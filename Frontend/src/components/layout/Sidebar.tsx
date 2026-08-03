@@ -43,11 +43,16 @@ export function Sidebar({
           'lg:translate-x-0',
         ].join(' ')}
       >
-        {/* Company mark */}
+        {/* Company mark. The wordmark itself is dark grey, so only the leaf
+            symbol is used here — on the dark sidebar the letters would vanish. */}
         <div className="flex h-16 shrink-0 items-center gap-3 px-4">
-          <div className="grid size-10 shrink-0 place-items-center rounded-control bg-brand-600 text-lg font-bold text-white">
-            C
-          </div>
+          <img
+            src="/logo-mark.png"
+            alt=""
+            width={40}
+            height={40}
+            className="size-10 shrink-0 object-contain"
+          />
           {!isCollapsed && (
             <div className="min-w-0">
               <p className="truncate font-bold text-white">Colors ERP</p>

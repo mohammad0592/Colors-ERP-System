@@ -66,10 +66,18 @@ export function LoginPage(): ReactElement {
         className="relative w-full max-w-md rounded-2xl bg-surface p-8 shadow-raised sm:p-10"
       >
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-brand-600 text-3xl font-bold text-white">
-            C
-          </div>
-          <h1 className="text-3xl font-bold text-ink">Colors ERP</h1>
+          <img
+            src="/logo-full.png"
+            alt="Colors — Company for Paper and Plastic Industries"
+            width={1151}
+            height={656}
+            className="mx-auto mb-6 h-auto w-full max-w-[260px]"
+          />
+          {/* The logo already carries the company name, so the heading says what
+              the system is rather than repeating "Colors". */}
+          <h1 className="text-xl font-bold text-ink">
+            Production &amp; Inventory System
+          </h1>
           <p className="mt-1 text-sm text-ink-muted">Styrofoam Factory</p>
         </div>
 
