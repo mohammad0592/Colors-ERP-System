@@ -17,6 +17,8 @@ namespace Colors.Infrastructure.Persistence;
 public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     : IdentityDbContext<ApplicationUser, ApplicationRole, int>(options)
 {
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

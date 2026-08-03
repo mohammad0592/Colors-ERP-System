@@ -1,8 +1,11 @@
+using Colors.Application.Features.Authentication;
+using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Colors.Infrastructure;
 
@@ -54,6 +57,20 @@ public static class DependencyInjection
         // reset and email confirmation. Specification section 3 gives password resets to
         // administrators only, and the factory has no email, so an administrator sets a
         // new password directly. It also keeps this layer free of the ASP.NET framework.
+
+        // Token settings are validated when the application starts, not when the first
+        // worker tries to log in. A missing or too-short signing key stops the server
+        // immediately, with a message saying what is wrong.
+        services.AddOptions<JwtOptions>()
+            .Bind(configuration.GetSection(JwtOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // The clock, injected rather than called directly, so tests can move time.
+        services.TryAddSingleton(TimeProvider.System);
+
+        services.AddSingleton<JwtTokenGenerator>();
+        services.AddScoped<IAuthenticationService, AuthenticationService>();
 
         return services;
     }

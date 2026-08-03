@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Colors.Domain\Colors.Domain.csproj" />
     <ProjectReference Include="..\..\src\Colors.Application\Colors.Application.csproj" />
+    <ProjectReference Include="..\..\src\Colors.Infrastructure\Colors.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

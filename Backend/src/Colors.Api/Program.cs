@@ -1,3 +1,4 @@
+using Colors.Api.Extensions;
 using Colors.Infrastructure;
 using Colors.Infrastructure.Persistence.Seed;
 
@@ -8,6 +9,9 @@ builder.Services.AddOpenApi();
 
 // Database, Identity and everything else Infrastructure owns.
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// Reading and checking the access token on every request.
+builder.Services.AddJwtAuthentication(builder.Configuration);
 
 var app = builder.Build();
 
