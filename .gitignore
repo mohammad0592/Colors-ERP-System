@@ -1,0 +1,79 @@
+## ---------------------------------------------------------------
+##  Colors ERP — root .gitignore
+## ---------------------------------------------------------------
+
+## .NET build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+
+## Visual Studio / Rider / VS Code
+.vs/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+## .NET
+project.lock.json
+project.fragment.lock.json
+*.nuget.props
+*.nuget.targets
+*.nupkg
+*.snupkg
+.dotnet/
+
+## Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+coverage*.json
+coverage*.xml
+coverage*.info
+
+## Node
+node_modules/
+dist/
+dist-ssr/
+.vite/
+*.local
+
+## Environment and secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+secrets.json
+
+## Database
+*.db
+*.db-shm
+*.db-wal
+*.bak
+*.backup
+
+## OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*.swp
+*~
+
+## Publish output
+publish/
+[Pp]ublish[Oo]utput/
+*.[Pp]ublish.xml
+*.pubxml
+*.pubxml.user
+*.azurePubxml
