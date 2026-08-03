@@ -1,0 +1,7 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\Colors.Application\Colors.Application.csproj" />
+  </ItemGroup>
+
+</Project>
