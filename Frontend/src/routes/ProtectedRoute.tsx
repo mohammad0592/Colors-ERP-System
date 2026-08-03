@@ -22,7 +22,11 @@ export function ProtectedRoute({ roles }: ProtectedRouteProps): ReactElement {
   // Still working out whether the saved session is good. Showing the login page here
   // would make it flash on every reload for someone who is already signed in.
   if (isRestoring) {
-    return <div className="route-loading">Loading…</div>;
+    return (
+      <div className="grid min-h-dvh place-items-center bg-canvas text-ink-muted">
+        Loading…
+      </div>
+    );
   }
 
   if (!isSignedIn) {

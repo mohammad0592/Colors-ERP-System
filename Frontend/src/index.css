@@ -1,62 +1,105 @@
-/*
-  Base styles for the whole application.
+@import 'tailwindcss';
 
-  Deliberately plain: the factory screens are forms and tables, so the shared layer
-  only sets typography, box sizing and sensible defaults. Each feature brings its own
-  stylesheet.
+/*
+  Design tokens, taken from the Figma design.
+
+  Every colour and size used anywhere in the application is named here. A screen
+  writes `bg-surface`, never `bg-white`, so one change here restyles the whole
+  system instead of needing an edit in fifty files.
 */
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+@theme {
+  /* ---- Brand ---------------------------------------------------------- */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb; /* buttons, active navigation, links */
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+
+  /* ---- The dark sidebar ----------------------------------------------- */
+  --color-sidebar: #151b2e;
+  --color-sidebar-hover: #1f2740;
+  --color-sidebar-text: #94a3b8;
+  --color-sidebar-heading: #64748b;
+
+  /* ---- Page surfaces --------------------------------------------------- */
+  --color-canvas: #f1f5f9; /* the page behind the cards */
+  --color-surface: #ffffff; /* cards, tables, panels */
+  --color-line: #e2e8f0; /* borders and separators */
+
+  /* ---- Text ------------------------------------------------------------ */
+  --color-ink: #0f172a; /* headings and values */
+  --color-ink-soft: #475569; /* body text */
+  --color-ink-muted: #94a3b8; /* labels, hints, units */
+
+  /* ---- Status ---------------------------------------------------------- */
+  --color-ok: #10b981;
+  --color-ok-soft: #d1fae5;
+  --color-warn: #f59e0b;
+  --color-warn-soft: #fef3c7;
+  --color-bad: #ef4444;
+  --color-bad-soft: #fee2e2;
+
+  /* ---- Shape ----------------------------------------------------------- */
+  --radius-card: 12px;
+  --radius-control: 10px;
+
+  /* ---- Depth ----------------------------------------------------------- */
+  --shadow-card: 0 1px 3px rgb(15 23 42 / 8%);
+  --shadow-raised: 0 10px 30px rgb(15 23 42 / 12%);
+
+  /* ---- Touch sizes -----------------------------------------------------
+     The workers use tablets, sometimes with gloves. Anything they tap is at
+     least 44px; the fields they use all shift are larger still. */
+  --spacing-touch: 44px;
+  --spacing-field: 52px;
+  --spacing-sidebar: 260px;
+  --spacing-sidebar-narrow: 72px;
 }
 
-:root {
-  font-family: system-ui, 'Segoe UI', Roboto, 'Noto Naskh Arabic', sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  color: #0f172a;
+@layer base {
+  html {
+    /* Stops a tablet zooming in when a field is focused. */
+    -webkit-text-size-adjust: 100%;
+  }
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-family: system-ui, 'Segoe UI', Roboto, 'Noto Naskh Arabic', sans-serif;
+  }
 
-  /* Stops iPad zooming in when a field is focused. */
-  -webkit-text-size-adjust: 100%;
+  /* Every interactive thing must show where the keyboard focus is. */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand-600;
+  }
 }
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
-  background: #f1f5f9;
-}
+@layer components {
+  /* Repeated shapes, named once so twenty screens cannot drift apart. */
 
-#root {
-  min-height: 100vh;
-  min-height: 100dvh;
-}
+  .card {
+    @apply rounded-card border border-line bg-surface shadow-card;
+  }
 
-h1,
-h2,
-h3 {
-  margin: 0;
-  font-weight: 600;
-  color: #0f172a;
-}
+  .field-label {
+    @apply mb-2 block text-sm font-semibold text-ink-soft;
+  }
 
-button,
-input,
-select,
-textarea {
-  font-family: inherit;
-  font-size: inherit;
-}
+  .field-input {
+    @apply h-field w-full rounded-control border-2 border-line bg-canvas px-4 text-lg
+      text-ink transition-colors
+      placeholder:text-ink-muted
+      focus:border-brand-600 focus:bg-surface focus:outline-none
+      disabled:bg-line disabled:text-ink-muted;
+  }
 
-/* Every interactive thing must show where the keyboard focus is. */
-:focus-visible {
-  outline: 3px solid #2563eb;
-  outline-offset: 2px;
+  .btn-primary {
+    @apply inline-flex h-field w-full items-center justify-center rounded-control
+      bg-brand-600 px-6 text-lg font-semibold text-white transition-colors
+      hover:bg-brand-700 active:bg-brand-800
+      disabled:cursor-not-allowed disabled:bg-ink-muted;
+  }
 }

@@ -2,7 +2,6 @@ import { useState, type ReactElement } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
-import './LoginPage.css';
 
 /** Where the worker was heading before being sent to sign in. */
 interface LoginLocationState {
@@ -12,8 +11,9 @@ interface LoginLocationState {
 /**
  * The sign-in screen.
  *
- * Built for a tablet held on the factory floor: large fields, large button, one
- * message at a time, and no small text.
+ * Follows the Figma design — centred card on a dark patterned background — but signs
+ * in with an **employee number**, not an email. That is how the factory identifies
+ * people on its paper forms, and many workers have no company email.
  */
 export function LoginPage(): ReactElement {
   const [employeeNumber, setEmployeeNumber] = useState('');
@@ -32,7 +32,6 @@ export function LoginPage(): ReactElement {
     try {
       await signIn(employeeNumber.trim().toUpperCase(), password);
 
-      // Back to the page they wanted before being sent here.
       const state = location.state as LoginLocationState | null;
       await navigate(state?.from ?? '/', { replace: true });
     } catch (caught) {
@@ -46,27 +45,43 @@ export function LoginPage(): ReactElement {
   const canSubmit = employeeNumber.trim() !== '' && password !== '' && !isSubmitting;
 
   return (
-    <div className="login-page">
+    <div className="relative grid min-h-dvh place-items-center overflow-hidden bg-sidebar p-6">
+      {/* Faint grid, as in the design. Purely decorative. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
+          backgroundSize: '48px 48px',
+        }}
+      />
+
       <form
-        className="login-card"
         onSubmit={(event) => {
           event.preventDefault();
           void submit();
         }}
         noValidate
+        className="relative w-full max-w-md rounded-2xl bg-surface p-8 shadow-raised sm:p-10"
       >
-        <header className="login-header">
-          <h1>Colors ERP</h1>
-          <p>Styrofoam Factory</p>
-        </header>
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-5 grid size-16 place-items-center rounded-2xl bg-brand-600 text-3xl font-bold text-white">
+            C
+          </div>
+          <h1 className="text-3xl font-bold text-ink">Colors ERP</h1>
+          <p className="mt-1 text-sm text-ink-muted">Styrofoam Factory</p>
+        </div>
 
-        <label className="field" htmlFor="employeeNumber">
-          <span className="field-label">Employee number</span>
+        <div className="mb-5">
+          <label className="field-label" htmlFor="employeeNumber">
+            Employee number
+          </label>
           <input
             id="employeeNumber"
             name="employeeNumber"
             type="text"
-            inputMode="text"
+            className="field-input"
             autoComplete="username"
             autoCapitalize="characters"
             spellCheck="false"
@@ -79,14 +94,17 @@ export function LoginPage(): ReactElement {
             autoFocus
             required
           />
-        </label>
+        </div>
 
-        <label className="field" htmlFor="password">
-          <span className="field-label">Password</span>
+        <div className="mb-5">
+          <label className="field-label" htmlFor="password">
+            Password
+          </label>
           <input
             id="password"
             name="password"
             type="password"
+            className="field-input"
             autoComplete="current-password"
             value={password}
             onChange={(event) => {
@@ -95,18 +113,25 @@ export function LoginPage(): ReactElement {
             disabled={isSubmitting}
             required
           />
-        </label>
+        </div>
 
         {/* role="alert" so a screen reader announces it. */}
         {error !== null && (
-          <p className="login-error" role="alert">
+          <p
+            role="alert"
+            className="mb-5 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          >
             {error}
           </p>
         )}
 
-        <button className="login-button" type="submit" disabled={!canSubmit}>
+        <button type="submit" className="btn-primary" disabled={!canSubmit}>
           {isSubmitting ? 'Signing in…' : 'Sign in'}
         </button>
+
+        <p className="mt-6 text-center text-xs text-ink-muted">
+          Ask an administrator if you cannot sign in.
+        </p>
       </form>
     </div>
   );
