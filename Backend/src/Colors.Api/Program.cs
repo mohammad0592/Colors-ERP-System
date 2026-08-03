@@ -1,14 +1,21 @@
+using Colors.Infrastructure;
+using Colors.Infrastructure.Persistence.Seed;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// Database, Identity and everything else Infrastructure owns.
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Roles and the first administrator. Safe to run every start — it only adds what
+// is missing. Database migrations are NOT run here: they are a deliberate step in
+// the deployment, taken after a backup (specification section 15).
+await IdentitySeeder.SeedAsync(app.Services);
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -16,6 +23,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

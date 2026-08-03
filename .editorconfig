@@ -106,3 +106,15 @@ dotnet_diagnostic.IDE0005.severity = warning
 dotnet_diagnostic.IDE0011.severity = error
 # File-scoped namespaces
 dotnet_diagnostic.IDE0161.severity = error
+
+# ---------------------------------------------------------------
+#  Generated code
+# ---------------------------------------------------------------
+
+# EF Core writes migrations itself and rewrites them on every change.
+# They are never edited by hand, so style rules do not apply.
+[**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+dotnet_diagnostic.IDE0005.severity = none
+dotnet_diagnostic.IDE0161.severity = none
