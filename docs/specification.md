@@ -999,14 +999,24 @@ ThermoProductions · ThermoTestReports · ProducedBags · WoodenPallets · BagPa
 **Line 3 (1)**
 RecyclerProductions
 
-**System (2)**
-Barcodes · AuditLog
+**System (3)**
+Barcodes · AuditLog · RefreshTokens
 
-**Total: 35 tables.**
+**Total: 36 tables.**
+
+`RefreshTokens` is not a factory concept. It exists only to deliver what section 15 asks for — a short access token plus a refresh token, so a twelve-hour shift never signs a man out mid-roll:
+
+| Column | Note |
+|---|---|
+| Id · UserId | |
+| **TokenHash** | SHA-256 of the token. The token itself is **never** stored, exactly as passwords are handled — a copy of the database yields nothing usable. |
+| CreatedAt · ExpiresAt | |
+| RevokedAt | Set on logout, on rotation, or when theft is detected. |
+| ReplacedByTokenHash | The token issued in its place. These form a chain: if an already-revoked token is presented, someone kept a copy, so every session for that worker is revoked at once. |
 
 ### New since the old documents
 
-`ProductionLines` · `Shifts` · `MaterialPackagings` · **`MaterialIssueTickets` + Lines** · **`Batches`** · `PackagingConsumptionLines` · `Barcodes` · `AuditLog` · `UserRoles`
+`ProductionLines` · `Shifts` · `MaterialPackagings` · **`MaterialIssueTickets` + Lines** · **`Batches`** · `PackagingConsumptionLines` · `Barcodes` · `AuditLog` · `UserRoles` · `RefreshTokens`
 
 ### Removed
 

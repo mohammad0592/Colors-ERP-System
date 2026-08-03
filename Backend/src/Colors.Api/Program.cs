@@ -13,6 +13,10 @@ builder.Services.AddInfrastructure(builder.Configuration);
 // Reading and checking the access token on every request.
 builder.Services.AddJwtAuthentication(builder.Configuration);
 
+// Lets the React development server reach the API. Not needed in production,
+// where both are served from the same address.
+builder.Services.AddFrontendCors(builder.Configuration);
+
 var app = builder.Build();
 
 // Roles and the first administrator. Safe to run every start — it only adds what
@@ -26,6 +30,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(CorsExtensions.PolicyName);
 
 app.UseAuthentication();
 app.UseAuthorization();
