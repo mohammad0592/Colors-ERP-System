@@ -1,10 +1,11 @@
+import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { LoginPage } from './features/auth/LoginPage';
 import { HomePage } from './features/home/HomePage';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 
-export default function App() {
+export default function App(): ReactElement {
   return (
     <BrowserRouter>
       <AuthProvider>

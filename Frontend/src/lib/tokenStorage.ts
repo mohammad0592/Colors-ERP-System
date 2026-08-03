@@ -17,38 +17,37 @@
 
 const REFRESH_TOKEN_KEY = 'colors.refreshToken';
 
-let accessToken = null;
-let accessTokenExpiresAt = null;
+let accessToken: string | null = null;
+let accessTokenExpiresAt: Date | null = null;
 
-export function getAccessToken() {
+export function getAccessToken(): string | null {
   return accessToken;
 }
 
-export function setAccessToken(token, expiresAt) {
+export function setAccessToken(token: string, expiresAt: string): void {
   accessToken = token;
-  accessTokenExpiresAt = expiresAt ? new Date(expiresAt) : null;
+  accessTokenExpiresAt = new Date(expiresAt);
 }
 
 /** True when the access token is missing or about to run out. */
-export function isAccessTokenExpired() {
-  if (!accessToken || !accessTokenExpiresAt) return true;
+export function isAccessTokenExpired(): boolean {
+  if (accessToken === null || accessTokenExpiresAt === null) {
+    return true;
+  }
+
   // Renew half a minute early, so a request never arrives just after expiry.
   return accessTokenExpiresAt.getTime() - Date.now() < 30_000;
 }
 
-export function getRefreshToken() {
+export function getRefreshToken(): string | null {
   return localStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
-export function setRefreshToken(token) {
-  if (token) {
-    localStorage.setItem(REFRESH_TOKEN_KEY, token);
-  } else {
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-  }
+export function setRefreshToken(token: string): void {
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
 }
 
-export function clearTokens() {
+export function clearTokens(): void {
   accessToken = null;
   accessTokenExpiresAt = null;
   localStorage.removeItem(REFRESH_TOKEN_KEY);

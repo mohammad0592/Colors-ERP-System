@@ -46,6 +46,9 @@ dist-ssr/
 .vite/
 *.local
 
+## TypeScript incremental build cache
+*.tsbuildinfo
+
 ## Environment and secrets — NEVER commit these
 .env
 .env.*

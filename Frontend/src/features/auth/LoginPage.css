@@ -67,7 +67,9 @@
   background: #f8fafc;
   border: 2px solid #cbd5e1;
   border-radius: 10px;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
 }
 
 .field input::placeholder {

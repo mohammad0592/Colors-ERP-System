@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import './HomePage.css';
 
@@ -8,8 +9,14 @@ import './HomePage.css';
  * The real screen for each worker comes with the modules in the build order
  * (specification section 17).
  */
-export function HomePage() {
+export function HomePage(): ReactElement | null {
   const { user, signOut } = useAuth();
+
+  // A protected route renders this only when signed in, but TypeScript cannot know
+  // that, and guessing would be exactly the kind of crash we switched to TS to avoid.
+  if (user === null) {
+    return null;
+  }
 
   return (
     <div className="home-page">
@@ -18,7 +25,13 @@ export function HomePage() {
           <h1>Colors ERP</h1>
           <p className="home-subtitle">Styrofoam Factory</p>
         </div>
-        <button className="sign-out" type="button" onClick={signOut}>
+        <button
+          className="sign-out"
+          type="button"
+          onClick={() => {
+            void signOut();
+          }}
+        >
           Sign out
         </button>
       </header>

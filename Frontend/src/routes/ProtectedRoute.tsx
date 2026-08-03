@@ -1,5 +1,11 @@
+import type { ReactElement } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+
+interface ProtectedRouteProps {
+  /** When given, the worker must hold at least one of these roles. */
+  roles?: string[];
+}
 
 /**
  * Blocks a page until the worker is signed in, and optionally until he holds one of
@@ -9,7 +15,7 @@ import { useAuth } from '../hooks/useAuth';
  * endpoint carries [Authorize]. Hiding a button does not protect anything — it only
  * stops a worker reaching a screen he cannot use.
  */
-export function ProtectedRoute({ roles }) {
+export function ProtectedRoute({ roles }: ProtectedRouteProps): ReactElement {
   const { isSignedIn, isRestoring, hasRole } = useAuth();
   const location = useLocation();
 
@@ -24,7 +30,7 @@ export function ProtectedRoute({ roles }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (roles?.length && !hasRole(...roles)) {
+  if (roles !== undefined && roles.length > 0 && !hasRole(...roles)) {
     return <Navigate to="/" replace />;
   }
 
