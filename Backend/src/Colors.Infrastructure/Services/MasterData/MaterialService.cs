@@ -19,7 +19,7 @@ public class MaterialService(ColorsDbContext db)
             .Include(m => m.Packagings)
             .ThenInclude(p => p.Unit);
 
-    protected override MaterialDto ToDto(Material entity) =>
+    protected override MaterialDto ToDto(Material entity, bool canDelete) =>
         new(
             entity.Id,
             entity.Code,
@@ -33,11 +33,25 @@ public class MaterialService(ColorsDbContext db)
             entity.UnitWeight,
             entity.Notes,
             entity.IsActive,
+            canDelete,
             entity.Packagings
                 .OrderBy(p => p.QuantityInBaseUnit)
                 .Select(p => new MaterialPackagingDto(
                     p.Id, p.UnitId, p.Unit.Name, p.QuantityInBaseUnit, p.IsDefaultReceiving))
                 .ToList());
+
+    protected override async Task<string?> CanDeleteAsync(
+        Material entity,
+        CancellationToken cancellationToken)
+    {
+        var used = await Db.RecipeIngredients.CountAsync(i => i.MaterialId == entity.Id, cancellationToken);
+        return used == 0
+            ? null
+            : $"Used by {used} recipe{(used == 1 ? "" : "s")} — deactivate it instead.";
+    }
+
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken) =>
+        [.. await Db.RecipeIngredients.Select(i => i.MaterialId).Distinct().ToListAsync(cancellationToken)];
 
     protected override void Apply(SaveMaterialRequest request, Material entity)
     {

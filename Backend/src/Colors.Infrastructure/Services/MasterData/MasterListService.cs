@@ -20,7 +20,11 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
     /// <summary>Overridden where the DTO needs related rows loaded (materials).</summary>
     protected virtual IQueryable<TEntity> Query() => db.Set<TEntity>();
 
-    protected abstract TDto ToDto(TEntity entity);
+    /// <param name="canDelete">
+    /// False when something references the row, so the screen can hide the delete
+    /// button instead of offering one that always fails.
+    /// </param>
+    protected abstract TDto ToDto(TEntity entity, bool canDelete);
 
     /// <summary>Copies the request onto the entity. Runs only after validation passed.</summary>
     protected abstract void Apply(TUpsert request, TEntity entity);
@@ -39,6 +43,17 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
     protected virtual Task<string?> CanDeleteAsync(TEntity entity, CancellationToken cancellationToken) =>
         Task.FromResult<string?>(null);
 
+    /// <summary>
+    /// Every id something references, in one query rather than one per row — a list
+    /// of fourteen materials must not cost fourteen round trips.
+    ///
+    /// Overridden alongside <see cref="CanDeleteAsync"/>, which answers the same
+    /// question for a single row but with a message worth reading. If the two ever
+    /// disagree the database's restrict foreign keys still hold the line.
+    /// </summary>
+    protected virtual Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken) =>
+        Task.FromResult<HashSet<int>>([]);
+
     public async Task<IReadOnlyList<TDto>> GetAllAsync(
         bool includeInactive = false,
         CancellationToken cancellationToken = default)
@@ -48,7 +63,9 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
             .OrderBy(e => e.Name)
             .ToListAsync(cancellationToken);
 
-        return rows.Select(ToDto).ToList();
+        var referenced = await ReferencedIdsAsync(cancellationToken);
+
+        return rows.Select(e => ToDto(e, !referenced.Contains(e.Id))).ToList();
     }
 
     public async Task<Result<TDto>> CreateAsync(TUpsert request, CancellationToken cancellationToken = default)
@@ -68,7 +85,7 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
 
         // Reloaded through Query() so a DTO needing related rows gets them.
         var saved = await Query().FirstAsync(e => e.Id == entity.Id, cancellationToken);
-        return Result<TDto>.Success(ToDto(saved));
+        return Result<TDto>.Success(await ToDtoAsync(saved, cancellationToken));
     }
 
     public async Task<Result<TDto>> UpdateAsync(int id, TUpsert request, CancellationToken cancellationToken = default)
@@ -92,7 +109,7 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
         // related entities are not loaded yet — a new pack size knows its UnitId
         // but not the Unit, and the DTO needs the unit's name.
         var saved = await Query().FirstAsync(e => e.Id == id, cancellationToken);
-        return Result<TDto>.Success(ToDto(saved));
+        return Result<TDto>.Success(await ToDtoAsync(saved, cancellationToken));
     }
 
     public async Task<Result<TDto>> SetActiveAsync(int id, bool isActive, CancellationToken cancellationToken = default)
@@ -115,7 +132,7 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
         entity.IsActive = isActive;
         await db.SaveChangesAsync(cancellationToken);
 
-        return Result<TDto>.Success(ToDto(entity));
+        return Result<TDto>.Success(await ToDtoAsync(entity, cancellationToken));
     }
 
     public async Task<Result<bool>> DeleteAsync(int id, CancellationToken cancellationToken = default)
@@ -154,6 +171,10 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
 
         return Result<bool>.Success(true);
     }
+
+    /// <summary>Maps one row, asking the database whether it is still referenced.</summary>
+    private async Task<TDto> ToDtoAsync(TEntity entity, CancellationToken cancellationToken) =>
+        ToDto(entity, !(await ReferencedIdsAsync(cancellationToken)).Contains(entity.Id));
 
     /// <summary>True when another row already holds this name.</summary>
     protected async Task<bool> NameTakenAsync(string name, int? exceptId, CancellationToken cancellationToken)

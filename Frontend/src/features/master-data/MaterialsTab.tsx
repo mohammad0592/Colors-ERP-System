@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import {
@@ -19,6 +20,7 @@ export function MaterialsTab(): ReactElement {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<MaterialDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const materials = useQuery({
     queryKey: ['materials'],
@@ -142,19 +144,31 @@ export function MaterialsTab(): ReactElement {
                         });
                       }}
                     />
-                    <RowButton
-                      label="Delete"
-                      tone="danger"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Delete ${material.code} ${material.name}? This only works while nothing uses it.`,
-                          )
-                        ) {
-                          remove.mutate(material.id);
-                        }
-                      }}
-                    />
+                    {/* Hidden once a recipe uses the material. */}
+                    {material.canDelete && (
+                      <RowButton
+                        label="Delete"
+                        tone="danger"
+                        onClick={() => {
+                          setConfirm({
+                            title: 'Delete material?',
+                            message: (
+                              <>
+                                <strong>
+                                  {material.code} {material.name}
+                                </strong>{' '}
+                                will be removed for good. No recipe uses it, so no records
+                                are affected.
+                              </>
+                            ),
+                            confirmLabel: 'Delete',
+                            onConfirm: () => {
+                              remove.mutate(material.id);
+                            },
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                 </td>
               </tr>
@@ -162,6 +176,15 @@ export function MaterialsTab(): ReactElement {
           </tbody>
         </table>
       </div>
+
+      {confirm !== null && (
+        <ConfirmDialog
+          request={confirm}
+          onCancel={() => {
+            setConfirm(null);
+          }}
+        />
+      )}
 
       {editing !== null && (
         <MaterialDialog

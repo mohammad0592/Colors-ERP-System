@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import type { CrudClient, LookupDto } from './api';
@@ -47,6 +48,7 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<TDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   // The management screen always shows inactive rows too — hiding them here would
   // make "bring it back" impossible.
@@ -153,19 +155,29 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
                         setActive.mutate({ id: row.id, isActive: !row.isActive });
                       }}
                     />
-                    <RowButton
-                      label="Delete"
-                      tone="danger"
-                      onClick={() => {
-                        if (
-                          window.confirm(
-                            `Delete "${row.name}"? This only works while nothing uses it.`,
-                          )
-                        ) {
-                          remove.mutate(row.id);
-                        }
-                      }}
-                    />
+                    {/* Only offered when nothing references the row — a button
+                        that always fails is worse than no button. */}
+                    {row.canDelete && (
+                      <RowButton
+                        label="Delete"
+                        tone="danger"
+                        onClick={() => {
+                          setConfirm({
+                            title: `Delete ${itemWord}?`,
+                            message: (
+                              <>
+                                <strong>{row.name}</strong> will be removed for good.
+                                Nothing uses it, so no records are affected.
+                              </>
+                            ),
+                            confirmLabel: 'Delete',
+                            onConfirm: () => {
+                              remove.mutate(row.id);
+                            },
+                          });
+                        }}
+                      />
+                    )}
                   </div>
                 </td>
               </tr>
@@ -173,6 +185,15 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
           </tbody>
         </table>
       </div>
+
+      {confirm !== null && (
+        <ConfirmDialog
+          request={confirm}
+          onCancel={() => {
+            setConfirm(null);
+          }}
+        />
+      )}
 
       {editing !== null && (
         <EditDialog

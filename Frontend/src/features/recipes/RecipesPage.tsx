@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../lib/apiClient';
 import { materialsApi } from '../master-data/api';
@@ -19,6 +20,7 @@ export function RecipesPage(): ReactElement {
   const [familyFilter, setFamilyFilter] = useState<number | 'all'>('all');
   const [dialog, setDialog] = useState<RecipeVersionDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const families = useQuery({
     queryKey: ['recipe-families'],
@@ -216,27 +218,53 @@ export function RecipesPage(): ReactElement {
                           label="Put in production"
                           tone="primary"
                           onClick={() => {
-                            if (
-                              window.confirm(
-                                `Put recipe ${String(version.recipeNumber)} into production? ` +
-                                  'It can never be changed afterwards, and the family’s current recipe is archived.',
-                              )
-                            ) {
-                              promote.mutate(version.id);
-                            }
+                            setConfirm({
+                              title: `Put recipe ${String(version.recipeNumber)} into production?`,
+                              message: (
+                                <>
+                                  It can <strong>never be changed</strong> afterwards,
+                                  because the rolls made with it must keep their exact
+                                  formula.
+                                  <br />
+                                  <br />
+                                  {version.familyName} is currently running recipe{' '}
+                                  {String(
+                                    families.data.find(
+                                      (f) => f.id === version.recipeFamilyId,
+                                    )?.currentRecipeNumber ?? '—',
+                                  )}
+                                  , which will be archived.
+                                </>
+                              ),
+                              confirmLabel: 'Put in production',
+                              tone: 'primary',
+                              onConfirm: () => {
+                                promote.mutate(version.id);
+                              },
+                            });
                           }}
                         />
                         <Action
                           label="Discard"
                           tone="danger"
                           onClick={() => {
-                            if (
-                              window.confirm(
-                                `Discard draft recipe ${String(version.recipeNumber)}?`,
-                              )
-                            ) {
-                              discard.mutate(version.id);
-                            }
+                            setConfirm({
+                              title: 'Discard this draft?',
+                              message: (
+                                <>
+                                  Draft recipe{' '}
+                                  <strong>{String(version.recipeNumber)}</strong> will be
+                                  removed. It has never been in production, so no rolls
+                                  refer to it — but the number{' '}
+                                  {String(version.recipeNumber)} is never given to another
+                                  recipe.
+                                </>
+                              ),
+                              confirmLabel: 'Discard',
+                              onConfirm: () => {
+                                discard.mutate(version.id);
+                              },
+                            });
                           }}
                         />
                       </>
@@ -248,6 +276,15 @@ export function RecipesPage(): ReactElement {
           </tbody>
         </table>
       </div>
+
+      {confirm !== null && (
+        <ConfirmDialog
+          request={confirm}
+          onCancel={() => {
+            setConfirm(null);
+          }}
+        />
+      )}
 
       {dialog !== null && (
         <RecipeVersionDialog

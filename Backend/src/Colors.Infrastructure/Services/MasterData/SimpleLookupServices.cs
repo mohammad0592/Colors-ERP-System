@@ -16,7 +16,8 @@ public abstract class NameOnlyService<TEntity>(ColorsDbContext db)
     : MasterListService<TEntity, LookupDto, SaveLookupRequest>(db)
     where TEntity : Domain.Common.MasterEntity, new()
 {
-    protected override LookupDto ToDto(TEntity entity) => new(entity.Id, entity.Name, entity.IsActive);
+    protected override LookupDto ToDto(TEntity entity, bool canDelete) =>
+        new(entity.Id, entity.Name, entity.IsActive, canDelete);
 
     protected override void Apply(SaveLookupRequest request, TEntity entity) =>
         entity.Name = request.Name.Trim();
@@ -53,11 +54,28 @@ public class MaterialCategoryService(ColorsDbContext db) : NameOnlyService<Mater
             ? null
             : $"Used by {used} material{(used == 1 ? "" : "s")} — deactivate it instead.";
     }
+
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken) =>
+        [.. await Db.Materials.Select(m => m.CategoryId).Distinct().ToListAsync(cancellationToken)];
 }
 
 public class PlateSizeService(ColorsDbContext db) : NameOnlyService<PlateSize>(db), IPlateSizeService;
 
-public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductType>(db), IProductTypeService;
+public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductType>(db), IProductTypeService
+{
+    protected override async Task<string?> CanDeleteAsync(
+        ProductType entity,
+        CancellationToken cancellationToken)
+    {
+        var used = await Db.RecipeFamilies.CountAsync(f => f.ProductTypeId == entity.Id, cancellationToken);
+        return used == 0
+            ? null
+            : $"Used by {used} recipe famil{(used == 1 ? "y" : "ies")} — deactivate it instead.";
+    }
+
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken) =>
+        [.. await Db.RecipeFamilies.Select(f => f.ProductTypeId).Distinct().ToListAsync(cancellationToken)];
+}
 
 public class UnitService(ColorsDbContext db)
     : MasterListService<Unit, UnitDto, SaveUnitRequest>(db), IUnitService
@@ -76,8 +94,16 @@ public class UnitService(ColorsDbContext db)
             : $"Used by {asPack} pack size{(asPack == 1 ? "" : "s")} — deactivate it instead.";
     }
 
-    protected override UnitDto ToDto(Unit entity) =>
-        new(entity.Id, entity.Name, entity.Symbol, entity.IsActive);
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken)
+    {
+        var baseUnits = await Db.Materials.Select(m => m.BaseUnitId).Distinct().ToListAsync(cancellationToken);
+        var packUnits = await Db.MaterialPackagings.Select(p => p.UnitId).Distinct().ToListAsync(cancellationToken);
+
+        return [.. baseUnits, .. packUnits];
+    }
+
+    protected override UnitDto ToDto(Unit entity, bool canDelete) =>
+        new(entity.Id, entity.Name, entity.Symbol, entity.IsActive, canDelete);
 
     protected override void Apply(SaveUnitRequest request, Unit entity)
     {
@@ -112,8 +138,8 @@ public class UnitService(ColorsDbContext db)
 public class ColorService(ColorsDbContext db)
     : MasterListService<Color, ColorDto, SaveColorRequest>(db), IColorService
 {
-    protected override ColorDto ToDto(Color entity) =>
-        new(entity.Id, entity.Name, entity.Code, entity.IsActive);
+    protected override ColorDto ToDto(Color entity, bool canDelete) =>
+        new(entity.Id, entity.Name, entity.Code, entity.IsActive, canDelete);
 
     protected override void Apply(SaveColorRequest request, Color entity)
     {
@@ -156,13 +182,14 @@ public class ColorService(ColorsDbContext db)
 public class ShiftService(ColorsDbContext db)
     : MasterListService<Shift, ShiftDto, SaveShiftRequest>(db), IShiftService
 {
-    protected override ShiftDto ToDto(Shift entity) =>
+    protected override ShiftDto ToDto(Shift entity, bool canDelete) =>
         new(
             entity.Id,
             entity.Name,
             entity.StartTime.ToString("HH:mm", CultureInfo.InvariantCulture),
             entity.EndTime.ToString("HH:mm", CultureInfo.InvariantCulture),
-            entity.IsActive);
+            entity.IsActive,
+            canDelete);
 
     protected override void Apply(SaveShiftRequest request, Shift entity)
     {

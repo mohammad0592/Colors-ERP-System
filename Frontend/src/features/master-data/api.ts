@@ -10,6 +10,12 @@ export interface LookupDto {
   id: number;
   name: string;
   isActive: boolean;
+  /**
+   * False as soon as anything references the row. The screen hides the delete
+   * button rather than offering one that always fails — only the server knows
+   * what points at a row.
+   */
+  canDelete: boolean;
 }
 
 export interface UnitDto extends LookupDto {
@@ -48,6 +54,7 @@ export interface MaterialDto {
   unitWeight: number | null;
   notes: string | null;
   isActive: boolean;
+  canDelete: boolean;
   packagings: MaterialPackagingDto[];
 }
 
