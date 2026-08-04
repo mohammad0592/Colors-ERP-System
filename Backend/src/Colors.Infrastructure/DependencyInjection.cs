@@ -1,7 +1,9 @@
 using Colors.Application.Features.Authentication;
+using Colors.Application.Features.MasterData;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.MasterData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -71,6 +73,16 @@ public static class DependencyInjection
 
         services.AddSingleton<JwtTokenGenerator>();
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+        // Master data (specification section 4).
+        services.AddScoped<IProductionLineService, ProductionLineService>();
+        services.AddScoped<IShiftService, ShiftService>();
+        services.AddScoped<IUnitService, UnitService>();
+        services.AddScoped<IMaterialCategoryService, MaterialCategoryService>();
+        services.AddScoped<IColorService, ColorService>();
+        services.AddScoped<IPlateSizeService, PlateSizeService>();
+        services.AddScoped<IProductTypeService, ProductTypeService>();
+        services.AddScoped<IMaterialService, MaterialService>();
 
         return services;
     }

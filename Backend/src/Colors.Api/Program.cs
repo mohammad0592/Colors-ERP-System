@@ -24,6 +24,10 @@ var app = builder.Build();
 // the deployment, taken after a backup (specification section 15).
 await IdentitySeeder.SeedAsync(app.Services);
 
+// The lines, shifts, units, colours and materials named in the specification.
+// Real factory data, not demo data — it runs everywhere and only adds what is missing.
+await MasterDataSeeder.SeedAsync(app.Services);
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
