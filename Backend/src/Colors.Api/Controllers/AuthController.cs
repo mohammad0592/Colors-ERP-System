@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Colors.Application.Common.Models;
 using Colors.Application.Features.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

@@ -16,13 +16,12 @@ public sealed record SaveUnitRequest(string Name, string Symbol);
 
 public sealed record ColorDto(int Id, string Name, string Code, bool IsActive);
 
-/// <param name="Code">One capital letter for the roll code: W, G, Y, B.</param>
+// Code is one capital letter for the roll code: W, G, Y, B.
 public sealed record SaveColorRequest(string Name, string Code);
 
 public sealed record ShiftDto(int Id, string Name, string StartTime, string EndTime, bool IsActive);
 
-/// <param name="StartTime">"HH:mm", e.g. "08:00".</param>
-/// <param name="EndTime">"HH:mm"; "00:00" means midnight at the end of the day.</param>
+// Times are "HH:mm"; "00:00" means midnight at the end of the day.
 public sealed record SaveShiftRequest(string Name, string StartTime, string EndTime);
 
 public sealed record MaterialPackagingDto(

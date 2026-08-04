@@ -1,9 +1,11 @@
 using Colors.Application.Features.Authentication;
 using Colors.Application.Features.MasterData;
+using Colors.Application.Features.Recipes;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.MasterData;
+using Colors.Infrastructure.Services.Recipes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -83,6 +85,9 @@ public static class DependencyInjection
         services.AddScoped<IPlateSizeService, PlateSizeService>();
         services.AddScoped<IProductTypeService, ProductTypeService>();
         services.AddScoped<IMaterialService, MaterialService>();
+
+        // Recipes (specification section 5).
+        services.AddScoped<IRecipeService, RecipeService>();
 
         return services;
     }
