@@ -6,6 +6,7 @@ import { AuthProvider } from './features/auth/AuthProvider';
 import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
+import { RecipesPage } from './features/recipes/RecipesPage';
 import { RoleNames } from './lib/roles';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { plannedRoutes } from './routes/routes';
@@ -40,6 +41,18 @@ export default function App(): ReactElement {
                     administrator gets in (specification section 3). */}
                 <Route element={<ProtectedRoute roles={[RoleNames.Administrator]} />}>
                   <Route path="/master-data" element={<MasterDataPage />} />
+                </Route>
+
+                {/* Recipes are the supervisor's job too — he is the one who
+                    adjusts the percentages (specification section 3). */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[RoleNames.Administrator, RoleNames.Supervisor]}
+                    />
+                  }
+                >
+                  <Route path="/recipes" element={<RecipesPage />} />
                 </Route>
 
                 {plannedRoutes.map(({ path, element }) => (

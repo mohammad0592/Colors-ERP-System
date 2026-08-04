@@ -86,13 +86,6 @@ const planned: { path: string; title: string; phase: string; description: string
       'Material waste against what the recipe requires, production by shift, stock, and full traceability from a pallet back to its materials.',
   },
   {
-    path: '/recipes',
-    title: 'Recipes',
-    phase: 'Phase 3',
-    description:
-      'The four families and every version. Copy a recipe, change a percentage, save it as a new number — the old one is kept for ever.',
-  },
-  {
     path: '/shifts',
     title: 'Shifts',
     phase: 'Phase 4',
