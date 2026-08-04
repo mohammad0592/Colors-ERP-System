@@ -42,7 +42,18 @@ public abstract class NameOnlyService<TEntity>(ColorsDbContext db)
 
 public class ProductionLineService(ColorsDbContext db) : NameOnlyService<ProductionLine>(db), IProductionLineService;
 
-public class MaterialCategoryService(ColorsDbContext db) : NameOnlyService<MaterialCategory>(db), IMaterialCategoryService;
+public class MaterialCategoryService(ColorsDbContext db) : NameOnlyService<MaterialCategory>(db), IMaterialCategoryService
+{
+    protected override async Task<string?> CanDeleteAsync(
+        MaterialCategory entity,
+        CancellationToken cancellationToken)
+    {
+        var used = await Db.Materials.CountAsync(m => m.CategoryId == entity.Id, cancellationToken);
+        return used == 0
+            ? null
+            : $"Used by {used} material{(used == 1 ? "" : "s")} — deactivate it instead.";
+    }
+}
 
 public class PlateSizeService(ColorsDbContext db) : NameOnlyService<PlateSize>(db), IPlateSizeService;
 
@@ -51,6 +62,20 @@ public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductTyp
 public class UnitService(ColorsDbContext db)
     : MasterListService<Unit, UnitDto, SaveUnitRequest>(db), IUnitService
 {
+    protected override async Task<string?> CanDeleteAsync(Unit entity, CancellationToken cancellationToken)
+    {
+        var asBase = await Db.Materials.CountAsync(m => m.BaseUnitId == entity.Id, cancellationToken);
+        if (asBase > 0)
+        {
+            return $"Used as the base unit of {asBase} material{(asBase == 1 ? "" : "s")} — deactivate it instead.";
+        }
+
+        var asPack = await Db.MaterialPackagings.CountAsync(p => p.UnitId == entity.Id, cancellationToken);
+        return asPack == 0
+            ? null
+            : $"Used by {asPack} pack size{(asPack == 1 ? "" : "s")} — deactivate it instead.";
+    }
+
     protected override UnitDto ToDto(Unit entity) =>
         new(entity.Id, entity.Name, entity.Symbol, entity.IsActive);
 

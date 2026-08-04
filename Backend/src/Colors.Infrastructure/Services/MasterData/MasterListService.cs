@@ -32,6 +32,13 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
     protected virtual Task<string?> CanDeactivateAsync(TEntity entity, CancellationToken cancellationToken) =>
         Task.FromResult<string?>(null);
 
+    /// <summary>
+    /// A message naming what references the row, or null when nothing does and it may
+    /// be deleted. Overridden per entity as later phases add referencing tables.
+    /// </summary>
+    protected virtual Task<string?> CanDeleteAsync(TEntity entity, CancellationToken cancellationToken) =>
+        Task.FromResult<string?>(null);
+
     public async Task<IReadOnlyList<TDto>> GetAllAsync(
         bool includeInactive = false,
         CancellationToken cancellationToken = default)
@@ -109,6 +116,43 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
         await db.SaveChangesAsync(cancellationToken);
 
         return Result<TDto>.Success(ToDto(entity));
+    }
+
+    public async Task<Result<bool>> DeleteAsync(int id, CancellationToken cancellationToken = default)
+    {
+        var entity = await db.Set<TEntity>().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (entity is null)
+        {
+            return Result<bool>.Failure(ErrorCode.NotFound, "This item does not exist.");
+        }
+
+        // Specification section 4: delete is for typos and tests — rows nothing
+        // references. Anything already used can only be deactivated, so that every
+        // historical record keeps resolving.
+        var referenced = await CanDeleteAsync(entity, cancellationToken);
+        if (referenced is not null)
+        {
+            return Result<bool>.Failure(ErrorCode.ValidationFailed, referenced);
+        }
+
+        db.Set<TEntity>().Remove(entity);
+
+        try
+        {
+            await db.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // The database's restrict foreign keys are the backstop: a reference the
+            // check above does not know about yet — or one added in the instant
+            // between check and delete — lands here instead of breaking history.
+            db.ChangeTracker.Clear();
+            return Result<bool>.Failure(
+                ErrorCode.ValidationFailed,
+                "This row is used by other records, so it cannot be deleted. Deactivate it instead.");
+        }
+
+        return Result<bool>.Success(true);
     }
 
     /// <summary>True when another row already holds this name.</summary>

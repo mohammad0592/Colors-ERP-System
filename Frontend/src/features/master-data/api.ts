@@ -74,6 +74,8 @@ export interface CrudClient<TDto, TSave> {
   create: (body: TSave) => Promise<TDto>;
   update: (id: number, body: TSave) => Promise<TDto>;
   setActive: (id: number, isActive: boolean) => Promise<TDto>;
+  /** Allowed only while nothing references the row (specification section 4). */
+  remove: (id: number) => Promise<undefined>;
 }
 
 function crudFor<TDto, TSave>(base: string): CrudClient<TDto, TSave> {
@@ -88,6 +90,7 @@ function crudFor<TDto, TSave>(base: string): CrudClient<TDto, TSave> {
         method: 'PUT',
         body: { isActive },
       }),
+    remove: (id) => apiRequest<undefined>(`${base}/${String(id)}`, { method: 'DELETE' }),
   };
 }
 

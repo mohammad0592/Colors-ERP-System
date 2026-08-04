@@ -62,4 +62,19 @@ public abstract class MasterDataControllerBase<TDto, TUpsert>(IMasterListService
     {
         return ToResponse(await service.SetActiveAsync(id, request.IsActive, cancellationToken));
     }
+
+    /// <summary>
+    /// Removes a row nothing references — a typo, a test. A referenced row is
+    /// refused with a message naming what uses it (specification section 4).
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = RoleNames.Administrator)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        var result = await service.DeleteAsync(id, cancellationToken);
+        return result.IsSuccess ? NoContent() : ToResponse(result);
+    }
 }

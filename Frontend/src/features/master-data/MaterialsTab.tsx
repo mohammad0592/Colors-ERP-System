@@ -18,6 +18,7 @@ import { RowButton, StatusBadge } from './LookupTab';
 export function MaterialsTab(): ReactElement {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<MaterialDto | 'new' | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const materials = useQuery({
     queryKey: ['materials'],
@@ -39,6 +40,17 @@ export function MaterialsTab(): ReactElement {
   const setActive = useMutation({
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
       materialsApi.setActive(id, isActive),
+    onSettled: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: number) => materialsApi.remove(id),
+    onSuccess: () => {
+      setActionError(null);
+    },
+    onError: (caught) => {
+      setActionError(caught instanceof ApiError ? caught.message : 'Could not delete.');
+    },
     onSettled: invalidate,
   });
 
@@ -64,6 +76,15 @@ export function MaterialsTab(): ReactElement {
           Add material
         </button>
       </div>
+
+      {actionError !== null && (
+        <p
+          role="alert"
+          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+        >
+          {actionError}
+        </p>
+      )}
 
       <div className="card overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -119,6 +140,19 @@ export function MaterialsTab(): ReactElement {
                           id: material.id,
                           isActive: !material.isActive,
                         });
+                      }}
+                    />
+                    <RowButton
+                      label="Delete"
+                      tone="danger"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Delete ${material.code} ${material.name}? This only works while nothing uses it.`,
+                          )
+                        ) {
+                          remove.mutate(material.id);
+                        }
                       }}
                     />
                   </div>

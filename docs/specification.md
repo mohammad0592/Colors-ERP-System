@@ -261,6 +261,14 @@ This is the whole reason roles are many-to-many rather than one role per user.
 
 ## 4. Master data
 
+### The deletion rule
+
+Every master table carries `IsActive` instead of being deleted, so historical records keep resolving. The precise rule, agreed after the first factory test:
+
+> **A master row may be deleted only while nothing references it.** A category with no materials, a colour no roll has used — these are typos and experiments, and they can go. The moment one record points at a row, delete is refused with a message naming what uses it, and **deactivate** is the only way to retire it: it disappears from every picker while every old record still displays correctly.
+
+The database's restrict foreign keys are the backstop — even a bug in the check cannot break history.
+
 ### Production lines
 
 **`ProductionLines`** — Id · Name · IsActive

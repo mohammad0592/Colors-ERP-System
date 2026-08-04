@@ -35,8 +35,9 @@ const tabs: { id: TabId; label: string }[] = [
 
 /**
  * Administration of the reference data every production screen depends on
- * (specification section 4). Nothing here is ever deleted — only deactivated —
- * so historical records keep resolving.
+ * (specification section 4). Delete works only while nothing references a row —
+ * for typos and tests; anything already used can only be deactivated, so
+ * historical records keep resolving.
  */
 export function MasterDataPage(): ReactElement {
   const [tab, setTab] = useState<TabId>('materials');
@@ -92,6 +93,7 @@ export function MasterDataPage(): ReactElement {
           queryKey="material-categories"
           client={materialCategoriesApi}
           itemWord="category"
+          itemWordPlural="categories"
           fields={[{ key: 'name', label: 'Name' }]}
         />
       )}

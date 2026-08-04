@@ -28,6 +28,8 @@ interface LookupTabProps<TDto extends LookupDto, TSave extends Record<string, st
   fields: FieldDef[];
   /** Named from the worker's point of view: "unit", "colour", "shift". */
   itemWord: string;
+  /** Overrides the default "+s" plural — "category" becomes "categories". */
+  itemWordPlural?: string;
 }
 
 /**
@@ -40,9 +42,11 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
   client,
   fields,
   itemWord,
+  itemWordPlural,
 }: LookupTabProps<TDto, TSave>): ReactElement {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<TDto | 'new' | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   // The management screen always shows inactive rows too — hiding them here would
   // make "bring it back" impossible.
@@ -56,6 +60,19 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
   const setActive = useMutation({
     mutationFn: ({ id, isActive }: { id: number; isActive: boolean }) =>
       client.setActive(id, isActive),
+    onSettled: invalidate,
+  });
+
+  const remove = useMutation({
+    mutationFn: (id: number) => client.remove(id),
+    onSuccess: () => {
+      setActionError(null);
+    },
+    onError: (caught) => {
+      // The usual refusal: the row is referenced. The server's message names
+      // what uses it and points at Deactivate.
+      setActionError(caught instanceof ApiError ? caught.message : 'Could not delete.');
+    },
     onSettled: invalidate,
   });
 
@@ -75,8 +92,8 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
         <p className="text-sm text-ink-muted">
-          {query.data.length} {itemWord}
-          {query.data.length === 1 ? '' : 's'}
+          {query.data.length}{' '}
+          {query.data.length === 1 ? itemWord : (itemWordPlural ?? `${itemWord}s`)}
         </p>
         <button
           type="button"
@@ -88,6 +105,15 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
           Add {itemWord}
         </button>
       </div>
+
+      {actionError !== null && (
+        <p
+          role="alert"
+          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+        >
+          {actionError}
+        </p>
+      )}
 
       <div className="card overflow-x-auto">
         <table className="w-full text-left text-sm">
@@ -125,6 +151,19 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
                       label={row.isActive ? 'Deactivate' : 'Activate'}
                       onClick={() => {
                         setActive.mutate({ id: row.id, isActive: !row.isActive });
+                      }}
+                    />
+                    <RowButton
+                      label="Delete"
+                      tone="danger"
+                      onClick={() => {
+                        if (
+                          window.confirm(
+                            `Delete "${row.name}"? This only works while nothing uses it.`,
+                          )
+                        ) {
+                          remove.mutate(row.id);
+                        }
                       }}
                     />
                   </div>
@@ -178,15 +217,22 @@ export function StatusBadge({ isActive }: { isActive: boolean }): ReactElement {
 export function RowButton({
   label,
   onClick,
+  tone = 'normal',
 }: {
   label: string;
   onClick: () => void;
+  tone?: 'normal' | 'danger';
 }): ReactElement {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="min-h-9 rounded-control border border-line px-3 text-sm font-medium text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+      className={[
+        'min-h-9 rounded-control border border-line px-3 text-sm font-medium transition-colors',
+        tone === 'danger'
+          ? 'text-ink-muted hover:border-bad/40 hover:bg-bad-soft hover:text-bad'
+          : 'text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700',
+      ].join(' ')}
     >
       {label}
     </button>

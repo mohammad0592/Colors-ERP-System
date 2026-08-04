@@ -6,7 +6,9 @@ namespace Colors.Application.Features.MasterData;
 /// What every master data list can do. Declared here, implemented in Infrastructure —
 /// this layer must not know how the data is stored (specification section 0.1).
 ///
-/// There is no delete: master data is deactivated so that history keeps resolving.
+/// Deletion follows the rule in specification section 4: allowed only while nothing
+/// references the row. A referenced row can only be deactivated, so that history
+/// keeps resolving.
 /// </summary>
 public interface IMasterListService<TDto, TUpsert>
 {
@@ -18,6 +20,13 @@ public interface IMasterListService<TDto, TUpsert>
     Task<Result<TDto>> UpdateAsync(int id, TUpsert request, CancellationToken cancellationToken = default);
 
     Task<Result<TDto>> SetActiveAsync(int id, bool isActive, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Removes a row that nothing references — a typo, a test. Fails with
+    /// <see cref="ErrorCode.ValidationFailed"/> and a message naming what uses it
+    /// when it is referenced.
+    /// </summary>
+    Task<Result<bool>> DeleteAsync(int id, CancellationToken cancellationToken = default);
 }
 
 // One named interface per list, so registration and injection stay explicit.
