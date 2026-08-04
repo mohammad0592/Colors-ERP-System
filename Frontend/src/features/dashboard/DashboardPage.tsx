@@ -1,8 +1,19 @@
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { navigation, type NavItem } from '../../components/layout/navigation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Icon } from '../../components/ui/Icon';
 import { useAuth } from '../../hooks/useAuth';
+
+/** The shortcuts offered, in the order a shift actually runs. */
+const shortcutPaths = [
+  '/inventory',
+  '/inventory/receive',
+  '/production/rolls',
+  '/production/thermo',
+  '/production/pallets',
+  '/production/recycler',
+];
 
 /**
  * The dashboard.
@@ -13,7 +24,7 @@ import { useAuth } from '../../hooks/useAuth';
  * somebody will act on it.
  */
 export function DashboardPage(): ReactElement {
-  const { user } = useAuth();
+  const { user, hasRole } = useAuth();
 
   const today = new Date().toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -21,6 +32,14 @@ export function DashboardPage(): ReactElement {
     month: 'long',
     year: 'numeric',
   });
+
+  // Built from the same list as the sidebar and filtered by the same rule, so a
+  // shortcut can never offer a screen the menu has hidden.
+  const allItems = navigation.flatMap((group) => group.items);
+  const shortcuts: NavItem[] = shortcutPaths
+    .map((path) => allItems.find((item) => item.path === path))
+    .filter((item): item is NavItem => item !== undefined)
+    .filter((item) => item.roles === undefined || hasRole(...item.roles));
 
   return (
     <>
@@ -50,20 +69,24 @@ export function DashboardPage(): ReactElement {
         </div>
       </section>
 
-      <section>
-        <h2 className="mb-3 text-sm font-semibold tracking-wider text-ink-muted uppercase">
-          Quick actions
-        </h2>
+      {shortcuts.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-sm font-semibold tracking-wider text-ink-muted uppercase">
+            Quick actions
+          </h2>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          <QuickAction to="/inventory" icon="inventory" label="Inventory" />
-          <QuickAction to="/inventory/receive" icon="receive" label="Receive" />
-          <QuickAction to="/production/rolls" icon="roll" label="Rolls" />
-          <QuickAction to="/production/thermo" icon="thermo" label="Thermo" />
-          <QuickAction to="/production/pallets" icon="pallet" label="Pallets" />
-          <QuickAction to="/production/recycler" icon="recycler" label="Recycler" />
-        </div>
-      </section>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {shortcuts.map((item) => (
+              <QuickAction
+                key={item.path}
+                to={item.path}
+                icon={item.icon}
+                label={item.label}
+              />
+            ))}
+          </div>
+        </section>
+      )}
     </>
   );
 }

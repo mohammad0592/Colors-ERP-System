@@ -27,6 +27,11 @@ await IdentitySeeder.SeedAsync(app.Services);
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Demonstration accounts, one per job, so the system can be tried before any
+    // real worker exists. They share one simple password, so this is fenced off
+    // twice: only outside production, and only when Seed:DemoUsers is switched on.
+    await DemoUserSeeder.SeedAsync(app.Services);
 }
 
 app.UseHttpsRedirection();
