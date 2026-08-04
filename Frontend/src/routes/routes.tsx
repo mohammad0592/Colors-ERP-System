@@ -100,13 +100,6 @@ const planned: { path: string; title: string; phase: string; description: string
       'Open and close a shift for a line, with the workers on it, machine settings and the electricity meter.',
   },
   {
-    path: '/master-data',
-    title: 'Master Data',
-    phase: 'Phase 2',
-    description:
-      'Production lines, units, material categories, materials and their pack sizes, colours, plate sizes and product types.',
-  },
-  {
     path: '/users',
     title: 'Users',
     phase: 'Phase 1',
