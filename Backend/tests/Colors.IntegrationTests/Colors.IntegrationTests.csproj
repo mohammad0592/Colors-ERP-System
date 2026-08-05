@@ -9,6 +9,11 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
+    <!-- These tests run against a real PostgreSQL database, created from the
+         migrations and dropped afterwards. An in-memory provider would pass every
+         assertion about sequences, unique indexes and check constraints while
+         proving none of them. -->
+    <PackageReference Include="Npgsql" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,8 +1,10 @@
 using System.Reflection;
+using Colors.Domain.Entities.Barcodes;
 using Colors.Domain.Entities.Inventory;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Entities.Shifts;
+using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +41,9 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<MaterialInventory> MaterialInventory => Set<MaterialInventory>();
     public DbSet<MaterialInventoryMovement> MaterialInventoryMovements =>
         Set<MaterialInventoryMovement>();
+
+    // Barcodes — specification section 12. One table for rolls, bags and pallets.
+    public DbSet<Barcode> Barcodes => Set<Barcode>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
 
     // Recipes — specification section 5.
@@ -60,11 +65,38 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     /// </summary>
     public const string RecipeNumberSequence = "recipe_number_seq";
 
+    /// <summary>
+    /// One sequence per barcode type, for the same reasons: two tablets printing at
+    /// the same moment must not be handed the same value, and a scrapped roll must
+    /// never free its code for a different one (specification section 12).
+    /// </summary>
+    public const string RollBarcodeSequence = "roll_barcode_seq";
+    public const string BagBarcodeSequence = "bag_barcode_seq";
+    public const string PalletBarcodeSequence = "pallet_barcode_seq";
+
+    public static string BarcodeSequenceFor(BarcodeObjectType objectType) => objectType switch
+    {
+        BarcodeObjectType.Roll => RollBarcodeSequence,
+        BarcodeObjectType.Bag => BagBarcodeSequence,
+        BarcodeObjectType.Pallet => PalletBarcodeSequence,
+        _ => throw new ArgumentOutOfRangeException(nameof(objectType), objectType, "No barcode sequence for this type."),
+    };
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
         builder.HasSequence<int>(RecipeNumberSequence).StartsAt(1).IncrementsBy(1);
+
+        foreach (var sequence in new[]
+                 {
+                     RollBarcodeSequence,
+                     BagBarcodeSequence,
+                     PalletBarcodeSequence,
+                 })
+        {
+            builder.HasSequence<long>(sequence).StartsAt(1).IncrementsBy(1);
+        }
 
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
     }
