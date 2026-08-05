@@ -7,6 +7,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { ReceiveMaterialsPage } from './features/inventory/ReceiveMaterialsPage';
+import { MaterialIssuePage } from './features/material-issue/MaterialIssuePage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
@@ -52,6 +53,22 @@ export default function App(): ReactElement {
                   }
                 >
                   <Route path="/inventory/receive" element={<ReceiveMaterialsPage />} />
+                </Route>
+
+                {/* Reading tickets is open wider than issuing them: the supervisor
+                    closing a shift needs to see what is still outstanding. */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[
+                        RoleNames.Administrator,
+                        RoleNames.InventoryManager,
+                        RoleNames.Supervisor,
+                      ]}
+                    />
+                  }
+                >
+                  <Route path="/inventory/issue" element={<MaterialIssuePage />} />
                 </Route>
 
                 {/* Master data changes affect every screen, so only the

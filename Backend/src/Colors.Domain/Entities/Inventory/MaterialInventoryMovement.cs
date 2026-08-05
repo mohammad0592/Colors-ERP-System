@@ -37,10 +37,14 @@ public class MaterialInventoryMovement
 
     public ShiftReport? ShiftReport { get; set; }
 
-    // The event that caused the movement — an issue ticket, a recycler run, a
-    // packaging record — is added in phases 7, 11 and 12 as those tables arrive. The
-    // point of naming it is to be able to go both ways: from a stock change to its
-    // reason, and from a recycler report to the stock it created.
+    /// <summary>
+    /// The ticket that caused this, where one did.
+    ///
+    /// Naming the cause is what lets you go both ways: from a stock change to its
+    /// reason, and from a ticket to every kilogram it moved. The recycler run and the
+    /// packaging record join it in phases 11 and 12.
+    /// </summary>
+    public int? IssueTicketId { get; set; }
 
     public int UserId { get; set; }
 

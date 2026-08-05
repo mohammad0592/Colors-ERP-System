@@ -1,6 +1,7 @@
 using Colors.Application.Features.Authentication;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Inventory;
+using Colors.Application.Features.MaterialIssue;
 using Colors.Application.Features.MasterData;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
@@ -11,6 +12,7 @@ using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.Barcodes;
 using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.MasterData;
+using Colors.Infrastructure.Services.MaterialIssue;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
 using Colors.Infrastructure.Services.ShiftReports;
@@ -104,8 +106,13 @@ public static class DependencyInjection
         // People, read only — every screen that has to name somebody.
         services.AddScoped<IPeopleService, PeopleService>();
 
-        // Inventory (specification section 6).
+        // Inventory (specification section 6). The ledger is shared: issue tickets
+        // move stock too, and two copies of the locking would drift apart.
+        services.AddScoped<StockLedger>();
         services.AddScoped<IInventoryService, InventoryService>();
+
+        // Material issue and return (specification section 7).
+        services.AddScoped<IMaterialIssueService, MaterialIssueService>();
 
         // Barcodes (specification section 12) — needed from the extruder onwards.
         services.AddScoped<IBarcodeService, BarcodeService>();

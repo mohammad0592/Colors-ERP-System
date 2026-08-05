@@ -1,7 +1,6 @@
 using Colors.Application.Common.Models;
 using Colors.Application.Features.Inventory;
 using Colors.Domain.Constants;
-using Colors.Domain.Entities.Inventory;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -20,7 +19,7 @@ namespace Colors.Infrastructure.Services.Inventory;
 /// </summary>
 public class InventoryService(
     ColorsDbContext db,
-    TimeProvider timeProvider,
+    StockLedger ledger,
     ILogger<InventoryService> logger) : IInventoryService
 {
     public async Task<IReadOnlyList<MaterialStockDto>> GetStockAsync(
@@ -264,12 +263,8 @@ public class InventoryService(
     }
 
     /// <summary>
-    /// The single door every balance change goes through.
-    ///
-    /// Takes a row lock on the balance first, so a second tablet asking the same
-    /// question waits rather than reading a number that is about to change. The
-    /// movement and the new total are then written in one transaction — the cached
-    /// total is never allowed to exist without the movement that explains it.
+    /// Posts through the shared ledger, then returns the material's fresh row so the
+    /// screen shows the balance the movement produced rather than asking again.
     /// </summary>
     private async Task<Result<MaterialStockDto>> MoveAsync(
         int materialId,
@@ -279,89 +274,23 @@ public class InventoryService(
         string note,
         CancellationToken cancellationToken)
     {
-        var movementType = await db.MovementTypes
-            .FirstOrDefaultAsync(t => t.Name == movementTypeName, cancellationToken);
+        var posted = await ledger.PostAsync(
+            materialId,
+            movementTypeName,
+            quantity,
+            userId,
+            note,
+            cancellationToken: cancellationToken);
 
-        if (movementType is null)
+        if (!posted.IsSuccess)
         {
-            return Invalid($"The movement type '{movementTypeName}' is missing from master data.");
+            return Result<MaterialStockDto>.Failure(
+                posted.ErrorCode,
+                posted.Message ?? "The stock could not be moved.");
         }
-
-        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-
-        // SELECT ... FOR UPDATE. Creates the row if this material has never moved
-        // before, so the very first receive has something to lock next time.
-        var balance = await db.MaterialInventory
-            .FromSql($"""SELECT * FROM "MaterialInventory" WHERE "MaterialId" = {materialId} FOR UPDATE""")
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (balance is null)
-        {
-            balance = new MaterialInventory
-            {
-                MaterialId = materialId,
-                CurrentQuantity = 0m,
-                LastUpdated = timeProvider.GetUtcNow(),
-            };
-            db.MaterialInventory.Add(balance);
-        }
-
-        var after = balance.CurrentQuantity + (quantity * movementType.Direction);
-
-        if (after < 0)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            db.ChangeTracker.Clear();
-
-            var material = await db.Materials
-                .Include(m => m.BaseUnit)
-                .FirstAsync(m => m.Id == materialId, cancellationToken);
-
-            return Invalid(
-                $"There is not enough {material.Name}. The store holds "
-                + $"{balance.CurrentQuantity:0.###} {material.BaseUnit.Symbol} and this would take "
-                + $"{quantity:0.###}.");
-        }
-
-        balance.CurrentQuantity = after;
-        balance.LastUpdated = timeProvider.GetUtcNow();
-
-        db.MaterialInventoryMovements.Add(new MaterialInventoryMovement
-        {
-            MaterialId = materialId,
-            MovementTypeId = movementType.Id,
-            Quantity = quantity,
-            ShiftReportId = await CurrentShiftIdAsync(cancellationToken),
-            UserId = userId,
-            MovementDate = timeProvider.GetUtcNow(),
-            Notes = note,
-        });
-
-        await db.SaveChangesAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
 
         var stock = await GetStockAsync(false, cancellationToken);
         return Result<MaterialStockDto>.Success(stock.First(s => s.MaterialId == materialId));
-    }
-
-    /// <summary>
-    /// The open shift to hang this movement on, if there is one.
-    ///
-    /// Deliveries do arrive before anyone opens a shift, and the storekeeper must not
-    /// be sent looking for a supervisor before he can book them in — so this is
-    /// allowed to find nothing.
-    /// </summary>
-    private async Task<int?> CurrentShiftIdAsync(CancellationToken cancellationToken)
-    {
-        var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
-
-        return await db.ShiftReports
-            .Where(r => r.Status == Domain.Enums.ShiftReportStatus.Open
-                        && r.ProductionDate >= today.AddDays(-1))
-            .OrderByDescending(r => r.ProductionDate)
-            .ThenByDescending(r => r.OpenedAt)
-            .Select(r => (int?)r.Id)
-            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private static Result<MaterialStockDto> Invalid(string message) =>

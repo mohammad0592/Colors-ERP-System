@@ -386,9 +386,26 @@ public class ShiftReportService(
             return Invalid("This shift is already closed.");
         }
 
-        // Specification section 2 also requires every material issue ticket on every
-        // line of the shift to be closed first. Tickets arrive in phase 7; this is
-        // where that check belongs when they do.
+        // The factory's own rule (specification sections 2 and 7): a shift cannot
+        // close while material it took out is unaccounted for. Closing first would
+        // leave the leftover with no ticket to come back to, and the shift's waste
+        // figure would be wrong for ever.
+        var lineIds = report.Lines.Select(l => l.Id).ToList();
+
+        var openTickets = await db.MaterialIssueTickets
+            .Where(t => lineIds.Contains(t.ShiftLineId) && t.Status == IssueTicketStatus.Open)
+            .Select(t => t.TicketNumber)
+            .OrderBy(number => number)
+            .ToListAsync(cancellationToken);
+
+        if (openTickets.Count > 0)
+        {
+            return Invalid(
+                $"Ticket{(openTickets.Count == 1 ? "" : "s")} "
+                + $"{string.Join(", ", openTickets)} {(openTickets.Count == 1 ? "is" : "are")} "
+                + "still open. Weigh the leftover back in and close "
+                + $"{(openTickets.Count == 1 ? "it" : "them")} first.");
+        }
 
         report.Status = ShiftReportStatus.Closed;
         report.ClosedByUserId = userId;

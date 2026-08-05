@@ -42,6 +42,11 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<MaterialInventoryMovement> MaterialInventoryMovements =>
         Set<MaterialInventoryMovement>();
 
+    // Material issue and return — specification section 7.
+    public DbSet<MaterialIssueTicket> MaterialIssueTickets => Set<MaterialIssueTicket>();
+    public DbSet<MaterialIssueTicketLine> MaterialIssueTicketLines =>
+        Set<MaterialIssueTicketLine>();
+
     // Barcodes — specification section 12. One table for rolls, bags and pallets.
     public DbSet<Barcode> Barcodes => Set<Barcode>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
@@ -70,6 +75,12 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     /// the same moment must not be handed the same value, and a scrapped roll must
     /// never free its code for a different one (specification section 12).
     /// </summary>
+    /// <summary>
+    /// The number on the paper ticket the worker carries. A sequence so two tickets
+    /// can never share one, and an abandoned ticket never frees its number.
+    /// </summary>
+    public const string IssueTicketNumberSequence = "issue_ticket_number_seq";
+
     public const string RollBarcodeSequence = "roll_barcode_seq";
     public const string BagBarcodeSequence = "bag_barcode_seq";
     public const string PalletBarcodeSequence = "pallet_barcode_seq";
@@ -87,6 +98,7 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
         base.OnModelCreating(builder);
 
         builder.HasSequence<int>(RecipeNumberSequence).StartsAt(1).IncrementsBy(1);
+        builder.HasSequence<int>(IssueTicketNumberSequence).StartsAt(1).IncrementsBy(1);
 
         foreach (var sequence in new[]
                  {
