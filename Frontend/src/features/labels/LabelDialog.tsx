@@ -5,35 +5,85 @@ import { Modal } from '../../components/ui/Modal';
 import { producedStockApi, type BarcodeLabelDto } from './api';
 
 interface LabelDialogProps {
-  barcode: string;
+  /** One label, or a whole run's worth. */
+  barcodes: string[];
+  /** Shown above the sheet when the thing was only just made. */
+  headline?: string;
   onClose: () => void;
 }
 
 /**
- * The label that gets stuck on a roll, a bag or a pallet (specification section 12).
+ * The labels that get stuck on rolls, bags and pallets (specification section 12).
+ *
+ * This opens by itself the moment something is produced, because that is when the label
+ * is needed — a worker who has just logged a roll should not have to go and find it in
+ * a list of five hundred to print the sticker for it.
+ *
+ * A thermo run makes a dozen or more bags at once, so the sheet holds all of them and
+ * prints as one job, in the order they were made.
  *
  * A QR rather than a striped barcode, because the workers scan with Android tablets:
  * a camera reads QR at an angle and a damaged QR still reads, where a torn linear
- * barcode is simply gone.
- *
- * The human-readable code sits above it so a man can type it when the label is ruined,
- * and the bag label keeps every field the factory prints today — including the roll
- * number, which is how they do traceability on paper now.
- *
- * The product code (AB500B) is printed as text and is deliberately *not* the barcode:
- * every bag of black absorbent 500 shares it, so scanning it could never say which bag.
+ * barcode is simply gone. The human-readable code sits above it so a man can type it
+ * when the label is ruined.
  */
-export function LabelDialog({ barcode, onClose }: LabelDialogProps): ReactElement {
-  const label = useQuery({
-    queryKey: ['label', barcode],
-    queryFn: () => producedStockApi.label(barcode),
+export function LabelDialog({
+  barcodes,
+  headline,
+  onClose,
+}: LabelDialogProps): ReactElement {
+  const labels = useQuery({
+    queryKey: ['labels', barcodes],
+    queryFn: () => producedStockApi.labels(barcodes),
   });
 
+  const many = barcodes.length > 1;
+
   return (
-    <Modal title={`Label ${barcode}`} onClose={onClose}>
-      {label.isPending && <p className="text-ink-muted">Loading…</p>}
-      {label.isError && <p className="text-bad">Could not load this label.</p>}
-      {label.data !== undefined && <LabelSheet label={label.data} />}
+    <Modal
+      title={many ? `Print ${String(barcodes.length)} labels` : `Label ${barcodes[0] ?? ''}`}
+      onClose={onClose}
+      printable
+    >
+      {headline !== undefined && (
+        <p className="mb-4 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+          {headline}
+        </p>
+      )}
+
+      {labels.isPending && <p className="text-ink-muted">Loading…</p>}
+      {labels.isError && <p className="text-bad">Could not load these labels.</p>}
+
+      {labels.data !== undefined && (
+        <>
+          {labels.data.length === 0 ? (
+            <p className="text-ink-muted">No label was found for this.</p>
+          ) : (
+            <>
+              <div className="mb-5 max-h-[45dvh] overflow-y-auto print:max-h-none print:overflow-visible">
+                {labels.data.map((label) => (
+                  <LabelSheet key={label.barcode} label={label} />
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={() => {
+                  window.print();
+                }}
+              >
+                {many ? `Print all ${String(labels.data.length)} labels` : 'Print this label'}
+              </button>
+              <p className="mt-2 text-xs text-ink-muted">
+                Each label prints at 100 × 70 mm, one to a page. Reprinting is allowed —
+                the barcode never changes, so an old label and a new one name the same
+                thing.
+              </p>
+            </>
+          )}
+        </>
+      )}
     </Modal>
   );
 }
@@ -71,80 +121,62 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
   const made = new Date(label.createdAt);
 
   return (
-    <>
-      <div className="print-label mx-auto mb-5 rounded-card border-2 border-ink bg-white p-4 text-ink">
-        <div className="mb-2 flex items-start justify-between gap-3 border-b-2 border-ink pb-2">
-          <div>
-            <p className="text-[10px] font-bold tracking-widest uppercase">
-              Colors — Paper &amp; Plastic
-            </p>
-            <p className="text-lg leading-tight font-bold">{label.headlineCode}</p>
-          </div>
-          <span className="rounded border border-ink px-2 py-0.5 text-xs font-bold uppercase">
-            {label.kind}
-          </span>
+    <div className="print-label mx-auto mb-4 rounded-card border-2 border-ink bg-white p-4 text-ink">
+      <div className="mb-2 flex items-start justify-between gap-3 border-b-2 border-ink pb-2">
+        <div>
+          <p className="text-[10px] font-bold tracking-widest uppercase">
+            Colors — Paper &amp; Plastic
+          </p>
+          <p className="text-lg leading-tight font-bold">{label.headlineCode}</p>
         </div>
-
-        <div className="flex gap-4">
-          <div className="flex-1 text-xs">
-            {label.productName !== null && <Field label="Product" value={label.productName} />}
-            {label.colorName !== null && <Field label="Colour" value={label.colorName} />}
-            {label.rollCode !== null && (
-              /* رقم الرول — already on the factory's own bag label today. */
-              <Field label="Roll · رقم الرول" value={label.rollCode} mono />
-            )}
-            {label.pieceCount !== null && (
-              <Field label="Pieces · العدد" value={String(label.pieceCount)} />
-            )}
-            {label.weight !== null && <Field label="Weight" value={`${String(label.weight)} kg`} />}
-            {label.shiftName !== null && (
-              <Field label="Shift · الوردية" value={label.shiftName} />
-            )}
-            <Field
-              label="Date · الوقت"
-              value={`${made.toLocaleDateString('en-GB')} ${made.toLocaleTimeString('en-GB', {
-                hour: '2-digit',
-                minute: '2-digit',
-              })}`}
-            />
-          </div>
-
-          <div className="flex w-[30mm] shrink-0 flex-col items-center">
-            {/* The code above the barcode, so a torn label can still be typed in. */}
-            <p className="mb-1 font-mono text-sm font-bold">{label.barcode}</p>
-            {qr === null ? (
-              <div className="grid h-[26mm] w-[26mm] place-items-center border border-ink text-[9px]">
-                no code
-              </div>
-            ) : (
-              <div
-                className="h-[26mm] w-[26mm] [&>svg]:h-full [&>svg]:w-full"
-                // The library returns a complete SVG string; there is no user input in
-                // it, only the barcode this server issued.
-                dangerouslySetInnerHTML={{ __html: qr }}
-              />
-            )}
-            {label.productCode !== null && (
-              <p className="mt-1 font-mono text-[10px]">{label.productCode}</p>
-            )}
-          </div>
-        </div>
+        <span className="rounded border border-ink px-2 py-0.5 text-xs font-bold uppercase">
+          {label.kind}
+        </span>
       </div>
 
-      <button
-        type="button"
-        className="btn-primary"
-        onClick={() => {
-          window.print();
-        }}
-      >
-        Print this label
-      </button>
-      <p className="mt-2 text-xs text-ink-muted">
-        Prints at 100 × 70 mm. Reprinting is allowed — the barcode never changes, so an
-        old label and a new one name the same thing.
-      </p>
-    </>
+      <div className="flex gap-4">
+        <div className="flex-1 text-xs">
+          {label.productName !== null && <Field label="Product" value={label.productName} />}
+          {label.colorName !== null && <Field label="Colour" value={label.colorName} />}
+          {label.rollCode !== null && (
+            /* رقم الرول — already on the factory's own bag label today. */
+            <Field label="Roll · رقم الرول" value={label.rollCode} mono />
+          )}
+          {label.pieceCount !== null && (
+            <Field label="Pieces · العدد" value={String(label.pieceCount)} />
+          )}
+          {label.weight !== null && <Field label="Weight" value={`${String(label.weight)} kg`} />}
+          {label.shiftName !== null && <Field label="Shift · الوردية" value={label.shiftName} />}
+          <Field
+            label="Date · الوقت"
+            value={`${made.toLocaleDateString('en-GB')} ${made.toLocaleTimeString('en-GB', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}`}
+          />
+        </div>
+
+        <div className="flex w-[30mm] shrink-0 flex-col items-center">
+          {/* The code above the barcode, so a torn label can still be typed in. */}
+          <p className="mb-1 font-mono text-sm font-bold">{label.barcode}</p>
+          {qr === null ? (
+            <div className="grid h-[26mm] w-[26mm] place-items-center border border-ink text-[9px]">
+              no code
+            </div>
+          ) : (
+            <div
+              className="h-[26mm] w-[26mm] [&>svg]:h-full [&>svg]:w-full"
+              // The library returns a complete SVG string; there is no user input in it,
+              // only the barcode this server issued.
+              dangerouslySetInnerHTML={{ __html: qr }}
+            />
+          )}
+          {label.productCode !== null && (
+            <p className="mt-1 font-mono text-[10px]">{label.productCode}</p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 

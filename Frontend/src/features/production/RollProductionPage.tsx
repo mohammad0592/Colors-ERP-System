@@ -32,7 +32,12 @@ export function RollProductionPage(): ReactElement {
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [justLogged, setJustLogged] = useState<RollDto | null>(null);
-  const [labelFor, setLabelFor] = useState<string | null>(null);
+
+  // The labels to print. Set the moment a roll is logged, so the sticker comes up by
+  // itself — nobody should have to go and find a roll in a list to label it.
+  const [printing, setPrinting] = useState<{ barcodes: string[]; headline?: string } | null>(
+    null,
+  );
 
   const batches = useQuery({
     queryKey: ['batches', openOnly],
@@ -180,12 +185,11 @@ export function RollProductionPage(): ReactElement {
             type="button"
             className="font-semibold underline"
             onClick={() => {
-              setLabelFor(justLogged.barcode);
+              setPrinting({ barcodes: [justLogged.barcode] });
             }}
           >
-            Print the label
-          </button>{' '}
-          and stick it on the roll.
+            Print the label again
+          </button>
         </p>
       )}
 
@@ -349,7 +353,7 @@ export function RollProductionPage(): ReactElement {
                       type="button"
                       className="font-mono text-xs text-ink-muted underline-offset-2 hover:text-brand-700 hover:underline"
                       onClick={() => {
-                        setLabelFor(roll.barcode);
+                        setPrinting({ barcodes: [roll.barcode] });
                       }}
                     >
                       {roll.barcode}
@@ -395,6 +399,10 @@ export function RollProductionPage(): ReactElement {
           onCreated={(roll) => {
             setJustLogged(roll);
             setSelected(logging);
+            setPrinting({
+              barcodes: [roll.barcode],
+              headline: `Roll ${roll.rollCode} logged. Print this and stick it on the roll.`,
+            });
             invalidate();
           }}
         />
@@ -409,11 +417,12 @@ export function RollProductionPage(): ReactElement {
         />
       )}
 
-      {labelFor !== null && (
+      {printing !== null && (
         <LabelDialog
-          barcode={labelFor}
+          barcodes={printing.barcodes}
+          {...(printing.headline === undefined ? {} : { headline: printing.headline })}
           onClose={() => {
-            setLabelFor(null);
+            setPrinting(null);
           }}
         />
       )}

@@ -177,7 +177,7 @@ export function ProducedStockTab(): ReactElement {
 
       {labelFor !== null && (
         <LabelDialog
-          barcode={labelFor}
+          barcodes={[labelFor]}
           onClose={() => {
             setLabelFor(null);
           }}

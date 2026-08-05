@@ -79,6 +79,9 @@ export function PalletsPage(): ReactElement {
     onSuccess: (pallet) => {
       setActionError(null);
       setSelectedId(pallet.id);
+      // The label goes on the empty pallet before the first bag does, so it comes up
+      // the moment the pallet is started.
+      setLabelFor(pallet.barcode);
     },
     onError: (caught: unknown) => {
       setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
@@ -317,7 +320,7 @@ export function PalletsPage(): ReactElement {
 
       {labelFor !== null && (
         <LabelDialog
-          barcode={labelFor}
+          barcodes={[labelFor]}
           onClose={() => {
             setLabelFor(null);
           }}

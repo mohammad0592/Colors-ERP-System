@@ -125,12 +125,28 @@
   }
 
   .print-label {
-    position: absolute;
-    top: 0;
-    left: 0;
     margin: 0;
     border: none;
     box-shadow: none;
+    /* One label to a page. A run of fourteen bags prints as fourteen stickers, not as
+       one long strip nobody can peel apart. */
+    break-after: page;
+    page-break-after: always;
+  }
+
+  .print-label:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  /* On screen the dialog is a fixed overlay that scrolls inside itself. Printed, that
+     clips the job to whatever happened to be on screen — one label out of fourteen. */
+  .printable-modal,
+  .printable-modal * {
+    position: static !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
   }
 }
 

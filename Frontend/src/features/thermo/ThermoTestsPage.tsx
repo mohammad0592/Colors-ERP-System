@@ -3,6 +3,7 @@ import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
+import { LabelDialog } from '../labels/LabelDialog';
 import { formatDate } from '../shifts/shiftFormat';
 import { thermoApi, type ThermoRunDto, type ThermoRunSummaryDto } from './api';
 import { ThermoTestDialog } from './ThermoTestDialog';
@@ -21,6 +22,13 @@ export function ThermoTestsPage(): ReactElement {
   const [waitingOnly, setWaitingOnly] = useState(true);
   const [counting, setCounting] = useState<ThermoRunSummaryDto | null>(null);
   const [justSaved, setJustSaved] = useState<ThermoRunDto | null>(null);
+
+  // Saving the form is what creates the bags, so the labels come up straight after it.
+  // A run makes a dozen or more at once and they print as one job — going to look each
+  // one up in a list of five hundred is not a thing anybody would do.
+  const [printing, setPrinting] = useState<{ barcodes: string[]; headline?: string } | null>(
+    null,
+  );
 
   const runs = useQuery({
     queryKey: ['thermo-runs', 'tests', waitingOnly],
@@ -154,6 +162,21 @@ export function ThermoTestsPage(): ReactElement {
                     {run.needsTest && !run.isFinished && (
                       <span className="text-xs text-ink-muted">Still in the machine</span>
                     )}
+                    {/* Already counted, so the bags exist. A torn label must not mean
+                        counting the run again. */}
+                    {!run.needsTest && (
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                        onClick={() => {
+                          void thermoApi.run(run.id).then((full) => {
+                            setPrinting({ barcodes: full.bags.map((b) => b.barcode) });
+                          });
+                        }}
+                      >
+                        Labels
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -161,6 +184,16 @@ export function ThermoTestsPage(): ReactElement {
           </tbody>
         </table>
       </div>
+
+      {printing !== null && (
+        <LabelDialog
+          barcodes={printing.barcodes}
+          {...(printing.headline === undefined ? {} : { headline: printing.headline })}
+          onClose={() => {
+            setPrinting(null);
+          }}
+        />
+      )}
 
       {counting !== null && (
         <ThermoTestDialog
@@ -170,6 +203,12 @@ export function ThermoTestsPage(): ReactElement {
           }}
           onSaved={(run) => {
             setJustSaved(run);
+            setPrinting({
+              barcodes: run.bags.map((bag) => bag.barcode),
+              headline:
+                `Roll ${run.rollCode} made ${String(run.bags.length)} bag` +
+                `${run.bags.length === 1 ? '' : 's'}. Print the labels and stick one on each.`,
+            });
             invalidate();
           }}
         />

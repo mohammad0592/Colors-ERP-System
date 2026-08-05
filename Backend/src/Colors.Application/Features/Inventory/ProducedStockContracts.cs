@@ -67,4 +67,22 @@ public interface IProducedStockService
     Task<Result<BarcodeLabelDto>> GetLabelAsync(
         string barcode,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The labels for a whole run at once — one thermo form makes a dozen or more bags,
+    /// and they are printed together as one job.
+    ///
+    /// Returned in the order asked for, so the labels come off the printer in the order
+    /// the bags were made. A barcode that resolves to nothing is skipped rather than
+    /// failing the sheet: one bad code must not stop the other thirteen printing.
+    /// </summary>
+    Task<IReadOnlyList<BarcodeLabelDto>> GetLabelsAsync(
+        IReadOnlyList<string> barcodes,
+        CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Asked for as a body rather than a query string: a run can make a couple of hundred
+/// bags, and that many codes in a URL is a length limit waiting to be hit.
+/// </summary>
+public sealed record LabelSheetRequest(IReadOnlyList<string> Barcodes);

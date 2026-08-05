@@ -56,6 +56,19 @@ public class InventoryController(
         return ToResponse(await produced.GetLabelAsync(barcode, cancellationToken));
     }
 
+    /// <summary>
+    /// A whole run's labels in one call. A POST because a thermo run can make a couple
+    /// of hundred bags, and that many codes in a query string is a length limit waiting
+    /// to be hit.
+    /// </summary>
+    [HttpPost("produced/labels")]
+    public async Task<IActionResult> GetLabels(
+        [FromBody] LabelSheetRequest request,
+        CancellationToken cancellationToken)
+    {
+        return Ok(await produced.GetLabelsAsync(request.Barcodes, cancellationToken));
+    }
+
     /// <summary>The units a material may be received in — pallet, bag, kilogram.</summary>
     [HttpGet("materials/{materialId:int}/units")]
     public async Task<IActionResult> GetReceivingUnits(

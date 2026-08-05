@@ -67,4 +67,15 @@ export const producedStockApi = {
     apiRequest<BarcodeLabelDto>(
       `/api/inventory/produced/label/${encodeURIComponent(barcode)}`,
     ),
+
+  /**
+   * A whole run's labels at once. A POST because a thermo run can make a couple of
+   * hundred bags, and that many codes in a query string is a length limit waiting to
+   * be hit.
+   */
+  labels: (barcodes: string[]): Promise<BarcodeLabelDto[]> =>
+    apiRequest<BarcodeLabelDto[]>('/api/inventory/produced/labels', {
+      method: 'POST',
+      body: { barcodes },
+    }),
 };

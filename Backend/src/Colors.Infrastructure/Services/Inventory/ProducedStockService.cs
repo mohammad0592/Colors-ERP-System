@@ -112,6 +112,26 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
         };
     }
 
+    public async Task<IReadOnlyList<BarcodeLabelDto>> GetLabelsAsync(
+        IReadOnlyList<string> barcodes,
+        CancellationToken cancellationToken = default)
+    {
+        var labels = new List<BarcodeLabelDto>();
+
+        foreach (var barcode in barcodes.Take(MaxRows))
+        {
+            var label = await GetLabelAsync(barcode, cancellationToken);
+
+            // One code nobody can resolve must not stop the other thirteen printing.
+            if (label.IsSuccess && label.Value is not null)
+            {
+                labels.Add(label.Value);
+            }
+        }
+
+        return labels;
+    }
+
     // ---------- the three kinds ----------
 
     private async Task<List<ProducedStockItemDto>> RollsAsync(CancellationToken cancellationToken)

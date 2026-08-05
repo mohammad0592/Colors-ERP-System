@@ -173,7 +173,10 @@ public static class FactoryData
 
         var report = new ShiftReport
         {
-            ProductionDate = new DateOnly(2026, 3, 1).AddDays(Math.Abs(suffix.GetHashCode()) % 300),
+            // A day of its own, so this factory's roll serials start at 1 whatever else
+            // the suite is doing. Never a hash: string.GetHashCode() is randomised per
+            // process, so collisions moved around and the suite only went red sometimes.
+            ProductionDate = TestSequences.NextProductionDate(),
             ShiftId = shift.Id,
             Status = Domain.Enums.ShiftReportStatus.Open,
             OpenedByUserId = user.Id,

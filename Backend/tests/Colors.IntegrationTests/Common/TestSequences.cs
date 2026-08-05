@@ -20,6 +20,20 @@ public static class TestSequences
     /// <summary>Recipe numbers are unique for ever, so they are never derived from a hash.</summary>
     public static int NextRecipeNumber() => Interlocked.Increment(ref _recipeNumber);
 
+    private static int _day = -1;
+
+    /// <summary>
+    /// A production day of its own for each test factory.
+    ///
+    /// A roll's serial restarts every day, so two factories sharing a date makes the
+    /// second one's first roll number 2 — and a test asserting 1 fails, in a different
+    /// test each run. That is what a hashed date did: <c>string.GetHashCode()</c> is
+    /// randomised per process, so the collisions moved around and the suite only went
+    /// red sometimes.
+    /// </summary>
+    public static DateOnly NextProductionDate() =>
+        new DateOnly(2026, 1, 1).AddDays(Interlocked.Increment(ref _day));
+
     /// <summary>
     /// A colour, taken from the twenty-six the database can hold.
     ///
