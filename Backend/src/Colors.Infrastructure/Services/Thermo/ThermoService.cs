@@ -380,7 +380,13 @@ public class ThermoService(
             var scan = await barcodes.LookupAsync(
                 request.RollBarcode.Trim(), BarcodeObjectType.Roll, cancellationToken);
 
-            if (!scan.IsSuccess || scan.Value is null || !scan.Value.Found)
+            // A wrong kind of label comes back *successful*, carrying "that is a bag,
+            // not a roll". The type has to be checked here — without it, a bag label
+            // whose id happens to match a roll's would quietly form the wrong roll.
+            if (!scan.IsSuccess
+                || scan.Value is null
+                || !scan.Value.Found
+                || scan.Value.ObjectType != BarcodeObjectType.Roll.ToString())
             {
                 return Result<Roll>.Failure(
                     ErrorCode.ValidationFailed,

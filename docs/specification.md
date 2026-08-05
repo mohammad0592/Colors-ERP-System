@@ -943,13 +943,23 @@ On 2 July: one green roll made 14 bags; four yellow rolls made 12 + 9 + 12 + 14 
 
 | Column | Notes |
 |---|---|
-| Id · PalletNumber · Barcode | |
-| ShiftLineId (FK) | the thermo line's part of the shift it was built on |
+| Id · PalletNumber | the barcode lives in `Barcodes`, like a roll's and a bag's |
+| ShiftLineId (FK) | the line that forms bags — its part of the shift the pallet was built on |
 | **ColorId · ProductId** | **both NULL until the first bag is scanned** |
-| Status | `Empty` · `Opened` · `Completed` · `Shipped` |
-| CreatedByUserId · CreatedAt · CompletedAt · Notes | |
+| CreatedByUserId · CreatedAt · **CompletedAt · ShippedAt** · Notes | two dates, no status column — see below |
 
 **Bag count and piece count are NOT stored.** They are `COUNT()` and `SUM()` over the assignments — a pallet holds a couple of dozen rows at most, so counting is instant.
+
+**Neither is the status.** The four states are read off what is already true:
+
+```
+ShippedAt set        →  Shipped
+CompletedAt set      →  Completed
+at least one bag     →  Opened
+none of the above    →  Empty
+```
+
+Shipping and completing are *events*, so they are dates. Empty and Opened are not events at all — they are just "does this pallet have bags on it", which the assignments already answer. A stored status would be a second copy of that, free to drift: a pallet reading `Opened` while holding nothing, with no way to say which of the two is right. This is the [calculated or stored](#calculated-or-stored) rule: the count is not master data and cannot be edited behind the pallet's back, so it is worked out.
 
 ### The rule the factory gave
 
@@ -957,22 +967,32 @@ On 2 July: one green roll made 14 bags; four yellow rolls made 12 + 9 + 12 + 14 
 
 ```
 Empty pallet              →  colour and product are NULL
-First bag scanned         →  both are SET from the bag  →  status becomes Opened
+First bag scanned         →  both are SET from the bag  →  the pallet is now Opened
 Every later bag           →  must MATCH both, or it is rejected
-BagsPerPallet reached     →  status becomes Completed
+BagsPerPallet reached     →  CompletedAt is stamped
 ```
 
 The number that completes a pallet is the product's own `BagsPerPallet` — 15 for plates,
 about 21 for meal boxes and clamshells. The pallet reads it from the product it took
 from its first bag, so it is right for whatever is being packed that shift.
 
-**`BagPalletAssignments`** — Id · ProducedBagId (FK, **unique**) · WoodenPalletId (FK) · **AssignedByUserId** (FK) · AssignedAt
+**`BagPalletAssignments`** — Id · ProducedBagId (FK) · WoodenPalletId (FK) · **AssignedByUserId** (FK) · AssignedAt · **ReversedByUserId · ReversedAt · ReversalReason**
 
 The user is recorded. This is the most repeated manual action in the factory and it must be accountable.
 
-The unique index on `ProducedBagId` is what actually stops a bag being put on two pallets — application code alone cannot, because two tablets can scan at the same moment.
-
 **Corrections.** A wrong scan happens. Assignments are never deleted: a supervisor posts a **reversal** with a reason, the bag returns to `Available`, and the history shows both events.
+
+**The unique index is partial**, and it has to be:
+
+```sql
+CREATE UNIQUE INDEX ux_bag_pallet_bag
+    ON "BagPalletAssignments" ("ProducedBagId")
+    WHERE "ReversedAt" IS NULL;
+```
+
+A plain unique index on the bag cannot live beside the reversal rule. The two contradict each other: the row is kept for ever, so the moment a bag is scanned wrongly it can never be put on the right pallet — the index would refuse the second row. Restricting it to assignments that have *not* been reversed keeps everything that matters. A bag is still on one pallet at a time, two tablets still cannot both claim it in the same moment, and the wrong scan stays in the history with the reason it was undone.
+
+This is the rule the database enforces, not the application. Application code alone cannot, because two tablets can scan at the same moment.
 
 **Capacity** is `Products.BagsPerPallet`, never a number in the code.
 
@@ -1317,6 +1337,8 @@ Small items. None block building.
 | 13 | May one man work **two lines** in the same shift? | **Open** — allowed today, which is right if he moves from the extruder to the thermo mid-shift. Enforcing one line per man is a small change if the factory says so. |
 | 14 | Is raw material ever issued to the **thermo or recycler** line, or only to the mixer? | **Answered with 15** — by `TakesRawMaterial`, seeded true for the extruder only. If the recycler turns out to draw something, that is one tick box in Master Data. |
 | 15 | Which lines can a **batch** be started on? | **Answered.** 14 and 15 asked the same thing — which line does what — and are settled by three flags on `ProductionLines`: `MakesRolls`, `FormsBags`, `TakesRawMaterial` ([section 4](#production-lines)). Seeded as the factory works today: the extruder mixes and takes raw material, the thermo forms bags. |
+| 16 | May a pallet take bags made on an **earlier shift**? | **Open** — allowed today, which is the safe way round: bags do accumulate, and a pallet part-built at the end of a shift is normal ([section 10](#partial-pallets-are-normal)). Refusing it would stop the floor if the factory does work that way. If they say a pallet is always one shift, the check is one line. |
+| 17 | Does anything **ship** a pallet yet? | **Open** — `ShippedAt` exists and nothing sets it. There is no dispatch phase in the build order, so the state is defined and left unreachable rather than invented. |
 
 Questions 8 to 12 arrived with the new moulds. **None of them blocks anything**, because
 every one is a value in `Moulds` or `Products` — a row edited in Master Data, with no

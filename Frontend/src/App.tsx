@@ -11,6 +11,7 @@ import { MaterialIssuePage } from './features/material-issue/MaterialIssuePage';
 import { RollProductionPage } from './features/production/RollProductionPage';
 import { RollTestsPage } from './features/production/RollTestsPage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
+import { PalletsPage } from './features/pallets/PalletsPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
@@ -111,6 +112,23 @@ export default function App(): ReactElement {
                 >
                   <Route path="/production/thermo" element={<ThermoProductionPage />} />
                   <Route path="/production/thermo-tests" element={<ThermoTestsPage />} />
+                </Route>
+
+                {/* Packing. Reading is open wider than scanning: the supervisor closing
+                    a shift needs to see what is still part-built, and he is also the one
+                    who takes a wrongly scanned bag back off. */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[
+                        RoleNames.Administrator,
+                        RoleNames.Supervisor,
+                        RoleNames.PackagingOperator,
+                      ]}
+                    />
+                  }
+                >
+                  <Route path="/production/pallets" element={<PalletsPage />} />
                 </Route>
 
                 {/* Master data changes affect every screen, so only the

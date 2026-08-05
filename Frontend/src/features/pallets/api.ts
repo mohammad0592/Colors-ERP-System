@@ -1,0 +1,105 @@
+import { apiRequest } from '../../lib/apiClient';
+
+/**
+ * Pallets, mirroring Colors.Application.Features.Pallets.
+ * Specification section 10.
+ */
+
+export type PalletStatus = 'Empty' | 'Opened' | 'Completed' | 'Shipped';
+
+export interface PalletSummaryDto {
+  id: number;
+  palletNumber: number;
+  barcode: string;
+  shiftLineId: number;
+  productionLineName: string;
+  shiftName: string;
+  productionDate: string;
+  /** Both null until the first bag is scanned. */
+  colorId: number | null;
+  colorName: string | null;
+  productId: number | null;
+  productName: string | null;
+  /** Worked out from two dates and the bags on it, never stored. */
+  status: PalletStatus;
+  isOpen: boolean;
+  bagCount: number;
+  pieceCount: number;
+  weight: number;
+  /** From the product the pallet took off its first bag. Null while empty. */
+  capacity: number | null;
+  createdByName: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface PalletBagDto {
+  assignmentId: number;
+  producedBagId: number;
+  barcode: string;
+  rollCode: string;
+  weight: number;
+  pieceCount: number;
+  assignedByName: string;
+  assignedAt: string;
+  /** A bag taken off stays here, saying who undid it and why. */
+  isActive: boolean;
+  reversedByName: string | null;
+  reversedAt: string | null;
+  reversalReason: string | null;
+}
+
+export interface PalletDto extends PalletSummaryDto {
+  shippedAt: string | null;
+  notes: string | null;
+  bags: PalletBagDto[];
+}
+
+export interface AvailableBagDto {
+  id: number;
+  barcode: string;
+  rollCode: string;
+  colorId: number;
+  colorName: string;
+  productId: number;
+  productName: string;
+  weight: number;
+  pieceCount: number;
+  createdAt: string;
+}
+
+export const palletsApi = {
+  list: (openOnly = false): Promise<PalletSummaryDto[]> =>
+    apiRequest<PalletSummaryDto[]>(`/api/pallets?openOnly=${String(openOnly)}`),
+
+  get: (id: number): Promise<PalletDto> => apiRequest<PalletDto>(`/api/pallets/${String(id)}`),
+
+  /** Pass a pallet and only the bags it can actually take come back. */
+  availableBags: (palletId?: number): Promise<AvailableBagDto[]> => {
+    const query = palletId === undefined ? '' : `?palletId=${String(palletId)}`;
+    return apiRequest<AvailableBagDto[]>(`/api/pallets/available-bags${query}`);
+  },
+
+  start: (shiftLineId: number, notes: string | null): Promise<PalletDto> =>
+    apiRequest<PalletDto>('/api/pallets', {
+      method: 'POST',
+      body: { shiftLineId, notes },
+    }),
+
+  /** The first bag decides what the pallet is; every later one must match. */
+  scanBag: (
+    palletId: number,
+    body: { bagBarcode: string | null; producedBagId: number | null },
+  ): Promise<PalletDto> =>
+    apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/bags`, {
+      method: 'POST',
+      body,
+    }),
+
+  /** Takes a bag back off. The scan stays in the history with its reason. */
+  reverse: (assignmentId: number, reason: string): Promise<PalletDto> =>
+    apiRequest<PalletDto>(`/api/pallets/assignments/${String(assignmentId)}/reverse`, {
+      method: 'POST',
+      body: { reason },
+    }),
+};

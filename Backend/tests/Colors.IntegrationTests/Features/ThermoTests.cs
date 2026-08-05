@@ -423,6 +423,32 @@ public class ThermoTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task A_bag_label_scanned_into_the_roll_box_is_refused()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "THR21");
+        var run = await FinishedRunAsync(db, ids, "THR21");
+
+        var counted = await NewService(db).SaveTestReportAsync(
+            run.Id, new SaveThermoTestRequest(3, 4m, 10m, 0m, null), ids.UserId);
+
+        var bagLabel = counted.Value!.Bags[0].Barcode;
+
+        var roll = await AvailableRollAsync(db, ids, "THR21b");
+        Assert.NotNull(roll);
+
+        // A wrong kind of label comes back from the barcode table as a *successful*
+        // lookup carrying "that is a bag, not a roll". Without checking the type, a bag
+        // whose id happened to match a roll's would quietly be formed instead.
+        var started = await NewService(db).StartRunAsync(
+            new StartThermoRunRequest(bagLabel, null, ids.ThermoShiftLineId, null, null),
+            ids.UserId);
+
+        Assert.False(started.IsSuccess);
+        Assert.Contains("not a roll", started.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task The_database_refuses_a_second_run_for_the_same_roll()
     {
         await using var db = fixture.CreateContext();
