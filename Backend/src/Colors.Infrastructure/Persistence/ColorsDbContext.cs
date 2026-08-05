@@ -1,4 +1,5 @@
 using System.Reflection;
+using Colors.Domain.Entities.Inventory;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Entities.Shifts;
@@ -32,6 +33,12 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<Color> Colors => Set<Color>();
     public DbSet<Mould> Moulds => Set<Mould>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<MovementType> MovementTypes => Set<MovementType>();
+
+    // Inventory — specification section 6.
+    public DbSet<MaterialInventory> MaterialInventory => Set<MaterialInventory>();
+    public DbSet<MaterialInventoryMovement> MaterialInventoryMovements =>
+        Set<MaterialInventoryMovement>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
 
     // Recipes — specification section 5.

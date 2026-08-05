@@ -1,0 +1,75 @@
+using System.Security.Claims;
+using Colors.Application.Features.Inventory;
+using Colors.Domain.Constants;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Colors.Api.Controllers;
+
+/// <summary>
+/// The store — what is in it, what moved, and the two ways stock goes up
+/// (specification section 6).
+///
+/// Reading is open to any signed-in worker: an operator about to start a batch needs
+/// to know whether the material is there. Receiving belongs to the Inventory Manager.
+/// Adjusting belongs to the Supervisor, because it overrides what the ledger says —
+/// and section 6 is explicit that the supervisor fixes a wrong balance on the tablet
+/// rather than going to find an administrator.
+/// </summary>
+[ApiController]
+[Route("api/inventory")]
+[Authorize]
+public class InventoryController(IInventoryService inventory) : ApiControllerBase
+{
+    private const string CanReceive = $"{RoleNames.Administrator},{RoleNames.InventoryManager}";
+    private const string CanAdjust = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
+
+    [HttpGet]
+    public async Task<IActionResult> GetStock(
+        [FromQuery] bool belowMinimumOnly = false,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await inventory.GetStockAsync(belowMinimumOnly, cancellationToken));
+    }
+
+    /// <summary>The units a material may be received in — pallet, bag, kilogram.</summary>
+    [HttpGet("materials/{materialId:int}/units")]
+    public async Task<IActionResult> GetReceivingUnits(
+        int materialId,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await inventory.GetReceivingUnitsAsync(materialId, cancellationToken));
+    }
+
+    [HttpGet("movements")]
+    public async Task<IActionResult> GetMovements(
+        [FromQuery] int? materialId = null,
+        [FromQuery] int take = 100,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await inventory.GetMovementsAsync(materialId, take, cancellationToken));
+    }
+
+    [HttpPost("receive")]
+    [Authorize(Roles = CanReceive)]
+    public async Task<IActionResult> Receive(
+        [FromBody] ReceiveMaterialRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await inventory.ReceiveAsync(request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>Corrects a balance after a stock count. Always with a reason.</summary>
+    [HttpPost("adjust")]
+    [Authorize(Roles = CanAdjust)]
+    public async Task<IActionResult> Adjust(
+        [FromBody] AdjustStockRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await inventory.AdjustAsync(request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>Who is acting. From the token, never from the body.</summary>
+    private int CurrentUserId() =>
+        int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
+}

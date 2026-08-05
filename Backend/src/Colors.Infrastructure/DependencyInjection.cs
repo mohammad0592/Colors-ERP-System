@@ -1,4 +1,5 @@
 using Colors.Application.Features.Authentication;
+using Colors.Application.Features.Inventory;
 using Colors.Application.Features.MasterData;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
@@ -6,6 +7,7 @@ using Colors.Application.Features.ShiftReports;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
@@ -99,6 +101,9 @@ public static class DependencyInjection
 
         // People, read only — every screen that has to name somebody.
         services.AddScoped<IPeopleService, PeopleService>();
+
+        // Inventory (specification section 6).
+        services.AddScoped<IInventoryService, InventoryService>();
 
         return services;
     }

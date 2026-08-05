@@ -1,3 +1,4 @@
+using Colors.Domain.Constants;
 using Colors.Domain.Entities.MasterData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -109,6 +110,18 @@ public static class MasterDataSeeder
             foreach (var (name, code) in colors)
             {
                 db.Colors.Add(new Color { Name = name, Code = code });
+                before++;
+            }
+        }
+
+        // --- Movement types (specification section 4) --------------------------
+        // The direction is data, so a balance is SUM(Quantity × Direction) and a sign
+        // error cannot be stored.
+        if (!await db.MovementTypes.AnyAsync(cancellationToken))
+        {
+            foreach (var (name, direction) in MovementTypeNames.All)
+            {
+                db.MovementTypes.Add(new MovementType { Name = name, Direction = direction });
                 before++;
             }
         }
