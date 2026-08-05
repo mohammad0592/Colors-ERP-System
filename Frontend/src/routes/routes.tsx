@@ -9,20 +9,6 @@ import { ComingSoon } from '../components/ui/ComingSoon';
  */
 const planned: { path: string; title: string; phase: string; description: string }[] = [
   {
-    path: '/inventory',
-    title: 'Inventory',
-    phase: 'Phase 5',
-    description:
-      'Current stock of every material, in its own unit, with anything below its minimum highlighted.',
-  },
-  {
-    path: '/inventory/receive',
-    title: 'Receive Materials',
-    phase: 'Phase 5',
-    description:
-      'Book in a delivery. Choose the material and the unit it arrived in — pallet, bag or kilogram — and the system converts it.',
-  },
-  {
     path: '/inventory/issue',
     title: 'Material Issue',
     phase: 'Phase 7',

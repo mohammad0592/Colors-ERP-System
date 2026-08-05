@@ -5,6 +5,8 @@ import { AppLayout } from './components/layout/AppLayout';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { InventoryPage } from './features/inventory/InventoryPage';
+import { ReceiveMaterialsPage } from './features/inventory/ReceiveMaterialsPage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
@@ -37,6 +39,20 @@ export default function App(): ReactElement {
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
                 <Route path="/" element={<DashboardPage />} />
+
+                {/* Anyone signed in may see the store — an operator about to start a
+                    batch needs to know the material is there. Receiving belongs to
+                    the inventory manager (specification section 3). */}
+                <Route path="/inventory" element={<InventoryPage />} />
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[RoleNames.Administrator, RoleNames.InventoryManager]}
+                    />
+                  }
+                >
+                  <Route path="/inventory/receive" element={<ReceiveMaterialsPage />} />
+                </Route>
 
                 {/* Master data changes affect every screen, so only the
                     administrator gets in (specification section 3). */}
