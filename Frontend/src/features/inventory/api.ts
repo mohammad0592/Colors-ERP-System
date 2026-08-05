@@ -10,6 +10,11 @@ export interface MaterialStockDto {
   code: string;
   name: string;
   categoryName: string;
+  /**
+   * True only for raw material. Packaging never goes out on a ticket — it is counted
+   * at the end of the shift from what was produced.
+   */
+  issuedOnTickets: boolean;
   baseUnitName: string;
   baseUnitSymbol: string;
   /** Always in the material's base unit. */

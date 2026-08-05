@@ -203,7 +203,9 @@ export function MaterialIssuePage(): ReactElement {
         <NewTicketDialog
           openLines={openLines}
           shifts={shifts.data}
-          stock={stock.data}
+          // Raw material only. Offering packaging would invite a double count
+          // against the end-of-shift figures the system works out itself.
+          stock={stock.data.filter((m) => m.issuedOnTickets)}
           onClose={() => {
             setCreating(false);
           }}

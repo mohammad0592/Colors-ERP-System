@@ -15,6 +15,7 @@ interface NewTicketDialogProps {
   /** Only lines of shifts that are still open — material cannot go to a finished one. */
   openLines: OpenLine[];
   shifts: ShiftReportSummaryDto[];
+  /** Raw material only; the caller has already filtered out packaging. */
   stock: MaterialStockDto[];
   onClose: () => void;
   onCreated: (ticket: IssueTicketDto) => void;
@@ -116,7 +117,11 @@ export function NewTicketDialog({
           </select>
         </div>
 
-        <p className="field-label">What is going out</p>
+        <p className="field-label">What is going out, weighed</p>
+        <p className="mb-2 text-xs text-ink-muted">
+          Raw material only. Packaging is not carried out on a ticket — the system
+          counts it at the end of the shift from what was produced.
+        </p>
         <div className="mb-4 max-h-72 overflow-y-auto rounded-control border border-line">
           <table className="w-full text-left text-sm">
             <tbody>

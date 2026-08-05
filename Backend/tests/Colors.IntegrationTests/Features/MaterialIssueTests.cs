@@ -281,7 +281,49 @@ public class MaterialIssueTests(DatabaseFixture fixture)
         Assert.True(now.IsSuccess, now.Message);
     }
 
-        [Fact]
+    [Fact]
+    public async Task Packaging_cannot_go_out_on_a_ticket()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "ISS13");
+        await StockUp(db, ids.GppsId, ids.UserId, 1000);
+        await StockUp(db, ids.LargeBagsId, ids.UserId, 500);
+
+        // It would be counted twice — the system already works packaging out from what
+        // was produced — and it would ask somebody to weigh bags counted in pieces.
+        var ticket = await NewService(db).CreateAsync(
+            new CreateIssueTicketRequest(ids.ShiftLineId, null,
+                [new IssueLineRequest(ids.LargeBagsId, 20)]),
+            ids.UserId);
+
+        Assert.False(ticket.IsSuccess);
+        Assert.Contains("raw material", ticket.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_ticket_mixing_raw_material_and_packaging_issues_neither()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "ISS14");
+        await StockUp(db, ids.GppsId, ids.UserId, 1000);
+        await StockUp(db, ids.LargeBagsId, ids.UserId, 500);
+
+        var ticket = await NewService(db).CreateAsync(
+            new CreateIssueTicketRequest(ids.ShiftLineId, null,
+            [
+                new IssueLineRequest(ids.GppsId, 100),
+                new IssueLineRequest(ids.LargeBagsId, 20),
+            ]),
+            ids.UserId);
+
+        Assert.False(ticket.IsSuccess);
+
+        await using var fresh = fixture.CreateContext();
+        Assert.Equal(1000, await Balance(fresh, ids.GppsId));
+        Assert.Equal(500, await Balance(fresh, ids.LargeBagsId));
+    }
+
+    [Fact]
     public async Task The_database_refuses_a_return_larger_than_the_issue()
     {
         await using var db = fixture.CreateContext();

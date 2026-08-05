@@ -21,7 +21,7 @@ public class UnitsController(IUnitService service)
 
 [Route("api/material-categories")]
 public class MaterialCategoriesController(IMaterialCategoryService service)
-    : MasterDataControllerBase<LookupDto, SaveLookupRequest>(service);
+    : MasterDataControllerBase<MaterialCategoryDto, SaveMaterialCategoryRequest>(service);
 
 [Route("api/colors")]
 public class ColorsController(IColorService service)

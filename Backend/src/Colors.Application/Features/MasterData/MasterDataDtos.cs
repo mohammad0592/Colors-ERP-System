@@ -56,6 +56,20 @@ public sealed record SaveProductRequest(
     int SmallBagsPerBag,
     int BagsPerPallet);
 
+/// <summary>
+/// A material category. <c>IssuedOnTickets</c> is what decides whether its materials
+/// may go out on an issue ticket — true for raw material, false for packaging, which
+/// the system counts from production instead.
+/// </summary>
+public sealed record MaterialCategoryDto(
+    int Id,
+    string Name,
+    bool IssuedOnTickets,
+    bool IsActive,
+    bool CanDelete);
+
+public sealed record SaveMaterialCategoryRequest(string Name, bool IssuedOnTickets);
+
 public sealed record UnitDto(int Id, string Name, string Symbol, bool IsActive, bool CanDelete);
 
 public sealed record SaveUnitRequest(string Name, string Symbol);

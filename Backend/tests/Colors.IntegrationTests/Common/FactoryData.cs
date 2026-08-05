@@ -22,7 +22,8 @@ public static class FactoryData
         int ShiftReportId,
         int ShiftLineId,
         int GppsId,
-        int TalcId);
+        int TalcId,
+        int LargeBagsId);
 
     public static async Task<Ids> CreateAsync(ColorsDbContext db, string suffix)
     {
@@ -64,8 +65,23 @@ public static class FactoryData
         var category = await db.MaterialCategories.FirstOrDefaultAsync(c => c.Name == "Raw Material");
         if (category is null)
         {
-            category = new MaterialCategory { Name = "Raw Material" };
+            category = new MaterialCategory { Name = "Raw Material", IssuedOnTickets = true };
             db.MaterialCategories.Add(category);
+        }
+
+        // Packaging is the category that must never reach an issue ticket.
+        var packaging = await db.MaterialCategories.FirstOrDefaultAsync(c => c.Name == "Packaging Material");
+        if (packaging is null)
+        {
+            packaging = new MaterialCategory { Name = "Packaging Material", IssuedOnTickets = false };
+            db.MaterialCategories.Add(packaging);
+        }
+
+        var piece = await db.Units.FirstOrDefaultAsync(u => u.Name == "Piece");
+        if (piece is null)
+        {
+            piece = new Unit { Name = "Piece", Symbol = "pcs" };
+            db.Units.Add(piece);
         }
 
         await db.SaveChangesAsync();
@@ -86,7 +102,18 @@ public static class FactoryData
             BaseUnitId = kilogram.Id,
             MinQuantity = 0,
         };
-        db.Materials.AddRange(gpps, talc);
+        // Counted in pieces, not weighed — which is half the reason it does not belong
+        // on a ticket.
+        var largeBags = new Material
+        {
+            Code = $"P{suffix}",
+            Name = $"Large Bags {suffix}",
+            CategoryId = packaging.Id,
+            BaseUnitId = piece.Id,
+            MinQuantity = 0,
+        };
+
+        db.Materials.AddRange(gpps, talc, largeBags);
 
         var report = new ShiftReport
         {
@@ -101,6 +128,6 @@ public static class FactoryData
 
         await db.SaveChangesAsync();
 
-        return new Ids(user.Id, report.Id, report.Lines[0].Id, gpps.Id, talc.Id);
+        return new Ids(user.Id, report.Id, report.Lines[0].Id, gpps.Id, talc.Id, largeBags.Id);
     }
 }

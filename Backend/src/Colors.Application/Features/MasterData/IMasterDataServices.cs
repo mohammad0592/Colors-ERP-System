@@ -38,7 +38,8 @@ public interface IShiftService : IMasterListService<ShiftDto, SaveShiftRequest>;
 
 public interface IUnitService : IMasterListService<UnitDto, SaveUnitRequest>;
 
-public interface IMaterialCategoryService : IMasterListService<LookupDto, SaveLookupRequest>;
+public interface IMaterialCategoryService
+    : IMasterListService<MaterialCategoryDto, SaveMaterialCategoryRequest>;
 
 public interface IColorService : IMasterListService<ColorDto, SaveColorRequest>;
 

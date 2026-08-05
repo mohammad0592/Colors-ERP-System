@@ -53,6 +53,14 @@ export interface SaveProduct {
   bagsPerPallet: number;
 }
 
+export interface MaterialCategoryDto extends LookupDto {
+  /**
+   * Whether its materials go out on an issue ticket. True for raw material only —
+   * packaging is counted at the end of the shift, from what was produced.
+   */
+  issuedOnTickets: boolean;
+}
+
 export interface UnitDto extends LookupDto {
   symbol: string;
 }
@@ -145,9 +153,10 @@ export const shiftsApi = crudFor<
   { name: string; startTime: string; endTime: string }
 >('/api/shifts');
 export const unitsApi = crudFor<UnitDto, { name: string; symbol: string }>('/api/units');
-export const materialCategoriesApi = crudFor<LookupDto, { name: string }>(
-  '/api/material-categories',
-);
+export const materialCategoriesApi = crudFor<
+  MaterialCategoryDto,
+  { name: string; issuedOnTickets: boolean }
+>('/api/material-categories');
 export const colorsApi = crudFor<ColorDto, { name: string; code: string }>('/api/colors');
 export const mouldsApi = crudFor<LookupDto, { name: string }>('/api/moulds');
 export const productsApi = crudFor<ProductDto, SaveProduct>('/api/products');

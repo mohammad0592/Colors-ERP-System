@@ -111,12 +111,26 @@ public class MaterialIssueService(
 
         var materialIds = request.Lines.Select(l => l.MaterialId).ToList();
         var materials = await db.Materials
+            .Include(m => m.Category)
             .Where(m => materialIds.Contains(m.Id) && m.IsActive)
             .ToListAsync(cancellationToken);
 
         if (materials.Count != materialIds.Count)
         {
             return Invalid("Every line must name an active material.");
+        }
+
+        // Raw material only. Packaging goes straight to the bench, nothing comes back
+        // from it, and the system already counts it from what was produced — putting
+        // it on a ticket would count it twice and ask somebody to weigh pieces.
+        var notIssuable = materials.Where(m => !m.Category.IssuedOnTickets).ToList();
+
+        if (notIssuable.Count > 0)
+        {
+            var names = string.Join(", ", notIssuable.Select(m => m.Name));
+            return Invalid(
+                $"{names} cannot go out on a ticket — only raw material does. "
+                + "Packaging is counted at the end of the shift, from what was produced.");
         }
 
         // One transaction around the whole ticket. Half a ticket issued — three

@@ -46,6 +46,7 @@ public class InventoryService(
                 r.Material.Code,
                 r.Material.Name,
                 r.Material.Category.Name,
+                r.Material.Category.IssuedOnTickets,
                 r.Material.BaseUnit.Name,
                 r.Material.BaseUnit.Symbol,
                 r.Inventory?.CurrentQuantity ?? 0m,

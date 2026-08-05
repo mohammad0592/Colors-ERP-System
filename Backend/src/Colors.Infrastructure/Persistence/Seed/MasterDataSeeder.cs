@@ -88,11 +88,25 @@ public static class MasterDataSeeder
         }
 
         // --- Material categories ----------------------------------------------
+        // Only raw material goes out on an issue ticket. Packaging goes to the bench,
+        // never comes back, and is counted by the system from what was produced
+        // (specification sections 4 and 11).
         if (!await db.MaterialCategories.AnyAsync(cancellationToken))
         {
-            foreach (var name in new[] { "Raw Material", "Packaging Material", "Consumable" })
+            var categories = new (string Name, bool IssuedOnTickets)[]
             {
-                db.MaterialCategories.Add(new MaterialCategory { Name = name });
+                ("Raw Material", true),
+                ("Packaging Material", false),
+                ("Consumable", false),
+            };
+
+            foreach (var (name, issuedOnTickets) in categories)
+            {
+                db.MaterialCategories.Add(new MaterialCategory
+                {
+                    Name = name,
+                    IssuedOnTickets = issuedOnTickets,
+                });
                 before++;
             }
         }

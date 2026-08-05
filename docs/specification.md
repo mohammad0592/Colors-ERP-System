@@ -325,6 +325,30 @@ Three rows: Extruder, Thermo, Recycler.
 
 A flag on the line, not a check on its name: renaming a line, or adding a second thermo, must never need a code change.
 
+### Material categories
+
+**`MaterialCategories`** — Id · Name · **IssuedOnTickets** · IsActive
+Three rows: Raw Material, Packaging Material, Consumable.
+
+`IssuedOnTickets` is true for **Raw Material only**. It decides what may go out on an
+issue ticket (section 7), and it exists because the two kinds of material leave the
+store in completely different ways:
+
+| | Raw material | Packaging |
+|---|---|---|
+| Leaves on | an issue ticket, weighed | nothing — it is counted at the end of the shift |
+| Comes back | leftover weighed in | nothing comes back |
+| Counted by | the scale, both ways | **the system**, from bags and pallets produced |
+| Goes to | the mixer and extruder | the packaging bench |
+
+Putting packaging on an issue ticket would be wrong twice over: it would be counted a
+second time against [section 11](#10-pallets-and-packaging), where the system already
+works it out from production, and it would ask somebody to weigh bags and pallets that
+nobody weighs — they are counted in pieces.
+
+A flag on the category rather than a check on its name, for the same reason as
+everywhere else: renaming a category must never need a code change.
+
 ### Units and material packaging
 
 Materials arrive in packs. The factory receives *"1 pallet"* or *"30 bags"*, but stock must be one number.
@@ -558,6 +582,11 @@ The reason it exists, in the owner's words: *"the workers are not careful about 
 | IssuedByUserId (FK) | the inventory manager |
 | Status | `Open` · `Closed` |
 | CreatedAt · ClosedAt · Notes | |
+
+**Raw material only.** A ticket may only carry materials whose category has
+`IssuedOnTickets` set — in practice, resin and additives. Packaging never appears here:
+it does not go to the mixer, nothing comes back from it, and the system already counts
+it from what was produced (section 11).
 
 **`MaterialIssueTicketLines`** — Id · TicketId (FK) · MaterialId (FK) · **IssuedQuantity** · **ReturnedQuantity** · unique on (TicketId, MaterialId)
 

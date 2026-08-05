@@ -14,6 +14,9 @@ public sealed record MaterialStockDto(
     string Code,
     string Name,
     string CategoryName,
+    // True only for raw material. The issue screen offers these and nothing else —
+    // packaging is counted from production, not carried out on a ticket.
+    bool IssuedOnTickets,
     string BaseUnitName,
     string BaseUnitSymbol,
     decimal CurrentQuantity,

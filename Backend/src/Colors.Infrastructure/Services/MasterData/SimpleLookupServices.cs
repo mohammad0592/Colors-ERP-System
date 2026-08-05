@@ -86,8 +86,34 @@ public class ProductionLineService(ColorsDbContext db)
         [.. await Db.ShiftLines.Select(l => l.ProductionLineId).Distinct().ToListAsync(cancellationToken)];
 }
 
-public class MaterialCategoryService(ColorsDbContext db) : NameOnlyService<MaterialCategory>(db), IMaterialCategoryService
+public class MaterialCategoryService(ColorsDbContext db)
+    : MasterListService<MaterialCategory, MaterialCategoryDto, SaveMaterialCategoryRequest>(db),
+      IMaterialCategoryService
 {
+    protected override MaterialCategoryDto ToDto(MaterialCategory entity, bool canDelete) =>
+        new(entity.Id, entity.Name, entity.IssuedOnTickets, entity.IsActive, canDelete);
+
+    protected override void Apply(SaveMaterialCategoryRequest request, MaterialCategory entity)
+    {
+        entity.Name = request.Name.Trim();
+        entity.IssuedOnTickets = request.IssuedOnTickets;
+    }
+
+    protected override async Task<string?> ValidateAsync(
+        SaveMaterialCategoryRequest request,
+        int? existingId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return "A name is required.";
+        }
+
+        return await NameTakenAsync(request.Name, existingId, cancellationToken)
+            ? "A category with this name already exists."
+            : null;
+    }
+
     protected override async Task<string?> CanDeleteAsync(
         MaterialCategory entity,
         CancellationToken cancellationToken)

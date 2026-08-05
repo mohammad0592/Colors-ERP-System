@@ -97,7 +97,15 @@ export function MasterDataPage(): ReactElement {
           client={materialCategoriesApi}
           itemWord="category"
           itemWordPlural="categories"
-          fields={[{ key: 'name', label: 'Name' }]}
+          fields={[
+            { key: 'name', label: 'Name' },
+            {
+              key: 'issuedOnTickets',
+              label: 'Goes out on an issue ticket',
+              type: 'checkbox',
+              hint: 'Raw material only. Packaging goes straight to the bench and is counted at the end of the shift from what was produced — putting it on a ticket would count it twice.',
+            },
+          ]}
         />
       )}
 
