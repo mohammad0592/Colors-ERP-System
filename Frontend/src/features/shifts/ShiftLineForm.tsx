@@ -48,7 +48,7 @@ export function ShiftLineForm({
   const [workers, setWorkers] = useState<SaveShiftWorker[]>(() =>
     line.workers.map((worker) => ({
       userId: worker.userId,
-      roleInShiftId: worker.roleInShiftId,
+      roleInShiftIds: worker.roleInShiftIds,
       isTrainee: worker.isTrainee,
     })),
   );

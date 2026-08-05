@@ -108,10 +108,28 @@ public class ShiftWorkerConfiguration : IEntityTypeConfiguration<ShiftWorker>
             .WithMany()
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class ShiftWorkerRoleConfiguration : IEntityTypeConfiguration<ShiftWorkerRole>
+{
+    public void Configure(EntityTypeBuilder<ShiftWorkerRole> builder)
+    {
+        builder.ToTable("ShiftWorkerRoles");
+
+        // A job listed twice for the same man says nothing the first row did not.
+        builder.HasIndex(e => new { e.ShiftWorkerId, e.RoleId })
+            .IsUnique()
+            .HasDatabaseName("ux_shift_worker_roles_worker_role");
+
+        builder.HasOne<ShiftWorker>()
+            .WithMany(w => w.Roles)
+            .HasForeignKey(e => e.ShiftWorkerId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne<ApplicationRole>()
             .WithMany()
-            .HasForeignKey(e => e.RoleInShiftId)
+            .HasForeignKey(e => e.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

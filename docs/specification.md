@@ -220,9 +220,25 @@ history is fixed at the moment it happened and a later swap cannot rewrite it.
 The mould is asked for on the line whose `RecordsMachineSettings` is true — the same
 flag that marks the forming machine. The extruder and the recycler never see it.
 
-**`ShiftWorkers`** — Id · **ShiftLineId** (FK) · UserId (FK) · RoleInShiftId (FK) · IsTrainee
+**`ShiftWorkers`** — Id · **ShiftLineId** (FK) · UserId (FK) · IsTrainee
+Unique on (ShiftLineId, UserId).
 
-Workers hang off the **line**, not the shift: a man works the extruder or the thermo, and the paper form lists the crew per department. The paper form also lists workers and trainees on separate lines, so `IsTrainee` keeps that distinction. `RoleInShiftId` is what he *did* on this shift, which is not the same as the roles he holds — the same man is both extruder operator and extruder test person, so only the shift can say which job he was doing.
+**`ShiftWorkerRoles`** — Id · ShiftWorkerId (FK) · RoleId (FK)
+Unique on (ShiftWorkerId, RoleId).
+
+Workers hang off the **line**, not the shift: a man works the extruder or the thermo, and the paper form lists the crew per department. The paper form also lists workers and trainees on separate lines, so `IsTrainee` keeps that distinction.
+
+### One man, several jobs, one shift
+
+The jobs are a **list**, not a single choice, because that is how this factory runs. [Section 3](#3-users-and-roles) already says it plainly: the same man is usually both Extruder Operator and Extruder Test Person, and the thermo operator also builds the pallets.
+
+Forcing one job per shift would make him pick, and then *"who took the measurements on 5 August?"* has no honest answer — the record would show him running the extruder and say nothing about the testing he also did.
+
+What he did is still not the same as the roles he **holds**. A man may hold four roles and work two of them on a given night; only the shift can say which.
+
+**Why a second table rather than several `ShiftWorkers` rows for the same man.** `IsTrainee` is one fact about that man on that shift. Repeat it on a row per job and it can disagree with itself — a trainee as an operator, not a trainee as a test person, same man, same night. One fact, one place.
+
+Recording the jobs stays **optional**. A shift where nobody wrote them down is ordinary, and refusing to save it would only teach people to tick a box at random.
 
 **Rules**
 
@@ -1161,8 +1177,8 @@ ProductionLines · Shifts · Units · MaterialCategories · Materials · Materia
 **Identity (3)**
 Users · Roles · UserRoles *(ASP.NET Identity)*
 
-**Shift (3)**
-ShiftReports · ShiftLines · ShiftWorkers
+**Shift (4)**
+ShiftReports · ShiftLines · ShiftWorkers · ShiftWorkerRoles
 
 **Inventory (4)**
 MaterialInventory · MaterialInventoryMovements · MaterialIssueTickets · MaterialIssueTicketLines
@@ -1193,7 +1209,7 @@ Barcodes · AuditLog · RefreshTokens
 
 ### New since the old documents
 
-`ProductionLines` · `Shifts` · **`ShiftLines`** · `MaterialPackagings` · **`MaterialIssueTickets` + Lines** · **`Batches`** · `PackagingConsumptionLines` · `Barcodes` · `AuditLog` · `UserRoles` · `RefreshTokens`
+`ProductionLines` · `Shifts` · **`ShiftLines`** · **`ShiftWorkerRoles`** · `MaterialPackagings` · **`MaterialIssueTickets` + Lines** · **`Batches`** · `PackagingConsumptionLines` · `Barcodes` · `AuditLog` · `UserRoles` · `RefreshTokens`
 
 ### Removed
 

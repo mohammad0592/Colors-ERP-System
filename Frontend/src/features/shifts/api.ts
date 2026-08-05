@@ -14,15 +14,18 @@ export interface ShiftWorkerDto {
   userId: number;
   employeeNumber: string;
   fullName: string;
-  /** What they did on this shift — not the roles they hold. */
-  roleInShiftId: number | null;
-  roleInShiftName: string | null;
+  /**
+   * The jobs they did on this shift — a list, because one man commonly does two.
+   * Not the same as the roles they hold.
+   */
+  roleInShiftIds: number[];
+  roleInShiftNames: string[];
   isTrainee: boolean;
 }
 
 export interface SaveShiftWorker {
   userId: number;
-  roleInShiftId: number | null;
+  roleInShiftIds: number[];
   isTrainee: boolean;
 }
 

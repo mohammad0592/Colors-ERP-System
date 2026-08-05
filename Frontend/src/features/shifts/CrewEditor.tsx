@@ -50,58 +50,76 @@ export function CrewEditor({
           return (
             <div
               key={worker.userId}
-              className="flex flex-wrap items-center gap-2 rounded-control border border-line px-3 py-2"
+              className="rounded-control border border-line px-3 py-2"
             >
-              <span className="min-w-40 flex-1 text-sm font-medium text-ink">
-                {person?.fullName ?? `User ${String(worker.userId)}`}
-                <span className="ml-2 text-xs font-normal text-ink-muted">
-                  {person?.employeeNumber}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="min-w-40 flex-1 text-sm font-medium text-ink">
+                  {person?.fullName ?? `User ${String(worker.userId)}`}
+                  <span className="ml-2 text-xs font-normal text-ink-muted">
+                    {person?.employeeNumber}
+                  </span>
                 </span>
-              </span>
 
-              <select
-                aria-label="Job on this shift"
-                className="field-input h-9 w-auto min-w-44 py-0 text-sm"
-                value={worker.roleInShiftId ?? ''}
-                disabled={disabled}
-                onChange={(event) => {
-                  replace(index, {
-                    roleInShiftId:
-                      event.target.value === '' ? null : Number(event.target.value),
-                  });
-                }}
-              >
-                <option value="">Job not recorded</option>
-                {roles.map((role) => (
-                  <option key={role.id} value={role.id}>
-                    {role.name}
-                  </option>
-                ))}
-              </select>
+                <label className="flex items-center gap-2 text-sm text-ink-soft">
+                  <input
+                    type="checkbox"
+                    className="size-4"
+                    checked={worker.isTrainee}
+                    disabled={disabled}
+                    onChange={(event) => {
+                      replace(index, { isTrainee: event.target.checked });
+                    }}
+                  />
+                  Trainee
+                </label>
 
-              <label className="flex items-center gap-2 text-sm text-ink-soft">
-                <input
-                  type="checkbox"
-                  className="size-4"
-                  checked={worker.isTrainee}
-                  disabled={disabled}
-                  onChange={(event) => {
-                    replace(index, { isTrainee: event.target.checked });
-                  }}
-                />
-                Trainee
-              </label>
+                {!disabled && (
+                  <button
+                    type="button"
+                    className="min-h-9 rounded-control border border-line px-3 text-sm font-medium text-ink-muted transition-colors hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
+                    onClick={() => {
+                      onChange(workers.filter((_, i) => i !== index));
+                    }}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
 
-              {!disabled && (
-                <button
-                  type="button"
-                  className="min-h-9 rounded-control border border-line px-3 text-sm font-medium text-ink-muted transition-colors hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
-                  onClick={() => {
-                    onChange(workers.filter((_, i) => i !== index));
-                  }}
-                >
-                  Remove
-                </button>
+              {/* Jobs, not job. The same man usually runs the extruder and takes its
+                  measurements, so making him pick one would lose half of what he did. */}
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-2">
+                {roles.map((role) => {
+                  const ticked = worker.roleInShiftIds.includes(role.id);
+                  return (
+                    <label
+                      key={role.id}
+                      className={[
+                        'flex items-center gap-1.5 text-xs',
+                        ticked ? 'font-semibold text-brand-700' : 'text-ink-muted',
+                      ].join(' ')}
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-3.5"
+                        checked={ticked}
+                        disabled={disabled}
+                        onChange={(event) => {
+                          replace(index, {
+                            roleInShiftIds: event.target.checked
+                              ? [...worker.roleInShiftIds, role.id]
+                              : worker.roleInShiftIds.filter((id) => id !== role.id),
+                          });
+                        }}
+                      />
+                      {role.name}
+                    </label>
+                  );
+                })}
+              </div>
+
+              {worker.roleInShiftIds.length === 0 && (
+                <p className="mt-1.5 text-xs text-ink-muted">No job recorded.</p>
               )}
             </div>
           );
@@ -132,7 +150,7 @@ export function CrewEditor({
             onClick={() => {
               onChange([
                 ...workers,
-                { userId: Number(toAdd), roleInShiftId: null, isTrainee: false },
+                { userId: Number(toAdd), roleInShiftIds: [], isTrainee: false },
               ]);
               setToAdd('');
             }}

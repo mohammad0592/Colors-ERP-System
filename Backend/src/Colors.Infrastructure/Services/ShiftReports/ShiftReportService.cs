@@ -304,8 +304,11 @@ public class ShiftReportService(
             .Select(w => new ShiftWorker
             {
                 UserId = w.UserId,
-                RoleInShiftId = w.RoleInShiftId,
                 IsTrainee = w.IsTrainee,
+                Roles = w.RoleInShiftIds
+                    .Distinct()
+                    .Select(roleId => new ShiftWorkerRole { RoleId = roleId })
+                    .ToList(),
             })
             .ToList();
 
@@ -518,7 +521,7 @@ public class ShiftReportService(
             .Include(r => r.Shift)
             .Include(r => r.Lines).ThenInclude(l => l.ProductionLine)
             .Include(r => r.Lines).ThenInclude(l => l.Mould)
-            .Include(r => r.Lines).ThenInclude(l => l.Workers);
+            .Include(r => r.Lines).ThenInclude(l => l.Workers).ThenInclude(w => w.Roles);
 
     /// <summary>Lines always read in the same order, so the screen never reshuffles.</summary>
     private static IEnumerable<ShiftLine> OrderedLines(ShiftReport report) =>
@@ -547,11 +550,14 @@ public class ShiftReportService(
             return "Every person on the shift must be an active user.";
         }
 
-        var roleIds = workers
-            .Where(w => w.RoleInShiftId is not null)
-            .Select(w => w.RoleInShiftId!.Value)
-            .Distinct()
-            .ToList();
+        // Listing a job twice for one man says nothing the first entry did not, and it
+        // would break the unique index rather than the screen.
+        if (workers.Any(w => w.RoleInShiftIds.Distinct().Count() != w.RoleInShiftIds.Count))
+        {
+            return "A worker's job may be listed once. Tick each job he did, not twice.";
+        }
+
+        var roleIds = workers.SelectMany(w => w.RoleInShiftIds).Distinct().ToList();
 
         if (roleIds.Count == 0)
         {
@@ -561,7 +567,7 @@ public class ShiftReportService(
         var knownRoles = await db.Set<ApplicationRole>()
             .CountAsync(r => roleIds.Contains(r.Id), cancellationToken);
 
-        return knownRoles == roleIds.Count ? null : "Choose a real role for each worker.";
+        return knownRoles == roleIds.Count ? null : "Choose real jobs for each worker.";
     }
 
     private static IEnumerable<int> UserIdsOf(ShiftReport report)
@@ -620,11 +626,7 @@ public class ShiftReportService(
             .Where(u => workerIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.EmployeeNumber, cancellationToken);
 
-        var roleIds = workers
-            .Where(w => w.RoleInShiftId is not null)
-            .Select(w => w.RoleInShiftId!.Value)
-            .Distinct()
-            .ToList();
+        var roleIds = workers.SelectMany(w => w.Roles).Select(r => r.RoleId).Distinct().ToList();
 
         var roleNames = await db.Set<ApplicationRole>()
             .Where(r => roleIds.Contains(r.Id))
@@ -667,10 +669,12 @@ public class ShiftReportService(
                             w.UserId,
                             employeeNumbers.GetValueOrDefault(w.UserId, string.Empty),
                             names.GetValueOrDefault(w.UserId, "—"),
-                            w.RoleInShiftId,
-                            w.RoleInShiftId is null
-                                ? null
-                                : roleNames.GetValueOrDefault(w.RoleInShiftId.Value),
+                            w.Roles.Select(r => r.RoleId).ToList(),
+                            w.Roles
+                                .Select(r => roleNames.GetValueOrDefault(r.RoleId, string.Empty))
+                                .Where(name => name.Length > 0)
+                                .Order()
+                                .ToList(),
                             w.IsTrainee))
                         .OrderBy(w => w.IsTrainee)
                         .ThenBy(w => w.FullName)

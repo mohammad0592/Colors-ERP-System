@@ -14,11 +14,19 @@ public class ShiftWorker
     public int UserId { get; set; }
 
     /// <summary>
-    /// Which job they did on this shift. A person may hold several roles — the same
-    /// man is often both extruder operator and test person — so what he actually did
-    /// is a fact about the shift, not about him.
+    /// One fact about this man on this shift, which is why it lives here and not on
+    /// each job. Repeated per job it could disagree with itself — a trainee as an
+    /// operator, not a trainee as a test person, same man, same night.
     /// </summary>
-    public int? RoleInShiftId { get; set; }
-
     public bool IsTrainee { get; set; }
+
+    /// <summary>
+    /// The jobs he did, which is a list because that is how the factory runs: the same
+    /// man usually runs the extruder and takes its measurements, and the thermo
+    /// operator also builds the pallets.
+    ///
+    /// Still not the same as the roles he holds. A man may hold four and work two of
+    /// them tonight; only the shift can say which.
+    /// </summary>
+    public List<ShiftWorkerRole> Roles { get; set; } = [];
 }

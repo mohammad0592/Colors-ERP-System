@@ -5,19 +5,24 @@ namespace Colors.Application.Features.ShiftReports;
 /// <summary>Shapes crossing the API for shift reports. Specification section 2.</summary>
 
 /// <summary>
-/// One person on a line during a shift. <c>RoleInShift</c> is what they did on this
-/// shift, which is not the same as the roles they hold: the same man is both extruder
-/// operator and extruder test person, so only the shift can say which job he was doing.
+/// One person on a line during a shift, and the jobs they did.
+///
+/// A list, because the same man usually runs the extruder and takes its measurements.
+/// Still not the same as the roles he holds: he may hold four and work two of them
+/// tonight, and only the shift can say which.
 /// </summary>
 public sealed record ShiftWorkerDto(
     int UserId,
     string EmployeeNumber,
     string FullName,
-    int? RoleInShiftId,
-    string? RoleInShiftName,
+    IReadOnlyList<int> RoleInShiftIds,
+    IReadOnlyList<string> RoleInShiftNames,
     bool IsTrainee);
 
-public sealed record SaveShiftWorkerRequest(int UserId, int? RoleInShiftId, bool IsTrainee);
+public sealed record SaveShiftWorkerRequest(
+    int UserId,
+    IReadOnlyList<int> RoleInShiftIds,
+    bool IsTrainee);
 
 /// <summary>One line's part of a shift — its hours, its meter, its machine, its crew.</summary>
 public sealed record ShiftLineDto(

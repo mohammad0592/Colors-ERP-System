@@ -60,6 +60,7 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<ShiftReport> ShiftReports => Set<ShiftReport>();
     public DbSet<ShiftLine> ShiftLines => Set<ShiftLine>();
     public DbSet<ShiftWorker> ShiftWorkers => Set<ShiftWorker>();
+    public DbSet<ShiftWorkerRole> ShiftWorkerRoles => Set<ShiftWorkerRole>();
 
     /// <summary>
     /// Hands out the recipe numbers the factory says out loud — "recipe 8".
