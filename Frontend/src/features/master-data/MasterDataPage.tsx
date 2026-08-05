@@ -3,7 +3,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import {
   colorsApi,
   materialCategoriesApi,
-  plateSizesApi,
+  mouldsApi,
   productionLinesApi,
   productTypesApi,
   shiftsApi,
@@ -11,13 +11,15 @@ import {
 } from './api';
 import { LookupTab } from './LookupTab';
 import { MaterialsTab } from './MaterialsTab';
+import { ProductsTab } from './ProductsTab';
 
 type TabId =
   | 'materials'
   | 'units'
   | 'categories'
   | 'colors'
-  | 'plateSizes'
+  | 'products'
+  | 'moulds'
   | 'productTypes'
   | 'lines'
   | 'shifts';
@@ -27,7 +29,8 @@ const tabs: { id: TabId; label: string }[] = [
   { id: 'units', label: 'Units' },
   { id: 'categories', label: 'Categories' },
   { id: 'colors', label: 'Colours' },
-  { id: 'plateSizes', label: 'Plate sizes' },
+  { id: 'products', label: 'Products' },
+  { id: 'moulds', label: 'Moulds' },
   { id: 'productTypes', label: 'Product types' },
   { id: 'lines', label: 'Lines' },
   { id: 'shifts', label: 'Shifts' },
@@ -46,7 +49,7 @@ export function MasterDataPage(): ReactElement {
     <>
       <PageHeader
         title="Master Data"
-        subtitle="Materials and their pack sizes, units, colours, sizes, lines and shifts"
+        subtitle="Materials and their pack sizes, units, colours, products and their moulds, lines and shifts"
       />
 
       <div className="mb-5 flex flex-wrap gap-2">
@@ -115,11 +118,13 @@ export function MasterDataPage(): ReactElement {
         />
       )}
 
-      {tab === 'plateSizes' && (
+      {tab === 'products' && <ProductsTab />}
+
+      {tab === 'moulds' && (
         <LookupTab
-          queryKey="plate-sizes"
-          client={plateSizesApi}
-          itemWord="plate size"
+          queryKey="moulds"
+          client={mouldsApi}
+          itemWord="mould"
           fields={[{ key: 'name', label: 'Name' }]}
         />
       )}

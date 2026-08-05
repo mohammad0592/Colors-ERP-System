@@ -2,7 +2,7 @@ import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
-import type { ProductionLineDto } from '../master-data/api';
+import type { LookupDto, ProductionLineDto } from '../master-data/api';
 import type { PersonDto, RoleDto } from '../people/api';
 import { shiftReportsApi, type ShiftReportDto } from './api';
 import { formatDate, orDash, toField, toNumberOrNull } from './shiftFormat';
@@ -14,6 +14,7 @@ interface ShiftReportDialogProps {
   allLines: ProductionLineDto[];
   people: PersonDto[];
   roles: RoleDto[];
+  moulds: LookupDto[];
   onClose: () => void;
   onChanged: (report: ShiftReportDto) => void;
 }
@@ -29,6 +30,7 @@ export function ShiftReportDialog({
   allLines,
   people,
   roles,
+  moulds,
   onClose,
   onChanged,
 }: ShiftReportDialogProps): ReactElement {
@@ -296,6 +298,7 @@ export function ShiftReportDialog({
             line={active}
             people={people}
             roles={roles}
+            moulds={moulds}
             locked={locked}
             onSaved={onChanged}
           />

@@ -5,7 +5,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
-import { productionLinesApi, shiftsApi } from '../master-data/api';
+import { mouldsApi, productionLinesApi, shiftsApi } from '../master-data/api';
 import { peopleApi } from '../people/api';
 import { shiftReportsApi, type ShiftReportDto, type ShiftReportSummaryDto } from './api';
 import { OpenShiftDialog } from './OpenShiftDialog';
@@ -55,6 +55,12 @@ export function ShiftsPage(): ReactElement {
     queryFn: () => peopleApi.roles(),
   });
 
+  // Only active moulds — a retired template must not be mountable on a new shift.
+  const moulds = useQuery({
+    queryKey: ['moulds', 'active'],
+    queryFn: () => mouldsApi.list(false),
+  });
+
   const reports = useQuery({
     queryKey: ['shift-reports', lineFilter, openOnly],
     queryFn: () =>
@@ -101,12 +107,19 @@ export function ShiftsPage(): ReactElement {
     shifts.isPending ||
     people.isPending ||
     roles.isPending ||
+    moulds.isPending ||
     reports.isPending
   ) {
     return <p className="p-6 text-ink-muted">Loading…</p>;
   }
 
-  if (lines.isError || shifts.isError || people.isError || roles.isError) {
+  if (
+    lines.isError ||
+    shifts.isError ||
+    people.isError ||
+    roles.isError ||
+    moulds.isError
+  ) {
     return <p className="p-6 text-bad">Could not load the shift screen.</p>;
   }
 
@@ -322,6 +335,7 @@ export function ShiftsPage(): ReactElement {
           allLines={lines.data}
           people={people.data}
           roles={roles.data}
+          moulds={moulds.data}
           onClose={() => {
             setEditing(null);
           }}

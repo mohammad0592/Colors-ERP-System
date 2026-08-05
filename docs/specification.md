@@ -95,7 +95,7 @@ Ask: *do these values have different owners, or different timing?* If no, they b
 
 ### One deliberate exception
 
-`ProducedBags` copies colour, product type, plate size and absorbent flag from its roll. This is duplication on purpose: a pallet scan must check four values in **one** comparison instead of five joins, and it must be fast because it happens thousands of times a day.
+`ProducedBags` copies its **colour and product** from the run that made it. This is duplication on purpose: a pallet scan must check two values in **one** comparison instead of a chain of joins, and it must be fast because it happens thousands of times a day.
 
 It is written once at creation and never editable afterwards, so the copy cannot drift. Every other duplicate in the design is removed.
 
@@ -204,7 +204,21 @@ ShiftReport         Shift A · 04/08/2026 · Open · meter 12000 → 12850
 | ProductionLineId (FK) | Extruder / Thermo / Recycler |
 | ProductionStartTime, ProductionEndTime | actual times worked, this line |
 | DowntimeHours | this line |
+| **MouldId** (FK, nullable) | which template is bolted in — forming line only |
 | MachineSpeed, FeedDistance, CycleTime | only where `RecordsMachineSettings` is true — cycles/hour, mm, **seconds** |
+
+### The mould belongs to the shift
+
+Changing a mould is heavy work, so the factory mounts one at the start of a shift and
+**runs it all shift**. That makes the mould a property of the shift's forming line, not
+of each roll — it is chosen once, and every run that shift inherits it.
+
+It may still be changed while the shift is open, because occasionally they do swap one.
+That costs nothing: each production run stores the **product** it actually made, so
+history is fixed at the moment it happened and a later swap cannot rewrite it.
+
+The mould is asked for on the line whose `RecordsMachineSettings` is true — the same
+flag that marks the forming machine. The extruder and the recycler never see it.
 
 **`ShiftWorkers`** — Id · **ShiftLineId** (FK) · UserId (FK) · RoleInShiftId (FK) · IsTrainee
 
@@ -346,8 +360,48 @@ A material may have several packaging rows, so the same material arriving in 25 
 ### Product attributes
 
 **`Colors`** — Id · Name · **Code** (single letter for the roll code: W, G, Y, B) · IsActive
-**`ProductTypes`** — Id · Name · IsActive · *(Plate; Meal Box later)*
-**`PlateSizes`** — Id · Name · IsActive · *(Big, Small)*
+**`ProductTypes`** — Id · Name · IsActive · *(Plate, Meal Box, Clamshell)*
+
+### Moulds and products
+
+The thermo machine forms whatever shape is bolted into it. The factory calls these
+**templates**; the trade calls them moulds. There are five:
+
+| # | Mould | Makes |
+|---|---|---|
+| 1 | Big Plate | Big plate — normal **and** absorbent |
+| 2 | Small Plate | Small plate — normal **and** absorbent |
+| 3 | Large Meal Box | one product |
+| 4 | Small Meal Box | one product |
+| 5 | 3-Compartment Clamshell | one product |
+
+**`Moulds`** — Id · Name · IsActive
+
+**`Products`** — Id · Name · MouldId (FK) · ProductTypeId (FK) · **IsAbsorbent** · **PiecesPerBag** · **SmallBagsPerBag** · **BagsPerPallet** · IsActive
+Unique on **(MouldId, IsAbsorbent)**.
+
+| Product | Mould | Abs | Pieces/bag | Small bags/bag | Bags/pallet |
+|---|---|---|---|---|---|
+| Big Plate — Normal | 1 | no | 500 | 2 | 15 |
+| Big Plate — Absorbent | 1 | yes | 500 | 2 | 15 |
+| Small Plate — Normal | 2 | no | 500 | 2 | 15 |
+| Small Plate — Absorbent | 2 | yes | 500 | 2 | 15 |
+| Large Meal Box | 3 | no | 250 | 1 | 21 |
+| Small Meal Box | 4 | no | 250 | 1 | 21 |
+| 3-Compartment Clamshell | 5 | no | 250 | 1 | 21 |
+
+**Why a product table and not a type × size grid.** The old model described a product as
+*type × size × absorbent*. That stopped being true the moment a clamshell existed: a
+3-compartment clamshell has no "plate size", and the packing numbers are no longer the
+same for everything. Size is now part of what a product *is*, not a separate axis that
+every non-plate would have to carry meaninglessly.
+
+**The numbers above are data, not code.** Several are provisional — the moulds arrived
+the day before this was written and the factory has not finished packing with them.
+Correcting one is an edit in Master Data: no migration, no deployment. See
+[section 18](#18-still-open) for what is still to be confirmed.
+
+**`PlateSizes` no longer exists.** Big and Small live in the product's name.
 
 ### Movement types
 
@@ -692,19 +746,46 @@ Recorded by the **Thermo Test Person** after the run, from the factory's own for
 |---|---|---|
 | Id · ThermoProductionId (FK, unique) | | |
 | **TotalTimeMinutes** | الزمن الكلي | |
-| **PlateSizeId** (FK) | حجم الصنف | Big / Small |
+| **ProductId** (FK) | حجم الصنف | derived, not typed — see below |
 | **BagCount** | عدد الأكياس المنتجة من الرول | |
-| **PlateCount** | عدد الصحون المنتجة من الرول | |
-| **PlateWeight** | وزن الصحن المنتج، غرام | measured again after forming |
+| **PieceCount** | عدد الصحون المنتجة من الرول | plates, boxes or clamshells |
+| **PieceWeight** | وزن الصحن المنتج، غرام | measured again after forming |
 | **AbsorbentPercentage** | نسبة الإمتصاص للصحن المنتج % | ABS recipes only; `0` for Normal |
 | **BagWeight** | وزن الكيس المنتج الواحد، كغم | |
 | TestedByUserId · TestedAt · Notes | | |
 
+*(`PlateCount` and `PlateWeight` are renamed because they are no longer always plates.
+The Arabic labels on the screen stay exactly as the form has them.)*
+
 **No duplication.** Roll weight, roll length and roll thickness appear on the paper form but are **not** stored here — they already exist in `RollTestReports`. The screen shows them read-only, in the same position the operator is used to, pulled from the roll.
 
-`PlateCount = BagCount × 500`. The real form confirms it on every roll: 14→7000, 12→6000, 9→4500, 12→6000, 14→7000.
+`PieceCount = BagCount × product.PiecesPerBag`. For the big plate that is 500, and the
+real form confirms it on every roll: 14→7000, 12→6000, 9→4500, 12→6000, 14→7000. For a
+meal box or a clamshell it is 250. The multiplier is read from the product, never
+written into the code.
 
-Plate weight is measured **twice** in the factory — once from a sample plate at the extruder, once here after forming. Both are kept. A gap between them points at a forming problem.
+Piece weight is measured **twice** in the factory — once from a sample at the extruder,
+once here after forming. Both are kept. A gap between them points at a forming problem.
+
+### Nobody chooses the product
+
+The operator does not pick what he is making, because two facts already decide it:
+
+```
+mould  (mounted on the line for this shift)
+  +  absorbency  (from the roll's recipe — it is the material, not the mould)
+  →  product
+```
+
+The two plate moulds each make a normal **and** an absorbent product. Which one comes
+out is not the mould's doing — it is what was mixed into the roll. So the system looks
+the product up on **(MouldId, IsAbsorbent)**, which is exactly the unique key on
+`Products`. Nothing is typed and nothing can be mislabelled.
+
+**If there is no such product, the run is refused.** Put an absorbent roll on the Large
+Meal Box mould and the system says so plainly, rather than quietly producing bags marked
+as something the factory does not make. If they ever do start making absorbent meal
+boxes, that is one new row in `Products` — no code.
 
 **Relationship:** `ThermoProduction 1 → 0..1 ThermoTestReport`.
 
@@ -718,15 +799,21 @@ One thing to watch after go-live: the packaging operator cannot start building a
 
 ### Produced bags
 
-**The packed unit is the big bag: 500 plates, made of two small bags of 250 inside it.**
+**The packed unit is one bag — the thing that carries a barcode, goes on a pallet and
+gets counted.** How many pieces it holds, and how many small bags are consumed making
+it, come from the product:
 
 ```
-1 big bag  =  500 plates  =  2 small bags × 250 plates
+Plates       1 bag  =  500 pieces  =  2 small bags × 250   (big bag, 2 small ones inside)
+Meal boxes   1 bag  =  250 pieces  =  1 small bag
+Clamshells   1 bag  =  250 pieces  =  1 small bag
 ```
 
-The big bag is what carries a barcode, what goes on a pallet, and what the reports count. The small bags are **packaging material**, consumed two per big bag — they are not separate tracked objects and do not get barcodes.
+Small bags used as an inner liner are **packaging material** — they are not separately
+tracked objects and do not get barcodes. `SmallBagsPerBag` says how many each product
+consumes.
 
-Created automatically when the production is saved. One row per big bag, one barcode per big bag.
+Created automatically when the production is saved. One row per bag, one barcode per bag.
 
 **`ProducedBags`**
 
@@ -734,12 +821,15 @@ Created automatically when the production is saved. One row per big bag, one bar
 |---|---|
 | Id · Barcode | |
 | ThermoProductionId (FK) | → roll → batch → recipe |
-| **ColorId · ProductTypeId · PlateSizeId · IsAbsorbent** | copied at creation — the four pallet-matching attributes |
-| Weight · PlateCount | |
+| **ColorId · ProductId** | copied at creation — the two pallet-matching attributes |
+| Weight · PieceCount | |
 | Status | `Available` · `Assigned` · `Defective` |
 | CreatedAt · Notes | |
 
-The four attributes are copied deliberately so a pallet scan is one fast comparison, not five table joins.
+Both are copied deliberately so a pallet scan is one fast comparison, not a chain of
+joins. Two columns rather than the old four: type, size and absorbency are all facts
+*about the product*, so holding them separately on the bag only created three more ways
+for a row to contradict itself.
 
 **Defective bags** are not packaged. They go to the recycler, so their weight becomes part of the shift's scrap. This makes *plates produced* and *plates packed* two different numbers — both are shown, so the difference is never mistaken for a packing error.
 
@@ -763,22 +853,26 @@ On 2 July: one green roll made 14 bags; four yellow rolls made 12 + 9 + 12 + 14 
 |---|---|
 | Id · PalletNumber · Barcode | |
 | ShiftLineId (FK) | the thermo line's part of the shift it was built on |
-| **ColorId · ProductTypeId · PlateSizeId · IsAbsorbent** | **all NULL until the first bag is scanned** |
+| **ColorId · ProductId** | **both NULL until the first bag is scanned** |
 | Status | `Empty` · `Opened` · `Completed` · `Shipped` |
 | CreatedByUserId · CreatedAt · CompletedAt · Notes | |
 
-**Bag count and plate count are NOT stored.** They are `COUNT()` and `SUM()` over the assignments — a pallet holds 15 rows, so counting is instant.
+**Bag count and piece count are NOT stored.** They are `COUNT()` and `SUM()` over the assignments — a pallet holds a couple of dozen rows at most, so counting is instant.
 
 ### The rule the factory gave
 
 > *"When the pallet is empty, the pallet will take the first scanned bag's characteristics."*
 
 ```
-Empty pallet          →  colour, size, type, product all NULL
-First bag scanned     →  those four are SET from the bag  →  status becomes Opened
-Every later bag       →  must MATCH all four, or it is rejected
-15 bags reached       →  status becomes Completed
+Empty pallet              →  colour and product are NULL
+First bag scanned         →  both are SET from the bag  →  status becomes Opened
+Every later bag           →  must MATCH both, or it is rejected
+BagsPerPallet reached     →  status becomes Completed
 ```
+
+The number that completes a pallet is the product's own `BagsPerPallet` — 15 for plates,
+about 21 for meal boxes and clamshells. The pallet reads it from the product it took
+from its first bag, so it is right for whatever is being packed that shift.
 
 **`BagPalletAssignments`** — Id · ProducedBagId (FK, **unique**) · WoodenPalletId (FK) · **AssignedByUserId** (FK) · AssignedAt
 
@@ -788,7 +882,7 @@ The unique index on `ProducedBagId` is what actually stops a bag being put on tw
 
 **Corrections.** A wrong scan happens. Assignments are never deleted: a supervisor posts a **reversal** with a reason, the bag returns to `Available`, and the history shows both events.
 
-**Capacity** is 15 bags, stored as configuration per product type and plate size — not written into the code — so meal boxes can differ later.
+**Capacity** is `Products.BagsPerPallet`, never a number in the code.
 
 **Partial pallets are normal.** The two unnumbered groups on the paper form (14 bags and 2 bags) are simply `Opened` pallets waiting for more bags. Nothing needs to force them closed.
 
@@ -848,11 +942,16 @@ These do not need to be typed at all, because the system already knows the numbe
 
 | Material | Used | From |
 |---|---|---|
-| **Large bags** | 1 per produced bag | `COUNT(ProducedBags)` |
-| **Small bags** | **2 per produced bag** | same × 2 |
+| **Large bags** | 1 per produced bag, **plates only** | `COUNT(ProducedBags)` |
+| **Small bags** | `SmallBagsPerBag` per produced bag | same × the product's own figure |
 | **Empty wooden pallets** | 1 per completed pallet | `COUNT(WoodenPallets Completed)` |
 
-So a shift that made 61 bags on 3 pallets used exactly 61 large bags, 122 small bags and 3 pallets. The operator types nothing and the numbers cannot be wrong.
+So a plate shift that made 61 bags on 3 pallets used exactly 61 large bags, 122 small
+bags and 3 pallets — the operator types nothing and the numbers cannot be wrong.
+
+A meal box or clamshell shift is packed in the small bag directly: `SmallBagsPerBag` is
+1 and no large bag is consumed at all. Both figures come from the product, so a shift
+that switches mould is still counted correctly.
 
 **Tape, shrink and plastic hood** cannot be counted this way — they are used by length and by feel — so those stay as typed shift totals, weighed where the factory weighs them.
 
@@ -1027,8 +1126,8 @@ The developer is **two hours away**, so three things are required, not optional:
 
 ## 16. Complete table list
 
-**Master (13)**
-ProductionLines · Shifts · Units · MaterialCategories · Materials · MaterialPackagings · MovementTypes · Colors · ProductTypes · PlateSizes · RecipeFamilies · RecipeVersions · RecipeIngredients
+**Master (14)**
+ProductionLines · Shifts · Units · MaterialCategories · Materials · MaterialPackagings · MovementTypes · Colors · ProductTypes · **Moulds** · **Products** · RecipeFamilies · RecipeVersions · RecipeIngredients
 
 **Identity (3)**
 Users · Roles · UserRoles *(ASP.NET Identity)*
@@ -1118,6 +1217,16 @@ Small items. None block building.
 | 5 | Does one batch use one recipe, or several? | **Open** — the design works either way; see [section 8](#8-line-1--mixer-and-extruder) |
 | 6 | Small bags: the form shows 4.14 where 122 were used | **Answered** — every big bag holds 2 small bags; the counts on the form are wrong, and the weights prove it |
 | 7 | Dashboard contents | **Agreed** — the proposal below is accepted for now, to be adjusted after the factory uses it |
+| 8 | The floor name for the small hinged box (mould 4) | **Open** — the photo looks like what the trade calls a *burger box*, not a shrunken meal box. Rename the row when the factory says. |
+| 9 | Pieces per bag and bags per pallet for the **Small Meal Box** | **Open** — seeded as 250 and 21, copied from the large box |
+| 10 | Bags per pallet for the Large Meal Box and the Clamshell — 21 or 23? | **Open** — seeded as 21 |
+| 11 | Is the **small plate** really 500 per bag, like the big one? | **Open** — inherited from the old form; seeded as 500 |
+| 12 | Are absorbent meal boxes or clamshells ever made? | **Open** — today those moulds have a normal product only, and an absorbent roll on them is refused |
+
+Questions 8 to 12 arrived with the new moulds. **None of them blocks anything**, because
+every one is a value in `Moulds` or `Products` — a row edited in Master Data, with no
+migration and no deployment. They are listed so the wrong number is never mistaken for a
+decision somebody made.
 
 ### Proposed dashboard
 

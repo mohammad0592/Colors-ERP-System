@@ -26,6 +26,33 @@ export interface ProductionLineDto extends LookupDto {
   recordsMachineSettings: boolean;
 }
 
+/**
+ * Something the factory makes. The thermo finds a product by mould and absorbency —
+ * that pair is unique — so nobody ever picks one on screen.
+ */
+export interface ProductDto extends LookupDto {
+  mouldId: number;
+  mouldName: string;
+  productTypeId: number;
+  productTypeName: string;
+  isAbsorbent: boolean;
+  /** 500 for a plate, 250 for a meal box or clamshell. */
+  piecesPerBag: number;
+  /** Two for a plate — its big bag holds two small ones inside. One for a box. */
+  smallBagsPerBag: number;
+  bagsPerPallet: number;
+}
+
+export interface SaveProduct {
+  name: string;
+  mouldId: number;
+  productTypeId: number;
+  isAbsorbent: boolean;
+  piecesPerBag: number;
+  smallBagsPerBag: number;
+  bagsPerPallet: number;
+}
+
 export interface UnitDto extends LookupDto {
   symbol: string;
 }
@@ -122,6 +149,7 @@ export const materialCategoriesApi = crudFor<LookupDto, { name: string }>(
   '/api/material-categories',
 );
 export const colorsApi = crudFor<ColorDto, { name: string; code: string }>('/api/colors');
-export const plateSizesApi = crudFor<LookupDto, { name: string }>('/api/plate-sizes');
+export const mouldsApi = crudFor<LookupDto, { name: string }>('/api/moulds');
+export const productsApi = crudFor<ProductDto, SaveProduct>('/api/products');
 export const productTypesApi = crudFor<LookupDto, { name: string }>('/api/product-types');
 export const materialsApi = crudFor<MaterialDto, SaveMaterial>('/api/materials');

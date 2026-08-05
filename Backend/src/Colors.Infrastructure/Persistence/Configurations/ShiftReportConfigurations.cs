@@ -79,6 +79,11 @@ public class ShiftLineConfiguration : IEntityTypeConfiguration<ShiftLine>
             .WithMany()
             .HasForeignKey(e => e.ProductionLineId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.Mould)
+            .WithMany()
+            .HasForeignKey(e => e.MouldId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

@@ -30,7 +30,8 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<MaterialPackaging> MaterialPackagings => Set<MaterialPackaging>();
     public DbSet<Color> Colors => Set<Color>();
-    public DbSet<PlateSize> PlateSizes => Set<PlateSize>();
+    public DbSet<Mould> Moulds => Set<Mould>();
+    public DbSet<Product> Products => Set<Product>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
 
     // Recipes — specification section 5.

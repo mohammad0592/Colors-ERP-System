@@ -66,13 +66,39 @@ public class ColorConfiguration : IEntityTypeConfiguration<Color>
     }
 }
 
-public class PlateSizeConfiguration : IEntityTypeConfiguration<PlateSize>
+public class MouldConfiguration : IEntityTypeConfiguration<Mould>
 {
-    public void Configure(EntityTypeBuilder<PlateSize> builder)
+    public void Configure(EntityTypeBuilder<Mould> builder)
     {
-        builder.ToTable("PlateSizes");
+        builder.ToTable("Moulds");
         builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
-        builder.HasIndex(e => e.Name).IsUnique().HasDatabaseName("ux_plate_sizes_name");
+        builder.HasIndex(e => e.Name).IsUnique().HasDatabaseName("ux_moulds_name");
+    }
+}
+
+public class ProductConfiguration : IEntityTypeConfiguration<Product>
+{
+    public void Configure(EntityTypeBuilder<Product> builder)
+    {
+        builder.ToTable("Products");
+        builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
+        builder.HasIndex(e => e.Name).IsUnique().HasDatabaseName("ux_products_name");
+
+        // The lookup the thermo does on every run: mould from the shift, absorbency
+        // from the roll. Unique, so that pair can only ever name one product.
+        builder.HasIndex(e => new { e.MouldId, e.IsAbsorbent })
+            .IsUnique()
+            .HasDatabaseName("ux_products_mould_absorbent");
+
+        builder.HasOne(e => e.Mould)
+            .WithMany()
+            .HasForeignKey(e => e.MouldId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.ProductType)
+            .WithMany()
+            .HasForeignKey(e => e.ProductTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

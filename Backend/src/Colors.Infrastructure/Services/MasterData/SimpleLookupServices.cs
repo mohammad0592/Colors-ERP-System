@@ -102,7 +102,36 @@ public class MaterialCategoryService(ColorsDbContext db) : NameOnlyService<Mater
         [.. await Db.Materials.Select(m => m.CategoryId).Distinct().ToListAsync(cancellationToken)];
 }
 
-public class PlateSizeService(ColorsDbContext db) : NameOnlyService<PlateSize>(db), IPlateSizeService;
+public class MouldService(ColorsDbContext db) : NameOnlyService<Mould>(db), IMouldService
+{
+    protected override async Task<string?> CanDeleteAsync(
+        Mould entity,
+        CancellationToken cancellationToken)
+    {
+        var products = await Db.Products.CountAsync(p => p.MouldId == entity.Id, cancellationToken);
+        if (products > 0)
+        {
+            return $"Makes {products} product{(products == 1 ? "" : "s")} — deactivate it instead.";
+        }
+
+        var shifts = await Db.ShiftLines.CountAsync(l => l.MouldId == entity.Id, cancellationToken);
+        return shifts == 0
+            ? null
+            : $"Mounted on {shifts} shift{(shifts == 1 ? "" : "s")} — deactivate it instead.";
+    }
+
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken)
+    {
+        var byProducts = await Db.Products.Select(p => p.MouldId).Distinct().ToListAsync(cancellationToken);
+        var byShifts = await Db.ShiftLines
+            .Where(l => l.MouldId != null)
+            .Select(l => l.MouldId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        return [.. byProducts, .. byShifts];
+    }
+}
 
 public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductType>(db), IProductTypeService
 {
@@ -110,14 +139,25 @@ public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductTyp
         ProductType entity,
         CancellationToken cancellationToken)
     {
-        var used = await Db.RecipeFamilies.CountAsync(f => f.ProductTypeId == entity.Id, cancellationToken);
-        return used == 0
+        var families = await Db.RecipeFamilies.CountAsync(f => f.ProductTypeId == entity.Id, cancellationToken);
+        if (families > 0)
+        {
+            return $"Used by {families} recipe famil{(families == 1 ? "y" : "ies")} — deactivate it instead.";
+        }
+
+        var products = await Db.Products.CountAsync(p => p.ProductTypeId == entity.Id, cancellationToken);
+        return products == 0
             ? null
-            : $"Used by {used} recipe famil{(used == 1 ? "y" : "ies")} — deactivate it instead.";
+            : $"Used by {products} product{(products == 1 ? "" : "s")} — deactivate it instead.";
     }
 
-    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken) =>
-        [.. await Db.RecipeFamilies.Select(f => f.ProductTypeId).Distinct().ToListAsync(cancellationToken)];
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken)
+    {
+        var byFamilies = await Db.RecipeFamilies.Select(f => f.ProductTypeId).Distinct().ToListAsync(cancellationToken);
+        var byProducts = await Db.Products.Select(p => p.ProductTypeId).Distinct().ToListAsync(cancellationToken);
+
+        return [.. byFamilies, .. byProducts];
+    }
 }
 
 public class UnitService(ColorsDbContext db)

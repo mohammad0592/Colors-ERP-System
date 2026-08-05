@@ -42,7 +42,9 @@ public interface IMaterialCategoryService : IMasterListService<LookupDto, SaveLo
 
 public interface IColorService : IMasterListService<ColorDto, SaveColorRequest>;
 
-public interface IPlateSizeService : IMasterListService<LookupDto, SaveLookupRequest>;
+public interface IMouldService : IMasterListService<LookupDto, SaveLookupRequest>;
+
+public interface IProductService : IMasterListService<ProductDto, SaveProductRequest>;
 
 public interface IProductTypeService : IMasterListService<LookupDto, SaveLookupRequest>;
 

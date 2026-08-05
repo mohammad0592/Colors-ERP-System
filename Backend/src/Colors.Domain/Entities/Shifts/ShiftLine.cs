@@ -31,6 +31,18 @@ public class ShiftLine
     /// <summary>Hours this line stood still. Subtracted from its running time.</summary>
     public decimal? DowntimeHours { get; set; }
 
+    /// <summary>
+    /// Which template is bolted into the machine this shift. Forming line only.
+    ///
+    /// Changing a mould is heavy work, so one is mounted at the start and runs all
+    /// shift. It may still be swapped while the shift is open — that costs nothing,
+    /// because every run stores the product it actually made, so history is fixed at
+    /// the moment it happened.
+    /// </summary>
+    public int? MouldId { get; set; }
+
+    public Mould? Mould { get; set; }
+
     // No electricity here: the factory has one meter for the whole building, so the
     // reading belongs to the shift (specification section 2).
 

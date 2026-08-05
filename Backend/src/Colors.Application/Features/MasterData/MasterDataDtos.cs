@@ -29,6 +29,33 @@ public sealed record ProductionLineDto(
 
 public sealed record SaveProductionLineRequest(string Name, bool RecordsMachineSettings);
 
+/// <summary>
+/// Something the factory makes. <c>IsAbsorbent</c> together with the mould is what the
+/// thermo looks a product up by, so the pair is unique.
+/// </summary>
+public sealed record ProductDto(
+    int Id,
+    string Name,
+    int MouldId,
+    string MouldName,
+    int ProductTypeId,
+    string ProductTypeName,
+    bool IsAbsorbent,
+    int PiecesPerBag,
+    int SmallBagsPerBag,
+    int BagsPerPallet,
+    bool IsActive,
+    bool CanDelete);
+
+public sealed record SaveProductRequest(
+    string Name,
+    int MouldId,
+    int ProductTypeId,
+    bool IsAbsorbent,
+    int PiecesPerBag,
+    int SmallBagsPerBag,
+    int BagsPerPallet);
+
 public sealed record UnitDto(int Id, string Name, string Symbol, bool IsActive, bool CanDelete);
 
 public sealed record SaveUnitRequest(string Name, string Symbol);

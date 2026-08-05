@@ -108,19 +108,70 @@ public static class MasterDataSeeder
             }
         }
 
-        // --- Plate sizes and product types -------------------------------------
-        foreach (var name in new[] { "Big", "Small" })
+        // --- Product types, moulds and products (specification section 4) ------
+        foreach (var name in new[] { "Plate", "Meal Box", "Clamshell" })
         {
-            if (!await db.PlateSizes.AnyAsync(x => x.Name == name, cancellationToken))
+            if (!await db.ProductTypes.AnyAsync(x => x.Name == name, cancellationToken))
             {
-                db.PlateSizes.Add(new PlateSize { Name = name });
+                db.ProductTypes.Add(new ProductType { Name = name });
                 before++;
             }
         }
 
-        if (!await db.ProductTypes.AnyAsync(x => x.Name == "Plate", cancellationToken))
+        // The five templates the factory has. Three of them arrived new.
+        foreach (var name in new[]
+                 {
+                     "Big Plate",
+                     "Small Plate",
+                     "Large Meal Box",
+                     "Small Meal Box",
+                     "3-Compartment Clamshell",
+                 })
         {
-            db.ProductTypes.Add(new ProductType { Name = "Plate" });
+            if (!await db.Moulds.AnyAsync(x => x.Name == name, cancellationToken))
+            {
+                db.Moulds.Add(new Mould { Name = name });
+                before++;
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        // A mould plus an absorbency names exactly one product — that pair is what the
+        // thermo looks up, so the two plate moulds carry two rows each.
+        //
+        // Several of these numbers are provisional: the new moulds arrived the day
+        // before this was written and the factory has not finished packing with them
+        // (specification section 18, questions 9 to 11). They are rows, so correcting
+        // one is an edit in Master Data.
+        var products = new (string Name, string Mould, string Type, bool Abs, int Pieces, int SmallBags, int PerPallet)[]
+        {
+            ("Big Plate — Normal", "Big Plate", "Plate", false, 500, 2, 15),
+            ("Big Plate — Absorbent", "Big Plate", "Plate", true, 500, 2, 15),
+            ("Small Plate — Normal", "Small Plate", "Plate", false, 500, 2, 15),
+            ("Small Plate — Absorbent", "Small Plate", "Plate", true, 500, 2, 15),
+            ("Large Meal Box", "Large Meal Box", "Meal Box", false, 250, 1, 21),
+            ("Small Meal Box", "Small Meal Box", "Meal Box", false, 250, 1, 21),
+            ("3-Compartment Clamshell", "3-Compartment Clamshell", "Clamshell", false, 250, 1, 21),
+        };
+
+        foreach (var p in products)
+        {
+            if (await db.Products.AnyAsync(x => x.Name == p.Name, cancellationToken))
+            {
+                continue;
+            }
+
+            db.Products.Add(new Product
+            {
+                Name = p.Name,
+                MouldId = (await db.Moulds.SingleAsync(m => m.Name == p.Mould, cancellationToken)).Id,
+                ProductTypeId = (await db.ProductTypes.SingleAsync(t => t.Name == p.Type, cancellationToken)).Id,
+                IsAbsorbent = p.Abs,
+                PiecesPerBag = p.Pieces,
+                SmallBagsPerBag = p.SmallBags,
+                BagsPerPallet = p.PerPallet,
+            });
             before++;
         }
 

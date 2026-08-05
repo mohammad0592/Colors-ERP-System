@@ -256,6 +256,18 @@ public class ShiftReportService(
                 + "Speed, feed distance and cycle time belong to the thermo line.");
         }
 
+        // Same flag marks the forming machine, which is the only one a mould goes into.
+        if (!line.ProductionLine.RecordsMachineSettings && request.MouldId is not null)
+        {
+            return Invalid($"{line.ProductionLine.Name} does not take a mould.");
+        }
+
+        if (request.MouldId is not null
+            && !await db.Moulds.AnyAsync(m => m.Id == request.MouldId && m.IsActive, cancellationToken))
+        {
+            return Invalid("Choose an active mould.");
+        }
+
         // Downtime longer than the shift itself is a typo worth catching before it
         // reaches a report. Checked on a throwaway instance so nothing is mutated
         // until every rule has passed.
@@ -277,6 +289,7 @@ public class ShiftReportService(
             return Invalid(workerError);
         }
 
+        line.MouldId = request.MouldId;
         line.ProductionStartTime = start;
         line.ProductionEndTime = end;
         line.DowntimeHours = request.DowntimeHours;
@@ -487,6 +500,7 @@ public class ShiftReportService(
         db.Set<ShiftReport>()
             .Include(r => r.Shift)
             .Include(r => r.Lines).ThenInclude(l => l.ProductionLine)
+            .Include(r => r.Lines).ThenInclude(l => l.Mould)
             .Include(r => r.Lines).ThenInclude(l => l.Workers);
 
     /// <summary>Lines always read in the same order, so the screen never reshuffles.</summary>
@@ -622,6 +636,8 @@ public class ShiftReportService(
                     line.ProductionLineId,
                     line.ProductionLine.Name,
                     line.ProductionLine.RecordsMachineSettings,
+                    line.MouldId,
+                    line.Mould?.Name,
                     Format(line.ProductionStartTime),
                     Format(line.ProductionEndTime),
                     line.DowntimeHours,
