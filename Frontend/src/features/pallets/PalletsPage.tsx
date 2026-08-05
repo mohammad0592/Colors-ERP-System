@@ -7,6 +7,7 @@ import { RoleNames } from '../../lib/roles';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { palletsApi } from './api';
+import { PalletCard } from './PalletCard';
 import { PalletScanBox } from './PalletScanBox';
 import { PalletStatusBadge } from './PalletStatusBadge';
 import { ReverseScanDialog } from './ReverseScanDialog';
@@ -14,9 +15,12 @@ import { ReverseScanDialog } from './ReverseScanDialog';
 /**
  * Pallets (specification section 10).
  *
- * A pallet is chosen once and then scanned into, so the screen is a list on top and the
- * open pallet underneath — not a dialog per bag. The pallet's colour and product are
- * shown but never chosen: the first bag scanned decides them, in the factory's own words.
+ * Cards on the left, the chosen pallet on the right. A pallet is picked once and then
+ * scanned into many times, so the scan box lives in the panel rather than in a dialog
+ * that would have to be opened for every one of a couple of dozen bags.
+ *
+ * The panel never asks for the colour or the product. The first bag scanned decides
+ * both, in the factory's own words, so there is nothing here to pick wrongly.
  */
 export function PalletsPage(): ReactElement {
   const queryClient = useQueryClient();
@@ -151,101 +155,76 @@ export function PalletsPage(): ReactElement {
         />
       </section>
 
-      <div className="card mb-8 overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Pallet</th>
-              <th className="px-4 py-3 font-semibold">Barcode</th>
-              <th className="px-4 py-3 font-semibold">Holding</th>
-              <th className="px-4 py-3 font-semibold">Shift</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3 text-right font-semibold">Bags</th>
-              <th className="px-4 py-3 text-right font-semibold">Pieces</th>
-              <th className="px-4 py-3 text-right font-semibold">Weight</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {pallets.data.length === 0 && (
-              <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-ink-muted">
-                  {openOnly ? 'No pallet is being built.' : 'No pallet has been started yet.'}
-                </td>
-              </tr>
-            )}
-            {pallets.data.map((pallet) => (
-              <tr
-                key={pallet.id}
-                className={[
-                  'border-b border-line last:border-0',
-                  selectedId === pallet.id ? 'bg-brand-50' : '',
-                ].join(' ')}
-              >
-                <td className="px-4 py-3 font-bold text-ink">{pallet.palletNumber}</td>
-                <td className="px-4 py-3 font-mono text-xs text-ink-muted">
-                  {pallet.barcode}
-                </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {pallet.productName === null ? (
-                    <span className="text-ink-muted">nothing yet</span>
-                  ) : (
-                    <>
-                      {pallet.colorName} {pallet.productName}
-                    </>
-                  )}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-ink-soft">
-                  {pallet.shiftName} · {formatDate(pallet.productionDate)}
-                </td>
-                <td className="px-4 py-3">
-                  <PalletStatusBadge status={pallet.status} />
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
-                  {pallet.bagCount}
-                  {pallet.capacity !== null && (
-                    <span className="text-ink-muted"> / {pallet.capacity}</span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
-                  {pallet.pieceCount.toLocaleString('en-GB')}
-                </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
-                  {pallet.weight}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
-                      onClick={() => {
-                        setSelectedId((current) =>
-                          current === pallet.id ? null : pallet.id,
-                        );
-                      }}
-                    >
-                      {selectedId === pallet.id ? 'Close' : 'Open'}
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          {pallets.data.length === 0 ? (
+            <p className="card p-8 text-center text-ink-muted">
+              {openOnly ? 'No pallet is being built.' : 'No pallet has been started yet.'}
+            </p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {pallets.data.map((pallet) => (
+                <PalletCard
+                  key={pallet.id}
+                  pallet={pallet}
+                  isSelected={selectedId === pallet.id}
+                  onSelect={() => {
+                    setSelectedId((current) => (current === pallet.id ? null : pallet.id));
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <aside className="lg:sticky lg:top-6 lg:self-start">
+          {open === null ? (
+            <div className="card p-6 text-sm text-ink-muted">
+              Choose a pallet to scan bags onto it.
+            </div>
+          ) : (
+            <div className="card p-5">
+              <h2 className="mb-1 font-mono text-lg font-bold text-ink">{open.barcode}</h2>
+              <p className="mb-5 text-sm text-ink-muted">
+                Pallet {open.palletNumber} · {open.productionLineName}, shift{' '}
+                {open.shiftName}
+              </p>
+
+              {canPack && (
+                <PalletScanBox
+                  pallet={open}
+                  bags={availableBags.data ?? []}
+                  onScanned={invalidate}
+                />
+              )}
+
+              <dl className="rounded-control bg-canvas px-4 py-3 text-sm">
+                <Row label="Bags">
+                  {open.bagCount}
+                  {open.capacity === null ? '' : ` / ${String(open.capacity)}`}
+                </Row>
+                <Row label="Total pieces">{open.pieceCount.toLocaleString('en-GB')}</Row>
+                <Row label="Weight">{open.weight} kg</Row>
+                <Row label="Colour">
+                  {open.colorName ?? <span className="text-ink-muted">not set yet</span>}
+                </Row>
+                <Row label="Product">
+                  {open.productName ?? <span className="text-ink-muted">not set yet</span>}
+                </Row>
+                <Row label="Status">
+                  <PalletStatusBadge status={open.status} />
+                </Row>
+              </dl>
+            </div>
+          )}
+        </aside>
       </div>
 
       {open !== null && (
-        <section>
+        <section className="mt-8">
           <h2 className="mb-3 text-lg font-bold text-ink">
-            Pallet {open.palletNumber}
-            {open.productName !== null && (
-              <span className="ml-2 text-base font-normal text-ink-soft">
-                — {open.colorName} {open.productName}
-              </span>
-            )}
+            What is on {open.barcode}
           </h2>
-
-          {canPack && <PalletScanBox pallet={open} bags={availableBags.data ?? []} onScanned={invalidate} />}
 
           <div className="card overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -327,6 +306,21 @@ export function PalletsPage(): ReactElement {
         />
       )}
     </>
+  );
+}
+
+function Row({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}): ReactElement {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-line py-2 last:border-0">
+      <dt className="text-ink-soft">{label}</dt>
+      <dd className="font-semibold text-ink">{children}</dd>
+    </div>
   );
 }
 

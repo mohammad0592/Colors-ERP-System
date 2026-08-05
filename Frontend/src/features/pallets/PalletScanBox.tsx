@@ -68,7 +68,7 @@ export function PalletScanBox({
   }
 
   return (
-    <div className="card mb-6 p-4">
+    <div className="mb-5">
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -79,29 +79,27 @@ export function PalletScanBox({
         noValidate
       >
         <label className="field-label" htmlFor="pallet-scan">
-          Scan a bag onto pallet {pallet.palletNumber}
+          Scan a bag
         </label>
-        <div className="flex flex-wrap gap-3">
-          <input
-            id="pallet-scan"
-            ref={box}
-            className="field-input flex-1 font-mono text-lg"
-            placeholder="B000123"
-            autoComplete="off"
-            value={barcode}
-            disabled={isSaving || full}
-            onChange={(event) => {
-              setBarcode(event.target.value);
-            }}
-          />
-          <button
-            type="submit"
-            className="btn-primary w-auto"
-            disabled={isSaving || full || barcode.trim() === ''}
-          >
-            Add
-          </button>
-        </div>
+        <input
+          id="pallet-scan"
+          ref={box}
+          className="field-input mb-3 font-mono text-lg"
+          placeholder="B000123"
+          autoComplete="off"
+          value={barcode}
+          disabled={isSaving || full}
+          onChange={(event) => {
+            setBarcode(event.target.value);
+          }}
+        />
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={isSaving || full || barcode.trim() === ''}
+        >
+          {isSaving ? 'Adding…' : 'Add bag to pallet'}
+        </button>
       </form>
 
       {/* For the office, and for a label too torn to scan. */}
