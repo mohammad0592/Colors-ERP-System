@@ -131,4 +131,74 @@ public static class IdentitySeeder
             "Created the first administrator {EmployeeNumber}. Change this password after the first login.",
             employeeNumber);
     }
+
+    /// <summary>
+    /// Sets the administrator's password back to whatever <c>Seed:AdminPassword</c>
+    /// says.
+    ///
+    /// This exists because the administrator is the only account nobody else can reset.
+    /// Every other password is changed by an administrator (specification section 3),
+    /// so if that one is lost there is no way back in except the database.
+    ///
+    /// Fenced twice, exactly as the demo users are: <c>Program.cs</c> only calls it
+    /// outside production, and it does nothing unless <c>Seed:ResetAdminPassword</c> is
+    /// explicitly true. The password comes from configuration — user secrets on a
+    /// developer's machine — so it is never written into source.
+    ///
+    /// Turn the flag off again once you are back in.
+    /// </summary>
+    public static async Task ResetAdministratorPasswordAsync(IServiceProvider services)
+    {
+        using var scope = services.CreateScope();
+        var provider = scope.ServiceProvider;
+
+        var configuration = provider.GetRequiredService<IConfiguration>();
+        if (!configuration.GetValue<bool>("Seed:ResetAdminPassword"))
+        {
+            return;
+        }
+
+        var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(IdentitySeeder));
+        var userManager = provider.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var employeeNumber = configuration["Seed:AdminEmployeeNumber"] ?? "ADMIN001";
+        var password = configuration["Seed:AdminPassword"];
+
+        if (string.IsNullOrWhiteSpace(password))
+        {
+            logger.LogWarning(
+                "Seed:ResetAdminPassword is on but Seed:AdminPassword is not set, so nothing changed.");
+            return;
+        }
+
+        if (await userManager.FindByNameAsync(employeeNumber) is not { } admin)
+        {
+            logger.LogWarning("No user {EmployeeNumber} to reset.", employeeNumber);
+            return;
+        }
+
+        // Remove and add rather than a reset token: those tokens are for self-service
+        // password reset, which this system deliberately does not have — see the note
+        // in DependencyInjection about AddDefaultTokenProviders. An administrator sets
+        // a password directly, and this is that same path.
+        //
+        // Still through Identity, so it is hashed the way every other password is.
+        // Writing a hash into the database by hand is how a login silently stops working.
+        await userManager.RemovePasswordAsync(admin);
+        var result = await userManager.AddPasswordAsync(admin, password);
+
+        if (!result.Succeeded)
+        {
+            logger.LogError(
+                "Could not reset the password for {EmployeeNumber}: {Errors}",
+                employeeNumber,
+                string.Join("; ", result.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        logger.LogWarning(
+            "The password for {EmployeeNumber} was RESET to the configured one, because " +
+            "Seed:ResetAdminPassword is true. Turn that setting off again.",
+            employeeNumber);
+    }
 }

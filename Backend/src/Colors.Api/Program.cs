@@ -39,6 +39,11 @@ if (app.Environment.IsDevelopment())
     // real worker exists. They share one simple password, so this is fenced off
     // twice: only outside production, and only when Seed:DemoUsers is switched on.
     await DemoUserSeeder.SeedAsync(app.Services);
+
+    // A way back in when the administrator password is lost — nobody else can reset
+    // it. Fenced the same way: only outside production, and only when
+    // Seed:ResetAdminPassword is switched on.
+    await IdentitySeeder.ResetAdministratorPasswordAsync(app.Services);
 }
 
 app.UseHttpsRedirection();

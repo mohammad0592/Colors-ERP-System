@@ -6,12 +6,16 @@ using Microsoft.Extensions.Logging;
 namespace Colors.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// The master data named in the specification, created on startup when missing.
+/// The master data named in the specification, created the first time the system runs.
 ///
 /// Runs in every environment: these are the factory's real lines, shifts, units,
-/// colours and materials (specification sections 1, 2 and 4), not demo data. It only
-/// adds what is absent — rows the administrator has since renamed, extended or
-/// deactivated are left exactly as they are.
+/// colours and materials (specification sections 1, 2 and 4), not demo data.
+///
+/// **Each list is filled only while its table is empty.** An earlier version checked
+/// row by row for a missing name, which quietly undid the administrator's work: rename
+/// "Large Meal Box" to what the factory actually calls it and the next restart decided
+/// the original was missing and created it again. A list is seeded once, and after that
+/// it belongs to whoever maintains it.
 /// </summary>
 public static class MasterDataSeeder
 {
@@ -22,6 +26,7 @@ public static class MasterDataSeeder
         var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(MasterDataSeeder));
 
         var before = 0;
+        var seededProducts = false;
 
         // --- The three lines (specification section 1) -----------------------
         // Only the thermo line records forming speed, feed distance and cycle time,
@@ -34,9 +39,9 @@ public static class MasterDataSeeder
             ("Recycler", false),
         };
 
-        foreach (var (name, recordsMachineSettings) in lines)
+        if (!await db.ProductionLines.AnyAsync(cancellationToken))
         {
-            if (!await db.ProductionLines.AnyAsync(x => x.Name == name, cancellationToken))
+            foreach (var (name, recordsMachineSettings) in lines)
             {
                 db.ProductionLines.Add(new ProductionLine
                 {
@@ -54,9 +59,9 @@ public static class MasterDataSeeder
             ("B", new TimeOnly(16, 0), new TimeOnly(0, 0)),
             ("C", new TimeOnly(0, 0), new TimeOnly(8, 0)),
         };
-        foreach (var (name, start, end) in shifts)
+        if (!await db.Shifts.AnyAsync(cancellationToken))
         {
-            if (!await db.Shifts.AnyAsync(x => x.Name == name, cancellationToken))
+            foreach (var (name, start, end) in shifts)
             {
                 db.Shifts.Add(new Shift { Name = name, StartTime = start, EndTime = end });
                 before++;
@@ -72,9 +77,9 @@ public static class MasterDataSeeder
             ("Pallet", "pallet"),
             ("Roll", "roll"),
         };
-        foreach (var (name, symbol) in units)
+        if (!await db.Units.AnyAsync(cancellationToken))
         {
-            if (!await db.Units.AnyAsync(x => x.Name == name, cancellationToken))
+            foreach (var (name, symbol) in units)
             {
                 db.Units.Add(new Unit { Name = name, Symbol = symbol });
                 before++;
@@ -82,9 +87,9 @@ public static class MasterDataSeeder
         }
 
         // --- Material categories ----------------------------------------------
-        foreach (var name in new[] { "Raw Material", "Packaging Material", "Consumable" })
+        if (!await db.MaterialCategories.AnyAsync(cancellationToken))
         {
-            if (!await db.MaterialCategories.AnyAsync(x => x.Name == name, cancellationToken))
+            foreach (var name in new[] { "Raw Material", "Packaging Material", "Consumable" })
             {
                 db.MaterialCategories.Add(new MaterialCategory { Name = name });
                 before++;
@@ -99,9 +104,9 @@ public static class MasterDataSeeder
             ("Yellow", "Y"),
             ("Black", "B"),
         };
-        foreach (var (name, code) in colors)
+        if (!await db.Colors.AnyAsync(cancellationToken))
         {
-            if (!await db.Colors.AnyAsync(x => x.Name == name, cancellationToken))
+            foreach (var (name, code) in colors)
             {
                 db.Colors.Add(new Color { Name = name, Code = code });
                 before++;
@@ -109,26 +114,29 @@ public static class MasterDataSeeder
         }
 
         // --- Product types, moulds and products (specification section 4) ------
-        foreach (var name in new[] { "Plate", "Meal Box", "Clamshell" })
+        if (!await db.ProductTypes.AnyAsync(cancellationToken))
         {
-            if (!await db.ProductTypes.AnyAsync(x => x.Name == name, cancellationToken))
+            foreach (var name in new[] { "Plate", "Meal Box", "Clamshell" })
             {
                 db.ProductTypes.Add(new ProductType { Name = name });
                 before++;
             }
         }
 
-        // The five templates the factory has. Three of them arrived new.
-        foreach (var name in new[]
-                 {
-                     "Big Plate",
-                     "Small Plate",
-                     "Large Meal Box",
-                     "Small Meal Box",
-                     "3-Compartment Clamshell",
-                 })
+        // The five templates the factory has. Three of them arrived new. The factory's
+        // own name for the small hinged box is still to be confirmed (specification
+        // section 18, question 8), so expect these to be renamed — which is exactly
+        // why the list is only seeded into an empty table.
+        if (!await db.Moulds.AnyAsync(cancellationToken))
         {
-            if (!await db.Moulds.AnyAsync(x => x.Name == name, cancellationToken))
+            foreach (var name in new[]
+                     {
+                         "Big Plate",
+                         "Small Plate",
+                         "Large Meal Box",
+                         "Small Meal Box",
+                         "3-Compartment Clamshell",
+                     })
             {
                 db.Moulds.Add(new Mould { Name = name });
                 before++;
@@ -155,24 +163,37 @@ public static class MasterDataSeeder
             ("3-Compartment Clamshell", "3-Compartment Clamshell", "Clamshell", false, 250, 1, 21),
         };
 
-        foreach (var p in products)
+        // Only into an empty table, and only if the moulds and types are still the ones
+        // seeded above — otherwise the names below would not find them.
+        if (!await db.Products.AnyAsync(cancellationToken))
         {
-            if (await db.Products.AnyAsync(x => x.Name == p.Name, cancellationToken))
+            foreach (var p in products)
             {
-                continue;
-            }
+                var mould = await db.Moulds.SingleOrDefaultAsync(m => m.Name == p.Mould, cancellationToken);
+                var type = await db.ProductTypes.SingleOrDefaultAsync(t => t.Name == p.Type, cancellationToken);
 
-            db.Products.Add(new Product
-            {
-                Name = p.Name,
-                MouldId = (await db.Moulds.SingleAsync(m => m.Name == p.Mould, cancellationToken)).Id,
-                ProductTypeId = (await db.ProductTypes.SingleAsync(t => t.Name == p.Type, cancellationToken)).Id,
-                IsAbsorbent = p.Abs,
-                PiecesPerBag = p.Pieces,
-                SmallBagsPerBag = p.SmallBags,
-                BagsPerPallet = p.PerPallet,
-            });
-            before++;
+                if (mould is null || type is null)
+                {
+                    logger.LogWarning(
+                        "Skipped seeding product {Product}: its mould or product type has been renamed. " +
+                        "Add it in Master Data.",
+                        p.Name);
+                    continue;
+                }
+
+                db.Products.Add(new Product
+                {
+                    Name = p.Name,
+                    MouldId = mould.Id,
+                    ProductTypeId = type.Id,
+                    IsAbsorbent = p.Abs,
+                    PiecesPerBag = p.Pieces,
+                    SmallBagsPerBag = p.SmallBags,
+                    BagsPerPallet = p.PerPallet,
+                });
+                before++;
+                seededProducts = true;
+            }
         }
 
         await db.SaveChangesAsync(cancellationToken);
@@ -203,9 +224,11 @@ public static class MasterDataSeeder
             ("MAT0014", "Empty Wooden Pallets", packaging.Id, piece.Id, null),
         };
 
-        foreach (var (code, name, categoryId, unitId, unitWeight) in materials)
+        // Matched on the code rather than the name, so renaming a material is safe —
+        // but still only into an empty table, so deleting one does not bring it back.
+        if (!await db.Materials.AnyAsync(cancellationToken))
         {
-            if (!await db.Materials.AnyAsync(m => m.Code == code, cancellationToken))
+            foreach (var (code, name, categoryId, unitId, unitWeight) in materials)
             {
                 db.Materials.Add(new Material
                 {
@@ -223,7 +246,10 @@ public static class MasterDataSeeder
 
         if (before > 0)
         {
-            logger.LogInformation("Seeded {Count} master data rows.", before);
+            logger.LogInformation(
+                "Seeded {Count} master data rows{Products}.",
+                before,
+                seededProducts ? " including the products" : string.Empty);
         }
     }
 }
