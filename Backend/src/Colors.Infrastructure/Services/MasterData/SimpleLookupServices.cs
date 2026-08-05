@@ -46,12 +46,23 @@ public class ProductionLineService(ColorsDbContext db)
       IProductionLineService
 {
     protected override ProductionLineDto ToDto(ProductionLine entity, bool canDelete) =>
-        new(entity.Id, entity.Name, entity.RecordsMachineSettings, entity.IsActive, canDelete);
+        new(
+            entity.Id,
+            entity.Name,
+            entity.RecordsMachineSettings,
+            entity.MakesRolls,
+            entity.FormsBags,
+            entity.TakesRawMaterial,
+            entity.IsActive,
+            canDelete);
 
     protected override void Apply(SaveProductionLineRequest request, ProductionLine entity)
     {
         entity.Name = request.Name.Trim();
         entity.RecordsMachineSettings = request.RecordsMachineSettings;
+        entity.MakesRolls = request.MakesRolls;
+        entity.FormsBags = request.FormsBags;
+        entity.TakesRawMaterial = request.TakesRawMaterial;
     }
 
     protected override async Task<string?> ValidateAsync(

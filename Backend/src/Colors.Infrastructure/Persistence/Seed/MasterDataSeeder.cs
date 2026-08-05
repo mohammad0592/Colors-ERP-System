@@ -33,21 +33,28 @@ public static class MasterDataSeeder
         // Only the thermo line records forming speed, feed distance and cycle time,
         // so only it is asked for them. Electricity is not here at all: the factory
         // has one meter for the building, so it is read once per shift.
-        var lines = new (string Name, bool RecordsMachineSettings)[]
+        //
+        // The other three say what each line does — which one a batch may start on,
+        // which one forms bags, and which one appears on an issue ticket. Seeded as the
+        // factory works today; each is a tick box in Master Data afterwards.
+        var lines = new (string Name, bool Settings, bool Rolls, bool Bags, bool RawMaterial)[]
         {
-            ("Extruder", false),
-            ("Thermo", true),
-            ("Recycler", false),
+            ("Extruder", false, true, false, true),
+            ("Thermo", true, false, true, false),
+            ("Recycler", false, false, false, false),
         };
 
         if (!await db.ProductionLines.AnyAsync(cancellationToken))
         {
-            foreach (var (name, recordsMachineSettings) in lines)
+            foreach (var (name, settings, rolls, bags, rawMaterial) in lines)
             {
                 db.ProductionLines.Add(new ProductionLine
                 {
                     Name = name,
-                    RecordsMachineSettings = recordsMachineSettings,
+                    RecordsMachineSettings = settings,
+                    MakesRolls = rolls,
+                    FormsBags = bags,
+                    TakesRawMaterial = rawMaterial,
                 });
                 before++;
             }

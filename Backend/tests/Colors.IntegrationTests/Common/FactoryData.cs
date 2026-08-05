@@ -23,7 +23,13 @@ public static class FactoryData
         int ShiftLineId,
         int GppsId,
         int TalcId,
-        int LargeBagsId);
+        int LargeBagsId,
+        // Line 2. The same shift, a second line — which is the whole point of the shift
+        // restructure: one shift for the factory, a row underneath for each line.
+        int ThermoShiftLineId,
+        int MouldId,
+        int NormalProductId,
+        int AbsorbentProductId);
 
     public static async Task<Ids> CreateAsync(ColorsDbContext db, string suffix)
     {
@@ -45,14 +51,27 @@ public static class FactoryData
         };
         db.Users.Add(user);
 
-        var line = new ProductionLine { Name = $"Extruder {suffix}" };
+        // The flags say what each line does. Without them every screen refuses, which is
+        // exactly what they are for (specification section 4).
+        var line = new ProductionLine
+        {
+            Name = $"Extruder {suffix}",
+            MakesRolls = true,
+            TakesRawMaterial = true,
+        };
+        var thermo = new ProductionLine
+        {
+            Name = $"Thermo {suffix}",
+            RecordsMachineSettings = true,
+            FormsBags = true,
+        };
         var shift = new Shift
         {
             Name = $"Shift {suffix}",
             StartTime = new TimeOnly(8, 0),
             EndTime = new TimeOnly(16, 0),
         };
-        db.ProductionLines.Add(line);
+        db.ProductionLines.AddRange(line, thermo);
         db.Shifts.Add(shift);
 
         var kilogram = await db.Units.FirstOrDefaultAsync(u => u.Name == "Kilogram");
@@ -115,6 +134,43 @@ public static class FactoryData
 
         db.Materials.AddRange(gpps, talc, largeBags);
 
+        // The mould bolted into the thermo, and the two products it can make. Which one
+        // comes out is not the mould's doing — it is what was mixed into the roll — so
+        // both exist and (mould, absorbency) picks between them.
+        var mould = new Mould { Name = $"Big Plate Mould {suffix}" };
+        db.Moulds.Add(mould);
+
+        var productType = await db.ProductTypes.FirstOrDefaultAsync(t => t.Name == "Plate");
+        if (productType is null)
+        {
+            productType = new ProductType { Name = "Plate" };
+            db.ProductTypes.Add(productType);
+        }
+
+        await db.SaveChangesAsync();
+
+        var normal = new Product
+        {
+            Name = $"Big Plate {suffix}",
+            MouldId = mould.Id,
+            ProductTypeId = productType.Id,
+            IsAbsorbent = false,
+            PiecesPerBag = 500,
+            SmallBagsPerBag = 2,
+            BagsPerPallet = 15,
+        };
+        var absorbent = new Product
+        {
+            Name = $"Big Plate ABS {suffix}",
+            MouldId = mould.Id,
+            ProductTypeId = productType.Id,
+            IsAbsorbent = true,
+            PiecesPerBag = 500,
+            SmallBagsPerBag = 2,
+            BagsPerPallet = 15,
+        };
+        db.Products.AddRange(normal, absorbent);
+
         var report = new ShiftReport
         {
             ProductionDate = new DateOnly(2026, 3, 1).AddDays(Math.Abs(suffix.GetHashCode()) % 300),
@@ -122,12 +178,30 @@ public static class FactoryData
             Status = Domain.Enums.ShiftReportStatus.Open,
             OpenedByUserId = user.Id,
             OpenedAt = DateTimeOffset.UtcNow,
-            Lines = [new ShiftLine { ProductionLineId = line.Id }],
+            Lines =
+            [
+                new ShiftLine { ProductionLineId = line.Id },
+                new ShiftLine { ProductionLineId = thermo.Id },
+            ],
         };
         db.ShiftReports.Add(report);
 
         await db.SaveChangesAsync();
 
-        return new Ids(user.Id, report.Id, report.Lines[0].Id, gpps.Id, talc.Id, largeBags.Id);
+        // The mould is mounted after the shift lines exist, because it hangs off one.
+        report.Lines[1].MouldId = mould.Id;
+        await db.SaveChangesAsync();
+
+        return new Ids(
+            user.Id,
+            report.Id,
+            report.Lines[0].Id,
+            gpps.Id,
+            talc.Id,
+            largeBags.Id,
+            report.Lines[1].Id,
+            mould.Id,
+            normal.Id,
+            absorbent.Id);
     }
 }

@@ -32,6 +32,12 @@ public sealed record ShiftLineDto(
     // From the line itself: true only for the thermo, and it decides whether the
     // screen shows the machine settings and the mould at all.
     bool RecordsMachineSettings,
+    // What the line does. The server refuses the wrong line anyway, but a screen that
+    // offers only the lines that can do the job never puts the man in that position
+    // (specification section 4).
+    bool MakesRolls,
+    bool FormsBags,
+    bool TakesRawMaterial,
     // Which template is bolted in this shift. Everything formed on the line inherits
     // it, so it is chosen once rather than per roll.
     int? MouldId,

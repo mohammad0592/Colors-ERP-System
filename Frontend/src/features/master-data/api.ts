@@ -24,6 +24,13 @@ export interface ProductionLineDto extends LookupDto {
    * forming speed, feed distance and cycle time — the extruder has no such settings.
    */
   recordsMachineSettings: boolean;
+  /**
+   * What the line does. Every screen filters on these: where a batch may start, where a
+   * roll may be formed, and which line appears on an issue ticket.
+   */
+  makesRolls: boolean;
+  formsBags: boolean;
+  takesRawMaterial: boolean;
 }
 
 /**
@@ -146,7 +153,13 @@ function crudFor<TDto, TSave>(base: string): CrudClient<TDto, TSave> {
 
 export const productionLinesApi = crudFor<
   ProductionLineDto,
-  { name: string; recordsMachineSettings: boolean }
+  {
+    name: string;
+    recordsMachineSettings: boolean;
+    makesRolls: boolean;
+    formsBags: boolean;
+    takesRawMaterial: boolean;
+  }
 >('/api/production-lines');
 export const shiftsApi = crudFor<
   ShiftDto,

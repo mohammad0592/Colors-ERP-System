@@ -9,20 +9,6 @@ import { ComingSoon } from '../components/ui/ComingSoon';
  */
 const planned: { path: string; title: string; phase: string; description: string }[] = [
   {
-    path: '/production/thermo',
-    title: 'Thermoforming',
-    phase: 'Phase 9',
-    description:
-      'Scan a roll to start forming. Bags and their barcodes are created when the run is recorded.',
-  },
-  {
-    path: '/production/thermo-tests',
-    title: 'Thermo Tests',
-    phase: 'Phase 9',
-    description:
-      'Time in the machine, plate size, counts, plate weight, bag weight and absorbent percentage.',
-  },
-  {
     path: '/production/pallets',
     title: 'Pallets',
     phase: 'Phase 10',

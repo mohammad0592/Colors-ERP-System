@@ -16,13 +16,6 @@ namespace Colors.IntegrationTests.Features;
 [Collection(DatabaseCollection.Name)]
 public class ProductionTests(DatabaseFixture fixture)
 {
-    /// <summary>
-    /// Recipe numbers are unique for ever, so the tests cannot derive one from a
-    /// string hash — two suffixes would eventually collide and the failure would point
-    /// nowhere near the cause.
-    /// </summary>
-    private static int _nextRecipeNumber = 900_000;
-
     private static ProductionService NewService(ColorsDbContext db) =>
         new(db, new BarcodeService(db, TimeProvider.System), TimeProvider.System);
 
@@ -33,8 +26,7 @@ public class ProductionTests(DatabaseFixture fixture)
         int authorUserId,
         bool absorbent = false)
     {
-        var colour = new Color { Name = $"White {suffix}", Code = PickLetter(suffix) };
-        db.Colors.Add(colour);
+        var colour = await TestSequences.ColourAsync(db);
 
         var productType = await db.ProductTypes.FirstOrDefaultAsync()
                           ?? new ProductType { Name = $"Plate {suffix}" };
@@ -55,7 +47,7 @@ public class ProductionTests(DatabaseFixture fixture)
             [
                 new RecipeVersion
                 {
-                    RecipeNumber = Interlocked.Increment(ref _nextRecipeNumber),
+                    RecipeNumber = TestSequences.NextRecipeNumber(),
                     VersionNumber = 1,
                     Status = RecipeVersionStatus.Current,
                     CreatedByUserId = authorUserId,
@@ -69,15 +61,6 @@ public class ProductionTests(DatabaseFixture fixture)
 
         return (colour.Id, family.Versions[0].Id);
     }
-
-    /// <summary>
-    /// Colour codes are one letter and unique, and there are only 26 — so each test
-    /// takes the next one rather than hashing its name into a collision.
-    /// </summary>
-    private static int _nextLetter = -1;
-
-    private static string PickLetter(string suffix) =>
-        ((char)('A' + (Interlocked.Increment(ref _nextLetter) % 26))).ToString();
 
     private static async Task<int> BatchAsync(ColorsDbContext db, FactoryData.Ids ids)
     {

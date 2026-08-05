@@ -7,6 +7,7 @@ using Colors.Application.Features.MasterData;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
 using Colors.Application.Features.ShiftReports;
+using Colors.Application.Features.Thermo;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
@@ -18,6 +19,7 @@ using Colors.Infrastructure.Services.Production;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
 using Colors.Infrastructure.Services.ShiftReports;
+using Colors.Infrastructure.Services.Thermo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -121,6 +123,9 @@ public static class DependencyInjection
 
         // Line 1, the mixer and extruder (specification section 8).
         services.AddScoped<IProductionService, ProductionService>();
+
+        // Line 2, thermoforming (specification section 9).
+        services.AddScoped<IThermoService, ThermoService>();
 
         return services;
     }

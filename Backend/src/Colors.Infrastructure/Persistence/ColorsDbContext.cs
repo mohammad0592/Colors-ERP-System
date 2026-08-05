@@ -53,6 +53,11 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<Roll> Rolls => Set<Roll>();
     public DbSet<RollTestReport> RollTestReports => Set<RollTestReport>();
 
+    // Line 2, thermoforming — specification section 9.
+    public DbSet<ThermoProduction> ThermoProductions => Set<ThermoProduction>();
+    public DbSet<ThermoTestReport> ThermoTestReports => Set<ThermoTestReport>();
+    public DbSet<ProducedBag> ProducedBags => Set<ProducedBag>();
+
     // Barcodes — specification section 12. One table for rolls, bags and pallets.
     public DbSet<Barcode> Barcodes => Set<Barcode>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();

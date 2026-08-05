@@ -19,15 +19,28 @@ public sealed record SaveLookupRequest(string Name);
 /// A production line. <c>RecordsMachineSettings</c> is true only for the thermo line —
 /// it is what decides whether the shift report asks for speed, feed distance and
 /// cycle time.
+///
+/// The other three say what the line <i>does</i>, and are what every screen filters on:
+/// where a batch may start, where a roll may be formed, and which line appears on an
+/// issue ticket. Each is a tick box here, so the day the factory changes its mind it is
+/// one edit and no deployment (specification section 4).
 /// </summary>
 public sealed record ProductionLineDto(
     int Id,
     string Name,
     bool RecordsMachineSettings,
+    bool MakesRolls,
+    bool FormsBags,
+    bool TakesRawMaterial,
     bool IsActive,
     bool CanDelete);
 
-public sealed record SaveProductionLineRequest(string Name, bool RecordsMachineSettings);
+public sealed record SaveProductionLineRequest(
+    string Name,
+    bool RecordsMachineSettings,
+    bool MakesRolls,
+    bool FormsBags,
+    bool TakesRawMaterial);
 
 /// <summary>
 /// Something the factory makes. <c>IsAbsorbent</c> together with the mould is what the

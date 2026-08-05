@@ -120,3 +120,119 @@ public class RollTestReportConfiguration : IEntityTypeConfiguration<RollTestRepo
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class ThermoProductionConfiguration : IEntityTypeConfiguration<ThermoProduction>
+{
+    public void Configure(EntityTypeBuilder<ThermoProduction> builder)
+    {
+        builder.ToTable("ThermoProductions", t =>
+            // A roll cannot come out before it went in.
+            t.HasCheckConstraint(
+                "ck_thermo_finished_after_started",
+                "\"FinishedAt\" IS NULL OR \"FinishedAt\" >= \"StartedAt\""));
+
+        builder.Property(e => e.Notes).HasMaxLength(500);
+
+        // The total time in the machine, worked out from the two timestamps here.
+        builder.Ignore(e => e.TotalTimeMinutes);
+
+        // One roll goes in whole and is never split, so it is formed exactly once.
+        builder.HasIndex(e => e.RollId)
+            .IsUnique()
+            .HasDatabaseName("ux_thermo_productions_roll");
+
+        builder.HasIndex(e => e.ShiftLineId).HasDatabaseName("ix_thermo_productions_shift_line");
+
+        builder.HasOne(e => e.Roll)
+            .WithOne()
+            .HasForeignKey<ThermoProduction>(e => e.RollId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.ShiftLine)
+            .WithMany()
+            .HasForeignKey(e => e.ShiftLineId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.OperatorUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class ThermoTestReportConfiguration : IEntityTypeConfiguration<ThermoTestReport>
+{
+    public void Configure(EntityTypeBuilder<ThermoTestReport> builder)
+    {
+        builder.ToTable("ThermoTestReports", t =>
+            // The outer walls. The service refuses these with a sentence the operator
+            // can act on; this is what no code path can get past.
+            t.HasCheckConstraint(
+                "ck_thermo_tests_positive",
+                "\"BagCount\" > 0 AND \"PieceCount\" > 0 AND \"PieceWeight\" > 0 "
+                + "AND \"BagWeight\" > 0 "
+                + "AND \"AbsorbentPercentage\" >= 0 AND \"AbsorbentPercentage\" <= 100"));
+
+        builder.Property(e => e.PieceWeight).HasPrecision(9, 3);
+        builder.Property(e => e.BagWeight).HasPrecision(9, 3);
+        builder.Property(e => e.AbsorbentPercentage).HasPrecision(5, 2);
+        builder.Property(e => e.Notes).HasMaxLength(500);
+
+        builder.HasIndex(e => e.ThermoProductionId)
+            .IsUnique()
+            .HasDatabaseName("ux_thermo_tests_production");
+
+        // Nullable one-to-one for the same reason as the roll's: the run exists before
+        // anyone has counted what came out of it.
+        builder.HasOne(e => e.ThermoProduction)
+            .WithOne(p => p.TestReport)
+            .HasForeignKey<ThermoTestReport>(e => e.ThermoProductionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.Product)
+            .WithMany()
+            .HasForeignKey(e => e.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.TestedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class ProducedBagConfiguration : IEntityTypeConfiguration<ProducedBag>
+{
+    public void Configure(EntityTypeBuilder<ProducedBag> builder)
+    {
+        builder.ToTable("ProducedBags", t =>
+            t.HasCheckConstraint(
+                "ck_produced_bags_positive",
+                "\"Weight\" > 0 AND \"PieceCount\" > 0"));
+
+        builder.Property(e => e.Weight).HasPrecision(9, 3);
+        builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
+        builder.Property(e => e.Notes).HasMaxLength(500);
+
+        builder.HasIndex(e => e.ThermoProductionId)
+            .HasDatabaseName("ix_produced_bags_production");
+
+        // "Which bags can go on a pallet?" — asked every time one is built.
+        builder.HasIndex(e => e.Status).HasDatabaseName("ix_produced_bags_status");
+
+        builder.HasOne(e => e.ThermoProduction)
+            .WithMany(p => p.Bags)
+            .HasForeignKey(e => e.ThermoProductionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.Color)
+            .WithMany()
+            .HasForeignKey(e => e.ColorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.Product)
+            .WithMany()
+            .HasForeignKey(e => e.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}

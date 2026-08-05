@@ -99,6 +99,15 @@ public class MaterialIssueService(
             return Invalid("Choose a line of an open shift.");
         }
 
+        // Raw material goes to the line that mixes it. Which lines those are is a tick
+        // box in Master Data, not a rule about a line's name (specification section 4).
+        if (!shiftLine.ProductionLine.TakesRawMaterial)
+        {
+            return Invalid(
+                $"{shiftLine.ProductionLine.Name} does not take raw material. "
+                + "Choose the extruder line.");
+        }
+
         // Material issued to a shift that is already finished could never be returned
         // against it, and its waste figure would belong to nothing.
         if (shiftLine.ShiftReport.Status != ShiftReportStatus.Open)

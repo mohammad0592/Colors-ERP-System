@@ -52,17 +52,20 @@ export function RollProductionPage(): ReactElement {
     queryFn: () => colorsApi.list(false),
   });
 
-  // Only lines of shifts still open — a batch never crosses a shift.
+  // Lines of shifts still open, and only the ones that mix — a batch never crosses a
+  // shift, and the thermo does not mix at all (specification section 4).
   const openLines = useQuery({
-    queryKey: ['shift-reports', 'open-lines'],
+    queryKey: ['shift-reports', 'mixing-lines'],
     queryFn: async () => {
       const open = await shiftReportsApi.list(undefined, true);
       const full = await Promise.all(open.map((s) => shiftReportsApi.get(s.id)));
       return full.flatMap((shift) =>
-        shift.lines.map((line) => ({
-          shiftLineId: line.id,
-          label: `${line.productionLineName} — shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
-        })),
+        shift.lines
+          .filter((line) => line.makesRolls)
+          .map((line) => ({
+            shiftLineId: line.id,
+            label: `${line.productionLineName} — shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
+          })),
       );
     },
   });

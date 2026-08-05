@@ -39,6 +39,13 @@ export interface ShiftLineDto {
    */
   recordsMachineSettings: boolean;
   /**
+   * What the line does. The server refuses the wrong line anyway, but a screen that
+   * offers only the lines that can do the job never puts the man in that position.
+   */
+  makesRolls: boolean;
+  formsBags: boolean;
+  takesRawMaterial: boolean;
+  /**
    * Which template is bolted in this shift. Everything formed on the line inherits it,
    * so it is chosen once rather than per roll.
    */

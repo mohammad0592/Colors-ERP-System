@@ -53,11 +53,15 @@ export function MaterialIssuePage(): ReactElement {
     },
   });
 
+  // Only the lines that take raw material. Which those are is a tick box in Master
+  // Data, not a rule about a line's name (specification section 4).
   const openLines = (openShifts.data ?? []).flatMap((shift) =>
-    shift.lines.map((line) => ({
-      shiftLineId: line.id,
-      label: `${line.productionLineName} — shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
-    })),
+    shift.lines
+      .filter((line) => line.takesRawMaterial)
+      .map((line) => ({
+        shiftLineId: line.id,
+        label: `${line.productionLineName} — shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
+      })),
   );
 
   function invalidate(): void {

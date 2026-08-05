@@ -1,4 +1,4 @@
-using Colors.Application.Features.ShiftReports;
+﻿using Colors.Application.Features.ShiftReports;
 using Colors.Domain.Constants;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Services.ShiftReports;
@@ -58,7 +58,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
 
         Assert.True(saved.IsSuccess, saved.Message);
 
-        var worker = saved.Value!.Lines.Single().Workers.Single();
+        var worker = saved.Value!.Lines.Single(l => l.Id == ids.ShiftLineId).Workers.Single();
         Assert.Equal(2, worker.RoleInShiftIds.Count);
         Assert.Contains(op, worker.RoleInShiftIds);
         Assert.Contains(test, worker.RoleInShiftIds);
@@ -96,7 +96,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
 
         Assert.True(saved.IsSuccess, saved.Message);
 
-        var worker = saved.Value!.Lines.Single().Workers.Single();
+        var worker = saved.Value!.Lines.Single(l => l.Id == ids.ShiftLineId).Workers.Single();
         Assert.Empty(worker.RoleInShiftIds);
         Assert.True(worker.IsTrainee);
     }
@@ -129,7 +129,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         var second = await service.UpdateLineAsync(ids.ShiftReportId, ids.ShiftLineId,
             LineWith(new SaveShiftWorkerRequest(ids.UserId, [test], false)));
 
-        var worker = second.Value!.Lines.Single().Workers.Single();
+        var worker = second.Value!.Lines.Single(l => l.Id == ids.ShiftLineId).Workers.Single();
         Assert.Single(worker.RoleInShiftIds);
         Assert.Equal(test, worker.RoleInShiftIds[0]);
 

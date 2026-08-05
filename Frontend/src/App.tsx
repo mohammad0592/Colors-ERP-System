@@ -13,6 +13,8 @@ import { RollTestsPage } from './features/production/RollTestsPage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
+import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
+import { ThermoTestsPage } from './features/thermo/ThermoTestsPage';
 import { RoleNames } from './lib/roles';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { plannedRoutes } from './routes/routes';
@@ -91,6 +93,24 @@ export default function App(): ReactElement {
                 >
                   <Route path="/production/rolls" element={<RollProductionPage />} />
                   <Route path="/production/roll-tests" element={<RollTestsPage />} />
+                </Route>
+
+                {/* Line 2, split the same way: forming is one job, counting what came
+                    out is another. Today one man holds both roles. */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[
+                        RoleNames.Administrator,
+                        RoleNames.Supervisor,
+                        RoleNames.ThermoOperator,
+                        RoleNames.ThermoTestPerson,
+                      ]}
+                    />
+                  }
+                >
+                  <Route path="/production/thermo" element={<ThermoProductionPage />} />
+                  <Route path="/production/thermo-tests" element={<ThermoTestsPage />} />
                 </Route>
 
                 {/* Master data changes affect every screen, so only the

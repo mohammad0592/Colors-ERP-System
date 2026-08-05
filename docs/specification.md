@@ -99,6 +99,21 @@ Ask: *do these values have different owners, or different timing?* If no, they b
 
 It is written once at creation and never editable afterwards, so the copy cannot drift. Every other duplicate in the design is removed.
 
+### Calculated, or stored?
+
+A number that comes from other numbers is normally **calculated and never stored** — a stored copy can only ever disagree with what it came from. `AverageThickness` is the plain case: its four readings sit on the same row and can never move, so a fifth column would be a liability and nothing else.
+
+But that only holds while the inputs are **frozen**. The test:
+
+> **Calculate** when every input is on the same row and can never change afterwards.
+> **Store** when any input is master data, because master data is edited.
+
+`PieceCount = BagCount × product.PiecesPerBag` fails the test. `PiecesPerBag` is a column in Master Data. Change a plate from 500 to 480 next year and every report from every past year would quietly restate itself — the factory would open last March and find a different number than it read last March. So the piece count is **worked out once at save and then frozen**. Still never typed, so it still cannot be mistyped; simply not re-derived from a value that is allowed to move.
+
+`ThermoProductions.TotalTimeMinutes` passes the test — two timestamps on its own row — so it is calculated. The paper form has a box for it; the screen shows it in the same place, filled in.
+
+The same reasoning is why a roll keeps its own `RecipeVersionId` and not just a recipe number, and why recipes are versioned instead of edited: history must stay true even after master data moves on.
+
 ### In the code
 
 The same rule applies above the database:
@@ -334,12 +349,24 @@ The database's restrict foreign keys are the backstop — even a bug in the chec
 
 ### Production lines
 
-**`ProductionLines`** — Id · Name · **RecordsMachineSettings** · IsActive
+**`ProductionLines`** — Id · Name · **RecordsMachineSettings** · **MakesRolls** · **FormsBags** · **TakesRawMaterial** · IsActive
 Three rows: Extruder, Thermo, Recycler.
 
 `RecordsMachineSettings` is true for **Thermo only**. It decides whether a shift line asks for forming speed, feed distance and cycle time — the extruder and the recycler have no such settings, so their part of the shift never shows those boxes.
 
-A flag on the line, not a check on its name: renaming a line, or adding a second thermo, must never need a code change.
+The other three say **what the line does**, and each one answers a question the system could not answer before:
+
+| Flag | True for | What it decides |
+|---|---|---|
+| `MakesRolls` | Extruder | Whether a batch can be started on this line, and a roll logged against it |
+| `FormsBags` | Thermo | Whether a roll can be put into this line and bags come out of it |
+| `TakesRawMaterial` | Extruder | Whether the line appears on a material issue ticket |
+
+Until these existed, every screen offered every open line. A batch could be started on the thermo, which does not mix; a forming run could be started on the extruder, which has no mould. Both were possible because nothing in the data said otherwise — only the name of the line, and names must never drive logic.
+
+The flags are separate rather than one "line type", because they are not exclusive. A line that both mixes and forms is a factory decision, not a shape the software should forbid.
+
+A flag on the line, not a check on its name: renaming a line, or adding a second thermo, must never need a code change. Each is a tick box in Master Data, so the day the factory changes its mind it is one edit and no deployment.
 
 ### Material categories
 
@@ -777,6 +804,10 @@ One roll goes in whole. A roll is never split.
 
 The operator scans the roll barcode to start. If the roll is not `Available` the system refuses. He never types the roll number, recipe, colour or product — all inherited from the roll.
 
+`TotalTimeMinutes` is **calculated** from StartedAt and FinishedAt, never stored — see [calculated or stored](#calculated-or-stored). The paper form has a box for the total time (الزمن الكلي); the screen shows it in the same place, worked out.
+
+**The line must be one that forms bags.** `ShiftLineId` must point at a line whose `FormsBags` is true, and that line must have a **mould mounted for this shift** — without one there is no way to know what is being made. Both are refused plainly rather than guessed at.
+
 **Why this table exists when the roll already has a status.** A roll made on 18 July by Ali may be used on 2 August by Omar. The roll's own columns already hold *18 July, shift A, Ali* — that is its birth at the extruder. The thermo facts — *2 August, shift B, Omar, in at 09:10, out at 10:00* — are a **different event** and have nowhere else to live.
 
 Status cannot carry them. `Processed` says the roll was used; it does not say when, by whom, or in which shift. And when a status changes, the previous value is gone — status is the present, never the history.
@@ -796,10 +827,9 @@ Recorded by the **Thermo Test Person** after the run, from the factory's own for
 | Column | Arabic on the form | Notes |
 |---|---|---|
 | Id · ThermoProductionId (FK, unique) | | |
-| **TotalTimeMinutes** | الزمن الكلي | |
 | **ProductId** (FK) | حجم الصنف | derived, not typed — see below |
-| **BagCount** | عدد الأكياس المنتجة من الرول | |
-| **PieceCount** | عدد الصحون المنتجة من الرول | plates, boxes or clamshells |
+| **BagCount** | عدد الأكياس المنتجة من الرول | the one count the man enters |
+| **PieceCount** | عدد الصحون المنتجة من الرول | plates, boxes or clamshells — worked out, then frozen |
 | **PieceWeight** | وزن الصحن المنتج، غرام | measured again after forming |
 | **AbsorbentPercentage** | نسبة الإمتصاص للصحن المنتج % | ABS recipes only; `0` for Normal |
 | **BagWeight** | وزن الكيس المنتج الواحد، كغم | |
@@ -814,6 +844,17 @@ The Arabic labels on the screen stay exactly as the form has them.)*
 real form confirms it on every roll: 14→7000, 12→6000, 9→4500, 12→6000, 14→7000. For a
 meal box or a clamshell it is 250. The multiplier is read from the product, never
 written into the code.
+
+The result is **stored, not calculated on the fly** — the one place this design keeps a
+derived number. `PiecesPerBag` is master data and master data gets edited, so a live
+formula would let a change made next year rewrite what last year produced. It is worked
+out at save and frozen there. Never typed, so it still cannot be mistyped. The full
+reasoning is in [calculated or stored](#calculated-or-stored); `ProducedBags.PieceCount`
+and `ProducedBags.Weight` are frozen for the same reason.
+
+**Absorbency must agree with the roll.** A percentage above zero on a roll made to a
+Normal recipe is refused: the absorbency comes from what was mixed, so a Normal roll
+cannot have absorbed anything. Normal rolls store `0`.
 
 Piece weight is measured **twice** in the factory — once from a sample at the extruder,
 once here after forming. Both are kept. A gap between them points at a forming problem.
@@ -1274,8 +1315,8 @@ Small items. None block building.
 | 11 | Is the **small plate** really 500 per bag, like the big one? | **Open** — inherited from the old form; seeded as 500 |
 | 12 | Are absorbent meal boxes or clamshells ever made? | **Open** — today those moulds have a normal product only, and an absorbent roll on them is refused |
 | 13 | May one man work **two lines** in the same shift? | **Open** — allowed today, which is right if he moves from the extruder to the thermo mid-shift. Enforcing one line per man is a small change if the factory says so. |
-| 14 | Is raw material ever issued to the **thermo or recycler** line, or only to the mixer? | **Open** — any open line is offered today. Resin only ever goes to the mixer, but the recycler may draw something. |
-| 15 | Which lines can a **batch** be started on? | **Open** — any open line is offered, which is visibly wrong: a batch is a *mix*, and the thermo does not mix. Waiting on 13 and 14, because all three want the same answer: which line does what. A flag on `ProductionLines` settles all of them at once, in the same shape as `RecordsMachineSettings`. |
+| 14 | Is raw material ever issued to the **thermo or recycler** line, or only to the mixer? | **Answered with 15** — by `TakesRawMaterial`, seeded true for the extruder only. If the recycler turns out to draw something, that is one tick box in Master Data. |
+| 15 | Which lines can a **batch** be started on? | **Answered.** 14 and 15 asked the same thing — which line does what — and are settled by three flags on `ProductionLines`: `MakesRolls`, `FormsBags`, `TakesRawMaterial` ([section 4](#production-lines)). Seeded as the factory works today: the extruder mixes and takes raw material, the thermo forms bags. |
 
 Questions 8 to 12 arrived with the new moulds. **None of them blocks anything**, because
 every one is a value in `Moulds` or `Products` — a row edited in Master Data, with no

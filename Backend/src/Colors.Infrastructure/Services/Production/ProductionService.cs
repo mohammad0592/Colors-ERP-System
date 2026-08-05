@@ -63,6 +63,14 @@ public class ProductionService(
             return InvalidBatch("Choose a line of an open shift.");
         }
 
+        // A batch is a mix. The thermo forms what the mixer already made, and the
+        // recycler grinds scrap — neither can start one (specification section 4).
+        if (!shiftLine.ProductionLine.MakesRolls)
+        {
+            return InvalidBatch(
+                $"{shiftLine.ProductionLine.Name} does not mix. Choose the extruder line.");
+        }
+
         // A batch never crosses a shift, because all material goes back to the store at
         // shift end — so a mix started against a finished shift could never be true.
         if (shiftLine.ShiftReport.Status != ShiftReportStatus.Open)

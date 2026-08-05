@@ -159,6 +159,26 @@ export function MasterDataPage(): ReactElement {
               type: 'checkbox',
               hint: 'Only the thermo line. It is then asked for forming speed, feed distance and cycle time.',
             },
+            // What the line does. Every screen filters on these, so a wrong tick shows
+            // up as a missing line in a list rather than as a bad record.
+            {
+              key: 'makesRolls',
+              label: 'Mixes and makes rolls',
+              type: 'checkbox',
+              hint: 'The extruder. Batches can only be started on a line ticked here.',
+            },
+            {
+              key: 'formsBags',
+              label: 'Forms bags',
+              type: 'checkbox',
+              hint: 'The thermo. Rolls can only be put into a line ticked here, and it needs a mould set on the shift.',
+            },
+            {
+              key: 'takesRawMaterial',
+              label: 'Takes raw material',
+              type: 'checkbox',
+              hint: 'Only a line ticked here appears on a material issue ticket.',
+            },
           ]}
         />
       )}
