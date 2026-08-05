@@ -4,6 +4,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
+import { LabelDialog } from '../labels/LabelDialog';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { palletsApi } from './api';
@@ -31,6 +32,7 @@ export function PalletsPage(): ReactElement {
   const [openOnly, setOpenOnly] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [reversing, setReversing] = useState<{ id: number; barcode: string } | null>(null);
+  const [labelFor, setLabelFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const pallets = useQuery({
@@ -185,10 +187,19 @@ export function PalletsPage(): ReactElement {
           ) : (
             <div className="card p-5">
               <h2 className="mb-1 font-mono text-lg font-bold text-ink">{open.barcode}</h2>
-              <p className="mb-5 text-sm text-ink-muted">
+              <p className="mb-3 text-sm text-ink-muted">
                 Pallet {open.palletNumber} · {open.productionLineName}, shift{' '}
                 {open.shiftName}
               </p>
+              <button
+                type="button"
+                className="mb-5 text-sm font-medium text-brand-700 hover:underline"
+                onClick={() => {
+                  setLabelFor(open.barcode);
+                }}
+              >
+                Print the pallet label
+              </button>
 
               {canPack && (
                 <PalletScanBox
@@ -255,9 +266,18 @@ export function PalletsPage(): ReactElement {
                     ].join(' ')}
                   >
                     <td className="px-4 py-3 font-mono font-semibold">
-                      <span className={bag.isActive ? 'text-ink' : 'line-through'}>
+                      <button
+                        type="button"
+                        className={[
+                          'underline-offset-2 hover:underline',
+                          bag.isActive ? 'text-ink' : 'line-through',
+                        ].join(' ')}
+                        onClick={() => {
+                          setLabelFor(bag.barcode);
+                        }}
+                      >
                         {bag.barcode}
-                      </span>
+                      </button>
                       {/* Kept for ever, with the reason it was undone. */}
                       {!bag.isActive && (
                         <span className="ml-2 font-sans text-xs font-normal">
@@ -293,6 +313,15 @@ export function PalletsPage(): ReactElement {
             </table>
           </div>
         </section>
+      )}
+
+      {labelFor !== null && (
+        <LabelDialog
+          barcode={labelFor}
+          onClose={() => {
+            setLabelFor(null);
+          }}
+        />
       )}
 
       {reversing !== null && (

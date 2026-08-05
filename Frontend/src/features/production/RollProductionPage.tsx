@@ -5,6 +5,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
+import { LabelDialog } from '../labels/LabelDialog';
 import { colorsApi } from '../master-data/api';
 import { recipesApi } from '../recipes/api';
 import { shiftReportsApi } from '../shifts/api';
@@ -31,6 +32,7 @@ export function RollProductionPage(): ReactElement {
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [justLogged, setJustLogged] = useState<RollDto | null>(null);
+  const [labelFor, setLabelFor] = useState<string | null>(null);
 
   const batches = useQuery({
     queryKey: ['batches', openOnly],
@@ -173,8 +175,17 @@ export function RollProductionPage(): ReactElement {
       {justLogged !== null && (
         <p className="mb-4 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           Roll <strong className="font-mono">{justLogged.rollCode}</strong> logged —
-          barcode <strong className="font-mono">{justLogged.barcode}</strong>. Stick the
-          label on the roll.
+          barcode <strong className="font-mono">{justLogged.barcode}</strong>.{' '}
+          <button
+            type="button"
+            className="font-semibold underline"
+            onClick={() => {
+              setLabelFor(justLogged.barcode);
+            }}
+          >
+            Print the label
+          </button>{' '}
+          and stick it on the roll.
         </p>
       )}
 
@@ -331,8 +342,18 @@ export function RollProductionPage(): ReactElement {
                   <td className="px-4 py-3 font-mono font-semibold text-ink">
                     {roll.rollCode}
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs text-ink-muted">
-                    {roll.barcode}
+                  <td className="px-4 py-3">
+                    {/* The label is reachable from the roll itself, not only from the
+                        banner that appears once when it is logged. */}
+                    <button
+                      type="button"
+                      className="font-mono text-xs text-ink-muted underline-offset-2 hover:text-brand-700 hover:underline"
+                      onClick={() => {
+                        setLabelFor(roll.barcode);
+                      }}
+                    >
+                      {roll.barcode}
+                    </button>
                   </td>
                   <td className="px-4 py-3 text-ink-soft">
                     {roll.recipeNumber}
@@ -384,6 +405,15 @@ export function RollProductionPage(): ReactElement {
           request={confirm}
           onCancel={() => {
             setConfirm(null);
+          }}
+        />
+      )}
+
+      {labelFor !== null && (
+        <LabelDialog
+          barcode={labelFor}
+          onClose={() => {
+            setLabelFor(null);
           }}
         />
       )}

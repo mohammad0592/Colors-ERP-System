@@ -132,6 +132,10 @@ public static class DependencyInjection
         // Pallets (specification section 10).
         services.AddScoped<IPalletService, PalletService>();
 
+        // Rolls, bags and pallets as stock, and the labels that go on them
+        // (specification sections 8 to 12).
+        services.AddScoped<IProducedStockService, ProducedStockService>();
+
         return services;
     }
 }

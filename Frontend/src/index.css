@@ -103,3 +103,38 @@
       disabled:cursor-not-allowed disabled:bg-ink-muted;
   }
 }
+
+/* The sticky label that goes on a roll, a bag or a pallet (specification section 12).
+   Sized in millimetres rather than pixels, because it is printed on a physical label
+   and 100mm x 70mm is what comes out of the printer whatever the screen is doing. */
+.print-label {
+  width: 100mm;
+  min-height: 70mm;
+}
+
+@media print {
+  /* Everything hides, the label stays. Printing a screenshot of the whole page with
+     the navigation down the side is not a label anybody can stick on a roll. */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-label,
+  .print-label * {
+    visibility: visible;
+  }
+
+  .print-label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    border: none;
+    box-shadow: none;
+  }
+}
+
+@page {
+  size: 100mm 70mm;
+  margin: 4mm;
+}

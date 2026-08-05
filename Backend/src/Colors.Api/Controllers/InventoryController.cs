@@ -19,7 +19,9 @@ namespace Colors.Api.Controllers;
 [ApiController]
 [Route("api/inventory")]
 [Authorize]
-public class InventoryController(IInventoryService inventory) : ApiControllerBase
+public class InventoryController(
+    IInventoryService inventory,
+    IProducedStockService produced) : ApiControllerBase
 {
     private const string CanReceive = $"{RoleNames.Administrator},{RoleNames.InventoryManager}";
     private const string CanAdjust = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
@@ -30,6 +32,28 @@ public class InventoryController(IInventoryService inventory) : ApiControllerBas
         CancellationToken cancellationToken = default)
     {
         return Ok(await inventory.GetStockAsync(belowMinimumOnly, cancellationToken));
+    }
+
+    /// <summary>
+    /// Rolls, bags and pallets in one list. Reading is open to any signed-in worker:
+    /// anyone may need to find where a label went.
+    /// </summary>
+    [HttpGet("produced")]
+    public async Task<IActionResult> GetProduced(
+        [FromQuery] string? kind = null,
+        [FromQuery] string? status = null,
+        [FromQuery] string? search = null,
+        [FromQuery] bool availableOnly = false,
+        CancellationToken cancellationToken = default)
+    {
+        return Ok(await produced.GetAsync(kind, status, search, availableOnly, cancellationToken));
+    }
+
+    /// <summary>Everything printed on the label for one barcode.</summary>
+    [HttpGet("produced/label/{barcode}")]
+    public async Task<IActionResult> GetLabel(string barcode, CancellationToken cancellationToken)
+    {
+        return ToResponse(await produced.GetLabelAsync(barcode, cancellationToken));
     }
 
     /// <summary>The units a material may be received in — pallet, bag, kilogram.</summary>

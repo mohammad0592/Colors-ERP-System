@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
+import { ProducedStockTab } from '../labels/ProducedStockTab';
 import { AdjustStockDialog } from './AdjustStockDialog';
 import { inventoryApi, type MaterialStockDto } from './api';
 
@@ -20,6 +21,7 @@ export function InventoryPage(): ReactElement {
   const canAdjust = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
   const canReceive = hasRole(RoleNames.Administrator, RoleNames.InventoryManager);
 
+  const [section, setSection] = useState<'materials' | 'produced'>('materials');
   const [lowOnly, setLowOnly] = useState(false);
   const [adjusting, setAdjusting] = useState<MaterialStockDto | null>(null);
   const [historyFor, setHistoryFor] = useState<MaterialStockDto | null>(null);
@@ -63,6 +65,29 @@ export function InventoryPage(): ReactElement {
         }
       />
 
+      {/* Two different kinds of stock. Materials are weighed and counted in their own
+          unit; rolls, bags and pallets are individual things, each with its own label. */}
+      <nav className="mb-6 flex gap-1 border-b border-line">
+        <Tab
+          label="Raw materials"
+          active={section === 'materials'}
+          onClick={() => {
+            setSection('materials');
+          }}
+        />
+        <Tab
+          label="Rolls, bags & pallets"
+          active={section === 'produced'}
+          onClick={() => {
+            setSection('produced');
+          }}
+        />
+      </nav>
+
+      {section === 'produced' && <ProducedStockTab />}
+
+      {section === 'materials' && (
+        <>
       <section className="mb-6 flex flex-wrap gap-2">
         <Chip
           label="All materials"
@@ -221,6 +246,8 @@ export function InventoryPage(): ReactElement {
           </table>
         </div>
       </section>
+        </>
+      )}
 
       {adjusting !== null && (
         <AdjustStockDialog
@@ -232,6 +259,31 @@ export function InventoryPage(): ReactElement {
         />
       )}
     </>
+  );
+}
+
+function Tab({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}): ReactElement {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        '-mb-px border-b-2 px-4 py-3 text-sm font-semibold transition-colors',
+        active
+          ? 'border-brand-600 text-brand-700'
+          : 'border-transparent text-ink-muted hover:text-ink-soft',
+      ].join(' ')}
+    >
+      {label}
+    </button>
   );
 }
 
