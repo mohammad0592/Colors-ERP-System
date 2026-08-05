@@ -7,6 +7,9 @@ namespace Colors.Application.Features.Recipes;
 public sealed record RecipeFamilyDto(
     int Id,
     string Name,
+    // The family's part of a roll code — "N", "Abs". Shared where the colour already
+    // separates two families (specification section 8).
+    string Code,
     int ProductTypeId,
     string ProductTypeName,
     bool UsesRecycle,
@@ -19,6 +22,7 @@ public sealed record RecipeFamilyDto(
 
 public sealed record SaveRecipeFamilyRequest(
     string Name,
+    string Code,
     int ProductTypeId,
     bool UsesRecycle,
     bool IsAbsorbent,

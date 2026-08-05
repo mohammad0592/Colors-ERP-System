@@ -24,6 +24,9 @@ public static class RecipeSeeder
 
     private sealed record Family(
         string Name,
+        // The family's part of a roll code. Normal and Normal Black share "N" — the
+        // colour letter is what separates them (specification section 8).
+        string Code,
         bool UsesRecycle,
         bool IsAbsorbent,
         string Description,
@@ -33,6 +36,7 @@ public static class RecipeSeeder
     [
         new(
             "Normal (Except Black)",
+            Code: "N",
             UsesRecycle: false,
             IsAbsorbent: false,
             "Plain plates in any colour but black.",
@@ -44,6 +48,7 @@ public static class RecipeSeeder
             ]),
         new(
             "Normal Black",
+            Code: "N",
             UsesRecycle: true,
             IsAbsorbent: false,
             "Black plates. A third of the polymer is the factory's own recycled material.",
@@ -56,6 +61,7 @@ public static class RecipeSeeder
             ]),
         new(
             "ABS (Except Black)",
+            Code: "Abs",
             UsesRecycle: false,
             IsAbsorbent: true,
             "Absorbent plates in any colour but black.",
@@ -68,6 +74,7 @@ public static class RecipeSeeder
             ]),
         new(
             "ABS Black",
+            Code: "Abs",
             UsesRecycle: true,
             IsAbsorbent: true,
             "Absorbent black plates, with recycled material in the polymer.",
@@ -136,6 +143,7 @@ public static class RecipeSeeder
             db.RecipeFamilies.Add(new RecipeFamily
             {
                 Name = family.Name,
+                Code = family.Code,
                 ProductTypeId = productType.Id,
                 UsesRecycle = family.UsesRecycle,
                 IsAbsorbent = family.IsAbsorbent,

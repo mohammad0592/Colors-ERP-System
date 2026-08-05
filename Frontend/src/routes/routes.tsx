@@ -9,20 +9,6 @@ import { ComingSoon } from '../components/ui/ComingSoon';
  */
 const planned: { path: string; title: string; phase: string; description: string }[] = [
   {
-    path: '/production/rolls',
-    title: 'Roll Production',
-    phase: 'Phase 8',
-    description:
-      'Record a batch and the rolls it produces, with a barcode printed for each roll.',
-  },
-  {
-    path: '/production/roll-tests',
-    title: 'Roll Tests',
-    phase: 'Phase 8',
-    description:
-      'Weight, length, plate weight and the four thickness readings, taken as the roll leaves the extruder.',
-  },
-  {
     path: '/production/thermo',
     title: 'Thermoforming',
     phase: 'Phase 9',

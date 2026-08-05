@@ -12,6 +12,9 @@ public class RecipeFamilyConfiguration : IEntityTypeConfiguration<RecipeFamily>
         builder.ToTable("RecipeFamilies");
 
         builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
+        // Deliberately not unique: Normal and Normal Black are both "N", and the
+        // colour letter in the roll code is what separates them.
+        builder.Property(e => e.Code).IsRequired().HasMaxLength(10);
         builder.Property(e => e.Description).HasMaxLength(500);
 
         builder.HasIndex(e => e.Name).IsUnique().HasDatabaseName("ux_recipe_families_name");

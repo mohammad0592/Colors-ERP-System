@@ -330,6 +330,12 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
             return "A name is required.";
         }
 
+        // Without it, no roll made to this family could be given a code.
+        if (string.IsNullOrWhiteSpace(request.Code))
+        {
+            return "A code is required — it is the family's part of every roll code, like N or Abs.";
+        }
+
         var name = request.Name.Trim();
         var taken = await db.RecipeFamilies.AnyAsync(
             f => f.Name == name && (existingId == null || f.Id != existingId),
@@ -438,6 +444,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
     private static void ApplyFamily(SaveRecipeFamilyRequest request, RecipeFamily family)
     {
         family.Name = request.Name.Trim();
+        family.Code = request.Code.Trim();
         family.ProductTypeId = request.ProductTypeId;
         family.UsesRecycle = request.UsesRecycle;
         family.IsAbsorbent = request.IsAbsorbent;
@@ -451,6 +458,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
         new(
             family.Id,
             family.Name,
+            family.Code,
             family.ProductTypeId,
             family.ProductType.Name,
             family.UsesRecycle,

@@ -2,6 +2,7 @@ using Colors.Application.Features.Authentication;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Inventory;
 using Colors.Application.Features.MaterialIssue;
+using Colors.Application.Features.Production;
 using Colors.Application.Features.MasterData;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
@@ -13,6 +14,7 @@ using Colors.Infrastructure.Services.Barcodes;
 using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.MaterialIssue;
+using Colors.Infrastructure.Services.Production;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
 using Colors.Infrastructure.Services.ShiftReports;
@@ -116,6 +118,9 @@ public static class DependencyInjection
 
         // Barcodes (specification section 12) — needed from the extruder onwards.
         services.AddScoped<IBarcodeService, BarcodeService>();
+
+        // Line 1, the mixer and extruder (specification section 8).
+        services.AddScoped<IProductionService, ProductionService>();
 
         return services;
     }

@@ -2,6 +2,7 @@ using System.Reflection;
 using Colors.Domain.Entities.Barcodes;
 using Colors.Domain.Entities.Inventory;
 using Colors.Domain.Entities.MasterData;
+using Colors.Domain.Entities.Production;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Entities.Shifts;
 using Colors.Domain.Enums;
@@ -47,6 +48,11 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<MaterialIssueTicketLine> MaterialIssueTicketLines =>
         Set<MaterialIssueTicketLine>();
 
+    // Line 1, the mixer and extruder — specification section 8.
+    public DbSet<Batch> Batches => Set<Batch>();
+    public DbSet<Roll> Rolls => Set<Roll>();
+    public DbSet<RollTestReport> RollTestReports => Set<RollTestReport>();
+
     // Barcodes — specification section 12. One table for rolls, bags and pallets.
     public DbSet<Barcode> Barcodes => Set<Barcode>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
@@ -82,6 +88,9 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     /// </summary>
     public const string IssueTicketNumberSequence = "issue_ticket_number_seq";
 
+    /// <summary>The number the factory says out loud — "batch 47". Never reused.</summary>
+    public const string BatchNumberSequence = "batch_number_seq";
+
     public const string RollBarcodeSequence = "roll_barcode_seq";
     public const string BagBarcodeSequence = "bag_barcode_seq";
     public const string PalletBarcodeSequence = "pallet_barcode_seq";
@@ -100,6 +109,7 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
 
         builder.HasSequence<int>(RecipeNumberSequence).StartsAt(1).IncrementsBy(1);
         builder.HasSequence<int>(IssueTicketNumberSequence).StartsAt(1).IncrementsBy(1);
+        builder.HasSequence<int>(BatchNumberSequence).StartsAt(1).IncrementsBy(1);
 
         foreach (var sequence in new[]
                  {

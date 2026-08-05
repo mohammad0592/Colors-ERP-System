@@ -8,6 +8,8 @@ import { DashboardPage } from './features/dashboard/DashboardPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { ReceiveMaterialsPage } from './features/inventory/ReceiveMaterialsPage';
 import { MaterialIssuePage } from './features/material-issue/MaterialIssuePage';
+import { RollProductionPage } from './features/production/RollProductionPage';
+import { RollTestsPage } from './features/production/RollTestsPage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
@@ -69,6 +71,26 @@ export default function App(): ReactElement {
                   }
                 >
                   <Route path="/inventory/issue" element={<MaterialIssuePage />} />
+                </Route>
+
+                {/* Line 1. Making rolls and measuring them are different jobs, so
+                    they are different screens — even though one man holds both roles
+                    today (specification section 3). Reading is open wider: the thermo
+                    operator needs to see what is in stock. */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[
+                        RoleNames.Administrator,
+                        RoleNames.Supervisor,
+                        RoleNames.ExtruderOperator,
+                        RoleNames.ExtruderTestPerson,
+                      ]}
+                    />
+                  }
+                >
+                  <Route path="/production/rolls" element={<RollProductionPage />} />
+                  <Route path="/production/roll-tests" element={<RollTestsPage />} />
                 </Route>
 
                 {/* Master data changes affect every screen, so only the
