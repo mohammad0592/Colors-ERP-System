@@ -9,7 +9,7 @@ import type { CrudClient, LookupDto } from './api';
 export interface FieldDef {
   key: string;
   label: string;
-  type?: 'text' | 'time';
+  type?: 'text' | 'time' | 'checkbox';
   maxLength?: number;
   placeholder?: string;
   hint?: string;
@@ -18,11 +18,23 @@ export interface FieldDef {
 /** Rows carry only strings and numbers in their listed fields; anything else shows blank. */
 function cellText(value: unknown): string {
   if (typeof value === 'string') return value;
-  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
   return '';
 }
 
-interface LookupTabProps<TDto extends LookupDto, TSave extends Record<string, string>> {
+/**
+ * A checkbox travels through the dialog as the text "true" or "false", because the
+ * dialog holds every field as text. It becomes a real boolean again on the way out.
+ */
+function isChecked(value: unknown): boolean {
+  return value === true || value === 'true';
+}
+
+interface LookupTabProps<
+  TDto extends LookupDto,
+  TSave extends Record<string, string | boolean>,
+> {
   /** Cache key; also invalidated after every change. */
   queryKey: string;
   client: CrudClient<TDto, TSave>;
@@ -38,7 +50,10 @@ interface LookupTabProps<TDto extends LookupDto, TSave extends Record<string, st
  * activate/deactivate — driven by a field list, so eight lists are configuration
  * rather than eight screens.
  */
-export function LookupTab<TDto extends LookupDto, TSave extends Record<string, string>>({
+export function LookupTab<
+  TDto extends LookupDto,
+  TSave extends Record<string, string | boolean>,
+>({
   queryKey,
   client,
   fields,
@@ -206,9 +221,17 @@ export function LookupTab<TDto extends LookupDto, TSave extends Record<string, s
             setEditing(null);
           }}
           onSave={async (values) => {
-            // The dialog collects strings by field key; the API client's save type
-            // is exactly those keys. The cast is localized here on purpose.
-            const body = values as TSave;
+            // The dialog collects strings by field key; the API client's save type is
+            // exactly those keys, with checkboxes turned back into real booleans. The
+            // cast is localized here on purpose.
+            const body = Object.fromEntries(
+              fields.map((field) => [
+                field.key,
+                field.type === 'checkbox'
+                  ? isChecked(values[field.key])
+                  : (values[field.key] ?? ''),
+              ]),
+            ) as TSave;
             if (editing === 'new') {
               await client.create(body);
             } else {
@@ -276,7 +299,14 @@ function EditDialog({
   onSave,
 }: EditDialogProps): ReactElement {
   const [values, setValues] = useState<Record<string, string>>(() =>
-    Object.fromEntries(fields.map((f) => [f.key, cellText(initial?.[f.key])])),
+    Object.fromEntries(
+      fields.map((f) => [
+        f.key,
+        f.type === 'checkbox'
+          ? String(isChecked(initial?.[f.key]))
+          : cellText(initial?.[f.key]),
+      ]),
+    ),
   );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -305,29 +335,59 @@ function EditDialog({
         }}
         noValidate
       >
-        {fields.map((field) => (
-          <div key={field.key} className="mb-4">
-            <label className="field-label" htmlFor={`fld-${field.key}`}>
-              {field.label}
-            </label>
-            <input
-              id={`fld-${field.key}`}
-              type={field.type ?? 'text'}
-              className="field-input"
-              value={values[field.key] ?? ''}
-              maxLength={field.maxLength}
-              placeholder={field.placeholder}
-              onChange={(event) => {
-                setValues((current) => ({ ...current, [field.key]: event.target.value }));
-              }}
-              disabled={isSaving}
-              required
-            />
-            {field.hint !== undefined && (
-              <p className="mt-1 text-xs text-ink-muted">{field.hint}</p>
-            )}
-          </div>
-        ))}
+        {fields.map((field) =>
+          field.type === 'checkbox' ? (
+            <div key={field.key} className="mb-4">
+              <label
+                className="flex items-center gap-3 text-sm font-medium text-ink"
+                htmlFor={`fld-${field.key}`}
+              >
+                <input
+                  id={`fld-${field.key}`}
+                  type="checkbox"
+                  className="size-5"
+                  checked={isChecked(values[field.key])}
+                  disabled={isSaving}
+                  onChange={(event) => {
+                    setValues((current) => ({
+                      ...current,
+                      [field.key]: String(event.target.checked),
+                    }));
+                  }}
+                />
+                {field.label}
+              </label>
+              {field.hint !== undefined && (
+                <p className="mt-1 ml-8 text-xs text-ink-muted">{field.hint}</p>
+              )}
+            </div>
+          ) : (
+            <div key={field.key} className="mb-4">
+              <label className="field-label" htmlFor={`fld-${field.key}`}>
+                {field.label}
+              </label>
+              <input
+                id={`fld-${field.key}`}
+                type={field.type ?? 'text'}
+                className="field-input"
+                value={values[field.key] ?? ''}
+                maxLength={field.maxLength}
+                placeholder={field.placeholder}
+                onChange={(event) => {
+                  setValues((current) => ({
+                    ...current,
+                    [field.key]: event.target.value,
+                  }));
+                }}
+                disabled={isSaving}
+                required
+              />
+              {field.hint !== undefined && (
+                <p className="mt-1 text-xs text-ink-muted">{field.hint}</p>
+              )}
+            </div>
+          ),
+        )}
 
         {error !== null && (
           <p

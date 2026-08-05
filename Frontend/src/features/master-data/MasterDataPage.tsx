@@ -138,7 +138,15 @@ export function MasterDataPage(): ReactElement {
           queryKey="production-lines"
           client={productionLinesApi}
           itemWord="line"
-          fields={[{ key: 'name', label: 'Name' }]}
+          fields={[
+            { key: 'name', label: 'Name' },
+            {
+              key: 'recordsMachineSettings',
+              label: 'Records machine settings',
+              type: 'checkbox',
+              hint: 'Only the thermo line. It is then asked for forming speed, feed distance and cycle time.',
+            },
+          ]}
         />
       )}
 

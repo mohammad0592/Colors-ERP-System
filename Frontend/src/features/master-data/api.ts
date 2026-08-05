@@ -18,6 +18,14 @@ export interface LookupDto {
   canDelete: boolean;
 }
 
+export interface ProductionLineDto extends LookupDto {
+  /**
+   * True only for the thermo line. It decides whether the shift report asks for
+   * forming speed, feed distance and cycle time — the extruder has no such settings.
+   */
+  recordsMachineSettings: boolean;
+}
+
 export interface UnitDto extends LookupDto {
   symbol: string;
 }
@@ -101,9 +109,10 @@ function crudFor<TDto, TSave>(base: string): CrudClient<TDto, TSave> {
   };
 }
 
-export const productionLinesApi = crudFor<LookupDto, { name: string }>(
-  '/api/production-lines',
-);
+export const productionLinesApi = crudFor<
+  ProductionLineDto,
+  { name: string; recordsMachineSettings: boolean }
+>('/api/production-lines');
 export const shiftsApi = crudFor<
   ShiftDto,
   { name: string; startTime: string; endTime: string }

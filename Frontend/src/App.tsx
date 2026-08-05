@@ -7,6 +7,7 @@ import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
+import { ShiftsPage } from './features/shifts/ShiftsPage';
 import { RoleNames } from './lib/roles';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { plannedRoutes } from './routes/routes';
@@ -53,6 +54,10 @@ export default function App(): ReactElement {
                   }
                 >
                   <Route path="/recipes" element={<RecipesPage />} />
+                  {/* Opening and closing shifts is the supervisor's job
+                      (specification section 3). Reopening a closed one is the
+                      administrator's, which the screen and the server both enforce. */}
+                  <Route path="/shifts" element={<ShiftsPage />} />
                 </Route>
 
                 {plannedRoutes.map(({ path, element }) => (

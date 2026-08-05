@@ -86,13 +86,6 @@ const planned: { path: string; title: string; phase: string; description: string
       'Material waste against what the recipe requires, production by shift, stock, and full traceability from a pallet back to its materials.',
   },
   {
-    path: '/shifts',
-    title: 'Shifts',
-    phase: 'Phase 4',
-    description:
-      'Open and close a shift for a line, with the workers on it, machine settings and the electricity meter.',
-  },
-  {
     path: '/users',
     title: 'Users',
     phase: 'Phase 1',
