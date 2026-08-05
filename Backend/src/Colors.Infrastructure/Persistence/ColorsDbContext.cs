@@ -1,6 +1,7 @@
 using System.Reflection;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
+using Colors.Domain.Entities.Shifts;
 using Colors.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,11 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<RecipeFamily> RecipeFamilies => Set<RecipeFamily>();
     public DbSet<RecipeVersion> RecipeVersions => Set<RecipeVersion>();
     public DbSet<RecipeIngredient> RecipeIngredients => Set<RecipeIngredient>();
+
+    // Shift reports — specification section 2.
+    public DbSet<ShiftReport> ShiftReports => Set<ShiftReport>();
+    public DbSet<ShiftLine> ShiftLines => Set<ShiftLine>();
+    public DbSet<ShiftWorker> ShiftWorkers => Set<ShiftWorker>();
 
     /// <summary>
     /// Hands out the recipe numbers the factory says out loud — "recipe 8".

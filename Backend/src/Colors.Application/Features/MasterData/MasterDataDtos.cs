@@ -15,6 +15,20 @@ public sealed record LookupDto(int Id, string Name, bool IsActive, bool CanDelet
 
 public sealed record SaveLookupRequest(string Name);
 
+/// <summary>
+/// A production line. <c>RecordsMachineSettings</c> is true only for the thermo line —
+/// it is what decides whether the shift report asks for speed, feed distance and
+/// cycle time.
+/// </summary>
+public sealed record ProductionLineDto(
+    int Id,
+    string Name,
+    bool RecordsMachineSettings,
+    bool IsActive,
+    bool CanDelete);
+
+public sealed record SaveProductionLineRequest(string Name, bool RecordsMachineSettings);
+
 public sealed record UnitDto(int Id, string Name, string Symbol, bool IsActive, bool CanDelete);
 
 public sealed record SaveUnitRequest(string Name, string Symbol);

@@ -168,37 +168,70 @@ Three shifts, eight hours each. No shift crosses midnight, so the date of a repo
 
 ### Shift reports
 
-A shift report is **one line, one shift, one date**. Not one report for the whole factory — the paper form is titled *"Daily Production Report for the Forming Department"*, and the extruder keeps its own log.
+**A shift is one date and one shift, for the whole factory. The lines that ran during it hang underneath.**
 
-**`ShiftReports`**
+This is how the factory speaks: *"shift A on 4 August"* is one thing, not three. A supervisor opens it once, ticks the lines that are running, and closes it once at the end. Asking him to open a separate shift for the extruder, the thermo and the recycler — same date, same hours, three records — would confuse the people using it and would ask for the electricity reading three times.
+
+But the lines are not identical while it runs. The extruder may start at 08:00 and the thermo at 09:00; one may stop for an hour and the other not; only the thermo has forming settings. So the times and the machine belong to the **line**, and the day belongs to the **shift**.
+
+```
+ShiftReport         Shift A · 04/08/2026 · Open · meter 12000 → 12850
+  └── ShiftLine       Extruder · 08:00–16:00 · 0.5 h down
+  │     └── ShiftWorkers
+  └── ShiftLine       Thermo   · 09:00–16:00 · speed 580 · feed 1220 · cycle 8
+        └── ShiftWorkers
+```
+
+**`ShiftReports`** — the shift itself
 
 | Column | Notes |
 |---|---|
 | Id | |
-| ProductionLineId (FK) | Extruder / Thermo / Recycler |
-| ShiftId (FK) | A / B / C |
 | ProductionDate | date only, no time |
+| ShiftId (FK) | A / B / C |
 | Status | `Open` · `Closed` |
-| SupervisorUserId (FK) | who is responsible for this report |
-| ProductionStartTime, ProductionEndTime | actual times worked |
-| DowntimeHours | |
-| ElectricityStartMeter, ElectricityEndMeter | |
-| MachineSpeed, FeedDistance, CycleTime | thermo line: cycles/hour, mm, **seconds** |
+| SupervisorUserId (FK) | who is answerable for the shift |
+| ElectricityStartMeter, ElectricityEndMeter | **the factory has one meter** — see below |
 | Notes | |
 | OpenedByUserId, OpenedAt, ClosedByUserId, ClosedAt | |
 
+**`ShiftLines`** — one row per line that actually ran
+
+| Column | Notes |
+|---|---|
+| Id | |
+| ShiftReportId (FK) | |
+| ProductionLineId (FK) | Extruder / Thermo / Recycler |
+| ProductionStartTime, ProductionEndTime | actual times worked, this line |
+| DowntimeHours | this line |
+| MachineSpeed, FeedDistance, CycleTime | only where `RecordsMachineSettings` is true — cycles/hour, mm, **seconds** |
+
+**`ShiftWorkers`** — Id · **ShiftLineId** (FK) · UserId (FK) · RoleInShiftId (FK) · IsTrainee
+
+Workers hang off the **line**, not the shift: a man works the extruder or the thermo, and the paper form lists the crew per department. The paper form also lists workers and trainees on separate lines, so `IsTrainee` keeps that distinction. `RoleInShiftId` is what he *did* on this shift, which is not the same as the roles he holds — the same man is both extruder operator and extruder test person, so only the shift can say which job he was doing.
+
 **Rules**
 
-- Unique on (ProductionLineId, ShiftId, ProductionDate) — a shift cannot be opened twice.
-- Production may only be recorded against an **Open** report.
+- Unique on (ProductionDate, ShiftId) — a shift cannot be opened twice.
+- Unique on (ShiftReportId, ProductionLineId) — a line appears once in a shift.
+- **A line appears only if it ran.** No empty rows for lines that stood still.
+- **Production is always recorded against a `ShiftLine`, never against the shift.** One foreign key then answers *which line, which shift, which day* at once.
+- Production may only be recorded against a line of an **Open** shift.
 - Electricity consumption is **calculated** (end − start), never stored.
-- Actual production hours are **calculated**, never stored.
-- **A shift cannot be closed until every material issue ticket for it is closed** — meaning the leftover has been weighed and returned. This is the factory's own rule and it makes the waste figures exact.
+- Actual production hours are **calculated** (end − start − downtime), never stored. An end time of `00:00` means midnight at the end of the day, so shift B's 16:00–00:00 is eight hours.
+- Closing closes the **whole shift**, with every line on it. There is one Close button, not three.
+- **A shift cannot be closed until every material issue ticket on any of its lines is closed** — meaning the leftover has been weighed and returned. This is the factory's own rule and it makes the waste figures exact.
 - Reopening a closed shift is an administrator action, with a reason, written to the audit log.
 
-**`ShiftWorkers`** — Id · ShiftReportId (FK) · UserId (FK) · RoleInShiftId (FK) · IsTrainee
+### Electricity — one meter, one reading
 
-The paper form lists workers and trainees on separate lines, so `IsTrainee` keeps that distinction.
+**The factory has a single electricity meter for the whole building** (confirmed by the owner). So the reading belongs to the **shift**, not to a line: two numbers per shift, start and end, typed once.
+
+The alternative — a reading on every line — would have recorded the same meter three times on a day when all three lines ran, and any total would have been triple the truth. There is nothing to tick and nothing to get wrong.
+
+If the factory ever fits a meter per machine, the readings move down to `ShiftLines` and become three real readings. That is a migration to write on the day it happens, not a flag to carry in the meantime.
+
+> **Open question for the factory:** how many electricity meters are there, and what does each one measure? Until it is answered the flag is on for all three lines, which keeps today's behaviour. Turning it off on the two lines that have no meter is a tick-box in Master Data — no code, no migration.
 
 ---
 
@@ -271,8 +304,12 @@ The database's restrict foreign keys are the backstop — even a bug in the chec
 
 ### Production lines
 
-**`ProductionLines`** — Id · Name · IsActive
+**`ProductionLines`** — Id · Name · **RecordsMachineSettings** · IsActive
 Three rows: Extruder, Thermo, Recycler.
+
+`RecordsMachineSettings` is true for **Thermo only**. It decides whether a shift line asks for forming speed, feed distance and cycle time — the extruder and the recycler have no such settings, so their part of the shift never shows those boxes.
+
+A flag on the line, not a check on its name: renaming a line, or adding a second thermo, must never need a code change.
 
 ### Units and material packaging
 
@@ -462,7 +499,7 @@ The reason it exists, in the owner's words: *"the workers are not careful about 
 | Column | Notes |
 |---|---|
 | Id · TicketNumber | printed on the ticket |
-| ShiftReportId (FK) | |
+| ShiftLineId (FK) | the line the material is going to, during which shift |
 | **BatchId** (FK, nullable) | which mix it is for — fills the by-recipe reports |
 | IssuedByUserId (FK) | the inventory manager |
 | Status | `Open` · `Closed` |
@@ -502,7 +539,7 @@ A shift that used more than the recipe allows becomes visible the next morning. 
 
 The **"recipes used"** line is read from the rolls the batch produced, not stored on the batch. If a batch turns out to have used two recipes, the report lists both and the additive check is shown per recipe, sharing the materials out by roll weight — with a note that the split is estimated. The kilograms in and out are always exact.
 
-**Rule:** a shift report cannot close while any of its tickets is still `Open`.
+**Rule:** a shift cannot close while any ticket on any of its lines is still `Open`.
 
 ---
 
@@ -512,7 +549,7 @@ The **"recipes used"** line is read from the rolls the batch produced, not store
 
 One mix produces many rolls, so **the batch is the smallest unit that knows its materials**.
 
-**`Batches`** — Id · BatchNumber · ShiftReportId (FK) · CreatedByUserId (FK) · StartedAt · FinishedAt · Notes
+**`Batches`** — Id · BatchNumber · **ShiftLineId** (FK) · CreatedByUserId (FK) · StartedAt · FinishedAt · Notes
 
 A batch never crosses a shift, because all material returns to store at shift end.
 
@@ -557,7 +594,7 @@ Either way the roll never lies about its own recipe, and the batch never lies ab
 | Barcode | |
 | **BatchId** (FK) | → recipe, → materials |
 | ColorId (FK) | chosen per roll |
-| ShiftReportId (FK) | extruder line's report |
+| ShiftLineId (FK) | the extruder's part of the shift |
 | ProducedByUserId (FK) | |
 | ProducedAt | **full timestamp** — the owner asked for hour and minute |
 | Status | `Needs Test` · `Available` · `In Thermo` · `Processed` · `Scrapped` |
@@ -631,7 +668,7 @@ One roll goes in whole. A roll is never split.
 
 ### The production record — the *event*
 
-**`ThermoProductions`** — Id · **RollId** (FK, unique) · ShiftReportId (FK) · OperatorUserId (FK) · StartedAt · FinishedAt · Notes
+**`ThermoProductions`** — Id · **RollId** (FK, unique) · **ShiftLineId** (FK) · OperatorUserId (FK) · StartedAt · FinishedAt · Notes
 
 The operator scans the roll barcode to start. If the roll is not `Available` the system refuses. He never types the roll number, recipe, colour or product — all inherited from the roll.
 
@@ -725,7 +762,7 @@ On 2 July: one green roll made 14 bags; four yellow rolls made 12 + 9 + 12 + 14 
 | Column | Notes |
 |---|---|
 | Id · PalletNumber · Barcode | |
-| ShiftReportId (FK) | |
+| ShiftLineId (FK) | the thermo line's part of the shift it was built on |
 | **ColorId · ProductTypeId · PlateSizeId · IsAbsorbent** | **all NULL until the first bag is scanned** |
 | Status | `Empty` · `Opened` · `Completed` · `Shipped` |
 | CreatedByUserId · CreatedAt · CompletedAt · Notes | |
@@ -759,7 +796,7 @@ The unique index on `ProducedBagId` is what actually stops a bag being put on tw
 
 Recorded once at the end of the shift by the **Packaging Operator**. The real form shows **fractional** quantities (small bags 4.14, large bags 6.1) alongside weights — so the factory *does* measure partial use, by weighing.
 
-**`PackagingConsumptions`** — Id · ShiftReportId (FK) · RecordedByUserId (FK) · RecordedAt · Notes
+**`PackagingConsumptions`** — Id · **ShiftLineId** (FK) · RecordedByUserId (FK) · RecordedAt · Notes
 
 **`PackagingConsumptionLines`** — Id · ConsumptionId (FK) · **MaterialId** (FK) · **Quantity** (decimal) · **Weight** (decimal, nullable) · unique on (ConsumptionId, MaterialId)
 
@@ -834,7 +871,7 @@ A gap means bags are being wasted, torn or used elsewhere.
 
 At the end of the shift all scrap is collected and weighed, recycled, and the output weighed again.
 
-**`RecyclerProductions`** — Id · ShiftReportId (FK) · **ScrapWeight** · **RecycledMaterialWeight** · RecordedByUserId · RecordedAt · Notes
+**`RecyclerProductions`** — Id · **ShiftLineId** (FK) · **ScrapWeight** · **RecycledMaterialWeight** · RecordedByUserId · RecordedAt · Notes
 
 `LossPercentage` is **calculated**, not stored: `(Scrap − Recycled) ÷ Scrap`.
 
@@ -948,6 +985,10 @@ There is no signature at the store. Attribution is by **shift**, which is what t
 
 **5. Warehouse locations — not in v1.** A pallet is "in the factory", not "in row 3, bay 2".
 
+**6. Electricity per line — impossible.**
+The factory has **one meter for the whole building**, so a shift's consumption cannot be split between the extruder, the thermo and the recycler. There can be no "kWh per roll" and no per-line efficiency comparison.
+*What you get instead:* consumption per shift, which can still be read against that shift's total output. Splitting it would need a meter per machine — an electrician, not a developer.
+
 ---
 
 ## 15. Security and deployment
@@ -992,8 +1033,8 @@ ProductionLines · Shifts · Units · MaterialCategories · Materials · Materia
 **Identity (3)**
 Users · Roles · UserRoles *(ASP.NET Identity)*
 
-**Shift (2)**
-ShiftReports · ShiftWorkers
+**Shift (3)**
+ShiftReports · ShiftLines · ShiftWorkers
 
 **Inventory (4)**
 MaterialInventory · MaterialInventoryMovements · MaterialIssueTickets · MaterialIssueTicketLines
@@ -1024,7 +1065,7 @@ Barcodes · AuditLog · RefreshTokens
 
 ### New since the old documents
 
-`ProductionLines` · `Shifts` · `MaterialPackagings` · **`MaterialIssueTickets` + Lines** · **`Batches`** · `PackagingConsumptionLines` · `Barcodes` · `AuditLog` · `UserRoles` · `RefreshTokens`
+`ProductionLines` · `Shifts` · **`ShiftLines`** · `MaterialPackagings` · **`MaterialIssueTickets` + Lines** · **`Batches`** · `PackagingConsumptionLines` · `Barcodes` · `AuditLog` · `UserRoles` · `RefreshTokens`
 
 ### Removed
 

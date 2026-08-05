@@ -41,7 +41,50 @@ public abstract class NameOnlyService<TEntity>(ColorsDbContext db)
     }
 }
 
-public class ProductionLineService(ColorsDbContext db) : NameOnlyService<ProductionLine>(db), IProductionLineService;
+public class ProductionLineService(ColorsDbContext db)
+    : MasterListService<ProductionLine, ProductionLineDto, SaveProductionLineRequest>(db),
+      IProductionLineService
+{
+    protected override ProductionLineDto ToDto(ProductionLine entity, bool canDelete) =>
+        new(entity.Id, entity.Name, entity.RecordsMachineSettings, entity.IsActive, canDelete);
+
+    protected override void Apply(SaveProductionLineRequest request, ProductionLine entity)
+    {
+        entity.Name = request.Name.Trim();
+        entity.RecordsMachineSettings = request.RecordsMachineSettings;
+    }
+
+    protected override async Task<string?> ValidateAsync(
+        SaveProductionLineRequest request,
+        int? existingId,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(request.Name))
+        {
+            return "A name is required.";
+        }
+
+        return await NameTakenAsync(request.Name, existingId, cancellationToken)
+            ? "A production line with this name already exists."
+            : null;
+    }
+
+    protected override async Task<string?> CanDeleteAsync(
+        ProductionLine entity,
+        CancellationToken cancellationToken)
+    {
+        var used = await Db.ShiftLines.CountAsync(
+            l => l.ProductionLineId == entity.Id,
+            cancellationToken);
+
+        return used == 0
+            ? null
+            : $"Used by {used} shift{(used == 1 ? "" : "s")} — deactivate it instead.";
+    }
+
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken) =>
+        [.. await Db.ShiftLines.Select(l => l.ProductionLineId).Distinct().ToListAsync(cancellationToken)];
+}
 
 public class MaterialCategoryService(ColorsDbContext db) : NameOnlyService<MaterialCategory>(db), IMaterialCategoryService
 {
@@ -228,6 +271,20 @@ public class ShiftService(ColorsDbContext db)
 
         return null;
     }
+
+    protected override async Task<string?> CanDeleteAsync(
+        Shift entity,
+        CancellationToken cancellationToken)
+    {
+        var used = await Db.ShiftReports.CountAsync(r => r.ShiftId == entity.Id, cancellationToken);
+
+        return used == 0
+            ? null
+            : $"Used by {used} shift report{(used == 1 ? "" : "s")} — deactivate it instead.";
+    }
+
+    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken) =>
+        [.. await Db.ShiftReports.Select(r => r.ShiftId).Distinct().ToListAsync(cancellationToken)];
 
     private static TimeOnly? ParseTime(string value) =>
         TimeOnly.TryParseExact(value.Trim(), "HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var time)

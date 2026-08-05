@@ -3,6 +3,7 @@ using System;
 using Colors.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Colors.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ColorsDbContext))]
-    partial class ColorsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260804200930_ShiftPerDayWithLines")]
+    partial class ShiftPerDayWithLines
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -236,6 +239,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<bool>("RecordsElectricity")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("RecordsMachineSettings")
                         .HasColumnType("boolean");
 
@@ -457,6 +463,14 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasPrecision(9, 2)
                         .HasColumnType("numeric(9,2)");
 
+                    b.Property<decimal?>("ElectricityEndMeter")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)");
+
+                    b.Property<decimal?>("ElectricityStartMeter")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("numeric(14,2)");
+
                     b.Property<int?>("FeedDistanceMm")
                         .HasColumnType("integer");
 
@@ -500,14 +514,6 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.Property<int?>("ClosedByUserId")
                         .HasColumnType("integer");
-
-                    b.Property<decimal?>("ElectricityEndMeter")
-                        .HasPrecision(14, 2)
-                        .HasColumnType("numeric(14,2)");
-
-                    b.Property<decimal?>("ElectricityStartMeter")
-                        .HasPrecision(14, 2)
-                        .HasColumnType("numeric(14,2)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)

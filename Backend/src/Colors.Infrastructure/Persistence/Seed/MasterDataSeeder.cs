@@ -24,11 +24,25 @@ public static class MasterDataSeeder
         var before = 0;
 
         // --- The three lines (specification section 1) -----------------------
-        foreach (var name in new[] { "Extruder", "Thermo", "Recycler" })
+        // Only the thermo line records forming speed, feed distance and cycle time,
+        // so only it is asked for them. Electricity is not here at all: the factory
+        // has one meter for the building, so it is read once per shift.
+        var lines = new (string Name, bool RecordsMachineSettings)[]
+        {
+            ("Extruder", false),
+            ("Thermo", true),
+            ("Recycler", false),
+        };
+
+        foreach (var (name, recordsMachineSettings) in lines)
         {
             if (!await db.ProductionLines.AnyAsync(x => x.Name == name, cancellationToken))
             {
-                db.ProductionLines.Add(new ProductionLine { Name = name });
+                db.ProductionLines.Add(new ProductionLine
+                {
+                    Name = name,
+                    RecordsMachineSettings = recordsMachineSettings,
+                });
                 before++;
             }
         }

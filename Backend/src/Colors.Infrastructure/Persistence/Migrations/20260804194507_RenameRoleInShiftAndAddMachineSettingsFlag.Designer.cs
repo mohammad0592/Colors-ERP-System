@@ -3,6 +3,7 @@ using System;
 using Colors.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Colors.Infrastructure.Persistence.Migrations
 {
     [DbContext(typeof(ColorsDbContext))]
-    partial class ColorsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260804194507_RenameRoleInShiftAndAddMachineSettingsFlag")]
+    partial class RenameRoleInShiftAndAddMachineSettingsFlag
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -441,52 +444,6 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.ToTable("RecipeVersions", (string)null);
                 });
 
-            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftLine", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal?>("CycleTimeSeconds")
-                        .HasPrecision(9, 2)
-                        .HasColumnType("numeric(9,2)");
-
-                    b.Property<decimal?>("DowntimeHours")
-                        .HasPrecision(9, 2)
-                        .HasColumnType("numeric(9,2)");
-
-                    b.Property<int?>("FeedDistanceMm")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("MachineSpeed")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeOnly?>("ProductionEndTime")
-                        .HasColumnType("time without time zone");
-
-                    b.Property<int>("ProductionLineId")
-                        .HasColumnType("integer");
-
-                    b.Property<TimeOnly?>("ProductionStartTime")
-                        .HasColumnType("time without time zone");
-
-                    b.Property<int>("ShiftReportId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductionLineId")
-                        .HasDatabaseName("ix_shift_lines_line");
-
-                    b.HasIndex("ShiftReportId", "ProductionLineId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_shift_lines_report_line");
-
-                    b.ToTable("ShiftLines", (string)null);
-                });
-
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftReport", b =>
                 {
                     b.Property<int>("Id")
@@ -501,6 +458,14 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int?>("ClosedByUserId")
                         .HasColumnType("integer");
 
+                    b.Property<decimal?>("CycleTimeSeconds")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("numeric(9,2)");
+
+                    b.Property<decimal?>("DowntimeHours")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("numeric(9,2)");
+
                     b.Property<decimal?>("ElectricityEndMeter")
                         .HasPrecision(14, 2)
                         .HasColumnType("numeric(14,2)");
@@ -508,6 +473,12 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<decimal?>("ElectricityStartMeter")
                         .HasPrecision(14, 2)
                         .HasColumnType("numeric(14,2)");
+
+                    b.Property<int?>("FeedDistanceMm")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("MachineSpeed")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
@@ -521,6 +492,15 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.Property<DateOnly>("ProductionDate")
                         .HasColumnType("date");
+
+                    b.Property<TimeOnly?>("ProductionEndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<int>("ProductionLineId")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly?>("ProductionStartTime")
+                        .HasColumnType("time without time zone");
 
                     b.Property<int>("ShiftId")
                         .HasColumnType("integer");
@@ -543,9 +523,12 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("SupervisorUserId");
 
-                    b.HasIndex("ProductionDate", "ShiftId")
+                    b.HasIndex("ProductionLineId", "ProductionDate")
+                        .HasDatabaseName("ix_shift_reports_line_date");
+
+                    b.HasIndex("ProductionLineId", "ShiftId", "ProductionDate")
                         .IsUnique()
-                        .HasDatabaseName("ux_shift_reports_date_shift");
+                        .HasDatabaseName("ux_shift_reports_line_shift_date");
 
                     b.ToTable("ShiftReports", (string)null);
                 });
@@ -564,7 +547,7 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int?>("RoleInShiftId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ShiftLineId")
+                    b.Property<int>("ShiftReportId")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
@@ -576,9 +559,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.HasIndex("ShiftLineId", "UserId")
+                    b.HasIndex("ShiftReportId", "UserId")
                         .IsUnique()
-                        .HasDatabaseName("ux_shift_workers_line_user");
+                        .HasDatabaseName("ux_shift_workers_report_user");
 
                     b.ToTable("ShiftWorkers", (string)null);
                 });
@@ -930,25 +913,6 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Navigation("Family");
                 });
 
-            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftLine", b =>
-                {
-                    b.HasOne("Colors.Domain.Entities.MasterData.ProductionLine", "ProductionLine")
-                        .WithMany()
-                        .HasForeignKey("ProductionLineId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Colors.Domain.Entities.Shifts.ShiftReport", "ShiftReport")
-                        .WithMany("Lines")
-                        .HasForeignKey("ShiftReportId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ProductionLine");
-
-                    b.Navigation("ShiftReport");
-                });
-
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftReport", b =>
                 {
                     b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
@@ -959,6 +923,12 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("OpenedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Colors.Domain.Entities.MasterData.ProductionLine", "ProductionLine")
+                        .WithMany()
+                        .HasForeignKey("ProductionLineId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -973,6 +943,8 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasForeignKey("SupervisorUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.Navigation("ProductionLine");
+
                     b.Navigation("Shift");
                 });
 
@@ -983,9 +955,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasForeignKey("RoleInShiftId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("Colors.Domain.Entities.Shifts.ShiftLine", null)
+                    b.HasOne("Colors.Domain.Entities.Shifts.ShiftReport", null)
                         .WithMany("Workers")
-                        .HasForeignKey("ShiftLineId")
+                        .HasForeignKey("ShiftReportId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1071,14 +1043,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Navigation("Ingredients");
                 });
 
-            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftLine", b =>
-                {
-                    b.Navigation("Workers");
-                });
-
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftReport", b =>
                 {
-                    b.Navigation("Lines");
+                    b.Navigation("Workers");
                 });
 #pragma warning restore 612, 618
         }

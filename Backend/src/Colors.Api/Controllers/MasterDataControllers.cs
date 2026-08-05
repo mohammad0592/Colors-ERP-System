@@ -9,7 +9,7 @@ namespace Colors.Api.Controllers;
 /// </summary>
 [Route("api/production-lines")]
 public class ProductionLinesController(IProductionLineService service)
-    : MasterDataControllerBase<LookupDto, SaveLookupRequest>(service);
+    : MasterDataControllerBase<ProductionLineDto, SaveProductionLineRequest>(service);
 
 [Route("api/shifts")]
 public class ShiftsController(IShiftService service)

@@ -20,6 +20,8 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
     /// <summary>Overridden where the DTO needs related rows loaded (materials).</summary>
     protected virtual IQueryable<TEntity> Query() => db.Set<TEntity>();
 
+    /// <summary>Shapes one row for the screen.</summary>
+    /// <param name="entity">The row, with whatever <see cref="Query"/> loaded alongside it.</param>
     /// <param name="canDelete">
     /// False when something references the row, so the screen can hide the delete
     /// button instead of offering one that always fails.

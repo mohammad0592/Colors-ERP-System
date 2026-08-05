@@ -1,11 +1,15 @@
 using Colors.Application.Features.Authentication;
 using Colors.Application.Features.MasterData;
+using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
+using Colors.Application.Features.ShiftReports;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.MasterData;
+using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
+using Colors.Infrastructure.Services.ShiftReports;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -88,6 +92,12 @@ public static class DependencyInjection
 
         // Recipes (specification section 5).
         services.AddScoped<IRecipeService, RecipeService>();
+
+        // Shift reports (specification section 2).
+        services.AddScoped<IShiftReportService, ShiftReportService>();
+
+        // People, read only — every screen that has to name somebody.
+        services.AddScoped<IPeopleService, PeopleService>();
 
         return services;
     }

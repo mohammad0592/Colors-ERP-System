@@ -31,7 +31,8 @@ public interface IMasterListService<TDto, TUpsert>
 
 // One named interface per list, so registration and injection stay explicit.
 
-public interface IProductionLineService : IMasterListService<LookupDto, SaveLookupRequest>;
+public interface IProductionLineService
+    : IMasterListService<ProductionLineDto, SaveProductionLineRequest>;
 
 public interface IShiftService : IMasterListService<ShiftDto, SaveShiftRequest>;
 
