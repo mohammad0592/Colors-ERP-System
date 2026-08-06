@@ -30,6 +30,16 @@ export interface ThermoRunSummaryDto {
   productName: string | null;
   bagCount: number | null;
   pieceCount: number | null;
+  /** What the roll weighed. Null until it has been tested. */
+  rollWeight: number | null;
+  /**
+   * What this run threw away: roll weight less the weight of the plates it made.
+   * Calculated, never stored, and null until the roll is weighed and the run counted.
+   *
+   * Its share of the roll is the thermoforming waste — a different figure from the
+   * recycler's loss, which is a share of the scrap that went into the grinder.
+   */
+  scrapWeight: number | null;
 }
 
 export interface ThermoTestReportDto {
@@ -88,6 +98,8 @@ export interface ThermoRunDto {
   notes: string | null;
   rollReadings: RollReadingsDto | null;
   testReport: ThermoTestReportDto | null;
+  /** Roll weight less the weight of the plates it made. Calculated, never stored. */
+  scrapWeight: number | null;
   bags: ProducedBagDto[];
 }
 

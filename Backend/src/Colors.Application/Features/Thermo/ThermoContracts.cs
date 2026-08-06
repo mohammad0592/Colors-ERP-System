@@ -26,7 +26,12 @@ public sealed record ThermoRunSummaryDto(
     bool NeedsTest,
     string? ProductName,
     int? BagCount,
-    int? PieceCount);
+    int? PieceCount,
+    // What the roll weighed, and what this run threw away: roll weight less the weight
+    // of the plates that came out of it. Both calculated, never stored. Null until the
+    // roll has been weighed and the run counted (specification section 9).
+    decimal? RollWeight,
+    decimal? ScrapWeight);
 
 public sealed record ThermoTestReportDto(
     int Id,
@@ -76,6 +81,9 @@ public sealed record ThermoRunDto(
     string? Notes,
     RollReadingsDto? RollReadings,
     ThermoTestReportDto? TestReport,
+    // Roll weight less the weight of the plates it made. Calculated, never stored, and
+    // null until the roll has been weighed and the run counted.
+    decimal? ScrapWeight,
     IReadOnlyList<ProducedBagDto> Bags);
 
 public sealed record ProducedBagDto(

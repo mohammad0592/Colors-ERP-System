@@ -22,24 +22,16 @@ public sealed record RecyclerProductionDto(
 /// <summary>
 /// The form before it is saved.
 ///
-/// It carries what the thermo already calculated, so the operator can see the free check
-/// from section 11 while typing the weighed figure — shown, never enforced.
+/// It deliberately does <b>not</b> carry what the thermo calculated. That figure is a
+/// fact about the forming machine and lives on the thermo's own screens, where it is
+/// visible whether or not the recycler ran that shift. Comparing the two belongs in the
+/// reports (specification sections 11 and 13).
 /// </summary>
 public sealed record RecyclerDraftDto(
     int ShiftLineId,
     string ProductionLineName,
     string ShiftName,
     DateOnly ProductionDate,
-    /// <summary>What the thermo lines of this shift lost, by their own calculation.</summary>
-    decimal? ThermoCalculatedScrap,
-    /// <summary>
-    /// What those rolls weighed, so the screen can say what share of them was lost.
-    ///
-    /// Sent as the fact rather than as a percentage, because it is a different share
-    /// from the recycler's own loss and the two must never be mistaken for each other:
-    /// this one is scrap ÷ roll, the recycler's is (scrap − recycled) ÷ scrap.
-    /// </summary>
-    decimal? ThermoRollWeight,
     /// <summary>The material the output is added to, so the screen can name it.</summary>
     string? RecycledMaterialName,
     bool AlreadyRecorded,

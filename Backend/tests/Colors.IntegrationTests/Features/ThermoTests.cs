@@ -389,6 +389,64 @@ public class ThermoTests(DatabaseFixture fixture)
     }
 
     [Fact]
+    public async Task The_run_says_what_it_threw_away()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "THR16b");
+        var run = await FinishedRunAsync(db, ids, "THR16b");
+        var service = NewService(db);
+
+        // Finished but not counted: the plates are not known yet, so neither is the
+        // scrap. A dash on the screen, never a zero — zero would read as a run that
+        // wasted nothing.
+        Assert.Null(run.ScrapWeight);
+
+        // 10 bags of 500 plates at 10 g each = 5,000 plates = 50 kg of product, out of
+        // a 95 kg roll.
+        var counted = await service.SaveTestReportAsync(
+            run.Id, new SaveThermoTestRequest(10, 10m, 10m, 0m, null), ids.UserId);
+
+        Assert.True(counted.IsSuccess, counted.Message);
+        Assert.Equal(45m, counted.Value!.ScrapWeight);
+
+        // And it is the thermo's own fact, so it comes back on the list the operator
+        // reads — not only on a screen belonging to the recycler
+        // (specification section 9).
+        var listed = (await service.GetRunsAsync(ids.ThermoShiftLineId))
+            .First(r => r.Id == run.Id);
+
+        Assert.Equal(45m, listed.ScrapWeight);
+
+        // The roll's weight comes with it, so the share can be worked out for display:
+        // 45 of 95 kg. A share of the ROLL, unlike the recycler's loss.
+        Assert.Equal(95m, listed.RollWeight);
+    }
+
+    [Fact]
+    public async Task A_run_whose_roll_was_never_weighed_has_no_waste_figure()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "THR16c");
+        var run = await FinishedRunAsync(db, ids, "THR16c");
+        var service = NewService(db);
+
+        await service.SaveTestReportAsync(
+            run.Id, new SaveThermoTestRequest(10, 10m, 10m, 0m, null), ids.UserId);
+
+        // Take the roll's test away. Without a roll weight there is nothing to subtract
+        // from, and a run that cannot say what it lost must not claim it lost nothing.
+        var rollTest = await db.RollTestReports.FirstAsync(t => t.RollId == run.RollId);
+        db.RollTestReports.Remove(rollTest);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var reloaded = await service.GetRunAsync(run.Id);
+
+        Assert.True(reloaded.IsSuccess, reloaded.Message);
+        Assert.Null(reloaded.Value!.ScrapWeight);
+    }
+
+    [Fact]
     public async Task A_formed_roll_leaves_the_available_list()
     {
         await using var db = fixture.CreateContext();

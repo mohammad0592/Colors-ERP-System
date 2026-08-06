@@ -31,13 +31,6 @@ export interface RecyclerDraftDto {
   productionLineName: string;
   shiftName: string;
   productionDate: string;
-  /** What the thermo lines of this shift lost by their own arithmetic. Shown, never enforced. */
-  thermoCalculatedScrap: number | null;
-  /**
-   * What those rolls weighed. Scrap over this is the thermoforming waste — a different
-   * share from the recycler's own loss, which is scrap lost over scrap ground.
-   */
-  thermoRollWeight: number | null;
   /** The material the output is added to. */
   recycledMaterialName: string | null;
   alreadyRecorded: boolean;

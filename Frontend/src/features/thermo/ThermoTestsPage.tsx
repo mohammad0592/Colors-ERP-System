@@ -55,6 +55,21 @@ export function ThermoTestsPage(): ReactElement {
   const rows = runs.data;
   const ready = rows.filter((run) => run.isFinished).length;
 
+  // Only the runs that can say what they lost — a roll that was never weighed has no
+  // waste figure, and counting it as zero would flatter the total.
+  const weighed = rows.filter(
+    (run) => run.scrapWeight !== null && run.rollWeight !== null && run.rollWeight > 0,
+  );
+
+  const totals =
+    weighed.length === 0
+      ? null
+      : {
+          runs: weighed.length,
+          rollKg: weighed.reduce((sum, run) => sum + (run.rollWeight ?? 0), 0),
+          scrapKg: weighed.reduce((sum, run) => sum + (run.scrapWeight ?? 0), 0),
+        };
+
   // Now that a running roll stays on the list, the table is only empty when there is
   // genuinely nothing — so two sentences cover it.
   const emptyMessage = waitingOnly
@@ -106,13 +121,14 @@ export function ThermoTestsPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">Product</th>
               <th className="px-4 py-3 text-right font-semibold">Bags</th>
               <th className="px-4 py-3 text-right font-semibold">Pieces</th>
+              <th className="px-4 py-3 text-right font-semibold">Waste</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
+                <td colSpan={9} className="px-4 py-8 text-center text-ink-muted">
                   {emptyMessage}
                 </td>
               </tr>
@@ -145,6 +161,9 @@ export function ThermoTestsPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                   {run.pieceCount?.toLocaleString('en-GB') ?? '—'}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <Waste kg={run.scrapWeight} rollKg={run.rollWeight} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end">
@@ -182,6 +201,27 @@ export function ThermoTestsPage(): ReactElement {
               </tr>
             ))}
           </tbody>
+          {/* The shift's own total, so the scrap figure does not have to be added up by
+              hand off the rows. Only the runs that can say what they lost are in it —
+              a roll that was never weighed is left out rather than counted as nothing
+              (specification section 9). */}
+          {totals !== null && (
+            <tfoot>
+              <tr className="border-t-2 border-line font-semibold">
+                <td className="px-4 py-3 text-ink" colSpan={7}>
+                  {totals.runs} run{totals.runs === 1 ? '' : 's'} counted ·{' '}
+                  {totals.rollKg.toFixed(1)} kg of rolls formed
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                  {totals.scrapKg.toFixed(1)} kg
+                  <span className="ml-2 text-xs font-normal text-ink-muted">
+                    {((totals.scrapKg / totals.rollKg) * 100).toFixed(1)}%
+                  </span>
+                </td>
+                <td className="px-4 py-3" />
+              </tr>
+            </tfoot>
+          )}
         </table>
       </div>
 
@@ -214,6 +254,31 @@ export function ThermoTestsPage(): ReactElement {
         />
       )}
     </>
+  );
+}
+
+/**
+ * What the run threw away: the roll's weight less the weight of the plates it made
+ * (specification section 9).
+ *
+ * The percentage is a share of the <b>roll</b> — how much of the material never became
+ * product. Not to be confused with the recycler's loss, which is a share of the scrap
+ * that went into the grinder. Both are named wherever they are shown.
+ *
+ * A dash, never a zero, until the roll has been weighed and the run counted.
+ */
+function Waste({ kg, rollKg }: { kg: number | null; rollKg: number | null }): ReactElement {
+  if (kg === null || rollKg === null || rollKg <= 0) {
+    return <span className="text-ink-muted">—</span>;
+  }
+
+  return (
+    <span className="tabular-nums text-ink-soft">
+      {kg.toFixed(1)} kg
+      <span className="ml-1 text-xs text-ink-muted">
+        {((kg / rollKg) * 100).toFixed(0)}%
+      </span>
+    </span>
   );
 }
 

@@ -958,6 +958,23 @@ and `ProducedBags.Weight` are frozen for the same reason.
 Normal recipe is refused: the absorbency comes from what was mixed, so a Normal roll
 cannot have absorbed anything. Normal rolls store `0`.
 
+### What the run threw away
+
+The roll went in whole and came out as plates plus skeleton. What the plates do not weigh is **scrap**, and it goes to the recycler:
+
+```
+scrap = roll weight − (plates × plate weight)
+      = 445.5 kg − (30,500 × 9 g)  =  171 kg   →  38% of the roll
+```
+
+**Calculated, never stored.** Every input is frozen the moment the run is counted — the roll's weight on its own test report, the piece count and plate weight on this one — so nothing here can be rewritten by a later edit to master data. That is the [calculated or stored](#calculated-or-stored) rule.
+
+Shown **per run and as a shift total** on the thermo's own screens. It is the thermo's fact, true the moment the bags are counted, so it must not depend on the recycler having run that day — see [where the check belongs](#the-free-accuracy-check-and-where-it-belongs).
+
+A run whose roll was never weighed has **no** waste figure and shows a dash. It is left out of the shift total rather than counted as zero, which would flatter it.
+
+The percentage is a share of the **roll**. The recycler's loss is a share of the **scrap**. Neither is ever shown as just "loss".
+
 Piece weight is measured **twice** in the factory — once from a sample at the extruder,
 once here after forming. Both are kept. A gap between them points at a forming problem.
 
@@ -1297,7 +1314,7 @@ Scrap 0,   recycled 150  →  loss —       only old scrap was ground
 
 Both weights may be zero on their own, but **not both at once** — a record saying nothing happened is not a record.
 
-### The free accuracy check
+### The free accuracy check, and where it belongs
 
 The thermo report *calculates* loss per product; the recycler *weighs* the same scrap.
 
@@ -1306,7 +1323,19 @@ Thermo calculated:  171 kg  (445.5 − 30,500 × 9 g)
 Recycler weighed:   ??? kg
 ```
 
-If these differ a lot, either the plate weight is wrong or scrap is going missing. Both numbers already exist — the check is free, so the recycler screen shows the thermo's figure beside the box the operator is typing into, in kilograms **and** as its share of the rolls formed. It is shown, never enforced: the two are measured different ways and a shift that grinds old scrap breaks the comparison honestly.
+If these differ a lot, either the plate weight is wrong or scrap is going missing. Both numbers already exist, so the check costs nothing.
+
+**But it is a report, not a box on the recycler screen.** The comparison lives in section 13 beside the other cross-checks, and each half lives with the machine that produced it:
+
+| Figure | Whose fact | Where it shows |
+|---|---|---|
+| Thermoforming waste | the thermo | the thermo's own screens, per run and as a shift total |
+| Scrap weighed, recycled out, grinder loss | the recycler | the recycler screen |
+| The two compared | neither | the reports |
+
+**The waste must not depend on the recycler running.** It was on the recycler screen first, and that was wrong: a shift where the thermo formed rolls but the recycler never ran had a real waste figure that no screen in the system would show. It becomes true the moment the bags are counted, so it belongs where the bags are counted.
+
+There is a second reason to keep them apart. Scrap collected on one shift may be ground on the next, so the two figures are not a matched pair on any given day — which is why the comparison is read over a period, in a report, and is never enforced anywhere.
 
 ### Closing the shift does not wait for it
 

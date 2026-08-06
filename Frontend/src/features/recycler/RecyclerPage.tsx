@@ -177,31 +177,10 @@ export function RecyclerPage(): ReactElement {
                       setScrap(event.target.value);
                     }}
                   />
-                  {/* The free check from section 11: the thermo's own arithmetic,
-                      shown beside the scale and never enforced. Named in full, because
-                      its percentage is a share of the roll and the one below is a share
-                      of the scrap — two different questions. */}
-                  {draft.data.thermoCalculatedScrap !== null && (
-                    <p className="mt-1 text-xs text-ink-muted">
-                      Thermoforming waste this shift:{' '}
-                      <span className="font-semibold">
-                        {draft.data.thermoCalculatedScrap} kg
-                      </span>
-                      {draft.data.thermoRollWeight !== null &&
-                        draft.data.thermoRollWeight > 0 && (
-                          <>
-                            {' — '}
-                            {(
-                              (draft.data.thermoCalculatedScrap /
-                                draft.data.thermoRollWeight) *
-                              100
-                            ).toFixed(1)}
-                            % of the {draft.data.thermoRollWeight} kg of rolls it formed
-                          </>
-                        )}
-                      .
-                    </p>
-                  )}
+                  {/* The thermo's own waste figure is deliberately not here. It belongs
+                      to the forming machine and shows on the thermo's screens, where it
+                      is visible whether or not the recycler ran that shift. Comparing
+                      the two is a report (specification sections 11 and 13). */}
                 </div>
 
                 <div>

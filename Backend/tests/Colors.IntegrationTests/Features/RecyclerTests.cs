@@ -249,7 +249,7 @@ public class RecyclerTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task The_draft_carries_what_the_thermo_calculated()
+    public async Task The_draft_names_the_material_and_says_nothing_about_the_thermo()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "REC10");
@@ -309,18 +309,19 @@ public class RecyclerTests(DatabaseFixture fixture)
         var draft = await NewService(db).GetDraftAsync(shiftLineId);
 
         Assert.True(draft.IsSuccess, draft.Message);
+        Assert.False(draft.Value!.AlreadyRecorded);
 
-        // 100 kg in, 50 kg of plates out — the thermo says it lost 50 kg. Shown beside
-        // the weighed figure, never enforced (specification section 11).
-        Assert.Equal(50m, draft.Value!.ThermoCalculatedScrap);
-
-        // The roll weight comes with it, so the screen can say what share of the rolls
-        // that was: 50 of 100 kg is 50% thermoforming waste. A different share from the
-        // recycler's own loss, which is worked out over the scrap.
-        Assert.Equal(100m, draft.Value.ThermoRollWeight);
-
-        Assert.False(draft.Value.AlreadyRecorded);
+        // The screen has to name the pile the output goes into.
         Assert.NotNull(draft.Value.RecycledMaterialName);
+
+        // The thermo formed a roll on this shift and lost 50 kg doing it, but that
+        // figure is the thermo's and does not come through here. It lives on the thermo's
+        // own screens so it is visible on a shift where the recycler never ran
+        // (specification section 11) — see ThermoTests.
+        Assert.DoesNotContain(
+            "Thermo",
+            string.Join(" ", typeof(RecyclerDraftDto).GetProperties().Select(p => p.Name)),
+            StringComparison.Ordinal);
     }
 
     [Fact]

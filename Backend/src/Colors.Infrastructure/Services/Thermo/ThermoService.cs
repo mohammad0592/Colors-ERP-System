@@ -64,7 +64,9 @@ public class ThermoService(
                 p.TestReport is null,
                 p.TestReport?.Product.Name,
                 p.TestReport?.BagCount,
-                p.TestReport?.PieceCount))
+                p.TestReport?.PieceCount,
+                p.Roll.TestReport?.Weight,
+                ThermoScrap.For(p)))
             .ToList();
     }
 
@@ -431,6 +433,9 @@ public class ThermoService(
         db.ThermoProductions
             .Include(p => p.Roll).ThenInclude(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(p => p.Roll).ThenInclude(r => r.Color)
+            // The roll's own test carries its weight, which is what the run's scrap is
+            // worked out from (specification section 9).
+            .Include(p => p.Roll).ThenInclude(r => r.TestReport)
             .Include(p => p.ShiftLine).ThenInclude(l => l.ProductionLine)
             .Include(p => p.ShiftLine).ThenInclude(l => l.ShiftReport).ThenInclude(r => r.Shift)
             .Include(p => p.TestReport).ThenInclude(t => t!.Product);
@@ -441,7 +446,6 @@ public class ThermoService(
     /// </summary>
     private IQueryable<ThermoProduction> RunQuery() =>
         ListQuery()
-            .Include(p => p.Roll).ThenInclude(r => r.TestReport)
             .Include(p => p.ShiftLine).ThenInclude(l => l.Mould)
             .Include(p => p.Bags).ThenInclude(b => b.Product)
             .Include(p => p.Bags).ThenInclude(b => b.Color)
@@ -544,6 +548,7 @@ public class ThermoService(
                     names.GetValueOrDefault(run.TestReport.TestedByUserId, "—"),
                     run.TestReport.TestedAt,
                     run.TestReport.Notes),
+            ThermoScrap.For(run),
             run.Bags
                 .OrderBy(b => b.Id)
                 .Select(b => new ProducedBagDto(

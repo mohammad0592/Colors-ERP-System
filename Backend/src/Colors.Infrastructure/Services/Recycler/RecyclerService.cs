@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Recycler;
 using Colors.Domain.Common;
 using Colors.Domain.Constants;
@@ -63,15 +63,12 @@ public class RecyclerService(
             : await UserNamesAsync([existing.RecordedByUserId], cancellationToken);
 
         var material = await RecycledMaterialAsync(cancellationToken);
-        var thermo = await ThermoLossAsync(shiftLine.ShiftReportId, cancellationToken);
 
         return Result<RecyclerDraftDto>.Success(new RecyclerDraftDto(
             shiftLineId,
             shiftLine.ProductionLine.Name,
             shiftLine.ShiftReport.Shift.Name,
             shiftLine.ShiftReport.ProductionDate,
-            thermo?.Scrap,
-            thermo?.RollWeight,
             material?.Name,
             existing is not null,
             existing is null ? null : ToDto(existing, names)));
@@ -174,60 +171,6 @@ public class RecyclerService(
 
         return await LoadAsync(record.Id, cancellationToken);
     }
-
-    // ---------- the free check ----------
-
-    /// <summary>
-    /// What the thermo lines of this shift lost, by their own arithmetic: the roll's
-    /// weight less the weight of the plates that came out of it — and what those rolls
-    /// weighed, so the screen can say what share of them that was
-    /// (specification section 11).
-    ///
-    /// <b>A different share from the recycler's own loss.</b> This one is scrap over the
-    /// roll: how much of the material never became product. The recycler's is scrap lost
-    /// over scrap ground. Both are returned as weights so neither can be mistaken for the
-    /// other on the way out.
-    ///
-    /// Null where the shift formed nothing, because there is nothing to compare against.
-    /// Shown beside the weighed figure and never enforced — the two are measured
-    /// different ways, and a shift that grinds an old pile breaks the comparison
-    /// honestly.
-    /// </summary>
-    private async Task<ThermoLoss?> ThermoLossAsync(
-        int shiftReportId,
-        CancellationToken cancellationToken)
-    {
-        var runs = await db.ThermoTestReports
-            .Where(t => t.ThermoProduction.ShiftLine.ShiftReportId == shiftReportId)
-            .Select(t => new
-            {
-                RollWeight = db.RollTestReports
-                    .Where(r => r.RollId == t.ThermoProduction.RollId)
-                    .Select(r => (decimal?)r.Weight)
-                    .FirstOrDefault(),
-                t.PieceCount,
-                t.PieceWeight,
-            })
-            .ToListAsync(cancellationToken);
-
-        // A run whose roll was never weighed cannot say what it lost, so it is left out
-        // rather than counted as zero.
-        var weighed = runs.Where(r => r.RollWeight is not null).ToList();
-        if (weighed.Count == 0)
-        {
-            return null;
-        }
-
-        // The plate weight is in grams, the roll in kilograms.
-        var scrap = weighed.Sum(r =>
-            r.RollWeight!.Value - (r.PieceCount * r.PieceWeight / 1000m));
-
-        return new ThermoLoss(
-            Math.Round(scrap, 3),
-            Math.Round(weighed.Sum(r => r.RollWeight!.Value), 3));
-    }
-
-    private sealed record ThermoLoss(decimal Scrap, decimal RollWeight);
 
     // ---------- helpers ----------
 
