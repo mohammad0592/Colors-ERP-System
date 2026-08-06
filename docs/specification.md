@@ -1,4 +1,4 @@
-# Colors ERP — Specification
+﻿# Colors ERP — Specification
 
 **Colors Company for Paper and Plastic Industries** — شركة كلرز للصناعات الورقية و البلاستيكية
 Styrofoam plate factory · Version 2.0 · Replaces Parts 1–12
@@ -1105,7 +1105,13 @@ Recorded once at the end of the shift by the **Packaging Operator**. The real fo
 
 **`PackagingConsumptions`** — Id · **ShiftLineId** (FK) · RecordedByUserId (FK) · RecordedAt · Notes
 
-**`PackagingConsumptionLines`** — Id · ConsumptionId (FK) · **MaterialId** (FK) · **Quantity** (decimal) · **Weight** (decimal, nullable) · unique on (ConsumptionId, MaterialId)
+**`PackagingConsumptionLines`** — Id · ConsumptionId (FK) · **MaterialId** (FK) · **Quantity** (decimal) · **Weight** (decimal, nullable) · **WasCounted** (bool) · unique on (ConsumptionId, MaterialId)
+
+One consumption per line per shift, so the unique index is on (ConsumptionId, MaterialId) and a shift line may only have one consumption at all — it is recorded once, at the end.
+
+`WasCounted` says whether the quantity came from the system or from a person. A counted line is worked out at save and then **frozen**, for the same reason the piece count is: it depends on `LargeBagsPerBag` and `SmallBagsPerBag`, which are master data and get edited. Recomputing it live would let a change made next year rewrite what last year consumed.
+
+**Saving posts the stock.** Each line moves its own material out of the store as a `Packaging Consumption` — its own movement type, not `Issue`, so packaging never gets mixed into the material-waste figures that only mean anything for what the mixer took.
 
 The factory records **both a count and a weight**, exactly as the paper form does — `العدد` and `الوزن (كغم)`. Some materials have both, some only one:
 
@@ -1155,16 +1161,36 @@ These do not need to be typed at all, because the system already knows the numbe
 
 | Material | Used | From |
 |---|---|---|
-| **Large bags** | 1 per produced bag, **plates only** | `COUNT(ProducedBags)` |
-| **Small bags** | `SmallBagsPerBag` per produced bag | same × the product's own figure |
+| **Large bags** | `LargeBagsPerBag` per produced bag | the product's own figure |
+| **Small bags** | `SmallBagsPerBag` per produced bag | the product's own figure |
 | **Empty wooden pallets** | 1 per completed pallet | `COUNT(WoodenPallets Completed)` |
 
 So a plate shift that made 61 bags on 3 pallets used exactly 61 large bags, 122 small
 bags and 3 pallets — the operator types nothing and the numbers cannot be wrong.
 
-A meal box or clamshell shift is packed in the small bag directly: `SmallBagsPerBag` is
-1 and no large bag is consumed at all. Both figures come from the product, so a shift
-that switches mould is still counted correctly.
+A meal box or clamshell is packed in the small bag directly: one small, no large. Both
+figures come from the **product**, so a shift that switches mould is still counted
+correctly, and neither is inferred from the other.
+
+**`Products.LargeBagsPerBag`** is a new column beside `SmallBagsPerBag`. It could have
+been read off the small-bag figure — two smalls means a big bag holding them — but that
+is a guess about why a number is what it is. A product that ever needs two large bags,
+or one small bag inside a large one, would break it silently. Two columns state the two
+facts.
+
+### Which material is the large bag
+
+The three counted materials need naming, and **`Materials.CountedAs`** does it: empty,
+`LargeBag`, `SmallBag` or `WoodenPallet`. Three rows are set once in Master Data.
+
+Never a check on the material's name. Rename "Large Bags" and a name rule would stop
+counting silently — no error, just a number quietly going to zero on every shift report
+from then on. That is the failure this system has refused everywhere else, and packaging
+is where it would be least visible: nobody notices a bag count that is merely wrong.
+
+A material with `CountedAs` empty is simply typed by hand, like tape and shrink. So the
+list is not a fixed set of six — it is however many packaging materials the factory
+keeps, three of which happen to count themselves.
 
 **Tape, shrink and plastic hood** cannot be counted this way — they are used by length and by feel — so those stay as typed shift totals, weighed where the factory weighs them.
 

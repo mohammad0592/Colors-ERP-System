@@ -1,4 +1,4 @@
-using Colors.Domain.Common;
+﻿using Colors.Domain.Common;
 
 namespace Colors.Domain.Entities.MasterData;
 
@@ -44,6 +44,17 @@ public class Product : MasterEntity
     /// directly.
     /// </summary>
     public int SmallBagsPerBag { get; set; } = 1;
+
+    /// <summary>
+    /// Large bags consumed making one packed bag — one for a plate, none for a meal box
+    /// or clamshell, which go in the small bag directly (specification section 10).
+    ///
+    /// Its own column rather than a reading of <see cref="SmallBagsPerBag"/>. Two smalls
+    /// does mean a big bag holding them today, but that is a guess about why a number is
+    /// what it is: a product needing two large bags, or one small inside a large, would
+    /// break it silently. Two columns state the two facts.
+    /// </summary>
+    public int LargeBagsPerBag { get; set; }
 
     /// <summary>Bags that complete a pallet — 15 for plates, about 21 for the rest.</summary>
     public int BagsPerPallet { get; set; }

@@ -60,6 +60,68 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
     }
 }
 
+public class PackagingConsumptionConfiguration : IEntityTypeConfiguration<PackagingConsumption>
+{
+    public void Configure(EntityTypeBuilder<PackagingConsumption> builder)
+    {
+        builder.ToTable("PackagingConsumptions");
+
+        builder.Property(e => e.Notes).HasMaxLength(500);
+
+        // Recorded once, at the end of the shift. A second record for the same line
+        // would double every figure and there would be no way to say which was meant.
+        builder.HasIndex(e => e.ShiftLineId)
+            .IsUnique()
+            .HasDatabaseName("ux_packaging_shift_line");
+
+        builder.HasOne(e => e.ShiftLine)
+            .WithMany()
+            .HasForeignKey(e => e.ShiftLineId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.RecordedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class PackagingConsumptionLineConfiguration
+    : IEntityTypeConfiguration<PackagingConsumptionLine>
+{
+    public void Configure(EntityTypeBuilder<PackagingConsumptionLine> builder)
+    {
+        builder.ToTable("PackagingConsumptionLines", t =>
+            // Nothing was used a negative number of times, and a weight of zero is not
+            // a weighing — it is a box nobody filled in.
+            t.HasCheckConstraint(
+                "ck_packaging_lines_positive",
+                "\"Quantity\" >= 0 AND (\"Weight\" IS NULL OR \"Weight\" > 0)"));
+
+        builder.Property(e => e.Quantity).HasPrecision(12, 3);
+        builder.Property(e => e.Weight).HasPrecision(12, 3);
+
+        // Worked out from the quantity and the material's unit weight.
+        builder.Ignore(e => e.ExpectedWeight);
+
+        // One line per material. Two lines for large bags would have to be added
+        // together by every reader, and one of them would forget.
+        builder.HasIndex(e => new { e.ConsumptionId, e.MaterialId })
+            .IsUnique()
+            .HasDatabaseName("ux_packaging_lines_material");
+
+        builder.HasOne(e => e.Consumption)
+            .WithMany(c => c.Lines)
+            .HasForeignKey(e => e.ConsumptionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.Material)
+            .WithMany()
+            .HasForeignKey(e => e.MaterialId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 public class BagPalletAssignmentConfiguration : IEntityTypeConfiguration<BagPalletAssignment>
 {
     public void Configure(EntityTypeBuilder<BagPalletAssignment> builder)

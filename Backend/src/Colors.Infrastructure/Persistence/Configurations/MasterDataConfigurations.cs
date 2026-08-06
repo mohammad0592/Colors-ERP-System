@@ -126,8 +126,17 @@ public class MaterialConfiguration : IEntityTypeConfiguration<Material>
         builder.Property(e => e.MinQuantity).HasPrecision(18, 4);
         builder.Property(e => e.UnitWeight).HasPrecision(18, 4);
 
+        builder.Property(e => e.CountedAs).HasConversion<string>().HasMaxLength(20);
+
         // The code is the identity the system relies on, never the name.
         builder.HasIndex(e => e.Code).IsUnique().HasDatabaseName("ux_materials_code");
+
+        // Only one material can be "the large bag". Two rows claiming it would make the
+        // count ambiguous, and the system would silently pick whichever came first.
+        builder.HasIndex(e => e.CountedAs)
+            .IsUnique()
+            .HasFilter("\"CountedAs\" <> 'None'")
+            .HasDatabaseName("ux_materials_counted_as");
 
         builder.HasOne(e => e.Category)
             .WithMany()

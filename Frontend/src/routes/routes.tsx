@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { ComingSoon } from '../components/ui/ComingSoon';
 
 /**
@@ -8,13 +8,6 @@ import { ComingSoon } from '../components/ui/ComingSoon';
  * real screen as its phase is built (specification section 17).
  */
 const planned: { path: string; title: string; phase: string; description: string }[] = [
-  {
-    path: '/production/packaging',
-    title: 'Packaging',
-    phase: 'Phase 11',
-    description:
-      'End-of-shift packaging materials. Bags and pallets are counted by the system; tape and shrink are weighed.',
-  },
   {
     path: '/production/recycler',
     title: 'Recycler',

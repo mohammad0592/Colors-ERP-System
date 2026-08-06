@@ -1,5 +1,6 @@
 ﻿using Colors.Domain.Constants;
 using Colors.Domain.Entities.MasterData;
+using Colors.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -190,15 +191,18 @@ public static class MasterDataSeeder
         // before this was written and the factory has not finished packing with them
         // (specification section 18, questions 9 to 11). They are rows, so correcting
         // one is an edit in Master Data.
-        var products = new (string Name, string Mould, string Type, bool Abs, int Pieces, int SmallBags, int PerPallet)[]
+        // A plate goes into a big bag holding two small ones; a meal box or clamshell
+        // goes into the small bag directly, with no large bag at all. Both figures are
+        // stated rather than one inferred from the other (specification section 10).
+        var products = new (string Name, string Mould, string Type, bool Abs, int Pieces, int SmallBags, int LargeBags, int PerPallet)[]
         {
-            ("Big Plate — Normal", "Big Plate", "Plate", false, 500, 2, 15),
-            ("Big Plate — Absorbent", "Big Plate", "Plate", true, 500, 2, 15),
-            ("Small Plate — Normal", "Small Plate", "Plate", false, 500, 2, 15),
-            ("Small Plate — Absorbent", "Small Plate", "Plate", true, 500, 2, 15),
-            ("Large Meal Box", "Large Meal Box", "Meal Box", false, 250, 1, 21),
-            ("Small Meal Box", "Small Meal Box", "Meal Box", false, 250, 1, 21),
-            ("3-Compartment Clamshell", "3-Compartment Clamshell", "Clamshell", false, 250, 1, 21),
+            ("Big Plate — Normal", "Big Plate", "Plate", false, 500, 2, 1, 15),
+            ("Big Plate — Absorbent", "Big Plate", "Plate", true, 500, 2, 1, 15),
+            ("Small Plate — Normal", "Small Plate", "Plate", false, 500, 2, 1, 15),
+            ("Small Plate — Absorbent", "Small Plate", "Plate", true, 500, 2, 1, 15),
+            ("Large Meal Box", "Large Meal Box", "Meal Box", false, 250, 1, 0, 21),
+            ("Small Meal Box", "Small Meal Box", "Meal Box", false, 250, 1, 0, 21),
+            ("3-Compartment Clamshell", "3-Compartment Clamshell", "Clamshell", false, 250, 1, 0, 21),
         };
 
         // Only into an empty table, and only if the moulds and types are still the ones
@@ -227,6 +231,7 @@ public static class MasterDataSeeder
                     IsAbsorbent = p.Abs,
                     PiecesPerBag = p.Pieces,
                     SmallBagsPerBag = p.SmallBags,
+                    LargeBagsPerBag = p.LargeBags,
                     BagsPerPallet = p.PerPallet,
                 });
                 before++;
@@ -242,31 +247,34 @@ public static class MasterDataSeeder
         var raw = await db.MaterialCategories.SingleAsync(c => c.Name == "Raw Material", cancellationToken);
         var packaging = await db.MaterialCategories.SingleAsync(c => c.Name == "Packaging Material", cancellationToken);
 
-        var materials = new (string Code, string Name, int CategoryId, int UnitId, decimal? UnitWeight)[]
+        // CountedAs names the three the system works out for itself from what the shift
+        // produced. Tape, shrink and the hood are used by length and by feel, so they
+        // stay typed (specification section 10).
+        var materials = new (string Code, string Name, int CategoryId, int UnitId, decimal? UnitWeight, CountedPackaging CountedAs)[]
         {
-            ("MAT0001", "GPPS", raw.Id, kg.Id, null),
-            ("MAT0002", "Recycled Material", raw.Id, kg.Id, null),
-            ("MAT0003", "Talc", raw.Id, kg.Id, null),
-            ("MAT0004", "Nucleating Agent", raw.Id, kg.Id, null),
-            ("MAT0005", "Absorbent Agent", raw.Id, kg.Id, null),
-            ("MAT0006", "Antistatic Agent", raw.Id, kg.Id, null),
-            ("MAT0007", "Coloring Agent", raw.Id, kg.Id, null),
-            ("MAT0008", "Black Coloring Agent", raw.Id, kg.Id, null),
-            ("MAT0009", "Tape", packaging.Id, piece.Id, null),
-            ("MAT0010", "Shrink Wrap", packaging.Id, piece.Id, null),
-            ("MAT0011", "Plastic Hood", packaging.Id, piece.Id, null),
+            ("MAT0001", "GPPS", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0002", "Recycled Material", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0003", "Talc", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0004", "Nucleating Agent", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0005", "Absorbent Agent", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0006", "Antistatic Agent", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0007", "Coloring Agent", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0008", "Black Coloring Agent", raw.Id, kg.Id, null, CountedPackaging.None),
+            ("MAT0009", "Tape", packaging.Id, piece.Id, null, CountedPackaging.None),
+            ("MAT0010", "Shrink Wrap", packaging.Id, piece.Id, null, CountedPackaging.None),
+            ("MAT0011", "Plastic Hood", packaging.Id, piece.Id, null, CountedPackaging.None),
             // Unit weights measured from the factory's own 2 July form:
             // 5.185 kg / 61 bags and 5.8 kg / 122 bags.
-            ("MAT0012", "Large Bags", packaging.Id, piece.Id, 0.085m),
-            ("MAT0013", "Small Bags", packaging.Id, piece.Id, 0.0475m),
-            ("MAT0014", "Empty Wooden Pallets", packaging.Id, piece.Id, null),
+            ("MAT0012", "Large Bags", packaging.Id, piece.Id, 0.085m, CountedPackaging.LargeBag),
+            ("MAT0013", "Small Bags", packaging.Id, piece.Id, 0.0475m, CountedPackaging.SmallBag),
+            ("MAT0014", "Empty Wooden Pallets", packaging.Id, piece.Id, null, CountedPackaging.WoodenPallet),
         };
 
         // Matched on the code rather than the name, so renaming a material is safe —
         // but still only into an empty table, so deleting one does not bring it back.
         if (!await db.Materials.AnyAsync(cancellationToken))
         {
-            foreach (var (code, name, categoryId, unitId, unitWeight) in materials)
+            foreach (var (code, name, categoryId, unitId, unitWeight, countedAs) in materials)
             {
                 db.Materials.Add(new Material
                 {
@@ -275,6 +283,7 @@ public static class MasterDataSeeder
                     CategoryId = categoryId,
                     BaseUnitId = unitId,
                     UnitWeight = unitWeight,
+                    CountedAs = countedAs,
                 });
                 before++;
             }

@@ -1,4 +1,4 @@
-using Colors.Domain.Constants;
+﻿using Colors.Domain.Constants;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Shifts;
 using Colors.Infrastructure.Identity;
@@ -156,7 +156,10 @@ public static class FactoryData
             ProductTypeId = productType.Id,
             IsAbsorbent = false,
             PiecesPerBag = 500,
+            // A plate goes into a big bag holding two small ones, which is what the
+            // packaging counts are worked out from (specification section 10).
             SmallBagsPerBag = 2,
+            LargeBagsPerBag = 1,
             BagsPerPallet = 15,
         };
         var absorbent = new Product
@@ -166,7 +169,10 @@ public static class FactoryData
             ProductTypeId = productType.Id,
             IsAbsorbent = true,
             PiecesPerBag = 500,
+            // A plate goes into a big bag holding two small ones, which is what the
+            // packaging counts are worked out from (specification section 10).
             SmallBagsPerBag = 2,
+            LargeBagsPerBag = 1,
             BagsPerPallet = 15,
         };
         db.Products.AddRange(normal, absorbent);

@@ -11,6 +11,7 @@ import { MaterialIssuePage } from './features/material-issue/MaterialIssuePage';
 import { RollProductionPage } from './features/production/RollProductionPage';
 import { RollTestsPage } from './features/production/RollTestsPage';
 import { MasterDataPage } from './features/master-data/MasterDataPage';
+import { PackagingPage } from './features/packaging/PackagingPage';
 import { PalletsPage } from './features/pallets/PalletsPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
@@ -135,6 +136,7 @@ export default function App(): ReactElement {
                   }
                 >
                   <Route path="/production/pallets" element={<PalletsPage />} />
+                  <Route path="/production/packaging" element={<PackagingPage />} />
                 </Route>
 
                 {/* Master data changes affect every screen, so only the

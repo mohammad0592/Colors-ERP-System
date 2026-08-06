@@ -4,6 +4,7 @@ using Colors.Application.Features.Inventory;
 using Colors.Application.Features.MaterialIssue;
 using Colors.Application.Features.Production;
 using Colors.Application.Features.MasterData;
+using Colors.Application.Features.Packaging;
 using Colors.Application.Features.Pallets;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
@@ -18,6 +19,7 @@ using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.MaterialIssue;
 using Colors.Infrastructure.Services.Production;
+using Colors.Infrastructure.Services.Packaging;
 using Colors.Infrastructure.Services.Pallets;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
@@ -131,8 +133,9 @@ public static class DependencyInjection
         // Line 2, thermoforming (specification section 9).
         services.AddScoped<IThermoService, ThermoService>();
 
-        // Pallets (specification section 10).
+        // Pallets and packaging (specification section 10).
         services.AddScoped<IPalletService, PalletService>();
+        services.AddScoped<IPackagingService, PackagingService>();
 
         // Rolls, bags and pallets as stock, and the labels that go on them
         // (specification sections 8 to 12).

@@ -1,4 +1,5 @@
-using Colors.Domain.Common;
+﻿using Colors.Domain.Common;
+using Colors.Domain.Enums;
 
 namespace Colors.Domain.Entities.MasterData;
 
@@ -32,6 +33,16 @@ public class Material : MasterEntity
     /// (specification section 10).
     /// </summary>
     public decimal? UnitWeight { get; set; }
+
+    /// <summary>
+    /// Which packaging material the system counts this row as, if any
+    /// (specification section 10).
+    ///
+    /// Three of them do not need typing: what the shift produced already says how many
+    /// were used. Left empty, the material is typed by hand like tape and shrink — so
+    /// the list is not a fixed set of six, it is however many the factory keeps.
+    /// </summary>
+    public CountedPackaging CountedAs { get; set; }
 
     /// <summary>Reserved for a future version; v1 barcodes rolls, bags and pallets only.</summary>
     public bool BarcodeTracked { get; set; }

@@ -1,4 +1,4 @@
-using System.Reflection;
+﻿using System.Reflection;
 using Colors.Domain.Entities.Barcodes;
 using Colors.Domain.Entities.Inventory;
 using Colors.Domain.Entities.MasterData;
@@ -59,9 +59,12 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<ThermoTestReport> ThermoTestReports => Set<ThermoTestReport>();
     public DbSet<ProducedBag> ProducedBags => Set<ProducedBag>();
 
-    // Pallets — specification section 10.
+    // Pallets and packaging — specification section 10.
     public DbSet<WoodenPallet> WoodenPallets => Set<WoodenPallet>();
     public DbSet<BagPalletAssignment> BagPalletAssignments => Set<BagPalletAssignment>();
+    public DbSet<PackagingConsumption> PackagingConsumptions => Set<PackagingConsumption>();
+    public DbSet<PackagingConsumptionLine> PackagingConsumptionLines =>
+        Set<PackagingConsumptionLine>();
 
     // Barcodes — specification section 12. One table for rolls, bags and pallets.
     public DbSet<Barcode> Barcodes => Set<Barcode>();
