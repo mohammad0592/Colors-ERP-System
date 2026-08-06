@@ -2,7 +2,7 @@ import type { ReactElement } from 'react';
 import type { PalletStatus } from './api';
 
 /**
- * None of these is stored. They are read off two dates and the bags on the pallet
+ * None of these is stored. They are read off three dates and the bags on the pallet
  * (specification section 10).
  */
 const tones: Record<PalletStatus, { label: string; className: string }> = {
@@ -10,6 +10,7 @@ const tones: Record<PalletStatus, { label: string; className: string }> = {
   Opened: { label: 'Building', className: 'bg-brand-50 text-brand-700' },
   Completed: { label: 'Full', className: 'bg-ok-soft text-ok' },
   Shipped: { label: 'Shipped', className: 'bg-canvas text-ink-soft' },
+  Cancelled: { label: 'Given up', className: 'bg-bad-soft text-bad' },
 };
 
 export function PalletStatusBadge({ status }: { status: PalletStatus }): ReactElement {

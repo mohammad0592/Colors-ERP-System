@@ -73,6 +73,23 @@ public class PalletsController(IPalletService pallets) : ApiControllerBase
             await pallets.ScanBagAsync(id, request, CurrentUserId(), cancellationToken));
     }
 
+    /// <summary>
+    /// Gives up on an empty pallet and sends its wooden pallet back to the store.
+    ///
+    /// The operator's own call, not a supervisor's: no bag was ever on it, nothing in
+    /// the record changes, and the wood is standing in front of them.
+    /// </summary>
+    [HttpPost("{id:int}/cancel")]
+    [Authorize(Roles = CanPack)]
+    public async Task<IActionResult> CancelPallet(
+        int id,
+        [FromBody] CancelPalletRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(
+            await pallets.CancelPalletAsync(id, request, CurrentUserId(), cancellationToken));
+    }
+
     /// <summary>Takes a bag back off. The scan stays in the history with its reason.</summary>
     [HttpPost("assignments/{assignmentId:int}/reverse")]
     [Authorize(Roles = CanReverse)]

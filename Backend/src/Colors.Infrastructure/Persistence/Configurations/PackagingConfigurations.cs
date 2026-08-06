@@ -25,6 +25,16 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
             t.HasCheckConstraint(
                 "ck_pallets_colour_and_product_together",
                 "(\"ColorId\" IS NULL) = (\"ProductId\" IS NULL)");
+
+            // Cancelling is one act with a date, a person and a reason — all three or
+            // none. And a pallet given up on was never filled, so it cannot also be
+            // finished or shipped.
+            t.HasCheckConstraint(
+                "ck_pallets_cancelled_together",
+                "(\"CancelledAt\" IS NULL) = (\"CancelledByUserId\" IS NULL) "
+                + "AND (\"CancelledAt\" IS NULL) = (\"CancellationReason\" IS NULL) "
+                + "AND (\"CancelledAt\" IS NULL "
+                + "OR (\"CompletedAt\" IS NULL AND \"ShippedAt\" IS NULL))");
         });
 
         builder.Property(e => e.Notes).HasMaxLength(500);
@@ -57,6 +67,13 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
             .WithMany()
             .HasForeignKey(e => e.CreatedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.CancelledByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(e => e.CancellationReason).HasMaxLength(500);
     }
 }
 

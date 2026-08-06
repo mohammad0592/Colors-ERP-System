@@ -3,7 +3,7 @@ namespace Colors.Domain.Enums;
 /// <summary>
 /// Where a pallet is in its life (specification section 10).
 ///
-/// Never stored. Read off two dates and the bags actually on it — see
+/// Never stored. Read off three dates and the bags actually on it — see
 /// <see cref="Entities.Packaging.WoodenPallet.Status"/>.
 /// </summary>
 public enum PalletStatus
@@ -18,4 +18,10 @@ public enum PalletStatus
     Completed = 3,
 
     Shipped = 4,
+
+    /// <summary>
+    /// Started by mistake and given up on. Its wooden pallet went back to the store,
+    /// because a pallet that never held a bag used no wood.
+    /// </summary>
+    Cancelled = 5,
 }

@@ -5,7 +5,7 @@ import { apiRequest } from '../../lib/apiClient';
  * Specification section 10.
  */
 
-export type PalletStatus = 'Empty' | 'Opened' | 'Completed' | 'Shipped';
+export type PalletStatus = 'Empty' | 'Opened' | 'Completed' | 'Shipped' | 'Cancelled';
 
 export interface PalletSummaryDto {
   id: number;
@@ -51,6 +51,10 @@ export interface PalletBagDto {
 
 export interface PalletDto extends PalletSummaryDto {
   shippedAt: string | null;
+  /** Set only on a pallet given up on. Its wooden pallet went back to the store. */
+  cancelledAt: string | null;
+  cancelledByName: string | null;
+  cancellationReason: string | null;
   notes: string | null;
   bags: PalletBagDto[];
 }
@@ -80,10 +84,18 @@ export const palletsApi = {
     return apiRequest<AvailableBagDto[]>(`/api/pallets/available-bags${query}`);
   },
 
+  /** Also takes the wooden pallet out of the store. Refused when there is none. */
   start: (shiftLineId: number, notes: string | null): Promise<PalletDto> =>
     apiRequest<PalletDto>('/api/pallets', {
       method: 'POST',
       body: { shiftLineId, notes },
+    }),
+
+  /** Gives up on an empty pallet and sends its wooden pallet back to the store. */
+  cancel: (palletId: number, reason: string): Promise<PalletDto> =>
+    apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/cancel`, {
+      method: 'POST',
+      body: { reason },
     }),
 
   /** The first bag decides what the pallet is; every later one must match. */

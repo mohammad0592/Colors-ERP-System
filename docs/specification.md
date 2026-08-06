@@ -1047,35 +1047,49 @@ On 2 July: one green roll made 14 bags; four yellow rolls made 12 + 9 + 12 + 14 
 | Id · PalletNumber | the barcode lives in `Barcodes`, like a roll's and a bag's |
 | ShiftLineId (FK) | the line that forms bags — its part of the shift the pallet was built on |
 | **ColorId · ProductId** | **both NULL until the first bag is scanned** |
-| CreatedByUserId · CreatedAt · **CompletedAt · ShippedAt** · Notes | two dates, no status column — see below |
+| CreatedByUserId · CreatedAt · **CompletedAt · ShippedAt · CancelledAt** · Notes | three dates, no status column — see below |
 
 **Bag count and piece count are NOT stored.** They are `COUNT()` and `SUM()` over the assignments — a pallet holds a couple of dozen rows at most, so counting is instant.
 
-**Neither is the status.** The four states are read off what is already true:
+**Neither is the status.** The five states are read off what is already true:
 
 ```
+CancelledAt set      →  Given up
 ShippedAt set        →  Shipped
 CompletedAt set      →  Completed
 at least one bag     →  Opened
 none of the above    →  Empty
 ```
 
-Shipping and completing are *events*, so they are dates. Empty and Opened are not events at all — they are just "does this pallet have bags on it", which the assignments already answer. A stored status would be a second copy of that, free to drift: a pallet reading `Opened` while holding nothing, with no way to say which of the two is right. This is the [calculated or stored](#calculated-or-stored) rule: the count is not master data and cannot be edited behind the pallet's back, so it is worked out.
+Shipping, completing and giving up are *events*, so they are dates. Empty and Opened are not events at all — they are just "does this pallet have bags on it", which the assignments already answer. A stored status would be a second copy of that, free to drift: a pallet reading `Opened` while holding nothing, with no way to say which of the two is right. This is the [calculated or stored](#calculated-or-stored) rule: the count is not master data and cannot be edited behind the pallet's back, so it is worked out.
 
 ### A pallet needs a pallet
 
-**Starting one is refused when the store holds no empty wooden pallets.** Bags cannot be stacked on wood that is not there, and the system knew the store was empty while letting it happen anyway.
+**One empty wooden pallet leaves the store the moment a pallet is started**, charged to the shift it was started on. That is when the operator picks it up off the stack, so that is when the store should say so.
 
-The reason it matters beyond tidiness is at the other end of the shift. Wooden pallets are one of the three materials counted from production, one per pallet **completed** — so a shift that finished three pallets deducts three. Deducting three from a store holding none meets the never-negative rule, and that refusal takes down the **whole** packaging record, not just its pallet line: the shift then has no packaging figures at all, and the operator is told he is short of something he used hours ago.
+It follows the floor rather than the paperwork. A pallet that was started used a pallet of wood whether or not it was ever filled — the wood is under the bags either way. And the store's figure is true all day instead of only after a shift closes.
 
-Checked when the pallet is started rather than when it is completed, so the answer comes while somebody can still do something about it — fetch more wood, or enter the opening count that was never entered.
+Two things fall out of it, and both are the point:
 
-The wood is still **deducted at shift end**, not here. A pallet started and abandoned uses nothing, and the count that matters is what was finished.
+**The store's own never-negative rule is the whole guard.** A factory with no wooden pallets left cannot start one, because taking the last one out would push the store below nothing and the ledger refuses. There is no separate check to fall out of step with the figure it is checking.
 
-Because nothing is deducted until then, the pallets already being built on the line are counted as claims on the same pile. Two in the store and two half-full on the floor means the third is refused — the wood for those two is spoken for, even though the store's figure has not moved yet.
+**Nothing about pallets is counted at shift end.** Wooden pallets are *not* one of the materials worked out from production on the packaging record — they never appear on that form at all. The old rule deducted one per pallet **completed**, at shift close, and it left a hole: a pallet started in one shift and still half-built when that shift ended was counted by nobody. Its own shift had passed, and the next shift only counts its own pallets. Under this rule there is no completion to wait for and no shift boundary to fall through.
+
+### Giving up on a pallet
+
+A pallet started by mistake — wrong line, wrong moment — can be **given up on**, and its wooden pallet goes back to the store.
+
+**Only while it is empty.** Once a bag is on it the wood is under the bags and the pallet is real; the way back is to take the bags off, one reversal at a time, and then give it up.
+
+A reason is required, exactly as a reversal needs one. The pallet is never deleted: it keeps its number, its barcode and its place in the record, with `CancelledAt`, who gave up on it, and why. Its status reads **Given up**, it takes no more bags, and it is not counted among the shift's pallets.
+
+**`WoodenPallets`** gains — CancelledAt · CancelledByUserId (FK) · CancellationReason
 
 ```
-in store − pallets already being built on this line  <  1   →  refused
+Started      →  1 wooden pallet OUT of the store   (Packaging Consumption)
+Given up     →  1 wooden pallet BACK to the store  (Return)
+Completed    →  nothing moves; the wood went out at the start
+Shift close  →  nothing moves either
 ```
 
 ### The rule the factory gave
@@ -1171,7 +1185,7 @@ Nobody does extra work — the count comes from production, the weight is alread
 
 One row per material — **never one column per material**. Adding a new packaging material is then a data change, and each line posts its own stock movement directly with no mapping code.
 
-### Three packaging materials the system can count by itself
+### The packaging materials the system can count by itself
 
 These do not need to be typed at all, because the system already knows the numbers:
 
@@ -1179,10 +1193,14 @@ These do not need to be typed at all, because the system already knows the numbe
 |---|---|---|
 | **Large bags** | `LargeBagsPerBag` per produced bag | the product's own figure |
 | **Small bags** | `SmallBagsPerBag` per produced bag | the product's own figure |
-| **Empty wooden pallets** | 1 per completed pallet | `COUNT(WoodenPallets Completed)` |
 
-So a plate shift that made 61 bags on 3 pallets used exactly 61 large bags, 122 small
-bags and 3 pallets — the operator types nothing and the numbers cannot be wrong.
+So a plate shift that made 61 bags used exactly 61 large bags and 122 small — the
+operator types nothing and the numbers cannot be wrong.
+
+**Empty wooden pallets are not on this form.** They are counted just as strictly, but one
+at a time as each pallet is started, not once at the end of the shift — see
+[a pallet needs a pallet](#a-pallet-needs-a-pallet). A line here would take the same wood
+out of the store twice.
 
 A meal box or clamshell is packed in the small bag directly: one small, no large. Both
 figures come from the **product**, so a shift that switches mould is still counted
@@ -1196,8 +1214,10 @@ facts.
 
 ### Which material is the large bag
 
-The three counted materials need naming, and **`Materials.CountedAs`** does it: empty,
-`LargeBag`, `SmallBag` or `WoodenPallet`. Three rows are set once in Master Data.
+The counted materials need naming, and **`Materials.CountedAs`** does it: empty,
+`LargeBag`, `SmallBag` or `WoodenPallet`. Three rows are set once in Master Data — the
+wooden pallet among them, because starting a pallet has to know which material to take
+out of the store even though it never reaches the packaging form.
 
 Never a check on the material's name. Rename "Large Bags" and a name rule would stop
 counting silently — no error, just a number quietly going to zero on every shift report

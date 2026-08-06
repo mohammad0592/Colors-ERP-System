@@ -6,6 +6,7 @@ using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.Barcodes;
+using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.Pallets;
 using Colors.Infrastructure.Services.Production;
 using Colors.Infrastructure.Services.Thermo;
@@ -21,7 +22,10 @@ namespace Colors.IntegrationTests.Features;
 public class PalletTests(DatabaseFixture fixture)
 {
     private static PalletService NewService(ColorsDbContext db) =>
-        new(db, new BarcodeService(db, TimeProvider.System), TimeProvider.System);
+        new(db,
+            new BarcodeService(db, TimeProvider.System),
+            new StockLedger(db, TimeProvider.System),
+            TimeProvider.System);
 
     /// <summary>
     /// A run of bags, built the long way through the real services — roll, measure,
@@ -466,8 +470,7 @@ public class PalletTests(DatabaseFixture fixture)
     /// about running out has to issue the pile down to the figure it wants. Nothing is
     /// put back afterwards — the next factory receives its own hundred.
     /// </summary>
-    private static async Task SetWoodStockAsync(
-        ColorsDbContext db, FactoryData.Ids ids, decimal quantity)
+    private static async Task<(int Id, decimal InStock)> WoodAsync(ColorsDbContext db)
     {
         var wood = await db.Materials.FirstAsync(
             m => m.CountedAs == CountedPackaging.WoodenPallet);
@@ -477,16 +480,28 @@ public class PalletTests(DatabaseFixture fixture)
             .Select(i => i.CurrentQuantity)
             .FirstOrDefaultAsync();
 
-        var ledger = new Colors.Infrastructure.Services.Inventory.StockLedger(
-            db, TimeProvider.System);
+        return (wood.Id, inStock);
+    }
 
-        var difference = quantity - inStock;
+    /// <summary>
+    /// Leaves exactly <paramref name="quantity"/> empty wooden pallets in the store.
+    ///
+    /// The suite shares one database and every factory receives a hundred, so a test
+    /// about running out has to issue the pile down to the figure it wants. Nothing is
+    /// put back afterwards — the next factory receives its own hundred.
+    /// </summary>
+    private static async Task SetWoodStockAsync(
+        ColorsDbContext db, FactoryData.Ids ids, decimal quantity)
+    {
+        var wood = await WoodAsync(db);
+        var difference = quantity - wood.InStock;
+
         if (difference == 0)
         {
             return;
         }
 
-        var posted = await ledger.PostAsync(
+        var posted = await new StockLedger(db, TimeProvider.System).PostAsync(
             wood.Id,
             difference > 0 ? MovementTypeNames.Receive : MovementTypeNames.Issue,
             Math.Abs(difference),
@@ -497,58 +512,146 @@ public class PalletTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task A_pallet_cannot_be_started_with_no_wood_in_the_store()
+    public async Task Starting_a_pallet_takes_its_wood_out_of_the_store()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PAL19");
+
+        var before = (await WoodAsync(db)).InStock;
+        await PalletAsync(db, ids);
+
+        // Not at the end of the shift — now, which is when the operator picks it up
+        // (specification section 10).
+        Assert.Equal(before - 1m, (await WoodAsync(db)).InStock);
+    }
+
+    [Fact]
+    public async Task A_pallet_cannot_be_started_with_no_wood_in_the_store()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL20");
         await SetWoodStockAsync(db, ids, 0m);
 
         var pallet = await NewService(db).StartPalletAsync(
             new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
 
+        // The store's own never-negative rule is the guard. There is no second check to
+        // disagree with it.
         Assert.False(pallet.IsSuccess);
-        Assert.Contains("store has 0", pallet.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("not enough", pallet.Message!, StringComparison.OrdinalIgnoreCase);
 
         // Refused means nothing was written — no pallet, and no barcode for one.
         Assert.False(await db.WoodenPallets.AnyAsync(p => p.ShiftLineId == ids.ThermoShiftLineId));
     }
 
     [Fact]
-    public async Task One_wooden_pallet_in_the_store_is_enough_for_one()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "PAL20");
-        await SetWoodStockAsync(db, ids, 1m);
-
-        var started = await NewService(db).StartPalletAsync(
-            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
-
-        Assert.True(started.IsSuccess, started.Message);
-    }
-
-    [Fact]
-    public async Task Pallets_already_being_built_count_against_the_wood()
+    public async Task The_last_wooden_pallet_starts_one_and_only_one()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PAL21");
-        await SetWoodStockAsync(db, ids, 2m);
+        await SetWoodStockAsync(db, ids, 1m);
         var service = NewService(db);
 
-        // The wood is only deducted when the shift's packaging is recorded, so a pallet
-        // that is still being filled is a claim on the store even though the store's
-        // figure has not moved yet.
-        for (var i = 0; i < 2; i++)
-        {
-            var started = await service.StartPalletAsync(
-                new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
-            Assert.True(started.IsSuccess, started.Message);
-        }
+        var first = await service.StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+        Assert.True(first.IsSuccess, first.Message);
 
-        var third = await service.StartPalletAsync(
+        var second = await service.StartPalletAsync(
             new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
 
-        Assert.False(third.IsSuccess);
-        Assert.Contains("2 pallets are already being built", third.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.False(second.IsSuccess);
+        Assert.Equal(0m, (await WoodAsync(db)).InStock);
+    }
+
+    [Fact]
+    public async Task Giving_up_on_an_empty_pallet_sends_its_wood_back()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL22");
+        var service = NewService(db);
+
+        var before = (await WoodAsync(db)).InStock;
+        var pallet = await PalletAsync(db, ids);
+
+        var cancelled = await service.CancelPalletAsync(
+            pallet.Id, new CancelPalletRequest("Started on the wrong line"), ids.UserId);
+
+        Assert.True(cancelled.IsSuccess, cancelled.Message);
+        Assert.Equal(PalletStatus.Cancelled.ToString(), cancelled.Value!.Status);
+        Assert.False(cancelled.Value.IsOpen);
+        Assert.Equal("Started on the wrong line", cancelled.Value.CancellationReason);
+        Assert.NotNull(cancelled.Value.CancelledByName);
+
+        // Nothing was ever stacked on it, so the store is exactly where it started.
+        Assert.Equal(before, (await WoodAsync(db)).InStock);
+    }
+
+    [Fact]
+    public async Task A_pallet_with_bags_on_it_cannot_be_given_up_on()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL23");
+        var bags = await BagsAsync(db, ids, "PAL23", 2);
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        await service.ScanBagAsync(
+            pallet.Id, new ScanBagRequest(bags[0].Barcode, null), ids.UserId);
+
+        var before = (await WoodAsync(db)).InStock;
+
+        var cancelled = await service.CancelPalletAsync(
+            pallet.Id, new CancelPalletRequest("Changed my mind"), ids.UserId);
+
+        // The wood is under the bags. Taking the bags off is the way back.
+        Assert.False(cancelled.IsSuccess);
+        Assert.Contains("bags on it", cancelled.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(before, (await WoodAsync(db)).InStock);
+    }
+
+    [Fact]
+    public async Task Giving_up_needs_a_reason_and_only_happens_once()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL24");
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        var blank = await service.CancelPalletAsync(
+            pallet.Id, new CancelPalletRequest("   "), ids.UserId);
+        Assert.False(blank.IsSuccess);
+
+        var first = await service.CancelPalletAsync(
+            pallet.Id, new CancelPalletRequest("Started by mistake"), ids.UserId);
+        Assert.True(first.IsSuccess, first.Message);
+
+        var before = (await WoodAsync(db)).InStock;
+
+        // Twice would hand the store a pallet of wood that never existed.
+        var again = await service.CancelPalletAsync(
+            pallet.Id, new CancelPalletRequest("Again"), ids.UserId);
+
+        Assert.False(again.IsSuccess);
+        Assert.Equal(before, (await WoodAsync(db)).InStock);
+    }
+
+    [Fact]
+    public async Task A_bag_cannot_go_on_a_pallet_that_was_given_up_on()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL25");
+        var bags = await BagsAsync(db, ids, "PAL25", 2);
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        await service.CancelPalletAsync(
+            pallet.Id, new CancelPalletRequest("Started by mistake"), ids.UserId);
+
+        var scanned = await service.ScanBagAsync(
+            pallet.Id, new ScanBagRequest(bags[0].Barcode, null), ids.UserId);
+
+        Assert.False(scanned.IsSuccess);
+        Assert.Contains("given up on", scanned.Message!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

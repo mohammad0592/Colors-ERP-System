@@ -43,7 +43,11 @@ export interface PackagingDraftDto {
   productionDate: string;
   /** Shown so the operator can see why the counts are what they are. */
   bagsProduced: number;
-  palletsCompleted: number;
+  /**
+   * Shown for the shift's shape only. The wood for these pallets is already out of the
+   * store — it left as each one was started, so it is not a line on this form.
+   */
+  palletsStarted: number;
   alreadyRecorded: boolean;
   lines: PackagingLineDto[];
 }

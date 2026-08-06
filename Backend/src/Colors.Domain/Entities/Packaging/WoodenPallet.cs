@@ -52,6 +52,17 @@ public class WoodenPallet
     /// <summary>Also an event. Nothing sets it yet — there is no dispatch phase.</summary>
     public DateTimeOffset? ShippedAt { get; set; }
 
+    /// <summary>
+    /// Set when a pallet started by mistake is given up on. Only ever on an empty one:
+    /// once a bag is on it the wood is under the bags and the pallet is real.
+    /// </summary>
+    public DateTimeOffset? CancelledAt { get; set; }
+
+    public int? CancelledByUserId { get; set; }
+
+    /// <summary>Required to cancel, exactly as a reversal needs one.</summary>
+    public string? CancellationReason { get; set; }
+
     public string? Notes { get; set; }
 
     public List<BagPalletAssignment> Assignments { get; set; } = [];
@@ -68,6 +79,13 @@ public class WoodenPallet
     {
         get
         {
+            // First, because it is the one state that ends the pallet's life without it
+            // ever having been a pallet of anything.
+            if (CancelledAt is not null)
+            {
+                return PalletStatus.Cancelled;
+            }
+
             if (ShippedAt is not null)
             {
                 return PalletStatus.Shipped;

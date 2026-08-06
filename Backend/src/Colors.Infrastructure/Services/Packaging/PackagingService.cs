@@ -92,7 +92,7 @@ public class PackagingService(
             shiftLine.ShiftReport.Shift.Name,
             shiftLine.ShiftReport.ProductionDate,
             counts.BagsProduced,
-            counts.PalletsCompleted,
+            counts.PalletsStarted,
             existing is not null,
             lines));
     }
@@ -235,11 +235,14 @@ public class PackagingService(
     // ---------- what the shift produced ----------
 
     /// <summary>
-    /// The three figures nobody types, read off what the shift actually made.
+    /// The figures nobody types, read off what the shift actually made.
     ///
     /// The bag counts come from the <b>product</b>, so a shift that switched mould
     /// halfway is still counted correctly — the plates take a large bag and two small,
     /// the meal boxes one small and no large, and each bag knows which it is.
+    ///
+    /// The pallet count is here to be read, not deducted. Its material left the store
+    /// one pallet at a time as they were started.
     /// </summary>
     private async Task<ProducedCounts> CountsAsync(
         int shiftLineId,
@@ -250,10 +253,12 @@ public class PackagingService(
             .Select(b => new { b.Product.LargeBagsPerBag, b.Product.SmallBagsPerBag })
             .ToListAsync(cancellationToken);
 
-        // A pallet counts when it is finished — an open one is still being built and its
-        // wood has not been used up yet.
+        // Shown so the operator can see the shift's shape, not deducted here: the wood
+        // left the store when each pallet was started. A pallet given up on does not
+        // count, because its wood went back.
         var pallets = await db.WoodenPallets
-            .CountAsync(p => p.ShiftLineId == shiftLineId && p.CompletedAt != null, cancellationToken);
+            .CountAsync(
+                p => p.ShiftLineId == shiftLineId && p.CancelledAt == null, cancellationToken);
 
         return new ProducedCounts(
             bags.Count,
@@ -266,25 +271,33 @@ public class PackagingService(
         int BagsProduced,
         int LargeBags,
         int SmallBags,
-        int PalletsCompleted)
+        int PalletsStarted)
     {
+        // No WoodenPallet arm on purpose. That material never reaches a line here, and a
+        // figure returned for it would be a figure waiting to be deducted twice.
         public decimal For(CountedPackaging counted) => counted switch
         {
             CountedPackaging.LargeBag => LargeBags,
             CountedPackaging.SmallBag => SmallBags,
-            CountedPackaging.WoodenPallet => PalletsCompleted,
             _ => 0m,
         };
     }
 
     // ---------- helpers ----------
 
-    /// <summary>Active materials in a category that does not go out on a ticket.</summary>
+    /// <summary>
+    /// Active materials in a category that does not go out on a ticket.
+    ///
+    /// The wooden pallet is not among them. It leaves the store when a pallet is
+    /// started, not at the end of the shift, so counting it here would take it out a
+    /// second time (specification section 10).
+    /// </summary>
     private async Task<List<Material>> PackagingMaterialsAsync(CancellationToken cancellationToken) =>
         await db.Materials
             .Include(m => m.Category)
             .Include(m => m.BaseUnit)
             .Where(m => m.IsActive && !m.Category.IssuedOnTickets)
+            .Where(m => m.CountedAs != CountedPackaging.WoodenPallet)
             .OrderBy(m => m.Name)
             .ToListAsync(cancellationToken);
 

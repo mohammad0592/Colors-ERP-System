@@ -67,6 +67,10 @@ public sealed record PalletDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? CompletedAt,
     DateTimeOffset? ShippedAt,
+    // Set only on a pallet given up on. Its wooden pallet went back to the store.
+    DateTimeOffset? CancelledAt,
+    string? CancelledByName,
+    string? CancellationReason,
     string? Notes,
     IReadOnlyList<PalletBagDto> Bags);
 
@@ -101,6 +105,13 @@ public sealed record ScanBagRequest(string? BagBarcode, int? ProducedBagId);
 public sealed record ReverseAssignmentRequest(string Reason);
 
 /// <summary>
+/// Gives up on a pallet started by mistake and sends its wooden pallet back to the
+/// store. Only an empty one, and the reason is required for the same reason a reversal
+/// needs one.
+/// </summary>
+public sealed record CancelPalletRequest(string Reason);
+
+/// <summary>
 /// Pallets (specification section 10).
 ///
 /// Declared here, implemented in Infrastructure.
@@ -121,8 +132,19 @@ public interface IPalletService
         int? palletId = null,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Starts an empty pallet and takes its wooden pallet out of the store. The store
+    /// never goes below nothing, so a factory with no wood cannot start one.
+    /// </summary>
     Task<Result<PalletDto>> StartPalletAsync(
         StartPalletRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Sends the wooden pallet back. Refused once a bag is on it.</summary>
+    Task<Result<PalletDto>> CancelPalletAsync(
+        int palletId,
+        CancelPalletRequest request,
         int userId,
         CancellationToken cancellationToken = default);
 

@@ -39,8 +39,11 @@ public sealed record PackagingConsumptionDto(
     IReadOnlyList<PackagingLineDto> Lines);
 
 /// <summary>
-/// The form before it is saved: every packaging material, with the three counted ones
-/// already filled in from the shift's own production.
+/// The form before it is saved: every packaging material, with the counted ones already
+/// filled in from the shift's own production.
+///
+/// The wooden pallet is not on it. That one leaves the store as each pallet is started,
+/// so there is nothing left to record here (specification section 10).
 /// </summary>
 public sealed record PackagingDraftDto(
     int ShiftLineId,
@@ -50,7 +53,8 @@ public sealed record PackagingDraftDto(
     // What the counts were worked out from, so the operator can see why they are what
     // they are rather than being handed a number to trust.
     int BagsProduced,
-    int PalletsCompleted,
+    // Shown for the shift's shape only — the wood for these is already out of the store.
+    int PalletsStarted,
     bool AlreadyRecorded,
     IReadOnlyList<PackagingLineDto> Lines);
 

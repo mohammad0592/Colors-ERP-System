@@ -153,8 +153,8 @@ export function PackagingPage(): ReactElement {
               </h2>
               <p className="text-sm text-ink-muted">
                 {formatDate(draft.data.productionDate)} · {draft.data.bagsProduced} bags
-                made · {draft.data.palletsCompleted} pallet
-                {draft.data.palletsCompleted === 1 ? '' : 's'} finished
+                made · {draft.data.palletsStarted} pallet
+                {draft.data.palletsStarted === 1 ? '' : 's'} built
               </p>
             </div>
             <button

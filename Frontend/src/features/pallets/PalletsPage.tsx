@@ -9,6 +9,7 @@ import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { palletsApi } from './api';
+import { GiveUpPalletDialog } from './GiveUpPalletDialog';
 import { PalletCard } from './PalletCard';
 import { PalletScanBox } from './PalletScanBox';
 import { PalletStatusBadge } from './PalletStatusBadge';
@@ -33,6 +34,7 @@ export function PalletsPage(): ReactElement {
   const [openOnly, setOpenOnly] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [reversing, setReversing] = useState<{ id: number; barcode: string } | null>(null);
+  const [givingUp, setGivingUp] = useState<{ id: number; number: number } | null>(null);
   const [labelFor, setLabelFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -186,17 +188,40 @@ export function PalletsPage(): ReactElement {
                 Pallet {open.palletNumber} · {open.productionLineName}, shift{' '}
                 {open.shiftName}
               </p>
-              <button
-                type="button"
-                className="mb-5 text-sm font-medium text-brand-700 hover:underline"
-                onClick={() => {
-                  setLabelFor(open.barcode);
-                }}
-              >
-                Print the pallet label
-              </button>
+              <div className="mb-5 flex flex-wrap items-center gap-4">
+                <button
+                  type="button"
+                  className="text-sm font-medium text-brand-700 hover:underline"
+                  onClick={() => {
+                    setLabelFor(open.barcode);
+                  }}
+                >
+                  Print the pallet label
+                </button>
 
-              {canPack && (
+                {/* Only while it is empty. After the first bag the wood is under the
+                    bags, and the way back is to take the bags off. */}
+                {canPack && open.status === 'Empty' && (
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-ink-soft hover:text-bad hover:underline"
+                    onClick={() => {
+                      setGivingUp({ id: open.id, number: open.palletNumber });
+                    }}
+                  >
+                    Give it up
+                  </button>
+                )}
+              </div>
+
+              {open.cancelledAt !== null && (
+                <p className="mb-5 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
+                  Given up on by {open.cancelledByName} — {open.cancellationReason}. Its
+                  wooden pallet went back to the store.
+                </p>
+              )}
+
+              {canPack && open.status !== 'Cancelled' && (
                 <PalletScanBox
                   pallet={open}
                   bags={availableBags.data ?? []}
@@ -316,6 +341,17 @@ export function PalletsPage(): ReactElement {
           onClose={() => {
             setLabelFor(null);
           }}
+        />
+      )}
+
+      {givingUp !== null && (
+        <GiveUpPalletDialog
+          palletId={givingUp.id}
+          palletNumber={givingUp.number}
+          onClose={() => {
+            setGivingUp(null);
+          }}
+          onGivenUp={invalidate}
         />
       )}
 

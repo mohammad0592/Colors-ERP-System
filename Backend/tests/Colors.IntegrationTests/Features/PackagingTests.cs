@@ -21,13 +21,22 @@ namespace Colors.IntegrationTests.Features;
 /// <summary>
 /// What packaging a shift used (specification section 10).
 ///
-/// Three materials are not typed at all — what the shift produced already says how many
+/// The bag materials are not typed at all — what the shift produced already says how many
 /// were used. Typing them is how the factory's own 2 July form ended up saying 6.1 large
 /// bags where 61 were used.
+///
+/// The wooden pallet is not here at all. It leaves the store as each pallet is started,
+/// which is <see cref="PalletTests"/>' business.
 /// </summary>
 [Collection(DatabaseCollection.Name)]
 public class PackagingTests(DatabaseFixture fixture)
 {
+    private static PalletService NewPalletService(ColorsDbContext db) =>
+        new(db,
+            new BarcodeService(db, TimeProvider.System),
+            new StockLedger(db, TimeProvider.System),
+            TimeProvider.System);
+
     private static PackagingService NewService(ColorsDbContext db) =>
         new(db, new StockLedger(db, TimeProvider.System), TimeProvider.System);
 
@@ -140,7 +149,7 @@ public class PackagingTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task The_three_counted_materials_come_from_what_the_shift_made()
+    public async Task The_counted_materials_come_from_what_the_shift_made()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PKG1");
@@ -158,48 +167,64 @@ public class PackagingTests(DatabaseFixture fixture)
         Assert.Equal(10m, lines[m.Large].Quantity);
         Assert.Equal(20m, lines[m.Small].Quantity);
 
-        // Nothing was completed, so no pallet wood has been used up.
-        Assert.Equal(0m, lines[m.Pallets].Quantity);
-
         // Tape is used by length and by feel, so it stays for a person to type.
         Assert.False(lines[m.Tape].IsCounted);
         Assert.True(lines[m.Large].IsCounted);
     }
 
     [Fact]
-    public async Task Only_completed_pallets_are_counted()
+    public async Task The_wooden_pallet_is_not_on_the_form_at_all()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PKG2");
         var m = await PackagingAsync(db, "PKG2");
         var bags = await BagsMadeAsync(db, ids, "PKG2", 16);
 
-        var pallets = new PalletService(
-            db, new BarcodeService(db, TimeProvider.System), TimeProvider.System);
+        var pallets = NewPalletService(db);
 
         var pallet = await pallets.StartPalletAsync(
             new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
         Assert.True(pallet.IsSuccess, pallet.Message);
-        var palletId = pallet.Value!.Id;
 
-        // Fifteen fills a plate pallet; the pallet's wood is used when it is finished,
-        // not while it is still being built.
-        foreach (var bag in bags.Take(14))
+        foreach (var bag in bags.Take(15))
         {
             await pallets.ScanBagAsync(
-                palletId, new ScanBagRequest(bag.Barcode, null), ids.UserId);
+                pallet.Value!.Id, new ScanBagRequest(bag.Barcode, null), ids.UserId);
         }
 
-        var before = await NewService(db).GetDraftAsync(ids.ThermoShiftLineId);
-        Assert.Equal(0, before.Value!.PalletsCompleted);
+        var draft = await NewService(db).GetDraftAsync(ids.ThermoShiftLineId);
 
-        var last = await pallets.ScanBagAsync(
-            palletId, new ScanBagRequest(bags[14].Barcode, null), ids.UserId);
-        Assert.True(last.IsSuccess, last.Message);
+        // A finished pallet, and still no line for the wood. It went out of the store
+        // when the pallet was started; a line here would take it out a second time.
+        Assert.Equal(1, draft.Value!.PalletsStarted);
+        Assert.DoesNotContain(draft.Value.Lines, l => l.MaterialId == m.Pallets);
+    }
 
-        var after = await NewService(db).GetDraftAsync(ids.ThermoShiftLineId);
-        Assert.Equal(1, after.Value!.PalletsCompleted);
-        Assert.Equal(1m, after.Value.Lines.Single(l => l.MaterialId == m.Pallets).Quantity);
+    [Fact]
+    public async Task Saving_never_moves_the_wooden_pallet()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PKG2b");
+        var m = await PackagingAsync(db, "PKG2b");
+        await BagsMadeAsync(db, ids, "PKG2b", 4);
+
+        var ledger = new StockLedger(db, TimeProvider.System);
+        await ledger.PostAsync(m.Large, MovementTypeNames.Receive, 100m, ids.UserId, "opening");
+        await ledger.PostAsync(m.Small, MovementTypeNames.Receive, 100m, ids.UserId, "opening");
+
+        var started = await NewPalletService(db).StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+        Assert.True(started.IsSuccess, started.Message);
+
+        var before = await StockAsync(db, m.Pallets);
+
+        var saved = await NewService(db).SaveAsync(
+            new SavePackagingRequest(ids.ThermoShiftLineId, [], null), ids.UserId);
+
+        Assert.True(saved.IsSuccess, saved.Message);
+
+        // The store's figure for wood is exactly what starting the pallet left it at.
+        Assert.Equal(before, await StockAsync(db, m.Pallets));
     }
 
     [Fact]

@@ -1,12 +1,15 @@
 ﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Pallets;
+using Colors.Domain.Constants;
+using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Packaging;
 using Colors.Domain.Entities.Production;
 using Colors.Domain.Common;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.Inventory;
 using Microsoft.EntityFrameworkCore;
 
 namespace Colors.Infrastructure.Services.Pallets;
@@ -22,6 +25,7 @@ namespace Colors.Infrastructure.Services.Pallets;
 public class PalletService(
     ColorsDbContext db,
     IBarcodeService barcodes,
+    StockLedger ledger,
     TimeProvider timeProvider) : IPalletService
 {
     public async Task<IReadOnlyList<PalletSummaryDto>> GetPalletsAsync(
@@ -31,7 +35,8 @@ public class PalletService(
     {
         var pallets = await PalletQuery()
             .Where(p => shiftLineId == null || p.ShiftLineId == shiftLineId)
-            .Where(p => !openOnly || (p.CompletedAt == null && p.ShippedAt == null))
+            .Where(p => !openOnly
+                        || (p.CompletedAt == null && p.ShippedAt == null && p.CancelledAt == null))
             .OrderByDescending(p => p.PalletNumber)
             .Take(300)
             .ToListAsync(cancellationToken);
@@ -124,52 +129,8 @@ public class PalletService(
             return Invalid(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
-        // Bags cannot be stacked on wood that is not there. Checked when the pallet is
-        // started rather than when it is finished, so the answer arrives while somebody
-        // can still fetch more — or enter the opening count that was never entered.
-        //
-        // It matters at the other end of the shift too: wooden pallets are deducted one
-        // per completed pallet, and deducting from an empty store meets the
-        // never-negative rule, which refuses the *whole* packaging record rather than
-        // just its pallet line (specification section 10).
-        var wood = await db.Materials
-            .Where(m => m.CountedAs == CountedPackaging.WoodenPallet && m.IsActive)
-            .Select(m => new
-            {
-                m.Id,
-                m.Name,
-                InStock = db.MaterialInventory
-                    .Where(i => i.MaterialId == m.Id)
-                    .Select(i => (decimal?)i.CurrentQuantity)
-                    .FirstOrDefault() ?? 0m,
-            })
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (wood is not null)
-        {
-            var started = await db.WoodenPallets
-                .CountAsync(
-                    p => p.ShiftLineId == shiftLine.Id && p.CompletedAt == null && p.ShippedAt == null,
-                    cancellationToken);
-
-            // The ones already being built have not been deducted yet, so they are still
-            // claims on the same pile of wood.
-            if (wood.InStock - started < 1)
-            {
-                var name = wood.Name.ToLowerInvariant();
-
-                // Said two ways, because the two situations need different answers:
-                // fetch more wood, or finish what is already on the floor.
-                return Invalid(started == 0
-                    ? $"The store has {wood.InStock:0.##} {name}. "
-                        + "Receive some before starting a pallet."
-                    : $"The store has {wood.InStock:0.##} {name} and "
-                        + $"{started} pallet{(started == 1 ? " is" : "s are")} already being "
-                        + "built. Receive more before starting another.");
-            }
-        }
-
-        // The pallet and its label are one act, exactly as a roll and a bag are.
+        // The pallet, its label and the wood it is built on are one act, exactly as a
+        // roll and its bag are.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         var pallet = new WoodenPallet
@@ -195,10 +156,133 @@ public class PalletService(
             return Invalid(barcode.Message ?? "The pallet's label could not be printed.");
         }
 
+        // The wood leaves the store now, not at the end of the shift. That is when the
+        // operator picks it up, and it is what makes the store's figure true all day
+        // instead of only after a shift closes (specification section 10).
+        //
+        // It is also the whole guard. The ledger refuses to go below nothing, so a
+        // factory out of wooden pallets cannot start one — no separate check needed,
+        // and no way for the two to disagree.
+        var wood = await WoodenPalletMaterialAsync(cancellationToken);
+
+        if (wood is not null)
+        {
+            var taken = await ledger.PostAsync(
+                wood.Id,
+                MovementTypeNames.PackagingConsumption,
+                1m,
+                userId,
+                $"Pallet {pallet.PalletNumber} started on {shiftLine.ProductionLine.Name}, "
+                + $"shift {shiftLine.ShiftReport.Shift.Name} "
+                + $"{shiftLine.ShiftReport.ProductionDate:dd/MM/yyyy}",
+                null,
+                shiftLine.ShiftReportId,
+                cancellationToken);
+
+            if (!taken.IsSuccess)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                db.ChangeTracker.Clear();
+                return Invalid(taken.Message ?? "There is no wooden pallet to build on.");
+            }
+        }
+
         await transaction.CommitAsync(cancellationToken);
 
         return await LoadAsync(pallet.Id, cancellationToken);
     }
+
+    public async Task<Result<PalletDto>> CancelPalletAsync(
+        int palletId,
+        CancelPalletRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var reason = Trimmed(request.Reason);
+        if (reason is null)
+        {
+            return Invalid("Say why the pallet is being given up on.");
+        }
+
+        var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
+        if (pallet is null)
+        {
+            return PalletNotFound();
+        }
+
+        if (pallet.CancelledAt is not null)
+        {
+            return Invalid($"Pallet {pallet.PalletNumber} has already been given up on.");
+        }
+
+        if (pallet.ShippedAt is not null || pallet.CompletedAt is not null)
+        {
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} is finished. Take its bags off first if it "
+                + "was built by mistake.");
+        }
+
+        // The wood only comes back if nothing was stacked on it. Once a bag is on the
+        // pallet the wood is under the bags, and taking the bags off is the way back.
+        if (pallet.Assignments.Any(a => a.ReversedAt is null))
+        {
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} has bags on it. Take them off before "
+                + "giving it up.");
+        }
+
+        var shiftLine = await db.ShiftLines
+            .Include(l => l.ProductionLine)
+            .Include(l => l.ShiftReport).ThenInclude(r => r.Shift)
+            .FirstAsync(l => l.Id == pallet.ShiftLineId, cancellationToken);
+
+        if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
+        {
+            return Invalid(ShiftWork.RefusalFor(shiftLine.ShiftReport));
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        pallet.CancelledAt = timeProvider.GetUtcNow();
+        pallet.CancelledByUserId = userId;
+        pallet.CancellationReason = reason;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        var wood = await WoodenPalletMaterialAsync(cancellationToken);
+
+        if (wood is not null)
+        {
+            var returned = await ledger.PostAsync(
+                wood.Id,
+                MovementTypeNames.Return,
+                1m,
+                userId,
+                $"Pallet {pallet.PalletNumber} given up on: {reason}",
+                null,
+                shiftLine.ShiftReportId,
+                cancellationToken);
+
+            if (!returned.IsSuccess)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                db.ChangeTracker.Clear();
+                return Invalid(returned.Message ?? "The wooden pallet could not go back.");
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        return await LoadAsync(pallet.Id, cancellationToken);
+    }
+
+    /// <summary>
+    /// The material a pallet is built on, or null where the factory has not said which
+    /// one it is. Only one material can be it — a unique index sees to that.
+    /// </summary>
+    private Task<Material?> WoodenPalletMaterialAsync(CancellationToken cancellationToken) =>
+        db.Materials.FirstOrDefaultAsync(
+            m => m.CountedAs == CountedPackaging.WoodenPallet && m.IsActive, cancellationToken);
 
     public async Task<Result<PalletDto>> ScanBagAsync(
         int palletId,
@@ -210,6 +294,13 @@ public class PalletService(
         if (pallet is null)
         {
             return PalletNotFound();
+        }
+
+        if (pallet.CancelledAt is not null)
+        {
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} was given up on and its wood went back to "
+                + "the store. Start a new one.");
         }
 
         if (pallet.ShippedAt is not null)
@@ -484,6 +575,11 @@ public class PalletService(
         CancellationToken cancellationToken)
     {
         var userIds = new List<int> { pallet.CreatedByUserId };
+        if (pallet.CancelledByUserId is not null)
+        {
+            userIds.Add(pallet.CancelledByUserId.Value);
+        }
+
         userIds.AddRange(pallet.Assignments.Select(a => a.AssignedByUserId));
         userIds.AddRange(pallet.Assignments
             .Where(a => a.ReversedByUserId is not null)
@@ -521,6 +617,11 @@ public class PalletService(
             summary.CreatedAt,
             summary.CompletedAt,
             pallet.ShippedAt,
+            pallet.CancelledAt,
+            pallet.CancelledByUserId is null
+                ? null
+                : names.GetValueOrDefault(pallet.CancelledByUserId.Value, "—"),
+            pallet.CancellationReason,
             pallet.Notes,
             pallet.Assignments
                 // Newest first: the scan just made is the one being checked.
