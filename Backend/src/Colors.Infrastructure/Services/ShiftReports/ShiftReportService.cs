@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Colors.Application.Common.Models;
 using Colors.Application.Features.ShiftReports;
 using Colors.Domain.Entities.Shifts;
@@ -49,6 +49,7 @@ public class ShiftReportService(
                 r.Shift.Name,
                 r.Status.ToString(),
                 r.Status == ShiftReportStatus.Open,
+                r.Status != ShiftReportStatus.Closed,
                 r.SupervisorUserId is null ? null : names.GetValueOrDefault(r.SupervisorUserId.Value),
                 OrderedLines(r).Select(l => l.ProductionLine.Name).ToList(),
                 r.Lines.Count,
@@ -460,9 +461,9 @@ public class ShiftReportService(
             return NotFound();
         }
 
-        if (report.Status == ShiftReportStatus.Open)
+        if (report.Status != ShiftReportStatus.Closed)
         {
-            return Invalid("This shift is already open.");
+            return Invalid("This shift is already reopened.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Reason))
@@ -470,23 +471,35 @@ public class ShiftReportService(
             return Invalid("Say why the shift is being reopened — it stays on the record.");
         }
 
-        // Reopening is opening. If something else is running by now, the same rule
-        // applies (specification section 2).
-        var alreadyOpen = await StillOpenAsync(cancellationToken);
-        if (alreadyOpen is not null)
-        {
-            return Invalid(AlreadyOpenMessage(alreadyOpen));
-        }
+        // Reopening is never blocked. A supervisor who closed A, watched B start, and
+        // only then noticed A's meter reading was missing cannot close B — B is really
+        // running — so refusing here would mean that reading could never be fixed at all
+        // (specification section 2).
+        //
+        // What it reopens *into* depends on whether anything else is running. Nothing
+        // else open means the shift was closed by mistake and work carries on. Something
+        // else open means this one is being corrected, not worked: it takes edits to its
+        // own record and no production, so nothing can land on the wrong day.
+        var running = await StillOpenAsync(cancellationToken);
 
-        report.Status = ShiftReportStatus.Open;
+        report.Status = running is null
+            ? ShiftReportStatus.Open
+            : ShiftReportStatus.Correcting;
         report.ClosedByUserId = null;
         report.ClosedAt = null;
 
         var reason = request.Reason.Trim();
         var stamp = timeProvider.GetUtcNow().ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+
+        // Which of the two it reopened into goes on the record as well, so a reader
+        // months later can see why this shift took no production while it was open.
+        var how = running is null
+            ? "Reopened"
+            : $"Reopened to correct, while shift {running.Shift.Name} was running";
+
         report.Notes = string.IsNullOrWhiteSpace(report.Notes)
-            ? $"[Reopened {stamp}] {reason}"
-            : $"{report.Notes}\n[Reopened {stamp}] {reason}";
+            ? $"[{how} {stamp}] {reason}"
+            : $"{report.Notes}\n[{how} {stamp}] {reason}";
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -669,6 +682,7 @@ public class ShiftReportService(
             report.Shift.Name,
             report.Status.ToString(),
             report.Status == ShiftReportStatus.Open,
+            report.Status != ShiftReportStatus.Closed,
             report.SupervisorUserId,
             report.SupervisorUserId is null ? null : names.GetValueOrDefault(report.SupervisorUserId.Value),
             report.ElectricityStartMeter,

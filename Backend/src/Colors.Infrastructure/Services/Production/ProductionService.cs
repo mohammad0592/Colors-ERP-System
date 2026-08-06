@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Production;
 using Colors.Domain.Common;
@@ -73,11 +73,9 @@ public class ProductionService(
 
         // A batch never crosses a shift, because all material goes back to the store at
         // shift end — so a mix started against a finished shift could never be true.
-        if (shiftLine.ShiftReport.Status != ShiftReportStatus.Open)
+        if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
         {
-            return InvalidBatch(
-                $"Shift {shiftLine.ShiftReport.Shift.Name} on "
-                + $"{shiftLine.ShiftReport.ProductionDate:dd/MM/yyyy} is closed.");
+            return InvalidBatch(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
         var batch = new Batch
@@ -190,9 +188,9 @@ public class ProductionService(
             return InvalidRoll($"Batch {batch.BatchNumber} is finished. Start a new one.");
         }
 
-        if (batch.ShiftLine.ShiftReport.Status != ShiftReportStatus.Open)
+        if (!ShiftWork.AcceptsWork(batch.ShiftLine.ShiftReport.Status))
         {
-            return InvalidRoll("The shift this batch belongs to is closed.");
+            return InvalidRoll(ShiftWork.RefusalFor(batch.ShiftLine.ShiftReport));
         }
 
         var recipe = await db.RecipeVersions

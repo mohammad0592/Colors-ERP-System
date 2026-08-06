@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.ShiftReports;
 
@@ -71,7 +71,12 @@ public sealed record ShiftReportSummaryDto(
     int ShiftId,
     string ShiftName,
     string Status,
+    // Running: it takes new rolls, bags, pallets and tickets. Only ever one at a time.
     bool IsOpen,
+    // Its record may still be changed. True while running, and also while it is being
+    // corrected after a reopen (specification section 2) — those are different things,
+    // so they are different flags.
+    bool CanEdit,
     string? SupervisorName,
     // The lines that ran, in the order they are shown — "Extruder, Thermo".
     IReadOnlyList<string> LineNames,
@@ -89,6 +94,7 @@ public sealed record ShiftReportDto(
     string ShiftName,
     string Status,
     bool IsOpen,
+    bool CanEdit,
     int? SupervisorUserId,
     string? SupervisorName,
     // One meter for the whole building, so it is read once per shift.

@@ -1,7 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Thermo;
 using Colors.Domain.Entities.Production;
+using Colors.Domain.Common;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
@@ -131,11 +132,9 @@ public class ThermoService(
                 $"{shiftLine.ProductionLine.Name} does not form bags. Choose the thermo line.");
         }
 
-        if (shiftLine.ShiftReport.Status != ShiftReportStatus.Open)
+        if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
         {
-            return InvalidRun(
-                $"Shift {shiftLine.ShiftReport.Shift.Name} on "
-                + $"{shiftLine.ShiftReport.ProductionDate:dd/MM/yyyy} is closed.");
+            return InvalidRun(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
         // Without a mould there is no way to know what is being made, and the product is

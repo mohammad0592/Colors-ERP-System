@@ -1,8 +1,9 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Pallets;
 using Colors.Domain.Entities.Packaging;
 using Colors.Domain.Entities.Production;
+using Colors.Domain.Common;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
@@ -118,11 +119,9 @@ public class PalletService(
                 + "there. Choose the thermo line.");
         }
 
-        if (shiftLine.ShiftReport.Status != ShiftReportStatus.Open)
+        if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
         {
-            return Invalid(
-                $"Shift {shiftLine.ShiftReport.Shift.Name} on "
-                + $"{shiftLine.ShiftReport.ProductionDate:dd/MM/yyyy} is closed.");
+            return Invalid(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
         // The pallet and its label are one act, exactly as a roll and a bag are.

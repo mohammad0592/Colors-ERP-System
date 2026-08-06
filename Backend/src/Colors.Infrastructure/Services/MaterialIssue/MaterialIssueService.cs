@@ -1,7 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.MaterialIssue;
 using Colors.Domain.Constants;
 using Colors.Domain.Entities.Inventory;
+using Colors.Domain.Common;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
@@ -110,12 +111,9 @@ public class MaterialIssueService(
 
         // Material issued to a shift that is already finished could never be returned
         // against it, and its waste figure would belong to nothing.
-        if (shiftLine.ShiftReport.Status != ShiftReportStatus.Open)
+        if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
         {
-            return Invalid(
-                $"Shift {shiftLine.ShiftReport.Shift.Name} on "
-                + $"{shiftLine.ShiftReport.ProductionDate:dd/MM/yyyy} is closed. "
-                + "Material cannot be issued to a finished shift.");
+            return Invalid(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
         var materialIds = request.Lines.Select(l => l.MaterialId).ToList();

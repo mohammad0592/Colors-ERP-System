@@ -205,7 +205,24 @@ CREATE UNIQUE INDEX ux_shift_reports_single_open
 
 The index is on a constant, so every open row collides with every other open row and only one can exist. Two supervisors opening a shift on two tablets in the same moment is exactly the case application code cannot catch by itself.
 
-Closing is unaffected: close A, then open B. A shift that was closed by mistake is reopened by an administrator, and reopening is refused for the same reason if something else is open by then.
+Closing is unaffected: close A, then open B.
+
+### Reopening an old shift is never blocked
+
+A supervisor closes A, B starts, and only then does he notice A's electricity reading was never written down. He cannot close B — B is genuinely running — so if reopening A were refused, that reading could never be corrected at all.
+
+So reopening is always allowed, and what the reopened shift can do depends on whether anything else is running:
+
+| Reopened while… | Status becomes | What it accepts |
+|---|---|---|
+| nothing else is open | `Open` | everything — the shift was closed by mistake and work carries on |
+| another shift is running | `Correcting` | corrections to its own record only |
+
+**`Correcting`** is a shift being fixed, not a shift being worked. Its electricity, times, downtime, workers and notes can all be edited. What it will not take is anything *produced*: no batch, no roll, no thermo run, no pallet, no issue ticket. Those belong to the shift the men are actually standing in, and the production screens only ever offer that one.
+
+This is what makes the rule above safe to keep. The single open shift protects new work from landing on the wrong day; correcting an old record was never a threat to that, and blocking it only stopped the factory fixing its own paperwork.
+
+A `Correcting` shift is closed again the same way any shift is. The database index counts `Open` only, so a shift under correction never competes with the one that is running.
 
 ```
 ShiftReport         Shift A · 04/08/2026 · Open · meter 12000 → 12850

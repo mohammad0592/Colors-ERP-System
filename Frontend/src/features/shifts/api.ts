@@ -1,4 +1,4 @@
-import { apiRequest } from '../../lib/apiClient';
+﻿import { apiRequest } from '../../lib/apiClient';
 
 /**
  * Shift reports, mirroring the C# records in Colors.Application.Features.ShiftReports.
@@ -8,7 +8,11 @@ import { apiRequest } from '../../lib/apiClient';
  * underneath it.
  */
 
-export type ShiftReportStatus = 'Open' | 'Closed';
+/**
+ * `Correcting` is a shift reopened to fix its record while another one is running.
+ * It takes edits but no production (specification section 2).
+ */
+export type ShiftReportStatus = 'Open' | 'Closed' | 'Correcting';
 
 export interface ShiftWorkerDto {
   userId: number;
@@ -82,6 +86,11 @@ export interface ShiftReportSummaryDto {
   shiftName: string;
   status: ShiftReportStatus;
   isOpen: boolean;
+  /**
+   * Its record may still be changed. True while it is running, and also while it is
+   * being corrected after a reopen — a correcting shift takes edits but no production.
+   */
+  canEdit: boolean;
   supervisorName: string | null;
   lineNames: string[];
   lineCount: number;
@@ -98,6 +107,11 @@ export interface ShiftReportDto {
   shiftName: string;
   status: ShiftReportStatus;
   isOpen: boolean;
+  /**
+   * Its record may still be changed. True while it is running, and also while it is
+   * being corrected after a reopen — a correcting shift takes edits but no production.
+   */
+  canEdit: boolean;
   supervisorUserId: number | null;
   supervisorName: string | null;
   /** One meter for the whole building, so it is read once per shift. */

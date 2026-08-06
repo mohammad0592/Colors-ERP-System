@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -232,13 +232,13 @@ export function ShiftsPage(): ReactElement {
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <Action
-                      label={report.isOpen ? 'Open report' : 'View'}
+                      label={report.canEdit ? 'Open report' : 'View'}
                       onClick={() => {
                         open.mutate(report.id);
                       }}
                     />
 
-                    {report.isOpen && (
+                    {report.canEdit && (
                       <>
                         <Action
                           label="Close shift"
@@ -297,7 +297,7 @@ export function ShiftsPage(): ReactElement {
                       </>
                     )}
 
-                    {!report.isOpen && isAdministrator && (
+                    {!report.canEdit && isAdministrator && (
                       <Action
                         label="Reopen"
                         onClick={() => {

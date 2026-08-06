@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
@@ -34,7 +34,9 @@ export function ShiftReportDialog({
   onClose,
   onChanged,
 }: ShiftReportDialogProps): ReactElement {
-  const locked = !report.isOpen;
+  // A shift being corrected is not running, but its record is still open to
+  // change — that is the whole point of reopening it.
+  const locked = !report.canEdit;
 
   const [activeLineId, setActiveLineId] = useState(() => report.lines[0]?.id ?? 0);
   const [supervisorUserId, setSupervisorUserId] = useState(report.supervisorUserId);

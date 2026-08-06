@@ -89,7 +89,7 @@ public class SingleOpenShiftTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task A_closed_shift_cannot_be_reopened_while_another_is_running()
+    public async Task An_old_shift_can_be_reopened_to_fix_it_while_another_runs()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "OPEN3");
@@ -108,14 +108,85 @@ public class SingleOpenShiftTests(DatabaseFixture fixture)
             new OpenShiftReportRequest(report.ProductionDate, nextShiftId, ids.UserId, [line]),
             ids.UserId);
 
-        // Reopening is opening, so the same rule applies.
+        // The supervisor closed A, B started, and only then did he notice A's meter
+        // reading was missing. He cannot close B — B is really running — so refusing
+        // here would mean that reading could never be fixed at all.
         var reopened = await service.ReopenAsync(
             ids.ShiftReportId,
             new ReopenShiftReportRequest("The electricity reading was missed"),
             ids.UserId);
 
-        Assert.False(reopened.IsSuccess);
-        Assert.Contains("still open", reopened.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.True(reopened.IsSuccess, reopened.Message);
+
+        // Being fixed, not being worked — and its record is open to change.
+        Assert.Equal(ShiftReportStatus.Correcting.ToString(), reopened.Value!.Status);
+        Assert.False(reopened.Value.IsOpen);
+        Assert.True(reopened.Value.CanEdit);
+
+        // The reason and the circumstance both stay on the record.
+        Assert.Contains("electricity reading", reopened.Value.Notes!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("while shift", reopened.Value.Notes!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_shift_being_fixed_takes_no_production()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "OPEN5");
+        var nextShiftId = await SecondShiftAsync(db, "OPEN5");
+        var service = NewService(db);
+
+        var line = await db.ShiftLines
+            .Where(l => l.Id == ids.ShiftLineId)
+            .Select(l => l.ProductionLineId)
+            .FirstAsync();
+
+        var report = await db.ShiftReports.AsNoTracking().FirstAsync(r => r.Id == ids.ShiftReportId);
+
+        await service.CloseAsync(ids.ShiftReportId, ids.UserId);
+        await service.OpenAsync(
+            new OpenShiftReportRequest(report.ProductionDate, nextShiftId, ids.UserId, [line]),
+            ids.UserId);
+        await service.ReopenAsync(
+            ids.ShiftReportId,
+            new ReopenShiftReportRequest("Downtime was written down wrong"),
+            ids.UserId);
+
+        // This is the whole reason Correcting exists rather than a second Open shift.
+        var production = new Colors.Infrastructure.Services.Production.ProductionService(
+            db,
+            new Colors.Infrastructure.Services.Barcodes.BarcodeService(db, TimeProvider.System),
+            TimeProvider.System);
+
+        var batch = await production.StartBatchAsync(
+            new Colors.Application.Features.Production.StartBatchRequest(ids.ShiftLineId, null),
+            ids.UserId);
+
+        Assert.False(batch.IsSuccess);
+
+        // And it must not claim the shift is closed, because it plainly is not.
+        Assert.Contains("fix its record", batch.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("is closed", batch.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Reopening_with_nothing_else_running_opens_it_properly()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "OPEN6");
+        var service = NewService(db);
+
+        await service.CloseAsync(ids.ShiftReportId, ids.UserId);
+
+        // Closed by mistake while it was still running — work carries on.
+        var reopened = await service.ReopenAsync(
+            ids.ShiftReportId,
+            new ReopenShiftReportRequest("Closed by mistake, the shift is still running"),
+            ids.UserId);
+
+        Assert.True(reopened.IsSuccess, reopened.Message);
+        Assert.Equal(ShiftReportStatus.Open.ToString(), reopened.Value!.Status);
+        Assert.True(reopened.Value.IsOpen);
     }
 
     [Fact]
