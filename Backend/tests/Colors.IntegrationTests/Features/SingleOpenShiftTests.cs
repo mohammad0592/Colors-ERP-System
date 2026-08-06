@@ -158,15 +158,16 @@ public class SingleOpenShiftTests(DatabaseFixture fixture)
             new Colors.Infrastructure.Services.Barcodes.BarcodeService(db, TimeProvider.System),
             TimeProvider.System);
 
-        var batch = await production.StartBatchAsync(
-            new Colors.Application.Features.Production.StartBatchRequest(ids.ShiftLineId, null),
+        var roll = await production.CreateRollAsync(
+            new Colors.Application.Features.Production.CreateRollRequest(
+                ids.ShiftLineId, 0, 0, null, null),
             ids.UserId);
 
-        Assert.False(batch.IsSuccess);
+        Assert.False(roll.IsSuccess);
 
         // And it must not claim the shift is closed, because it plainly is not.
-        Assert.Contains("fix its record", batch.Message!, StringComparison.OrdinalIgnoreCase);
-        Assert.DoesNotContain("is closed", batch.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("fix its record", roll.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("is closed", roll.Message!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

@@ -758,6 +758,30 @@ One mix produces many rolls, so **the batch is the smallest unit that knows its 
 
 A batch never crosses a shift, because all material returns to store at shift end.
 
+### Nobody starts a batch
+
+**Confirmed by the factory: the mixer is filled once per shift.** One mix makes fifteen to seventeen rolls and a shift produces about sixteen, so the numbers agreed before anybody asked.
+
+That makes the batch the same thing as the extruder's part of the shift, and asking an operator to open one is asking him to declare something already true. So he does not:
+
+```
+first roll of the shift   →  the batch is created, silently
+every roll after it       →  joins the same batch
+the shift closes          →  the batch is finished with it
+```
+
+There is no button, no batch on the screen, and no batch number to remember. The operator logs rolls; the extruder's part of the shift is what he thinks he is working on, and he is right.
+
+**Three things follow, and all of them are improvements.**
+
+An empty batch can no longer exist, because a batch is only created by a roll. The trap it caused is gone: a mix could be left open across a close, and then neither take a roll — the shift was shut — nor be finished, because a batch with no rolls may not be. There is nothing left to discard, so nothing to discard *with*.
+
+One mix per shift stops being a fact the factory reports and becomes a fact the data enforces. A roll joins the shift line's open batch or creates it; there is no second one to create.
+
+And the table stays. It costs nothing, it is what the by-recipe waste report will group on, and if the factory ever does refill the mixer mid-shift, the only change is a supervisor action that finishes the open batch and lets the next roll open another. Removing the table would throw that away to save nothing.
+
+> **Still missing:** the issue ticket was to gain a `BatchId` in phase 8 — "which mix it is for" — and did not. Material is issued to the **shift line**, so waste is measured per shift line rather than per mix. With one mix per shift those are the same measurement, which is why nothing is wrong today; it would only matter if the factory ever mixed twice.
+
 ### Why the batch has no recipe column
 
 It would be natural to put `RecipeVersionId` on the batch. **We deliberately do not**, because it is not yet certain whether one batch always uses one recipe — and if it does not, a required recipe column would force the operator to enter something false.
@@ -786,6 +810,8 @@ Either way the roll never lies about its own recipe, and the batch never lies ab
 > **To confirm with the factory:** when they mix, do they prepare the base material for **one recipe at a time**, or keep feeding the mixer while the machine runs and change the mixture as they go?
 >
 > If it is one recipe at a time, a nullable `RecipeVersionId` can be added to `Batches` later — one column, no rebuild — and the by-recipe report becomes exact.
+>
+> Note this is now a question about *one shift*, not one mix: with the mixer filled once a shift, "does a batch use several recipes" and "does a shift use several recipes" are the same question. The July form shows a shift running one recipe throughout, which suggests one — but one form is not a rule.
 
 ### Rolls
 

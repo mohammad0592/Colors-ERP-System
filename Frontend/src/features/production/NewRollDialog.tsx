@@ -1,12 +1,14 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import type { ColorDto } from '../master-data/api';
 import type { RecipeVersionSummaryDto } from '../recipes/api';
-import { productionApi, type BatchSummaryDto, type RollDto } from './api';
+import { productionApi, type RollDto } from './api';
 
 interface NewRollDialogProps {
-  batch: BatchSummaryDto;
+  /** The extruder's part of the open shift. The mix underneath is created by the
+   *  first roll and never mentioned (specification section 8). */
+  shiftLine: { shiftLineId: number; lineName: string; shiftLabel: string };
   /** Only recipes in production — a draft may still change. */
   recipes: RecipeVersionSummaryDto[];
   colors: ColorDto[];
@@ -25,7 +27,7 @@ interface NewRollDialogProps {
  * point is that nobody types them.
  */
 export function NewRollDialog({
-  batch,
+  shiftLine,
   recipes,
   colors,
   onClose,
@@ -42,7 +44,7 @@ export function NewRollDialog({
     setIsSaving(true);
     try {
       const roll = await productionApi.createRoll({
-        batchId: batch.id,
+        shiftLineId: shiftLine.shiftLineId,
         recipeVersionId,
         colorId,
         // Null means now. He is usually standing at the machine.
@@ -61,7 +63,7 @@ export function NewRollDialog({
   }
 
   return (
-    <Modal title={`Log a roll — batch ${String(batch.batchNumber)}`} onClose={onClose}>
+    <Modal title={`Log a roll — ${shiftLine.lineName}, ${shiftLine.shiftLabel}`} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -89,7 +91,7 @@ export function NewRollDialog({
             ))}
           </select>
           <p className="mt-1 text-xs text-ink-muted">
-            Asked per roll, not per batch: the recipe can change while the same mix is
+            Asked per roll, not once for the shift: the recipe can change while the same mix is
             running.
           </p>
         </div>

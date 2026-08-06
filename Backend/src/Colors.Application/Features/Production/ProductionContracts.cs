@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Production;
 
@@ -74,18 +74,19 @@ public sealed record RollDto(
     string? Notes,
     RollTestReportDto? TestReport);
 
-/// <summary>Starts a mix on the extruder's part of a shift.</summary>
-public sealed record StartBatchRequest(int ShiftLineId, string? Notes);
-
 /// <summary>
 /// Logs a roll off the extruder.
 ///
-/// The recipe and colour are given per roll, not inherited from the batch: the
-/// colouring agent is fed separately at the extruder, so both can change while the
-/// same mix is still running.
+/// Named by the <b>shift line</b>, not by a batch. The mixer is filled once a shift, so
+/// the batch is the extruder's part of that shift — the first roll creates it and every
+/// roll after joins it. The operator never sees one (specification section 8).
+///
+/// The recipe and colour are given per roll, not inherited from the mix: the colouring
+/// agent is fed separately at the extruder, so both can change while the same mix is
+/// still running.
 /// </summary>
 public sealed record CreateRollRequest(
-    int BatchId,
+    int ShiftLineId,
     int RecipeVersionId,
     int ColorId,
     // The "out time" the operator knows. Null means now — he is usually standing at
@@ -120,26 +121,8 @@ public interface IProductionService
         bool openOnly = false,
         CancellationToken cancellationToken = default);
 
-    Task<Result<BatchSummaryDto>> StartBatchAsync(
-        StartBatchRequest request,
-        int userId,
-        CancellationToken cancellationToken = default);
 
-    /// <summary>Closes a mix. No more rolls may be drawn from it.</summary>
-    Task<Result<BatchSummaryDto>> FinishBatchAsync(
-        int batchId,
-        CancellationToken cancellationToken = default);
 
-    /// <summary>
-    /// Throws away a mix that produced nothing — started by mistake, or a bad mix.
-    ///
-    /// Only ever an empty one: a batch with rolls on it is the only record of what went
-    /// into them. Without this a shift could not close, because an empty batch cannot be
-    /// finished and cannot take a roll once its shift is shut (specification section 2).
-    /// </summary>
-    Task<Result<bool>> DiscardBatchAsync(
-        int batchId,
-        CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<RollSummaryDto>> GetRollsAsync(
         int? batchId = null,

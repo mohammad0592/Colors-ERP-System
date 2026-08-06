@@ -1,4 +1,4 @@
-using Colors.Application.Features.Production;
+﻿using Colors.Application.Features.Production;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
@@ -107,12 +107,11 @@ public class ProductionTests(DatabaseFixture fixture)
         var ids = await FactoryData.CreateAsync(db, "BLK1");
         var (colourId, _) = await RecipeAndColourAsync(db, "BLK1", ids.UserId);
         var (_, blackRecipeId) = await BlackRecipeAsync(db, "BLK1", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
 
         // A third of the polymer is recycled material, which is dark. No amount of
         // white colouring hides it, so this roll cannot exist.
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(batchId, blackRecipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, blackRecipeId, colourId, null, null), ids.UserId);
 
         Assert.False(roll.IsSuccess);
         Assert.Contains("only be made in black", roll.Message!, StringComparison.OrdinalIgnoreCase);
@@ -125,12 +124,11 @@ public class ProductionTests(DatabaseFixture fixture)
         var ids = await FactoryData.CreateAsync(db, "BLK2");
         var (_, plainRecipeId) = await RecipeAndColourAsync(db, "BLK2", ids.UserId);
         var (blackColourId, _) = await BlackRecipeAsync(db, "BLK2", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
 
         // The other direction, and the factory's own policy: black is made on the
         // recipe that uses recycle, which is the whole reason that recipe exists.
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(batchId, plainRecipeId, blackColourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, plainRecipeId, blackColourId, null, null), ids.UserId);
 
         Assert.False(roll.IsSuccess);
         Assert.Contains("cannot be made in", roll.Message!, StringComparison.OrdinalIgnoreCase);
@@ -142,22 +140,13 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "BLK3");
         var (blackColourId, blackRecipeId) = await BlackRecipeAsync(db, "BLK3", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(batchId, blackRecipeId, blackColourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, blackRecipeId, blackColourId, null, null), ids.UserId);
 
         Assert.True(roll.IsSuccess, roll.Message);
     }
 
-    private static async Task<int> BatchAsync(ColorsDbContext db, FactoryData.Ids ids)
-    {
-        var started = await NewService(db).StartBatchAsync(
-            new StartBatchRequest(ids.ShiftLineId, null), ids.UserId);
-
-        Assert.True(started.IsSuccess, started.Message);
-        return started.Value!.Id;
-    }
 
     [Fact]
     public async Task A_roll_gets_a_code_a_serial_and_a_barcode()
@@ -165,10 +154,9 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD1");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD1", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         Assert.True(roll.IsSuccess, roll.Message);
         Assert.Equal(1, roll.Value!.DailySerial);
@@ -185,13 +173,12 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD2");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD2", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
         var service = NewService(db);
 
         var first = await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
         var second = await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         Assert.Equal(1, first.Value!.DailySerial);
         Assert.Equal(2, second.Value!.DailySerial);
@@ -204,10 +191,9 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD3");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD3", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         Assert.Equal(RollStatus.NeedsTest.ToString(), roll.Value!.Status);
         Assert.True(roll.Value.NeedsTest);
@@ -219,11 +205,10 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD4");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD4", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
         var service = NewService(db);
 
         var roll = await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         var tested = await service.SaveTestReportAsync(
             roll.Value!.Id,
@@ -243,11 +228,10 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD5");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD5", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
         var service = NewService(db);
 
         var roll = await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         // The real Roll Log export has one: the operator typed the length into the
         // weight box. On paper it was wrong for ever; here he is still at the machine.
@@ -266,11 +250,10 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD6");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD6", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
         var service = NewService(db);
 
         var roll = await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
         var request = new SaveRollTestRequest(95m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null);
 
         await service.SaveTestReportAsync(roll.Value!.Id, request, ids.UserId);
@@ -279,37 +262,7 @@ public class ProductionTests(DatabaseFixture fixture)
         Assert.False(again.IsSuccess);
     }
 
-    [Fact]
-    public async Task A_finished_batch_takes_no_more_rolls()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "PRD7");
-        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD7", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
-        var service = NewService(db);
 
-        await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
-        await service.FinishBatchAsync(batchId);
-
-        var late = await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
-
-        Assert.False(late.IsSuccess);
-        Assert.Contains("finished", late.Message!, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task An_empty_batch_cannot_be_finished()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "PRD8");
-        var batchId = await BatchAsync(db, ids);
-
-        var finished = await NewService(db).FinishBatchAsync(batchId);
-
-        Assert.False(finished.IsSuccess);
-    }
 
     [Fact]
     public async Task A_draft_recipe_cannot_make_a_roll()
@@ -317,7 +270,6 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD9");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD9", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
 
         var version = await db.RecipeVersions.FirstAsync(v => v.Id == recipeId);
         version.Status = RecipeVersionStatus.Draft;
@@ -325,29 +277,12 @@ public class ProductionTests(DatabaseFixture fixture)
 
         // A draft may still change, so a roll made to it could never be reproduced.
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         Assert.False(roll.IsSuccess);
         Assert.Contains("draft", roll.Message!, StringComparison.OrdinalIgnoreCase);
     }
 
-    [Fact]
-    public async Task A_batch_cannot_be_started_on_a_closed_shift()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "PRD10");
-
-        var report = await db.ShiftReports.FirstAsync(r => r.Id == ids.ShiftReportId);
-        report.Status = ShiftReportStatus.Closed;
-        await db.SaveChangesAsync();
-
-        // All material goes back to the store at shift end, so a mix started against a
-        // finished shift could never be true.
-        var batch = await NewService(db).StartBatchAsync(
-            new StartBatchRequest(ids.ShiftLineId, null), ids.UserId);
-
-        Assert.False(batch.IsSuccess);
-    }
 
     [Fact]
     public async Task The_database_refuses_two_rolls_with_the_same_serial_on_a_day()
@@ -355,10 +290,9 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD11");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD11", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         var saved = await db.Rolls.FirstAsync(r => r.Id == roll.Value!.Id);
 
@@ -367,7 +301,7 @@ public class ProductionTests(DatabaseFixture fixture)
             ProductionDate = saved.ProductionDate,
             DailySerial = saved.DailySerial,
             RollCode = saved.RollCode + "X",
-            BatchId = batchId,
+            BatchId = saved.BatchId,
             RecipeVersionId = recipeId,
             ColorId = colourId,
             ProducedByUserId = ids.UserId,
@@ -384,25 +318,42 @@ public class ProductionTests(DatabaseFixture fixture)
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD12");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD12", ids.UserId);
-        var batchId = await BatchAsync(db, ids);
         var service = NewService(db);
 
         var first = await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
         await service.CreateRollAsync(
-            new CreateRollRequest(batchId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
 
         await service.SaveTestReportAsync(
             first.Value!.Id,
             new SaveRollTestRequest(96m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
             ids.UserId);
 
-        var batches = await service.GetBatchesAsync();
-        var batch = batches.Single(b => b.Id == batchId);
+        var batches = await service.GetBatchesAsync(ids.ShiftReportId);
+        var batch = batches.Single();
 
         // Two rolls, one measured — the kilograms out that the waste report will set
         // against the kilograms issued.
         Assert.Equal(2, batch.RollCount);
         Assert.Equal(96m, batch.TotalRollWeight);
+    }
+    [Fact]
+    public async Task A_roll_cannot_be_logged_to_a_closed_shift()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PRD13");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD13", ids.UserId);
+
+        var report = await db.ShiftReports.FirstAsync(r => r.Id == ids.ShiftReportId);
+        report.Status = ShiftReportStatus.Closed;
+        await db.SaveChangesAsync();
+
+        // All material goes back to the store at shift end, so a roll made against a
+        // finished shift could never be true — and the mix it would open with it.
+        var roll = await NewService(db).CreateRollAsync(
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+
+        Assert.False(roll.IsSuccess);
     }
 }

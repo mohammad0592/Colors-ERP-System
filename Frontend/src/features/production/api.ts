@@ -74,24 +74,8 @@ export const productionApi = {
   batches: (openOnly = false): Promise<BatchSummaryDto[]> =>
     apiRequest<BatchSummaryDto[]>(`/api/production/batches?openOnly=${String(openOnly)}`),
 
-  startBatch: (shiftLineId: number, notes: string | null): Promise<BatchSummaryDto> =>
-    apiRequest<BatchSummaryDto>('/api/production/batches', {
-      method: 'POST',
-      body: { shiftLineId, notes },
-    }),
 
-  finishBatch: (id: number): Promise<BatchSummaryDto> =>
-    apiRequest<BatchSummaryDto>(`/api/production/batches/${String(id)}/finish`, {
-      method: 'POST',
-      body: {},
-    }),
 
-  /**
-   * Throws away a mix that produced nothing. Never one with rolls on it — that batch is
-   * the only record of what went into them.
-   */
-  discardBatch: (id: number): Promise<undefined> =>
-    apiRequest<undefined>(`/api/production/batches/${String(id)}`, { method: 'DELETE' }),
 
   rolls: (batchId?: number, needsTestOnly = false): Promise<RollSummaryDto[]> => {
     const query = new URLSearchParams({ needsTestOnly: String(needsTestOnly) });
@@ -105,7 +89,7 @@ export const productionApi = {
     apiRequest<RollDto>(`/api/production/rolls/${String(id)}`),
 
   createRoll: (body: {
-    batchId: number;
+    shiftLineId: number;
     recipeVersionId: number;
     colorId: number;
     producedAt: string | null;

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Colors.Application.Features.Production;
 using Colors.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
@@ -36,29 +36,8 @@ public class ProductionController(IProductionService production) : ApiController
         return Ok(await production.GetBatchesAsync(shiftReportId, openOnly, cancellationToken));
     }
 
-    [HttpPost("batches")]
-    [Authorize(Roles = CanProduce)]
-    public async Task<IActionResult> StartBatch(
-        [FromBody] StartBatchRequest request,
-        CancellationToken cancellationToken)
-    {
-        return ToResponse(await production.StartBatchAsync(request, CurrentUserId(), cancellationToken));
-    }
 
-    [HttpPost("batches/{id:int}/finish")]
-    [Authorize(Roles = CanProduce)]
-    public async Task<IActionResult> FinishBatch(int id, CancellationToken cancellationToken)
-    {
-        return ToResponse(await production.FinishBatchAsync(id, cancellationToken));
-    }
 
-    /// <summary>Throws away a mix that produced nothing. Never one with rolls on it.</summary>
-    [HttpDelete("batches/{id:int}")]
-    [Authorize(Roles = CanProduce)]
-    public async Task<IActionResult> DiscardBatch(int id, CancellationToken cancellationToken)
-    {
-        return ToResponse(await production.DiscardBatchAsync(id, cancellationToken));
-    }
 
     // ---------- rolls ----------
 

@@ -421,29 +421,6 @@ public class ShiftReportService(
                 + $"{(openTickets.Count == 1 ? "it" : "them")} first.");
         }
 
-        // A mix never crosses a shift, and leaving one open across a close is a trap
-        // with no way out: rolls may only be logged to an open shift, and a batch that
-        // made no rolls may not be finished — so the batch can neither take a roll nor
-        // be closed (specification section 2). An empty one can be discarded instead.
-        var openBatches = await db.Batches
-            .Where(b => lineIds.Contains(b.ShiftLineId) && b.FinishedAt == null)
-            .Select(b => new { b.BatchNumber, HasRolls = b.Rolls.Count > 0 })
-            .OrderBy(b => b.BatchNumber)
-            .ToListAsync(cancellationToken);
-
-        if (openBatches.Count > 0)
-        {
-            var numbers = string.Join(", ", openBatches.Select(b => b.BatchNumber));
-            var one = openBatches.Count == 1;
-
-            return Invalid(
-                $"Batch{(one ? "" : "es")} {numbers} {(one ? "is" : "are")} still running. "
-                + (openBatches.All(b => !b.HasRolls)
-                    ? $"{(one ? "It" : "They")} produced no rolls, so discard "
-                      + $"{(one ? "it" : "them")} first."
-                    : $"Finish {(one ? "it" : "them")} first."));
-        }
-
         // A roll physically in the machine. Its run has no end time and has made no
         // bags, so closing now would leave the shift claiming work it never finished.
         var inThermo = await db.ThermoProductions
@@ -462,9 +439,23 @@ public class ShiftReportService(
                 + $"{(one ? "it" : "them")} out first.");
         }
 
+        var closedAt = timeProvider.GetUtcNow();
+
+        // The mix ends with the shift, because all material goes back to the store at
+        // shift end. Nobody opened it and nobody closes it: it is the extruder's part of
+        // this shift, and this is that shift ending (specification section 8).
+        var running = await db.Batches
+            .Where(b => lineIds.Contains(b.ShiftLineId) && b.FinishedAt == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var batch in running)
+        {
+            batch.FinishedAt = closedAt;
+        }
+
         report.Status = ShiftReportStatus.Closed;
         report.ClosedByUserId = userId;
-        report.ClosedAt = timeProvider.GetUtcNow();
+        report.ClosedAt = closedAt;
 
         await db.SaveChangesAsync(cancellationToken);
 

@@ -62,11 +62,8 @@ public class PalletTests(DatabaseFixture fixture)
         var thermo = new ThermoService(
             db, new BarcodeService(db, TimeProvider.System), TimeProvider.System);
 
-        var batch = await production.StartBatchAsync(
-            new StartBatchRequest(ids.ShiftLineId, null), ids.UserId);
-
         var roll = await production.CreateRollAsync(
-            new CreateRollRequest(batch.Value!.Id, family.Versions[0].Id, colour.Id, null, null),
+            new CreateRollRequest(ids.ShiftLineId, family.Versions[0].Id, colour.Id, null, null),
             ids.UserId);
 
         await production.SaveTestReportAsync(

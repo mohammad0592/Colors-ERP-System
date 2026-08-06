@@ -3,6 +3,7 @@ using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Production;
 using Colors.Domain.Common;
 using Colors.Domain.Entities.Production;
+using Colors.Domain.Entities.Shifts;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
@@ -48,34 +49,29 @@ public class ProductionService(
         return batches.Select(b => ToSummary(b, names)).ToList();
     }
 
-    public async Task<Result<BatchSummaryDto>> StartBatchAsync(
-        StartBatchRequest request,
+    /// <summary>
+    /// The mix this shift line is running, created by the first roll of the shift.
+    ///
+    /// The mixer is filled once a shift, so the batch is the extruder's part of that
+    /// shift and nobody opens one by hand (specification section 8). Creating it here
+    /// rather than on a button has two consequences worth naming: an empty batch can no
+    /// longer exist, and "one mix per shift" stops being a fact the factory reports and
+    /// becomes one the data enforces — a roll joins the open batch or creates it, and
+    /// there is no second one to create.
+    /// </summary>
+    private async Task<Batch> OpenBatchForAsync(
+        ShiftLine shiftLine,
         int userId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
-        var shiftLine = await db.ShiftLines
-            .Include(l => l.ProductionLine)
-            .Include(l => l.ShiftReport).ThenInclude(r => r.Shift)
-            .FirstOrDefaultAsync(l => l.Id == request.ShiftLineId, cancellationToken);
+        var running = await db.Batches
+            .FirstOrDefaultAsync(
+                b => b.ShiftLineId == shiftLine.Id && b.FinishedAt == null,
+                cancellationToken);
 
-        if (shiftLine is null)
+        if (running is not null)
         {
-            return InvalidBatch("Choose a line of an open shift.");
-        }
-
-        // A batch is a mix. The thermo forms what the mixer already made, and the
-        // recycler grinds scrap — neither can start one (specification section 4).
-        if (!shiftLine.ProductionLine.MakesRolls)
-        {
-            return InvalidBatch(
-                $"{shiftLine.ProductionLine.Name} does not mix. Choose the extruder line.");
-        }
-
-        // A batch never crosses a shift, because all material goes back to the store at
-        // shift end — so a mix started against a finished shift could never be true.
-        if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
-        {
-            return InvalidBatch(ShiftWork.RefusalFor(shiftLine.ShiftReport));
+            return running;
         }
 
         var batch = new Batch
@@ -84,67 +80,10 @@ public class ProductionService(
             ShiftLineId = shiftLine.Id,
             CreatedByUserId = userId,
             StartedAt = timeProvider.GetUtcNow(),
-            Notes = Trimmed(request.Notes),
         };
 
         db.Batches.Add(batch);
-        await db.SaveChangesAsync(cancellationToken);
-
-        return await LoadBatchAsync(batch.Id, cancellationToken);
-    }
-
-    public async Task<Result<BatchSummaryDto>> FinishBatchAsync(
-        int batchId,
-        CancellationToken cancellationToken = default)
-    {
-        var batch = await BatchQuery().FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken);
-        if (batch is null)
-        {
-            return Result<BatchSummaryDto>.Failure(ErrorCode.NotFound, "This batch does not exist.");
-        }
-
-        if (batch.FinishedAt is not null)
-        {
-            return InvalidBatch("This batch is already finished.");
-        }
-
-        if (batch.Rolls.Count == 0)
-        {
-            return InvalidBatch("This batch produced no rolls. Log them before finishing it.");
-        }
-
-        batch.FinishedAt = timeProvider.GetUtcNow();
-        await db.SaveChangesAsync(cancellationToken);
-
-        return await LoadBatchAsync(batchId, cancellationToken);
-    }
-
-    public async Task<Result<bool>> DiscardBatchAsync(
-        int batchId,
-        CancellationToken cancellationToken = default)
-    {
-        var batch = await BatchQuery().FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken);
-        if (batch is null)
-        {
-            return Result<bool>.Failure(ErrorCode.NotFound, "This batch does not exist.");
-        }
-
-        // A batch with rolls on it is the only record of what went into them, so it is
-        // never thrown away. An empty one is a mix that made nothing — started by
-        // mistake, or a bad mix — and nothing at all points at it.
-        if (batch.Rolls.Count > 0)
-        {
-            return Result<bool>.Failure(
-                ErrorCode.ValidationFailed,
-                $"Batch {batch.BatchNumber} made {batch.Rolls.Count} roll"
-                + $"{(batch.Rolls.Count == 1 ? "" : "s")}, so it cannot be thrown away. "
-                + "Finish it instead.");
-        }
-
-        db.Batches.Remove(batch);
-        await db.SaveChangesAsync(cancellationToken);
-
-        return Result<bool>.Success(true);
+        return batch;
     }
 
     public async Task<IReadOnlyList<RollSummaryDto>> GetRollsAsync(
@@ -202,23 +141,27 @@ public class ProductionService(
         int userId,
         CancellationToken cancellationToken = default)
     {
-        var batch = await db.Batches
-            .Include(b => b.ShiftLine).ThenInclude(l => l.ShiftReport).ThenInclude(r => r.Shift)
-            .FirstOrDefaultAsync(b => b.Id == request.BatchId, cancellationToken);
+        var shiftLine = await db.ShiftLines
+            .Include(l => l.ProductionLine)
+            .Include(l => l.ShiftReport).ThenInclude(r => r.Shift)
+            .FirstOrDefaultAsync(l => l.Id == request.ShiftLineId, cancellationToken);
 
-        if (batch is null)
+        if (shiftLine is null)
         {
-            return InvalidRoll("Choose a batch.");
+            return InvalidRoll("Choose a line of an open shift.");
         }
 
-        if (batch.FinishedAt is not null)
+        // The thermo forms what the mixer already made and the recycler grinds scrap —
+        // neither produces a roll (specification section 4).
+        if (!shiftLine.ProductionLine.MakesRolls)
         {
-            return InvalidRoll($"Batch {batch.BatchNumber} is finished. Start a new one.");
+            return InvalidRoll(
+                $"{shiftLine.ProductionLine.Name} does not make rolls. Choose the extruder line.");
         }
 
-        if (!ShiftWork.AcceptsWork(batch.ShiftLine.ShiftReport.Status))
+        if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
         {
-            return InvalidRoll(ShiftWork.RefusalFor(batch.ShiftLine.ShiftReport));
+            return InvalidRoll(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
         var recipe = await db.RecipeVersions
@@ -261,11 +204,14 @@ public class ProductionService(
                 $"{recipe.Family.Name} has no code for the roll code. Set one in Master Data.");
         }
 
-        var productionDate = batch.ShiftLine.ShiftReport.ProductionDate;
+        var productionDate = shiftLine.ShiftReport.ProductionDate;
 
         // The roll and its barcode are one act: a roll with no label cannot be found on
         // the floor, and a label with no roll names nothing.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        // The mix this shift is running, created by this roll if it is the first.
+        var batch = await OpenBatchForAsync(shiftLine, userId, cancellationToken);
 
         var serial = await NextDailySerialAsync(productionDate, cancellationToken);
 
@@ -278,8 +224,8 @@ public class ProductionService(
                 colour.Code,
                 recipe.Family.Code,
                 productionDate,
-                batch.ShiftLine.ShiftReport.Shift.Name),
-            BatchId = batch.Id,
+                shiftLine.ShiftReport.Shift.Name),
+            Batch = batch,
             RecipeVersionId = recipe.Id,
             ColorId = colour.Id,
             ProducedByUserId = userId,
@@ -474,14 +420,6 @@ public class ProductionService(
             .ToDictionaryAsync(b => b.ObjectId, b => b.Value, cancellationToken);
     }
 
-    private async Task<Result<BatchSummaryDto>> LoadBatchAsync(int id, CancellationToken cancellationToken)
-    {
-        db.ChangeTracker.Clear();
-        var batch = await BatchQuery().FirstAsync(b => b.Id == id, cancellationToken);
-        var names = await UserNamesAsync([batch.CreatedByUserId], cancellationToken);
-
-        return Result<BatchSummaryDto>.Success(ToSummary(batch, names));
-    }
 
     private async Task<Result<RollDto>> LoadRollAsync(int id, CancellationToken cancellationToken)
     {
@@ -540,8 +478,6 @@ public class ProductionService(
     private static string? Trimmed(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
-    private static Result<BatchSummaryDto> InvalidBatch(string message) =>
-        Result<BatchSummaryDto>.Failure(ErrorCode.ValidationFailed, message);
 
     private static Result<RollDto> InvalidRoll(string message) =>
         Result<RollDto>.Failure(ErrorCode.ValidationFailed, message);

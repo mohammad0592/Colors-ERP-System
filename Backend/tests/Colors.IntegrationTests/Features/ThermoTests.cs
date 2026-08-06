@@ -1,4 +1,4 @@
-using Colors.Application.Features.Production;
+﻿using Colors.Application.Features.Production;
 using Colors.Application.Features.Thermo;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
@@ -60,12 +60,8 @@ public class ThermoTests(DatabaseFixture fixture)
 
         var production = NewProduction(db);
 
-        var batch = await production.StartBatchAsync(
-            new StartBatchRequest(ids.ShiftLineId, null), ids.UserId);
-        Assert.True(batch.IsSuccess, batch.Message);
-
         var roll = await production.CreateRollAsync(
-            new CreateRollRequest(batch.Value!.Id, family.Versions[0].Id, colour.Id, null, null),
+            new CreateRollRequest(ids.ShiftLineId, family.Versions[0].Id, colour.Id, null, null),
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 
@@ -473,17 +469,4 @@ public class ThermoTests(DatabaseFixture fixture)
         await Assert.ThrowsAsync<Npgsql.PostgresException>(duplicate);
     }
 
-    [Fact]
-    public async Task A_batch_cannot_be_started_on_the_thermo()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "THR20");
-
-        // A batch is a mix, and the thermo does not mix (specification section 4).
-        var batch = await NewProduction(db).StartBatchAsync(
-            new StartBatchRequest(ids.ThermoShiftLineId, null), ids.UserId);
-
-        Assert.False(batch.IsSuccess);
-        Assert.Contains("does not mix", batch.Message!, StringComparison.OrdinalIgnoreCase);
-    }
 }

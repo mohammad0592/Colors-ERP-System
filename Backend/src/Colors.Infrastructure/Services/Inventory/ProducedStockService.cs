@@ -137,7 +137,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
     private async Task<List<ProducedStockItemDto>> RollsAsync(CancellationToken cancellationToken)
     {
         var rolls = await db.Rolls
-            .Include(r => r.Batch)
+            .Include(r => r.Batch).ThenInclude(b => b.ShiftLine)
+                .ThenInclude(l => l.ShiftReport).ThenInclude(s => s.Shift)
             .Include(r => r.Color)
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(r => r.TestReport)
@@ -156,7 +157,9 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 $"{r.RecipeVersion.Family.Name} · {r.Color.Name}",
                 Spaced(r.Status.ToString()),
                 r.Status == RollStatus.Available,
-                $"Batch {r.Batch.BatchNumber}",
+                // The shift, not the batch. Nobody opens a mix any more, so its number
+                // is not a thing anybody in the factory knows (specification section 8).
+                $"Shift {r.Batch.ShiftLine.ShiftReport.Shift.Name}",
                 r.TestReport?.Weight,
                 null,
                 r.ProductionDate,
