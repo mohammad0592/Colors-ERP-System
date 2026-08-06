@@ -1,5 +1,6 @@
 ﻿using Colors.Application.Features.Authentication;
 using Colors.Application.Features.Barcodes;
+using Colors.Application.Features.Dashboard;
 using Colors.Application.Features.Inventory;
 using Colors.Application.Features.MaterialIssue;
 using Colors.Application.Features.Production;
@@ -17,6 +18,7 @@ using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.Barcodes;
+using Colors.Infrastructure.Services.Dashboard;
 using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.MaterialIssue;
@@ -150,6 +152,10 @@ public static class DependencyInjection
 
         // Reports (specification section 13). Read-only over what already exists.
         services.AddScoped<IReportsService, ReportsService>();
+
+        // The home screen. Reads the shift's figures through the reports service, so the
+        // two can never tell different stories about the same shift.
+        services.AddScoped<IDashboardService, DashboardService>();
 
         // Where one thing came from, and what it became (specification section 13).
         services.AddScoped<ITraceService, TraceService>();
