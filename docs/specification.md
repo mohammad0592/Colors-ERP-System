@@ -1062,6 +1062,22 @@ none of the above    →  Empty
 
 Shipping and completing are *events*, so they are dates. Empty and Opened are not events at all — they are just "does this pallet have bags on it", which the assignments already answer. A stored status would be a second copy of that, free to drift: a pallet reading `Opened` while holding nothing, with no way to say which of the two is right. This is the [calculated or stored](#calculated-or-stored) rule: the count is not master data and cannot be edited behind the pallet's back, so it is worked out.
 
+### A pallet needs a pallet
+
+**Starting one is refused when the store holds no empty wooden pallets.** Bags cannot be stacked on wood that is not there, and the system knew the store was empty while letting it happen anyway.
+
+The reason it matters beyond tidiness is at the other end of the shift. Wooden pallets are one of the three materials counted from production, one per pallet **completed** — so a shift that finished three pallets deducts three. Deducting three from a store holding none meets the never-negative rule, and that refusal takes down the **whole** packaging record, not just its pallet line: the shift then has no packaging figures at all, and the operator is told he is short of something he used hours ago.
+
+Checked when the pallet is started rather than when it is completed, so the answer comes while somebody can still do something about it — fetch more wood, or enter the opening count that was never entered.
+
+The wood is still **deducted at shift end**, not here. A pallet started and abandoned uses nothing, and the count that matters is what was finished.
+
+Because nothing is deducted until then, the pallets already being built on the line are counted as claims on the same pile. Two in the store and two half-full on the floor means the third is refused — the wood for those two is spoken for, even though the store's figure has not moved yet.
+
+```
+in store − pallets already being built on this line  <  1   →  refused
+```
+
 ### The rule the factory gave
 
 > *"When the pallet is empty, the pallet will take the first scanned bag's characteristics."*

@@ -133,6 +133,38 @@ public static class FactoryData
         };
 
         db.Materials.AddRange(gpps, talc, largeBags);
+        await db.SaveChangesAsync();
+
+        // Wood in the store, because a pallet cannot be started without it
+        // (specification section 10). Only one material may be the wooden pallet, and
+        // the suite shares one database, so an existing one is reused rather than a
+        // second created — which the unique index would refuse anyway.
+        var wood = await db.Materials
+            .FirstOrDefaultAsync(m => m.CountedAs == Domain.Enums.CountedPackaging.WoodenPallet);
+
+        if (wood is null)
+        {
+            wood = new Material
+            {
+                Code = $"W{suffix}",
+                Name = "Empty Wooden Pallets",
+                CategoryId = packaging.Id,
+                BaseUnitId = piece.Id,
+                MinQuantity = 0,
+                CountedAs = Domain.Enums.CountedPackaging.WoodenPallet,
+            };
+            db.Materials.Add(wood);
+            await db.SaveChangesAsync();
+        }
+
+        // Enough for any one test to build the pallets it needs.
+        var ledger = new Colors.Infrastructure.Services.Inventory.StockLedger(db, TimeProvider.System);
+        await ledger.PostAsync(
+            wood.Id,
+            MovementTypeNames.Receive,
+            100m,
+            user.Id,
+            "Opening count of wooden pallets");
 
         // The mould bolted into the thermo, and the two products it can make. Which one
         // comes out is not the mould's doing — it is what was mixed into the roll — so

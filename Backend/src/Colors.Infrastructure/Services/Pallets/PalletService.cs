@@ -124,6 +124,51 @@ public class PalletService(
             return Invalid(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
+        // Bags cannot be stacked on wood that is not there. Checked when the pallet is
+        // started rather than when it is finished, so the answer arrives while somebody
+        // can still fetch more — or enter the opening count that was never entered.
+        //
+        // It matters at the other end of the shift too: wooden pallets are deducted one
+        // per completed pallet, and deducting from an empty store meets the
+        // never-negative rule, which refuses the *whole* packaging record rather than
+        // just its pallet line (specification section 10).
+        var wood = await db.Materials
+            .Where(m => m.CountedAs == CountedPackaging.WoodenPallet && m.IsActive)
+            .Select(m => new
+            {
+                m.Id,
+                m.Name,
+                InStock = db.MaterialInventory
+                    .Where(i => i.MaterialId == m.Id)
+                    .Select(i => (decimal?)i.CurrentQuantity)
+                    .FirstOrDefault() ?? 0m,
+            })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (wood is not null)
+        {
+            var started = await db.WoodenPallets
+                .CountAsync(
+                    p => p.ShiftLineId == shiftLine.Id && p.CompletedAt == null && p.ShippedAt == null,
+                    cancellationToken);
+
+            // The ones already being built have not been deducted yet, so they are still
+            // claims on the same pile of wood.
+            if (wood.InStock - started < 1)
+            {
+                var name = wood.Name.ToLowerInvariant();
+
+                // Said two ways, because the two situations need different answers:
+                // fetch more wood, or finish what is already on the floor.
+                return Invalid(started == 0
+                    ? $"The store has {wood.InStock:0.##} {name}. "
+                        + "Receive some before starting a pallet."
+                    : $"The store has {wood.InStock:0.##} {name} and "
+                        + $"{started} pallet{(started == 1 ? " is" : "s are")} already being "
+                        + "built. Receive more before starting another.");
+            }
+        }
+
         // The pallet and its label are one act, exactly as a roll and a bag are.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 

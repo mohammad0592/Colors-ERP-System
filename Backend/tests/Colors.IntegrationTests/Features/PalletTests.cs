@@ -1,6 +1,7 @@
 ﻿using Colors.Application.Features.Pallets;
 using Colors.Application.Features.Production;
 using Colors.Application.Features.Thermo;
+using Colors.Domain.Constants;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Persistence;
@@ -456,6 +457,98 @@ public class PalletTests(DatabaseFixture fixture)
 
         Assert.False(scanned.IsSuccess);
         Assert.Contains("not a bag", scanned.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Leaves exactly <paramref name="quantity"/> empty wooden pallets in the store.
+    ///
+    /// The suite shares one database and every factory receives a hundred, so a test
+    /// about running out has to issue the pile down to the figure it wants. Nothing is
+    /// put back afterwards — the next factory receives its own hundred.
+    /// </summary>
+    private static async Task SetWoodStockAsync(
+        ColorsDbContext db, FactoryData.Ids ids, decimal quantity)
+    {
+        var wood = await db.Materials.FirstAsync(
+            m => m.CountedAs == CountedPackaging.WoodenPallet);
+
+        var inStock = await db.MaterialInventory
+            .Where(i => i.MaterialId == wood.Id)
+            .Select(i => i.CurrentQuantity)
+            .FirstOrDefaultAsync();
+
+        var ledger = new Colors.Infrastructure.Services.Inventory.StockLedger(
+            db, TimeProvider.System);
+
+        var difference = quantity - inStock;
+        if (difference == 0)
+        {
+            return;
+        }
+
+        var posted = await ledger.PostAsync(
+            wood.Id,
+            difference > 0 ? MovementTypeNames.Receive : MovementTypeNames.Issue,
+            Math.Abs(difference),
+            ids.UserId,
+            "Setting up the test");
+
+        Assert.True(posted.IsSuccess, posted.Message);
+    }
+
+    [Fact]
+    public async Task A_pallet_cannot_be_started_with_no_wood_in_the_store()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL19");
+        await SetWoodStockAsync(db, ids, 0m);
+
+        var pallet = await NewService(db).StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+
+        Assert.False(pallet.IsSuccess);
+        Assert.Contains("store has 0", pallet.Message!, StringComparison.OrdinalIgnoreCase);
+
+        // Refused means nothing was written — no pallet, and no barcode for one.
+        Assert.False(await db.WoodenPallets.AnyAsync(p => p.ShiftLineId == ids.ThermoShiftLineId));
+    }
+
+    [Fact]
+    public async Task One_wooden_pallet_in_the_store_is_enough_for_one()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL20");
+        await SetWoodStockAsync(db, ids, 1m);
+
+        var started = await NewService(db).StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+
+        Assert.True(started.IsSuccess, started.Message);
+    }
+
+    [Fact]
+    public async Task Pallets_already_being_built_count_against_the_wood()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAL21");
+        await SetWoodStockAsync(db, ids, 2m);
+        var service = NewService(db);
+
+        // The wood is only deducted when the shift's packaging is recorded, so a pallet
+        // that is still being filled is a claim on the store even though the store's
+        // figure has not moved yet.
+        for (var i = 0; i < 2; i++)
+        {
+            var started = await service.StartPalletAsync(
+                new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+            Assert.True(started.IsSuccess, started.Message);
+        }
+
+        var third = await service.StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+
+        Assert.False(third.IsSuccess);
+        Assert.Contains("2 pallets are already being built", third.Message!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
