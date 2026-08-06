@@ -1,4 +1,4 @@
-import { apiRequest } from '../../lib/apiClient';
+﻿import { apiRequest } from '../../lib/apiClient';
 
 /**
  * Line 1 — the mixer and the extruder, mirroring
@@ -85,6 +85,13 @@ export const productionApi = {
       method: 'POST',
       body: {},
     }),
+
+  /**
+   * Throws away a mix that produced nothing. Never one with rolls on it — that batch is
+   * the only record of what went into them.
+   */
+  discardBatch: (id: number): Promise<undefined> =>
+    apiRequest<undefined>(`/api/production/batches/${String(id)}`, { method: 'DELETE' }),
 
   rolls: (batchId?: number, needsTestOnly = false): Promise<RollSummaryDto[]> => {
     const query = new URLSearchParams({ needsTestOnly: String(needsTestOnly) });

@@ -107,6 +107,17 @@ export function RollProductionPage(): ReactElement {
     onSettled: invalidate,
   });
 
+  // A mix that produced nothing. Without this the shift cannot close: an empty batch
+  // cannot be finished, and once its shift shuts it cannot take a roll either.
+  const discardBatch = useMutation({
+    mutationFn: (id: number) => productionApi.discardBatch(id),
+    onSuccess: () => {
+      setActionError(null);
+    },
+    onError,
+    onSettled: invalidate,
+  });
+
   if (batches.isPending || recipes.isPending || colors.isPending) {
     return <p className="p-6 text-ink-muted">Loading…</p>;
   }
@@ -254,26 +265,51 @@ export function RollProductionPage(): ReactElement {
                             setLogging(batch);
                           }}
                         />
-                        <Action
-                          label="Finish"
-                          onClick={() => {
-                            setConfirm({
-                              title: `Finish batch ${String(batch.batchNumber)}?`,
-                              message: (
-                                <>
-                                  No more rolls can be drawn from this mix. It made{' '}
-                                  {batch.rollCount} roll
-                                  {batch.rollCount === 1 ? '' : 's'}.
-                                </>
-                              ),
-                              confirmLabel: 'Finish batch',
-                              tone: 'primary',
-                              onConfirm: () => {
-                                finishBatch.mutate(batch.id);
-                              },
-                            });
-                          }}
-                        />
+                        {/* A mix that made nothing cannot be finished, so the only
+                            way to clear it is to throw it away — and the shift cannot
+                            close while it is still open. */}
+                        {batch.rollCount === 0 ? (
+                          <Action
+                            label="Discard"
+                            onClick={() => {
+                              setConfirm({
+                                title: `Throw away batch ${String(batch.batchNumber)}?`,
+                                message: (
+                                  <>
+                                    This mix produced no rolls, so there is nothing to
+                                    keep. The shift cannot close while it is still open.
+                                  </>
+                                ),
+                                confirmLabel: 'Throw it away',
+                                tone: 'danger',
+                                onConfirm: () => {
+                                  discardBatch.mutate(batch.id);
+                                },
+                              });
+                            }}
+                          />
+                        ) : (
+                          <Action
+                            label="Finish"
+                            onClick={() => {
+                              setConfirm({
+                                title: `Finish batch ${String(batch.batchNumber)}?`,
+                                message: (
+                                  <>
+                                    No more rolls can be drawn from this mix. It made{' '}
+                                    {batch.rollCount} roll
+                                    {batch.rollCount === 1 ? '' : 's'}.
+                                  </>
+                                ),
+                                confirmLabel: 'Finish batch',
+                                tone: 'primary',
+                                onConfirm: () => {
+                                  finishBatch.mutate(batch.id);
+                                },
+                              });
+                            }}
+                          />
+                        )}
                       </>
                     )}
                   </div>

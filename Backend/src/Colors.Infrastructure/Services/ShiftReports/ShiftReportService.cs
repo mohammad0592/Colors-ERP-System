@@ -421,6 +421,47 @@ public class ShiftReportService(
                 + $"{(openTickets.Count == 1 ? "it" : "them")} first.");
         }
 
+        // A mix never crosses a shift, and leaving one open across a close is a trap
+        // with no way out: rolls may only be logged to an open shift, and a batch that
+        // made no rolls may not be finished — so the batch can neither take a roll nor
+        // be closed (specification section 2). An empty one can be discarded instead.
+        var openBatches = await db.Batches
+            .Where(b => lineIds.Contains(b.ShiftLineId) && b.FinishedAt == null)
+            .Select(b => new { b.BatchNumber, HasRolls = b.Rolls.Count > 0 })
+            .OrderBy(b => b.BatchNumber)
+            .ToListAsync(cancellationToken);
+
+        if (openBatches.Count > 0)
+        {
+            var numbers = string.Join(", ", openBatches.Select(b => b.BatchNumber));
+            var one = openBatches.Count == 1;
+
+            return Invalid(
+                $"Batch{(one ? "" : "es")} {numbers} {(one ? "is" : "are")} still running. "
+                + (openBatches.All(b => !b.HasRolls)
+                    ? $"{(one ? "It" : "They")} produced no rolls, so discard "
+                      + $"{(one ? "it" : "them")} first."
+                    : $"Finish {(one ? "it" : "them")} first."));
+        }
+
+        // A roll physically in the machine. Its run has no end time and has made no
+        // bags, so closing now would leave the shift claiming work it never finished.
+        var inThermo = await db.ThermoProductions
+            .Where(p => lineIds.Contains(p.ShiftLineId) && p.FinishedAt == null)
+            .Select(p => p.Roll.RollCode)
+            .OrderBy(code => code)
+            .ToListAsync(cancellationToken);
+
+        if (inThermo.Count > 0)
+        {
+            var one = inThermo.Count == 1;
+
+            return Invalid(
+                $"Roll{(one ? "" : "s")} {string.Join(", ", inThermo)} "
+                + $"{(one ? "is" : "are")} still in the thermo. Take "
+                + $"{(one ? "it" : "them")} out first.");
+        }
+
         report.Status = ShiftReportStatus.Closed;
         report.ClosedByUserId = userId;
         report.ClosedAt = timeProvider.GetUtcNow();

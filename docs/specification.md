@@ -207,6 +207,22 @@ The index is on a constant, so every open row collides with every other open row
 
 Closing is unaffected: close A, then open B.
 
+### What must be finished before a shift can close
+
+A shift is refused closing while any of these is still hanging:
+
+| Still open | Why it blocks |
+|---|---|
+| a **material issue ticket** | the leftover has no ticket to be weighed back onto, and the waste figure would be wrong for ever |
+| a **batch** | it is a mix still being drawn from, and a mix never crosses a shift |
+| a **roll in the thermo** | it is physically in the machine; the run has no end time and made no bags |
+
+Each message names what to finish, so the supervisor is never told "no" without being told what to do.
+
+**This is not tidiness either — leaving a batch open across a close is a trap with no way out.** Rolls may only be logged to an open shift, and a batch that produced no rolls may not be finished. So an empty batch on a closed shift can neither take a roll nor be closed: it is stuck for ever, and so is anybody trying to tidy the list.
+
+Which is why the way out exists too: **a batch that produced nothing can be discarded.** A mix that made no rolls has no history worth keeping — nothing points at it — exactly like an empty shift opened by mistake. A batch that *did* produce rolls is never discardable.
+
 ### Reopening an old shift is never blocked
 
 A supervisor closes A, B starts, and only then does he notice A's electricity reading was never written down. He cannot close B — B is genuinely running — so if reopening A were refused, that reading could never be corrected at all.

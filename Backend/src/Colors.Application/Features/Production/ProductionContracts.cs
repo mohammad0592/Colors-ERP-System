@@ -130,6 +130,17 @@ public interface IProductionService
         int batchId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Throws away a mix that produced nothing — started by mistake, or a bad mix.
+    ///
+    /// Only ever an empty one: a batch with rolls on it is the only record of what went
+    /// into them. Without this a shift could not close, because an empty batch cannot be
+    /// finished and cannot take a roll once its shift is shut (specification section 2).
+    /// </summary>
+    Task<Result<bool>> DiscardBatchAsync(
+        int batchId,
+        CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<RollSummaryDto>> GetRollsAsync(
         int? batchId = null,
         bool needsTestOnly = false,

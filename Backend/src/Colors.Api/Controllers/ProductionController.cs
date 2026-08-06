@@ -52,6 +52,14 @@ public class ProductionController(IProductionService production) : ApiController
         return ToResponse(await production.FinishBatchAsync(id, cancellationToken));
     }
 
+    /// <summary>Throws away a mix that produced nothing. Never one with rolls on it.</summary>
+    [HttpDelete("batches/{id:int}")]
+    [Authorize(Roles = CanProduce)]
+    public async Task<IActionResult> DiscardBatch(int id, CancellationToken cancellationToken)
+    {
+        return ToResponse(await production.DiscardBatchAsync(id, cancellationToken));
+    }
+
     // ---------- rolls ----------
 
     [HttpGet("rolls")]

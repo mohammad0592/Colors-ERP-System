@@ -119,6 +119,34 @@ public class ProductionService(
         return await LoadBatchAsync(batchId, cancellationToken);
     }
 
+    public async Task<Result<bool>> DiscardBatchAsync(
+        int batchId,
+        CancellationToken cancellationToken = default)
+    {
+        var batch = await BatchQuery().FirstOrDefaultAsync(b => b.Id == batchId, cancellationToken);
+        if (batch is null)
+        {
+            return Result<bool>.Failure(ErrorCode.NotFound, "This batch does not exist.");
+        }
+
+        // A batch with rolls on it is the only record of what went into them, so it is
+        // never thrown away. An empty one is a mix that made nothing — started by
+        // mistake, or a bad mix — and nothing at all points at it.
+        if (batch.Rolls.Count > 0)
+        {
+            return Result<bool>.Failure(
+                ErrorCode.ValidationFailed,
+                $"Batch {batch.BatchNumber} made {batch.Rolls.Count} roll"
+                + $"{(batch.Rolls.Count == 1 ? "" : "s")}, so it cannot be thrown away. "
+                + "Finish it instead.");
+        }
+
+        db.Batches.Remove(batch);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Result<bool>.Success(true);
+    }
+
     public async Task<IReadOnlyList<RollSummaryDto>> GetRollsAsync(
         int? batchId = null,
         bool needsTestOnly = false,
