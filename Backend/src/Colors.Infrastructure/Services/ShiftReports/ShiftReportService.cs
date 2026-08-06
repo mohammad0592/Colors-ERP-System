@@ -112,6 +112,16 @@ public class ShiftReportService(
                 + "opening a second shift.");
         }
 
+        // The factory cannot work two shifts at once — the men on A go home before the
+        // men on B arrive. With two open there is nothing to say which shift a roll
+        // belongs to, and once it is recorded against the wrong one the figures for
+        // both are wrong (specification section 2).
+        var alreadyOpen = await StillOpenAsync(cancellationToken);
+        if (alreadyOpen is not null)
+        {
+            return Invalid(AlreadyOpenMessage(alreadyOpen));
+        }
+
         var report = new ShiftReport
         {
             ProductionDate = request.ProductionDate,
@@ -426,6 +436,18 @@ public class ShiftReportService(
         return await LoadAsync(id, cancellationToken);
     }
 
+    /// <summary>
+    /// The shift that is still running, if there is one. Only ever one, and the database
+    /// makes sure of it — but this is what turns the refusal into a sentence naming the
+    /// shift to close rather than a constraint violation.
+    /// </summary>
+    private async Task<ShiftReport?> StillOpenAsync(CancellationToken cancellationToken) =>
+        await Query().FirstOrDefaultAsync(r => r.Status == ShiftReportStatus.Open, cancellationToken);
+
+    private static string AlreadyOpenMessage(ShiftReport open) =>
+        $"Shift {open.Shift.Name} on {open.ProductionDate:dd/MM/yyyy} is still open. "
+        + "The factory works one shift at a time, so close that one first.";
+
     public async Task<Result<ShiftReportDto>> ReopenAsync(
         int id,
         ReopenShiftReportRequest request,
@@ -446,6 +468,14 @@ public class ShiftReportService(
         if (string.IsNullOrWhiteSpace(request.Reason))
         {
             return Invalid("Say why the shift is being reopened — it stays on the record.");
+        }
+
+        // Reopening is opening. If something else is running by now, the same rule
+        // applies (specification section 2).
+        var alreadyOpen = await StillOpenAsync(cancellationToken);
+        if (alreadyOpen is not null)
+        {
+            return Invalid(AlreadyOpenMessage(alreadyOpen));
         }
 
         report.Status = ShiftReportStatus.Open;

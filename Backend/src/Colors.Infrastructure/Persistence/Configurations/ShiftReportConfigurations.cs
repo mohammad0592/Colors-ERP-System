@@ -28,6 +28,17 @@ public class ShiftReportConfiguration : IEntityTypeConfiguration<ShiftReport>
             .IsUnique()
             .HasDatabaseName("ux_shift_reports_date_shift");
 
+        // A second index, ux_shift_reports_single_open, allows only one Open row in the
+        // whole table — the factory works one shift at a time (specification section 2).
+        // It lives in the migration as SQL rather than here, because it indexes a
+        // constant:
+        //
+        //     CREATE UNIQUE INDEX ... ON "ShiftReports" ((TRUE)) WHERE "Status" = 'Open'
+        //
+        // Every open row then collides with every other open row. EF cannot express an
+        // index on an expression, and cannot see this one, so it will never try to drop
+        // it either.
+
         builder.HasOne(e => e.Shift)
             .WithMany()
             .HasForeignKey(e => e.ShiftId)

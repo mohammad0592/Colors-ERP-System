@@ -189,6 +189,24 @@ This is how the factory speaks: *"shift A on 4 August"* is one thing, not three.
 
 But the lines are not identical while it runs. The extruder may start at 08:00 and the thermo at 09:00; one may stop for an hour and the other not; only the thermo has forming settings. So the times and the machine belong to the **line**, and the day belongs to the **shift**.
 
+### Only one shift is open at a time
+
+The factory cannot work shift A and shift B at once — the men on A go home before the men on B arrive. So **opening a shift while another is still open is refused**, and the message names the one that has to be closed first.
+
+This is not tidiness. Every roll, bag, pallet and ticket is recorded against a shift, and with two open there is nothing to say which. A screen offering both is offering a mistake, and once a roll is recorded against the wrong shift, the production and waste figures for *both* shifts are wrong and nothing later can tell them apart.
+
+**The database enforces it too**, with a unique index that permits a single open row for the whole table:
+
+```sql
+CREATE UNIQUE INDEX ux_shift_reports_single_open
+    ON "ShiftReports" ((TRUE))
+    WHERE "Status" = 'Open';
+```
+
+The index is on a constant, so every open row collides with every other open row and only one can exist. Two supervisors opening a shift on two tablets in the same moment is exactly the case application code cannot catch by itself.
+
+Closing is unaffected: close A, then open B. A shift that was closed by mistake is reopened by an administrator, and reopening is refused for the same reason if something else is open by then.
+
 ```
 ShiftReport         Shift A · 04/08/2026 · Open · meter 12000 → 12850
   └── ShiftLine       Extruder · 08:00–16:00 · 0.5 h down

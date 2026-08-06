@@ -171,6 +171,26 @@ public static class FactoryData
         };
         db.Products.AddRange(normal, absorbent);
 
+        // One database is one factory, and a factory works one shift at a time
+        // (specification section 2) — the database enforces it with a unique index that
+        // allows a single Open row. The suite builds a new factory per test in one
+        // shared database, so the shift the last test opened has to end before this one
+        // starts, exactly as it would on the floor.
+        var stillOpen = await db.ShiftReports
+            .Where(r => r.Status == Domain.Enums.ShiftReportStatus.Open)
+            .ToListAsync();
+
+        foreach (var previous in stillOpen)
+        {
+            previous.Status = Domain.Enums.ShiftReportStatus.Closed;
+            previous.ClosedAt = DateTimeOffset.UtcNow;
+        }
+
+        if (stillOpen.Count > 0)
+        {
+            await db.SaveChangesAsync();
+        }
+
         var report = new ShiftReport
         {
             // A day of its own, so this factory's roll serials start at 1 whatever else
