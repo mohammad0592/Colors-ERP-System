@@ -13,6 +13,7 @@ using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
 using Colors.Application.Features.ShiftReports;
 using Colors.Application.Features.Trace;
+using Colors.Application.Features.Users;
 using Colors.Application.Features.Thermo;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
@@ -31,6 +32,7 @@ using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
 using Colors.Infrastructure.Services.ShiftReports;
 using Colors.Infrastructure.Services.Trace;
+using Colors.Infrastructure.Services.Users;
 using Colors.Infrastructure.Services.Thermo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -121,6 +123,9 @@ public static class DependencyInjection
 
         // People, read only — every screen that has to name somebody.
         services.AddScoped<IPeopleService, PeopleService>();
+
+        // User administration (specification section 3). The administrator's job.
+        services.AddScoped<IUserService, UserService>();
 
         // Inventory (specification section 6). The ledger is shared: issue tickets
         // move stock too, and two copies of the locking would drift apart.

@@ -17,6 +17,7 @@ import { RecipesPage } from './features/recipes/RecipesPage';
 import { RecyclerPage } from './features/recycler/RecyclerPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
+import { UsersPage } from './features/users/UsersPage';
 import { TracePage } from './features/trace/TracePage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
 import { ThermoTestsPage } from './features/thermo/ThermoTestsPage';
@@ -162,6 +163,9 @@ export default function App(): ReactElement {
                     administrator gets in (specification section 3). */}
                 <Route element={<ProtectedRoute roles={[RoleNames.Administrator]} />}>
                   <Route path="/master-data" element={<MasterDataPage />} />
+                  {/* Who may sign in and what they may do — the administrator's alone
+                      (specification section 3). */}
+                  <Route path="/users" element={<UsersPage />} />
                 </Route>
 
                 {/* Reports account for the shift, so they are for the people who

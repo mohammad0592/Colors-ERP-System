@@ -1,25 +1,16 @@
-﻿import type { ReactElement } from 'react';
-import { ComingSoon } from '../components/ui/ComingSoon';
+import type { ReactElement } from 'react';
 
 /**
  * Screens that are planned but not built.
  *
- * Listed here rather than as fifteen almost-identical files. Each is replaced by a
- * real screen as its phase is built (specification section 17).
+ * The list is empty: every screen in the menu is real. It is kept because the next thing
+ * the factory asks for will want somewhere to say "this is coming", and a placeholder
+ * that says so beats a menu item that goes nowhere.
  */
-const planned: { path: string; title: string; phase: string; description: string }[] = [
-  {
-    path: '/users',
-    title: 'Users',
-    phase: 'Phase 1',
-    description:
-      'Add a worker, give them an employee number, and set which of the nine roles they hold.',
-  },
-];
+const planned: { path: string; title: string; phase: string; description: string }[] = [];
 
 export const plannedRoutes: { path: string; element: ReactElement }[] = planned.map(
-  ({ path, title, phase, description }) => ({
-    path,
-    element: <ComingSoon title={title} phase={phase} description={description} />,
-  }),
+  () => {
+    throw new Error('Unreachable: the planned list is empty.');
+  },
 );
