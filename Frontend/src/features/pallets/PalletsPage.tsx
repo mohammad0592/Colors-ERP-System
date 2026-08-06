@@ -1,6 +1,7 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { StartOnLineButton } from '../../components/ui/StartOnLineButton';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
@@ -62,7 +63,8 @@ export function PalletsPage(): ReactElement {
           .filter((line) => line.formsBags)
           .map((line) => ({
             shiftLineId: line.id,
-            label: `${line.productionLineName} — shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
+            lineName: line.productionLineName,
+            shiftLabel: `shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
           })),
       );
     },
@@ -106,24 +108,14 @@ export function PalletsPage(): ReactElement {
         title="Pallets"
         subtitle="The first bag scanned decides the pallet's colour and product. Every later bag must match, and the product itself says how many fill it."
         actions={
-          canPack && lines.length > 0 ? (
-            <select
-              aria-label="Start a pallet on"
-              className="field-input h-touch w-auto py-0"
-              value=""
-              onChange={(event) => {
-                if (event.target.value !== '') {
-                  startPallet.mutate(Number(event.target.value));
-                }
+          canPack ? (
+            <StartOnLineButton
+              lines={lines}
+              action="Start a pallet"
+              onStart={(shiftLineId) => {
+                startPallet.mutate(shiftLineId);
               }}
-            >
-              <option value="">Start a pallet on…</option>
-              {lines.map((line) => (
-                <option key={line.shiftLineId} value={line.shiftLineId}>
-                  {line.label}
-                </option>
-              ))}
-            </select>
+            />
           ) : undefined
         }
       />

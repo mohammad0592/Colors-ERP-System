@@ -5,7 +5,12 @@ import { formatDate } from '../shifts/shiftFormat';
 import { thermoApi, type AvailableRollDto, type ThermoRunDto } from './api';
 
 interface StartRunDialogProps {
-  line: { shiftLineId: number; label: string; mouldName: string | null };
+  line: {
+    shiftLineId: number;
+    lineName: string;
+    shiftLabel: string;
+    mouldName: string | null;
+  };
   rolls: AvailableRollDto[];
   onClose: () => void;
   onStarted: (run: ThermoRunDto) => void;
@@ -69,7 +74,9 @@ export function StartRunDialog({
         noValidate
       >
         <div className="mb-5 border-b border-line pb-4 text-sm text-ink-muted">
-          <p>{line.label}</p>
+          <p>
+            {line.lineName} — {line.shiftLabel}
+          </p>
           <p className="mt-1">
             Mould: <strong className="text-ink">{line.mouldName ?? 'none set'}</strong>
             {line.mouldName !== null && (

@@ -2,6 +2,7 @@
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { StartOnLineButton } from '../../components/ui/StartOnLineButton';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
@@ -71,7 +72,8 @@ export function RollProductionPage(): ReactElement {
           .filter((line) => line.makesRolls)
           .map((line) => ({
             shiftLineId: line.id,
-            label: `${line.productionLineName} — shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
+            lineName: line.productionLineName,
+            shiftLabel: `shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
           })),
       );
     },
@@ -122,24 +124,14 @@ export function RollProductionPage(): ReactElement {
         title="Roll Production"
         subtitle="One mix makes fifteen to seventeen rolls. The batch knows the materials; each roll knows its own recipe and colour."
         actions={
-          canProduce && (openLines.data?.length ?? 0) > 0 ? (
-            <select
-              aria-label="Start a batch on"
-              className="field-input h-touch w-auto py-0"
-              value=""
-              onChange={(event) => {
-                if (event.target.value !== '') {
-                  startBatch.mutate(Number(event.target.value));
-                }
+          canProduce ? (
+            <StartOnLineButton
+              lines={openLines.data ?? []}
+              action="Start a batch"
+              onStart={(shiftLineId) => {
+                startBatch.mutate(shiftLineId);
               }}
-            >
-              <option value="">Start a batch on…</option>
-              {openLines.data?.map((line) => (
-                <option key={line.shiftLineId} value={line.shiftLineId}>
-                  {line.label}
-                </option>
-              ))}
-            </select>
+            />
           ) : undefined
         }
       />

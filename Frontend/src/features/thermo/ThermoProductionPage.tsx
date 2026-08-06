@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { StartOnLineButton } from '../../components/ui/StartOnLineButton';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
@@ -25,7 +26,8 @@ export function ThermoProductionPage(): ReactElement {
   const [openOnly, setOpenOnly] = useState(true);
   const [starting, setStarting] = useState<{
     shiftLineId: number;
-    label: string;
+    lineName: string;
+    shiftLabel: string;
     mouldName: string | null;
   } | null>(null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
@@ -55,7 +57,8 @@ export function ThermoProductionPage(): ReactElement {
           .map((line) => ({
             shiftLineId: line.id,
             mouldName: line.mouldName,
-            label: `${line.productionLineName} — shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
+            lineName: line.productionLineName,
+            shiftLabel: `shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
           })),
       );
     },
@@ -94,27 +97,17 @@ export function ThermoProductionPage(): ReactElement {
         title="Thermoforming"
         subtitle="One roll goes in whole. The mould on the line and the roll's recipe decide what comes out — nobody types it."
         actions={
-          canForm && lines.length > 0 ? (
-            <select
-              aria-label="Put a roll into"
-              className="field-input h-touch w-auto py-0"
-              value=""
-              onChange={(event) => {
-                const line = lines.find(
-                  (l) => String(l.shiftLineId) === event.target.value,
-                );
+          canForm ? (
+            <StartOnLineButton
+              lines={lines}
+              action="Put a roll in"
+              onStart={(shiftLineId) => {
+                const line = lines.find((l) => l.shiftLineId === shiftLineId);
                 if (line !== undefined) {
                   setStarting(line);
                 }
               }}
-            >
-              <option value="">Put a roll into…</option>
-              {lines.map((line) => (
-                <option key={line.shiftLineId} value={line.shiftLineId}>
-                  {line.label}
-                </option>
-              ))}
-            </select>
+            />
           ) : undefined
         }
       />
