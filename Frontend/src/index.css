@@ -115,28 +115,28 @@
   overflow: hidden;
 }
 
-@media print {
-  /* A page of its own for the label, named so that printing anything else in this app
-     is unaffected. No margin at all: the page is exactly the sticker, and the label
-     supplies its own padding. A margin here made the printable area 92mm wide, which a
-     100mm label cannot fit into — so Chrome split one label across seven sheets. */
-  @page label {
-    size: 100mm 70mm;
-    margin: 0;
-  }
+/* The page is exactly the sticker. No margin at all: a margin here would leave 92mm to
+   print on, which a 100mm label cannot fit into, and Chrome would break one label
+   across several sheets. */
+@page {
+  size: 100mm 70mm;
+  margin: 0;
+}
 
-  /* The whole app goes, the label screen stays. One selector, and it works wherever in
-     the app the print was started from — which is exactly why that screen is rendered
-     straight into the body rather than nested inside the page.
+@media print {
+  /* The whole app goes, the label dialog stays. One selector, and it works wherever in
+     the app the print was started from — which is why that dialog is rendered straight
+     into the body rather than nested inside the page.
      display, not visibility: a hidden element keeps its space and would go on pushing
      the label onto further sheets while invisible. */
   body > *:not(#label-print-root) {
     display: none !important;
   }
 
-  /* On screen it is a fixed, scrolling overlay. On paper it is a plain stack. */
+  /* On screen these are a dimmed overlay and a scrolling card. On paper they are
+     nothing at all — just a stack of labels. */
   #label-print-root,
-  #label-print-root > div,
+  .label-card,
   .label-sheets {
     display: block !important;
     position: static !important;
@@ -152,28 +152,29 @@
     box-shadow: none !important;
   }
 
-  /* The screen's own furniture — title, print button, hints. Never on a sticker. */
+  /* The dialog's own furniture — backdrop, title, print button, hints. Never on a
+     sticker. */
   .no-print {
     display: none !important;
   }
 
   .print-label {
-    page: label;
     margin: 0 !important;
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
-    /* One label to a page, and never split down the middle. A run of fourteen bags
-       prints as fourteen stickers, not one long strip nobody can peel apart. */
+    /* Never split down the middle. */
     break-inside: avoid;
-    break-after: page;
     page-break-inside: avoid;
-    page-break-after: always;
   }
 
-  .print-label:last-of-type {
-    break-after: auto;
-    page-break-after: auto;
+  /* Every label after the first starts a new page — a break BEFORE, never AFTER.
+     A break after the last label is a break with nothing following it, which Chrome
+     honours by printing one more empty sheet. On a roll of stickers that is a wasted
+     label every single time. */
+  .print-label + .print-label {
+    break-before: page;
+    page-break-before: always;
   }
 }
 

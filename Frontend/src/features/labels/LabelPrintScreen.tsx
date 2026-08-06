@@ -60,47 +60,42 @@ export function LabelPrintScreen({
   return createPortal(
     <div
       id="label-print-root"
-      role="dialog"
-      aria-modal="true"
-      aria-label={many ? `Print ${String(barcodes.length)} labels` : 'Print label'}
-      className="fixed inset-0 z-50 overflow-y-auto bg-canvas"
+      className="fixed inset-0 z-50 grid place-items-center p-4"
     >
-      {/* Everything with `no-print` is the screen around the labels — it must not reach
-          the printer, and it must not take up space there either. */}
-      <header className="no-print sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-line bg-surface px-6 py-4">
-        <div>
-          <h2 className="text-lg font-bold text-ink">
-            {many ? `${String(barcodes.length)} labels to print` : 'Label'}
-          </h2>
-          {headline !== undefined && (
-            <p className="mt-1 text-sm font-medium text-ok">{headline}</p>
-          )}
-        </div>
+      {/* Everything marked `no-print` is the dialog around the labels — it must not
+          reach the printer, and it must not take up space there either. */}
+      <button
+        type="button"
+        aria-label="Close"
+        onClick={onClose}
+        className="no-print absolute inset-0 cursor-default bg-ink/50"
+      />
 
-        <div className="flex items-center gap-2">
-          {labels.data !== undefined && labels.data.length > 0 && (
-            <button
-              type="button"
-              className="h-touch rounded-control bg-brand-600 px-5 font-semibold text-white transition-colors hover:bg-brand-700"
-              onClick={() => {
-                window.print();
-              }}
-            >
-              {many ? `Print all ${String(labels.data.length)}` : 'Print'}
-            </button>
-          )}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={many ? `Print ${String(barcodes.length)} labels` : 'Print label'}
+        className="label-card relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-card bg-surface p-5 shadow-raised"
+      >
+        <div className="no-print mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-bold text-ink">
+              {many ? `${String(barcodes.length)} labels` : 'Label'}
+            </h2>
+            {headline !== undefined && (
+              <p className="mt-1 text-sm font-medium text-ok">{headline}</p>
+            )}
+          </div>
           <button
             type="button"
             aria-label="Close"
             onClick={onClose}
-            className="grid size-touch place-items-center rounded-control text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
+            className="grid size-touch shrink-0 place-items-center rounded-control text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
           >
             <Icon name="close" />
           </button>
         </div>
-      </header>
 
-      <div className="p-6">
         {labels.isPending && <p className="no-print text-ink-muted">Loading…</p>}
         {labels.isError && <p className="no-print text-bad">Could not load these labels.</p>}
 
@@ -116,7 +111,16 @@ export function LabelPrintScreen({
               ))}
             </div>
 
-            <p className="no-print mt-4 text-center text-xs text-ink-muted">
+            <button
+              type="button"
+              className="no-print btn-primary"
+              onClick={() => {
+                window.print();
+              }}
+            >
+              {many ? `Print all ${String(labels.data.length)} labels` : 'Print this label'}
+            </button>
+            <p className="no-print mt-2 text-xs text-ink-muted">
               Each label prints at 100 × 70 mm, one to a page. Reprinting is allowed —
               the barcode never changes, so an old label and a new one name the same
               thing.
