@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+﻿import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
@@ -14,6 +14,7 @@ import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { PalletsPage } from './features/pallets/PalletsPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
+import { TracePage } from './features/trace/TracePage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
 import { ThermoTestsPage } from './features/thermo/ThermoTestsPage';
 import { RoleNames } from './lib/roles';
@@ -50,6 +51,11 @@ export default function App(): ReactElement {
                     batch needs to know the material is there. Receiving belongs to
                     the inventory manager (specification section 3). */}
                 <Route path="/inventory" element={<InventoryPage />} />
+
+                {/* Where did this come from. Open to anyone signed in: it writes
+                    nothing, and whoever is holding a label may need to know what is
+                    behind it (specification section 13). */}
+                <Route path="/trace" element={<TracePage />} />
                 <Route
                   element={
                     <ProtectedRoute

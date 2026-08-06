@@ -1,5 +1,6 @@
 ﻿import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { Link } from 'react-router-dom';
 import { formatDate } from '../shifts/shiftFormat';
 import { producedStockApi, type ProducedKind } from './api';
 import { LabelPrintScreen } from './LabelPrintScreen';
@@ -158,7 +159,15 @@ export function ProducedStockTab(): ReactElement {
                     {formatDate(item.productionDate)}
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
+                      {item.barcode !== '' && (
+                        <Link
+                          to={`/trace?code=${encodeURIComponent(item.barcode)}`}
+                          className="grid min-h-9 place-items-center rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                        >
+                          Trace
+                        </Link>
+                      )}
                       {item.barcode !== '' && (
                         <button
                           type="button"

@@ -1271,6 +1271,25 @@ The label also confirms the shift on the bag is the **thermo** shift (A), while 
 | Full traceability | pallet → bags → rolls → batches → recipe → materials |
 | Movement history | every stock change with its cause |
 
+### Where did this come from
+
+Every report above is a summary. This one is the opposite: a man holds **one** label and wants to know everything behind it.
+
+Scan a roll, a bag or a pallet, and the whole chain comes back on one page — backwards to the materials and forwards to what it became:
+
+```
+Pallet  →  the bags on it, each naming its own roll
+Bag     →  the pallet it went on
+        ←  the thermo run: shift, operator, minutes, piece and bag weight
+        ←  the roll: code, recipe and version, colour, weight, length, thickness
+        ←  the mix, and the materials issued to that shift
+Roll    →  every bag it made, and where each one went
+```
+
+**Nothing new is stored for it.** Every link is already a foreign key — that is what a bag's barcode has been for since section 10 — so this is a read-only view over records that exist. It cannot disagree with the data, because it *is* the data.
+
+**One honest limit, printed on the page rather than hidden.** Materials are issued to a **shift line**, not to a mix, because the ticket never gained the `BatchId` section 7 describes. With the mixer filled once a shift those are the same set of materials, so the answer is right today. But the true sentence is *"these materials were issued to the shift that made this roll"*, not *"these materials are in this roll"* — and the screen says so, rather than claiming more than it knows.
+
 ### Shift summary is a report, not a table
 
 The paper form's summary block — loss %, loss weight, roll weight used, plate count, per product — is **entirely calculable** from records the system already holds. It is built as a view, so it can never disagree with the data underneath it.

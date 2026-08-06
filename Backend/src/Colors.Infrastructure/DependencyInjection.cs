@@ -1,4 +1,4 @@
-using Colors.Application.Features.Authentication;
+﻿using Colors.Application.Features.Authentication;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Inventory;
 using Colors.Application.Features.MaterialIssue;
@@ -8,6 +8,7 @@ using Colors.Application.Features.Pallets;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
 using Colors.Application.Features.ShiftReports;
+using Colors.Application.Features.Trace;
 using Colors.Application.Features.Thermo;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
@@ -21,6 +22,7 @@ using Colors.Infrastructure.Services.Pallets;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
 using Colors.Infrastructure.Services.ShiftReports;
+using Colors.Infrastructure.Services.Trace;
 using Colors.Infrastructure.Services.Thermo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -135,6 +137,9 @@ public static class DependencyInjection
         // Rolls, bags and pallets as stock, and the labels that go on them
         // (specification sections 8 to 12).
         services.AddScoped<IProducedStockService, ProducedStockService>();
+
+        // Where one thing came from, and what it became (specification section 13).
+        services.AddScoped<ITraceService, TraceService>();
 
         return services;
     }

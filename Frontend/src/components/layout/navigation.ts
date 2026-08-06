@@ -1,4 +1,4 @@
-import { RoleNames } from '../../lib/roles';
+﻿import { RoleNames } from '../../lib/roles';
 
 /**
  * The sidebar, grouped exactly as the Figma design shows.
@@ -32,6 +32,9 @@ export const navigation: NavGroup[] = [
     heading: 'Operations',
     items: [
       { label: 'Inventory', path: '/inventory', icon: 'inventory' },
+      // No roles: it writes nothing, and whoever is holding a label may need to know
+      // what is behind it (specification section 13).
+      { label: 'Trace a label', path: '/trace', icon: 'search' },
       {
         label: 'Receive Materials',
         path: '/inventory/receive',
