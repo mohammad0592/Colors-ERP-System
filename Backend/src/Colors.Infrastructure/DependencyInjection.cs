@@ -1,4 +1,6 @@
-﻿using Colors.Application.Features.Authentication;
+﻿using Colors.Application.Common.Auditing;
+using Colors.Application.Features.Audit;
+using Colors.Application.Features.Authentication;
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Dashboard;
 using Colors.Application.Features.Inventory;
@@ -18,6 +20,8 @@ using Colors.Application.Features.Thermo;
 using Colors.Infrastructure.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Persistence.Auditing;
+using Colors.Infrastructure.Services.Audit;
 using Colors.Infrastructure.Services.Barcodes;
 using Colors.Infrastructure.Services.Dashboard;
 using Colors.Infrastructure.Services.Inventory;
@@ -56,9 +60,21 @@ public static class DependencyInjection
                 "Connection string 'ColorsDb' was not found. " +
                 "In development set it with: dotnet user-secrets set \"ConnectionStrings:ColorsDb\" \"...\"");
 
-        services.AddDbContext<ColorsDbContext>(options =>
-            options.UseNpgsql(connectionString, npgsql =>
-                npgsql.MigrationsAssembly(typeof(ColorsDbContext).Assembly.FullName)));
+        // Who is acting. The API layer registers a real one over this; here it is
+        // nobody, which is the truth for the seeder, a migration and the tests.
+        services.TryAddScoped<ICurrentActor, NoActor>();
+
+        // Scoped, because it asks who is acting and that is a per-request question.
+        services.AddScoped<AuditInterceptor>();
+
+        services.AddDbContext<ColorsDbContext>((provider, options) =>
+            options
+                .UseNpgsql(connectionString, npgsql =>
+                    npgsql.MigrationsAssembly(typeof(ColorsDbContext).Assembly.FullName))
+                // On the context rather than in the services, so no business code has to
+                // remember to write the audit log and none of it can forget
+                // (specification section 15).
+                .AddInterceptors(provider.GetRequiredService<AuditInterceptor>()));
 
         services
             .AddIdentityCore<ApplicationUser>(options =>
@@ -126,6 +142,10 @@ public static class DependencyInjection
 
         // User administration (specification section 3). The administrator's job.
         services.AddScoped<IUserService, UserService>();
+
+        // The audit log, read only (specification section 15). Nothing writes a line
+        // from business code, and nothing edits or deletes one.
+        services.AddScoped<IAuditService, AuditService>();
 
         // Inventory (specification section 6). The ledger is shared: issue tickets
         // move stock too, and two copies of the locking would drift apart.

@@ -1,4 +1,6 @@
+﻿using Colors.Api.Auditing;
 using Colors.Api.Extensions;
+using Colors.Application.Common.Auditing;
 using Colors.Infrastructure;
 using Colors.Infrastructure.Persistence.Seed;
 
@@ -9,6 +11,14 @@ builder.Services.AddOpenApi();
 
 // Database, Identity and everything else Infrastructure owns.
 builder.Services.AddInfrastructure(builder.Configuration);
+
+// The audit log needs to know who is acting, which only the web layer knows. Registered
+// after AddInfrastructure so it replaces the "nobody" fallback (specification section 15).
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentActor, CurrentActor>();
+
+// Refusals are written on their own scope, after the man already has his answer.
+builder.Services.AddSingleton<RefusalLog>();
 
 // Reading and checking the access token on every request.
 builder.Services.AddJwtAuthentication(builder.Configuration);

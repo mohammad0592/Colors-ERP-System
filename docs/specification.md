@@ -1440,9 +1440,45 @@ The factory has **one meter for the whole building**, so a shift's consumption c
 
 **`AuditLog`** — Id · UserId · **ShiftReportId** · Action · ObjectType · ObjectId · Result (`Success` / `Rejected`) · Details · Timestamp
 
-Written by one EF Core `SaveChanges` interceptor, so nothing is missed. It covers **all** important actions, not only barcode scans — recipe versions, inventory adjustments, shift reopening, assignment reversals.
+### What it is for
 
-**Failed actions are logged too.** A rejected bag scan changes no data, but a man scanning wrong bags repeatedly is exactly what a supervisor wants to see.
+Most of what the factory does **already records who did it**: a roll names the man who made it, a ticket names who issued it, a pallet names who started it. Copying all of that here would double the record and bury the handful of lines that matter under a thousand that do not.
+
+This table exists for the two kinds of thing that leave no such trace:
+
+| | Why nothing else records it |
+|---|---|
+| **Decisions and corrections** — a recipe changed, a shift reopened, a bag taken back off a pallet, somebody's roles changed | The row shows only the *result*. It never shows that it was changed, by whom, or what it said before. |
+| **Refusals** — a scan rejected, a shift refused, a password rejected | Nothing changed anywhere, so without a line here it simply never happened. |
+
+The second is the one a supervisor asks for by name. One rejected scan is a man with the wrong bag in his hand; twenty in an evening is a man who needs help, or a label printer that is failing.
+
+### Two mechanisms, because one cannot do both
+
+A `SaveChanges` interceptor catches everything that changes data and cannot be bypassed — no business code has to remember to call it, and none of it can forget. But **a refusal never reaches `SaveChanges` at all**, precisely because it changes nothing. So there are two:
+
+| Path | Catches | Why it is complete |
+|---|---|---|
+| `SaveChanges` interceptor | successes | every write goes through it |
+| The API's `Result` → HTTP step | refusals | every refusal in the system comes back through that one method |
+
+### Routine production is deliberately not audited
+
+Auditing every roll, bag and barcode would add roughly 450 lines a shift that say nothing the production tables do not already say. What is audited:
+
+- **all master data and recipes** — every change, because they silently change what every past and future screen means
+- **people and their roles** — who may do what
+- **corrections only** for shift reports, pallets, bag assignments and issue tickets — creating those is routine and already recorded, so only the later *change* earns a line
+
+### Rules
+
+**Nothing is ever edited or deleted.** A log that can be tidied is not a log. There is no endpoint to write a line by hand and none to remove one.
+
+**No foreign keys.** A line must outlive whatever it describes, and must never be the reason a delete is refused. The log is a witness, not a participant.
+
+**Passwords and tokens never reach it**, even as a "changed from". It is read by people who are not entitled to them.
+
+**A failure to write a line never breaks the action.** The refusal path swallows its own errors and logs them to the file log instead — turning a plain refusal the man could read into a server error he cannot would be a poor trade.
 
 ### Deployment
 

@@ -1,4 +1,5 @@
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Persistence.Auditing;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
@@ -63,6 +64,10 @@ public sealed class DatabaseFixture : IAsyncLifetime
     {
         var options = new DbContextOptionsBuilder<ColorsDbContext>()
             .UseNpgsql(_connectionString)
+            // The same interceptor the running application uses, so a test sees the
+            // audit log the factory will see. Without it the suite would go green on
+            // auditing that never happened (specification section 15).
+            .AddInterceptors(new AuditInterceptor(new NoActor()))
             .Options;
 
         return new ColorsDbContext(options);

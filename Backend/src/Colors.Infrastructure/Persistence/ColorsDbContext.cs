@@ -6,6 +6,7 @@ using Colors.Domain.Entities.Packaging;
 using Colors.Domain.Entities.Production;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Entities.Shifts;
+using Colors.Domain.Entities.System;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -68,6 +69,10 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
 
     // The recycler — specification section 11.
     public DbSet<RecyclerProduction> RecyclerProductions => Set<RecyclerProduction>();
+
+    // The audit log — specification section 15. Written by an interceptor and by the API
+    // layer's refusal path, never by business code, and never edited or deleted.
+    public DbSet<AuditEntry> AuditEntries => Set<AuditEntry>();
 
     // Barcodes — specification section 12. One table for rolls, bags and pallets.
     public DbSet<Barcode> Barcodes => Set<Barcode>();
