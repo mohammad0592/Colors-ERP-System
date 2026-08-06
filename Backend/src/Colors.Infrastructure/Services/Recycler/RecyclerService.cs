@@ -63,13 +63,15 @@ public class RecyclerService(
             : await UserNamesAsync([existing.RecordedByUserId], cancellationToken);
 
         var material = await RecycledMaterialAsync(cancellationToken);
+        var thermo = await ThermoLossAsync(shiftLine.ShiftReportId, cancellationToken);
 
         return Result<RecyclerDraftDto>.Success(new RecyclerDraftDto(
             shiftLineId,
             shiftLine.ProductionLine.Name,
             shiftLine.ShiftReport.Shift.Name,
             shiftLine.ShiftReport.ProductionDate,
-            await ThermoCalculatedScrapAsync(shiftLine.ShiftReportId, cancellationToken),
+            thermo?.Scrap,
+            thermo?.RollWeight,
             material?.Name,
             existing is not null,
             existing is null ? null : ToDto(existing, names)));
@@ -177,15 +179,21 @@ public class RecyclerService(
 
     /// <summary>
     /// What the thermo lines of this shift lost, by their own arithmetic: the roll's
-    /// weight less the weight of the plates that came out of it
+    /// weight less the weight of the plates that came out of it — and what those rolls
+    /// weighed, so the screen can say what share of them that was
     /// (specification section 11).
+    ///
+    /// <b>A different share from the recycler's own loss.</b> This one is scrap over the
+    /// roll: how much of the material never became product. The recycler's is scrap lost
+    /// over scrap ground. Both are returned as weights so neither can be mistaken for the
+    /// other on the way out.
     ///
     /// Null where the shift formed nothing, because there is nothing to compare against.
     /// Shown beside the weighed figure and never enforced — the two are measured
     /// different ways, and a shift that grinds an old pile breaks the comparison
     /// honestly.
     /// </summary>
-    private async Task<decimal?> ThermoCalculatedScrapAsync(
+    private async Task<ThermoLoss?> ThermoLossAsync(
         int shiftReportId,
         CancellationToken cancellationToken)
     {
@@ -214,8 +222,12 @@ public class RecyclerService(
         var scrap = weighed.Sum(r =>
             r.RollWeight!.Value - (r.PieceCount * r.PieceWeight / 1000m));
 
-        return Math.Round(scrap, 3);
+        return new ThermoLoss(
+            Math.Round(scrap, 3),
+            Math.Round(weighed.Sum(r => r.RollWeight!.Value), 3));
     }
+
+    private sealed record ThermoLoss(decimal Scrap, decimal RollWeight);
 
     // ---------- helpers ----------
 

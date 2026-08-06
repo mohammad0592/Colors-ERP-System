@@ -1252,6 +1252,24 @@ At the end of the shift all scrap is collected and weighed, recycled, and the ou
 
 `LossPercentage` is **calculated**, not stored: `(Scrap − Recycled) ÷ Scrap`. Every input is on the row and frozen once written, which is the [calculated or stored](#calculated-or-stored) rule exactly.
 
+### Two percentages, and they are not the same number
+
+This has already caused one misreading, so it is written down. The factory's thermo form carries a waste percentage; the recycler carries a loss percentage; **they are shares of different things** and they will not agree.
+
+```
+Thermoforming waste  =  scrap ÷ ROLL WEIGHT
+                        how much of the roll never became product
+                        445.5 kg roll, 171 kg scrap  →  38%
+
+Recycler loss        =  (scrap − recycled) ÷ SCRAP
+                        how much of the scrap the grinder lost as dust and burn-off
+                        123 kg in, 100 kg out        →  18.7%
+```
+
+The first is a fact about the thermo and is true whether or not anything is ever recycled. The second is a fact about the recycler. Neither can be worked out from the other.
+
+**So neither is ever shown as just "loss".** Every screen names what the percentage is a share of, in the same breath as the number. A percentage without that is an invitation to read the wrong one.
+
 Saving the record posts a `Production` movement that increases **Recycled Material** in the store. One material, no split.
 
 **Written once per line of the shift**, like the packaging record, and guarded by a unique index on `ShiftLineId`. A second record would double the recycled material added to the store and there would be no way to say which one was meant.
@@ -1288,7 +1306,7 @@ Thermo calculated:  171 kg  (445.5 − 30,500 × 9 g)
 Recycler weighed:   ??? kg
 ```
 
-If these differ a lot, either the plate weight is wrong or scrap is going missing. Both numbers already exist — the check is free, so the recycler screen shows the thermo's figure beside the box the operator is typing into. It is shown, never enforced: the two are measured different ways and a shift that grinds old scrap breaks the comparison honestly.
+If these differ a lot, either the plate weight is wrong or scrap is going missing. Both numbers already exist — the check is free, so the recycler screen shows the thermo's figure beside the box the operator is typing into, in kilograms **and** as its share of the rolls formed. It is shown, never enforced: the two are measured different ways and a shift that grinds old scrap breaks the comparison honestly.
 
 ### Closing the shift does not wait for it
 

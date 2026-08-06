@@ -14,8 +14,11 @@ export interface RecyclerProductionDto {
   scrapWeight: number;
   recycledMaterialWeight: number;
   /**
-   * Calculated, never stored. Null where no scrap was weighed, because a share of
-   * nothing is not a number. Negative where more came out than went in.
+   * How much of the scrap the grinder lost: (scrap − recycled) ÷ scrap.
+   *
+   * Not the thermoforming waste, which is scrap ÷ roll weight and answers a different
+   * question. Calculated, never stored. Null where no scrap was weighed, because a share
+   * of nothing is not a number. Negative where more came out than went in.
    */
   lossPercentage: number | null;
   recordedByName: string;
@@ -30,6 +33,11 @@ export interface RecyclerDraftDto {
   productionDate: string;
   /** What the thermo lines of this shift lost by their own arithmetic. Shown, never enforced. */
   thermoCalculatedScrap: number | null;
+  /**
+   * What those rolls weighed. Scrap over this is the thermoforming waste — a different
+   * share from the recycler's own loss, which is scrap lost over scrap ground.
+   */
+  thermoRollWeight: number | null;
   /** The material the output is added to. */
   recycledMaterialName: string | null;
   alreadyRecorded: boolean;

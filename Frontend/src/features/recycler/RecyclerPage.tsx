@@ -97,7 +97,7 @@ export function RecyclerPage(): ReactElement {
     <>
       <PageHeader
         title="Recycler"
-        subtitle="Scrap weighed in, recycled material weighed out. The output goes back into the store, and the loss between the two is worked out for you."
+        subtitle="Scrap weighed in, recycled material weighed out. The output goes back into the store, and what the grinder lost between the two is worked out for you."
         actions={
           canRecord ? (
             <StartOnLineButton
@@ -178,11 +178,28 @@ export function RecyclerPage(): ReactElement {
                     }}
                   />
                   {/* The free check from section 11: the thermo's own arithmetic,
-                      shown beside the scale and never enforced. */}
+                      shown beside the scale and never enforced. Named in full, because
+                      its percentage is a share of the roll and the one below is a share
+                      of the scrap — two different questions. */}
                   {draft.data.thermoCalculatedScrap !== null && (
                     <p className="mt-1 text-xs text-ink-muted">
-                      The thermo calculated {draft.data.thermoCalculatedScrap} kg lost
-                      this shift.
+                      Thermoforming waste this shift:{' '}
+                      <span className="font-semibold">
+                        {draft.data.thermoCalculatedScrap} kg
+                      </span>
+                      {draft.data.thermoRollWeight !== null &&
+                        draft.data.thermoRollWeight > 0 && (
+                          <>
+                            {' — '}
+                            {(
+                              (draft.data.thermoCalculatedScrap /
+                                draft.data.thermoRollWeight) *
+                              100
+                            ).toFixed(1)}
+                            % of the {draft.data.thermoRollWeight} kg of rolls it formed
+                          </>
+                        )}
+                      .
                     </p>
                   )}
                 </div>
@@ -268,7 +285,9 @@ export function RecyclerPage(): ReactElement {
                 <th className="px-4 py-3 font-semibold">Line</th>
                 <th className="px-4 py-3 text-right font-semibold">Scrap in</th>
                 <th className="px-4 py-3 text-right font-semibold">Recycled out</th>
-                <th className="px-4 py-3 text-right font-semibold">Loss</th>
+                <th className="px-4 py-3 text-right font-semibold">
+                  Lost in grinding
+                </th>
                 <th className="px-4 py-3 font-semibold">Recorded by</th>
               </tr>
             </thead>
@@ -305,7 +324,12 @@ export function RecyclerPage(): ReactElement {
 }
 
 /**
- * The loss as the operator types, so he sees it before saving rather than after.
+ * What the grinder lost, as the operator types, so he sees it before saving.
+ *
+ * <b>Named in full on purpose.</b> This is a share of the scrap that went into the
+ * grinder, not a share of the roll — the waste percentage on the factory's thermo form
+ * is scrap over roll weight and answers a different question. A percentage with no
+ * statement of what it is a share of invites the reader to assume the wrong one.
  *
  * Says nothing at all where no scrap was weighed: a share of nothing is not a number,
  * and showing 0% would read as a perfect shift.
@@ -315,7 +339,7 @@ function Loss({ scrap, recycled }: { scrap: number; recycled: number }): ReactEl
     return (
       <p className="text-sm text-ink-muted">
         {recycled > 0
-          ? 'No scrap was weighed in, so there is no loss to work out — this is an old pile being ground.'
+          ? 'No scrap was weighed in, so there is nothing to work the grinder’s loss out of — this is an old pile being ground.'
           : 'Weigh the scrap, what came out of it, or both.'}
       </p>
     );
@@ -325,11 +349,14 @@ function Loss({ scrap, recycled }: { scrap: number; recycled: number }): ReactEl
 
   return (
     <div className="flex flex-wrap items-baseline justify-between gap-2">
-      <span className="text-sm text-ink-soft">Loss</span>
+      <span className="text-sm text-ink-soft">
+        Lost in grinding
+        <span className="ml-1 text-xs text-ink-muted">— share of the scrap</span>
+      </span>
       <span className="font-bold text-ink tabular-nums">
         {loss.toFixed(2)}%
         <span className="ml-2 text-sm font-normal text-ink-muted">
-          {(scrap - recycled).toFixed(3)} kg
+          {(scrap - recycled).toFixed(3)} kg of {scrap.toFixed(3)} kg
         </span>
       </span>
       {loss < 0 && (

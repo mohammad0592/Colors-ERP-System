@@ -32,6 +32,14 @@ public sealed record RecyclerDraftDto(
     DateOnly ProductionDate,
     /// <summary>What the thermo lines of this shift lost, by their own calculation.</summary>
     decimal? ThermoCalculatedScrap,
+    /// <summary>
+    /// What those rolls weighed, so the screen can say what share of them was lost.
+    ///
+    /// Sent as the fact rather than as a percentage, because it is a different share
+    /// from the recycler's own loss and the two must never be mistaken for each other:
+    /// this one is scrap ÷ roll, the recycler's is (scrap − recycled) ÷ scrap.
+    /// </summary>
+    decimal? ThermoRollWeight,
     /// <summary>The material the output is added to, so the screen can name it.</summary>
     string? RecycledMaterialName,
     bool AlreadyRecorded,

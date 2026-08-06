@@ -313,8 +313,37 @@ public class RecyclerTests(DatabaseFixture fixture)
         // 100 kg in, 50 kg of plates out — the thermo says it lost 50 kg. Shown beside
         // the weighed figure, never enforced (specification section 11).
         Assert.Equal(50m, draft.Value!.ThermoCalculatedScrap);
+
+        // The roll weight comes with it, so the screen can say what share of the rolls
+        // that was: 50 of 100 kg is 50% thermoforming waste. A different share from the
+        // recycler's own loss, which is worked out over the scrap.
+        Assert.Equal(100m, draft.Value.ThermoRollWeight);
+
         Assert.False(draft.Value.AlreadyRecorded);
         Assert.NotNull(draft.Value.RecycledMaterialName);
+    }
+
+    [Fact]
+    public async Task The_two_percentages_answer_different_questions()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "REC12");
+        var (shiftLineId, _) = await RecyclerLineAsync(db, ids, "REC12");
+
+        // The factory's own figures: a 445.5 kg roll that left 171 kg of scrap, and a
+        // grinder that turned 123 kg of scrap into 100 kg of material.
+        var saved = await NewService(db).SaveAsync(
+            new SaveRecyclerProductionRequest(shiftLineId, 123m, 100m, null), ids.UserId);
+
+        Assert.True(saved.IsSuccess, saved.Message);
+
+        // 23 kg lost out of 123 kg ground — a share of the SCRAP.
+        Assert.Equal(18.70m, saved.Value!.LossPercentage);
+
+        // Not 38.38%, which is 171 over 445.5 — a share of the ROLL, and a fact about
+        // the thermo rather than the recycler (specification section 11). Nothing in
+        // this record can produce that number, and it must never be labelled the same.
+        Assert.NotEqual(Math.Round(171m / 445.5m * 100m, 2), saved.Value.LossPercentage);
     }
 
     [Fact]
