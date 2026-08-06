@@ -6,6 +6,7 @@ using Colors.Application.Features.Production;
 using Colors.Application.Features.MasterData;
 using Colors.Application.Features.Packaging;
 using Colors.Application.Features.Recycler;
+using Colors.Application.Features.Reports;
 using Colors.Application.Features.Pallets;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
@@ -22,6 +23,7 @@ using Colors.Infrastructure.Services.MaterialIssue;
 using Colors.Infrastructure.Services.Production;
 using Colors.Infrastructure.Services.Packaging;
 using Colors.Infrastructure.Services.Recycler;
+using Colors.Infrastructure.Services.Reports;
 using Colors.Infrastructure.Services.Pallets;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
@@ -145,6 +147,9 @@ public static class DependencyInjection
         // Rolls, bags and pallets as stock, and the labels that go on them
         // (specification sections 8 to 12).
         services.AddScoped<IProducedStockService, ProducedStockService>();
+
+        // Reports (specification section 13). Read-only over what already exists.
+        services.AddScoped<IReportsService, ReportsService>();
 
         // Where one thing came from, and what it became (specification section 13).
         services.AddScoped<ITraceService, TraceService>();

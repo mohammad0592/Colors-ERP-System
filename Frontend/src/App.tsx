@@ -15,6 +15,7 @@ import { PackagingPage } from './features/packaging/PackagingPage';
 import { PalletsPage } from './features/pallets/PalletsPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { RecyclerPage } from './features/recycler/RecyclerPage';
+import { ReportsPage } from './features/reports/ReportsPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
 import { TracePage } from './features/trace/TracePage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
@@ -141,8 +142,8 @@ export default function App(): ReactElement {
                 </Route>
 
                 {/* Line 3, the recycler (specification section 11). Reading is open to
-                    the supervisor as well: the weighed scrap is one half of the free
-                    check against what the thermo calculated. */}
+                    the supervisor as well, because what it produced is part of the
+                    shift he answers for. */}
                 <Route
                   element={
                     <ProtectedRoute
@@ -161,6 +162,22 @@ export default function App(): ReactElement {
                     administrator gets in (specification section 3). */}
                 <Route element={<ProtectedRoute roles={[RoleNames.Administrator]} />}>
                   <Route path="/master-data" element={<MasterDataPage />} />
+                </Route>
+
+                {/* Reports account for the shift, so they are for the people who
+                    answer for it (specification section 13). */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[
+                        RoleNames.Administrator,
+                        RoleNames.Supervisor,
+                        RoleNames.InventoryManager,
+                      ]}
+                    />
+                  }
+                >
+                  <Route path="/reports" element={<ReportsPage />} />
                 </Route>
 
                 {/* Recipes are the supervisor's job too — he is the one who

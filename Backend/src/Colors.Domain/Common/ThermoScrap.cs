@@ -35,12 +35,20 @@ public static class ThermoScrap
         var rollWeight = run.Roll.TestReport?.Weight;
         var counted = run.TestReport;
 
-        if (rollWeight is null || counted is null)
-        {
-            return null;
-        }
-
-        // The plate is weighed in grams, the roll in kilograms.
-        return Math.Round(rollWeight.Value - (counted.PieceCount * counted.PieceWeight / 1000m), 3);
+        return rollWeight is null || counted is null
+            ? null
+            : Between(rollWeight.Value, counted.PieceCount, counted.PieceWeight);
     }
+
+    /// <summary>
+    /// The same sum from three loose numbers, for callers reading a projection rather
+    /// than whole entities — the reports, mostly.
+    ///
+    /// It exists so the formula is written once. A report that repeated it would be free
+    /// to disagree with the screen the operator read it off, and the two would drift
+    /// apart the first time either was touched.
+    /// </summary>
+    public static decimal Between(decimal rollWeight, int pieceCount, decimal pieceWeight) =>
+        // The plate is weighed in grams, the roll in kilograms.
+        Math.Round(rollWeight - (pieceCount * pieceWeight / 1000m), 3);
 }
