@@ -11,16 +11,11 @@ export interface RecyclerProductionDto {
   productionLineName: string;
   shiftName: string;
   productionDate: string;
-  scrapWeight: number;
-  recycledMaterialWeight: number;
   /**
-   * How much of the scrap the grinder lost: (scrap − recycled) ÷ scrap.
-   *
-   * Not the thermoforming waste, which is scrap ÷ roll weight and answers a different
-   * question. Calculated, never stored. Null where no scrap was weighed, because a share
-   * of nothing is not a number. Negative where more came out than went in.
+   * The whole record. What went into the grinder cannot be weighed — scrap lives in two
+   * silos and is drawn out to be ground (specification section 11).
    */
-  lossPercentage: number | null;
+  recycledMaterialWeight: number;
   recordedByName: string;
   recordedAt: string;
   notes: string | null;
@@ -43,13 +38,12 @@ export const recyclerApi = {
     return apiRequest<RecyclerProductionDto[]>(`/api/recycler${query}`);
   },
 
-  /** The form, carrying the thermo's own figure for the free check. */
+  /** The form: one box, and the name of the pile the output goes into. */
   draft: (shiftLineId: number): Promise<RecyclerDraftDto> =>
     apiRequest<RecyclerDraftDto>(`/api/recycler/draft/${String(shiftLineId)}`),
 
   save: (body: {
     shiftLineId: number;
-    scrapWeight: number;
     recycledMaterialWeight: number;
     notes: string | null;
   }): Promise<RecyclerProductionDto> =>

@@ -10,22 +10,19 @@ public sealed record RecyclerProductionDto(
     string ProductionLineName,
     string ShiftName,
     DateOnly ProductionDate,
-    decimal ScrapWeight,
+    // The whole record. What went into the grinder cannot be weighed — scrap lives in
+    // two silos and is drawn out to be ground (specification section 11).
     decimal RecycledMaterialWeight,
-    // Calculated, never stored. Null where no scrap was weighed, because a share of
-    // nothing is not a number. Negative where more came out than went in.
-    decimal? LossPercentage,
     string RecordedByName,
     DateTimeOffset RecordedAt,
     string? Notes);
 
 /// <summary>
-/// The form before it is saved.
+/// The form before it is saved. One box on it.
 ///
-/// It deliberately does <b>not</b> carry what the thermo calculated. That figure is a
-/// fact about the forming machine and lives on the thermo's own screens, where it is
-/// visible whether or not the recycler ran that shift. Comparing the two belongs in the
-/// reports (specification sections 11 and 13).
+/// It carries nothing about the thermo. Comparing calculated waste against weighed scrap
+/// is not possible at all — the scrap is never on a scale — and the thermo's own waste
+/// figure lives on the thermo's screens (specification sections 9 and 11).
 /// </summary>
 public sealed record RecyclerDraftDto(
     int ShiftLineId,
@@ -38,14 +35,11 @@ public sealed record RecyclerDraftDto(
     RecyclerProductionDto? Recorded);
 
 /// <summary>
-/// Scrap weighed in and recycled material weighed out, both in kilograms.
-///
-/// Recycled may be more than scrap: the recycler grinds what is in front of it, and that
-/// can include a pile left from an earlier shift.
+/// Recycled material weighed out, in kilograms. Must be more than nothing — a record
+/// saying the recycler produced zero is not a record.
 /// </summary>
 public sealed record SaveRecyclerProductionRequest(
     int ShiftLineId,
-    decimal ScrapWeight,
     decimal RecycledMaterialWeight,
     string? Notes);
 

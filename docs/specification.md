@@ -1263,79 +1263,40 @@ A gap means bags are being wasted, torn or used elsewhere.
 
 ## 11. Line 3 — Recycler
 
-At the end of the shift all scrap is collected and weighed, recycled, and the output weighed again.
+**One number: how much recycled material the shift produced.**
 
-**`RecyclerProductions`** — Id · **ShiftLineId** (FK, unique) · **ScrapWeight** · **RecycledMaterialWeight** · RecordedByUserId · RecordedAt · Notes
-
-`LossPercentage` is **calculated**, not stored: `(Scrap − Recycled) ÷ Scrap`. Every input is on the row and frozen once written, which is the [calculated or stored](#calculated-or-stored) rule exactly.
-
-### Two percentages, and they are not the same number
-
-This has already caused one misreading, so it is written down. The factory's thermo form carries a waste percentage; the recycler carries a loss percentage; **they are shares of different things** and they will not agree.
-
-```
-Thermoforming waste  =  scrap ÷ ROLL WEIGHT
-                        how much of the roll never became product
-                        445.5 kg roll, 171 kg scrap  →  38%
-
-Recycler loss        =  (scrap − recycled) ÷ SCRAP
-                        how much of the scrap the grinder lost as dust and burn-off
-                        123 kg in, 100 kg out        →  18.7%
-```
-
-The first is a fact about the thermo and is true whether or not anything is ever recycled. The second is a fact about the recycler. Neither can be worked out from the other.
-
-**So neither is ever shown as just "loss".** Every screen names what the percentage is a share of, in the same breath as the number. A percentage without that is an invitation to read the wrong one.
+**`RecyclerProductions`** — Id · **ShiftLineId** (FK, unique) · **RecycledMaterialWeight** · RecordedByUserId · RecordedAt · Notes
 
 Saving the record posts a `Production` movement that increases **Recycled Material** in the store. One material, no split.
 
-**Written once per line of the shift**, like the packaging record, and guarded by a unique index on `ShiftLineId`. A second record would double the recycled material added to the store and there would be no way to say which one was meant.
+**Written once per line of the shift**, like the packaging record, and guarded by a unique index on `ShiftLineId`. A second record would add the same output to the store twice and there would be no way to say which one was meant.
+
+### Why the scrap is not weighed
+
+The factory keeps scrap in **two silos, one big and one small**. It goes in as it comes off the thermo and is drawn out to be ground; there is no moment when a shift's scrap sits on a scale.
+
+So the shift's scrap weight is **not recorded, because it cannot be measured** — and everything that depended on it goes with it:
+
+- no scrap weight on the record
+- no recycler loss percentage — with no figure going in, there is nothing to lose it from
+- no comparison against what the thermo calculated
+
+This was asked of the factory directly and this is their answer. It is not a simplification to be revisited when there is time; the measurement does not exist.
+
+**What is still known.** The thermo's own waste stands on its own — roll weight less the weight of the plates, calculated per run and totalled per shift on the thermo's screens (section 9). It never depended on the recycler. And the store still receives exactly what the recycler produced, so recycled material is tracked in and out like any other material.
 
 ### Which line, and which material
 
 Two flags, because neither may be worked out from a name:
 
-- **`ProductionLines.Recycles`** — where scrap can be recorded. True for the Recycler row.
+- **`ProductionLines.Recycles`** — where the output can be recorded. True for the Recycler row.
 - **`Materials.IsRecycledOutput`** — what the recycler makes. True for Recycled Material, and **only one material may carry it**, enforced by a partial unique index the same way `CountedAs` is.
 
 The alternative — looking for a material called "Recycled Material" — fails silently the day somebody renames the row: no error, just a shift's output quietly going nowhere.
 
-### More can come out than went in
+### The weight must be more than nothing
 
-**The recycled weight is allowed to exceed the scrap weight.** The recycler grinds whatever is in front of it, and that can include scrap left over from an earlier shift. Refusing it would force the operator to write a figure he did not weigh.
-
-So `LossPercentage` can be **negative**, and that is information rather than an error: it says this shift ground more than it collected. Where scrap is zero the percentage is **not defined at all** and is shown as nothing, never as zero.
-
-```
-Scrap 200, recycled 180  →  loss 10%     normal
-Scrap 200, recycled 220  →  loss −10%    ground some of yesterday's pile
-Scrap 0,   recycled 150  →  loss —       only old scrap was ground
-```
-
-Both weights may be zero on their own, but **not both at once** — a record saying nothing happened is not a record.
-
-### The free accuracy check, and where it belongs
-
-The thermo report *calculates* loss per product; the recycler *weighs* the same scrap.
-
-```
-Thermo calculated:  171 kg  (445.5 − 30,500 × 9 g)
-Recycler weighed:   ??? kg
-```
-
-If these differ a lot, either the plate weight is wrong or scrap is going missing. Both numbers already exist, so the check costs nothing.
-
-**But it is a report, not a box on the recycler screen.** The comparison lives in section 13 beside the other cross-checks, and each half lives with the machine that produced it:
-
-| Figure | Whose fact | Where it shows |
-|---|---|---|
-| Thermoforming waste | the thermo | the thermo's own screens, per run and as a shift total |
-| Scrap weighed, recycled out, grinder loss | the recycler | the recycler screen |
-| The two compared | neither | the reports |
-
-**The waste must not depend on the recycler running.** It was on the recycler screen first, and that was wrong: a shift where the thermo formed rolls but the recycler never ran had a real waste figure that no screen in the system would show. It becomes true the moment the bags are counted, so it belongs where the bags are counted.
-
-There is a second reason to keep them apart. Scrap collected on one shift may be ground on the next, so the two figures are not a matched pair on any given day — which is why the comparison is read over a period, in a report, and is never enforced anywhere.
+A record saying the recycler produced zero is not a record of anything. If it did not run, nothing is written.
 
 ### Closing the shift does not wait for it
 
@@ -1404,10 +1365,10 @@ The label also confirms the shift on the bag is the **thermo** shift (A), while 
 | **Current stock** | with materials below minimum highlighted |
 | **Rolls in stock** | by colour, recipe and age — rolls sit for weeks |
 | Shift production summary | per product (NOR500 / AB500), matching the paper form |
-| Thermo loss vs recycler weighed scrap | the free accuracy check |
+| Thermoforming waste | roll weight less the plates it made, per run and per shift |
 | Consumption by recipe | works because tickets link to batches |
 | Consumption by shift | |
-| Recycler efficiency | scrap in vs recycled out |
+| Recycled material produced | per shift, and against the black recipes that consume it |
 | Pallet production | completed pallets by product |
 | Full traceability | pallet → bags → rolls → batches → recipe → materials |
 | Movement history | every stock change with its cause |
@@ -1452,7 +1413,11 @@ One mix makes 15–17 rolls. The system can say exactly what went into **batch 4
 **3. Recycled material history — impossible.**
 All recycled material goes into one pile. A black roll can say it used Recycled Material, but not which shifts produced it. Fixing this would need the factory to store each shift's recycled output separately — a physical change, not a software one.
 
-**4. Who exactly took the material — not recorded.**
+**4. Scrap weight before recycling — impossible.**
+Scrap goes into **two silos, one big and one small**, as it comes off the thermo, and is drawn out to be ground. There is no moment when a shift's scrap sits on a scale, so it cannot be weighed. That removes the recycler's own loss percentage and any check of calculated waste against weighed scrap.
+*What you get instead:* the thermo's calculated waste per run and per shift, which stands on its own, and the exact weight of recycled material each shift produced.
+
+**5. Who exactly took the material — not recorded.**
 There is no signature at the store. Attribution is by **shift**, which is what the factory asked for.
 
 **5. Warehouse locations — not in v1.** A pallet is "in the factory", not "in row 3, bay 2".

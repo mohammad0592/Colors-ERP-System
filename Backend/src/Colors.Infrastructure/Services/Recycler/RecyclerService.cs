@@ -13,12 +13,12 @@ namespace Colors.Infrastructure.Services.Recycler;
 /// <summary>
 /// The recycler (specification section 11).
 ///
-/// The smallest line in the factory and the smallest record in the system: scrap weighed
-/// in, recycled material weighed out, and the output added back to the store. Two
-/// numbers, written once at the end of the shift.
+/// The smallest record in the system: how much recycled material the shift produced, and
+/// that weight added back to the store. Written once, at the end of the shift.
 ///
-/// The loss between them is never stored — both inputs sit on the row and are frozen the
-/// moment it is written, which is the calculated-or-stored rule exactly.
+/// <b>One number, because one number is all the factory can measure.</b> Scrap sits in
+/// two silos and is drawn out to be ground, so there is no moment when a shift's scrap is
+/// on a scale. Nothing here weighs what went in, and nothing works out a loss from it.
 /// </summary>
 public class RecyclerService(
     ColorsDbContext db,
@@ -89,7 +89,7 @@ public class RecyclerService(
             return Invalid("Choose a line of an open shift.");
         }
 
-        // Scrap is recorded where it is ground (specification section 4).
+        // The output is recorded where it is made (specification section 4).
         if (!shiftLine.ProductionLine.Recycles)
         {
             return Invalid(
@@ -102,21 +102,12 @@ public class RecyclerService(
             return Invalid(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
-        if (request.ScrapWeight < 0 || request.RecycledMaterialWeight < 0)
+        // A record saying the recycler produced nothing is not a record of anything. If
+        // it did not run, nothing is written (specification section 11).
+        if (request.RecycledMaterialWeight <= 0)
         {
-            return Invalid("A weight cannot be less than nothing.");
+            return Invalid("Weigh what the recycler produced.");
         }
-
-        // Either may be zero on its own — a shift can collect scrap without grinding it,
-        // or grind yesterday's pile without collecting any. Both zero is not a record.
-        if (request.ScrapWeight == 0 && request.RecycledMaterialWeight == 0)
-        {
-            return Invalid("Weigh the scrap, what came out of it, or both.");
-        }
-
-        // Deliberately no rule that the output must be smaller. The recycler grinds what
-        // is in front of it, and that can include a pile left from an earlier shift
-        // (specification section 11).
 
         if (await db.RecyclerProductions
                 .AnyAsync(r => r.ShiftLineId == request.ShiftLineId, cancellationToken))
@@ -135,7 +126,6 @@ public class RecyclerService(
         var record = new RecyclerProduction
         {
             ShiftLineId = shiftLine.Id,
-            ScrapWeight = request.ScrapWeight,
             RecycledMaterialWeight = request.RecycledMaterialWeight,
             RecordedByUserId = userId,
             RecordedAt = timeProvider.GetUtcNow(),
@@ -145,7 +135,7 @@ public class RecyclerService(
         db.RecyclerProductions.Add(record);
         await db.SaveChangesAsync(cancellationToken);
 
-        if (material is not null && request.RecycledMaterialWeight > 0)
+        if (material is not null)
         {
             var posted = await ledger.PostAsync(
                 material.Id,
@@ -196,9 +186,7 @@ public class RecyclerService(
             r.ShiftLine.ProductionLine.Name,
             r.ShiftLine.ShiftReport.Shift.Name,
             r.ShiftLine.ShiftReport.ProductionDate,
-            r.ScrapWeight,
             r.RecycledMaterialWeight,
-            r.LossPercentage is null ? null : Math.Round(r.LossPercentage.Value, 2),
             names.GetValueOrDefault(r.RecordedByUserId, "—"),
             r.RecordedAt,
             r.Notes);

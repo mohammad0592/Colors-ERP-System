@@ -15,14 +15,14 @@ import { recyclerApi } from './api';
 /**
  * Line 3 — the recycler (specification section 11).
  *
- * The smallest screen in the system: two weights. Scrap collected off the floor and
- * weighed in, recycled material weighed out, and the output goes back into the store.
+ * The smallest screen in the system: one weight. How much recycled material the shift
+ * produced, which goes straight back into the store.
  *
- * The loss between them is never typed and never stored — it is worked out from the two
- * figures on the record. What the thermo calculated is shown beside the box so the
- * operator sees the free check from section 11 while typing, but it is never enforced:
- * the two are measured different ways, and a shift that grinds an old pile breaks the
- * comparison honestly.
+ * <b>The scrap going in is not asked for, because it cannot be weighed.</b> The factory
+ * keeps scrap in two silos and draws it out to be ground, so there is no moment when a
+ * shift's scrap sits on a scale. Nothing here works out a loss from it, and nothing
+ * compares it against what the thermo calculated — that figure stands on its own, on the
+ * thermo's screens.
  */
 export function RecyclerPage(): ReactElement {
   const queryClient = useQueryClient();
@@ -30,7 +30,6 @@ export function RecyclerPage(): ReactElement {
   const canRecord = hasRole(RoleNames.Administrator, RoleNames.RecyclerOperator);
 
   const [recording, setRecording] = useState<StartableLine | null>(null);
-  const [scrap, setScrap] = useState('');
   const [recycled, setRecycled] = useState('');
   const [notes, setNotes] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
@@ -40,7 +39,7 @@ export function RecyclerPage(): ReactElement {
     queryFn: () => recyclerApi.list(),
   });
 
-  // Scrap is recorded where it is ground (specification section 4).
+  // The output is recorded where it is made (specification section 4).
   const recyclingLines = useQuery({
     queryKey: ['shift-reports', 'recycling-lines'],
     queryFn: async () => {
@@ -68,14 +67,12 @@ export function RecyclerPage(): ReactElement {
     mutationFn: () =>
       recyclerApi.save({
         shiftLineId: recording?.shiftLineId ?? 0,
-        scrapWeight: Number(scrap) || 0,
         recycledMaterialWeight: Number(recycled) || 0,
         notes: notes.trim() === '' ? null : notes.trim(),
       }),
     onSuccess: () => {
       setActionError(null);
       setRecording(null);
-      setScrap('');
       setRecycled('');
       setNotes('');
       void queryClient.invalidateQueries({ queryKey: ['recycler'] });
@@ -89,25 +86,22 @@ export function RecyclerPage(): ReactElement {
   });
 
   const lines = recyclingLines.data ?? [];
-  const scrapNumber = Number(scrap) || 0;
-  const recycledNumber = Number(recycled) || 0;
-  const nothingWeighed = scrapNumber <= 0 && recycledNumber <= 0;
+  const nothingWeighed = (Number(recycled) || 0) <= 0;
 
   return (
     <>
       <PageHeader
         title="Recycler"
-        subtitle="Scrap weighed in, recycled material weighed out. The output goes back into the store, and what the grinder lost between the two is worked out for you."
+        subtitle="How much recycled material the shift produced. The weight goes straight back into the store, ready for the black recipes."
         actions={
           canRecord ? (
             <StartOnLineButton
               lines={lines}
-              action="Record the scrap"
+              action="Record what it produced"
               onStart={(shiftLineId) => {
                 const line = lines.find((l) => l.shiftLineId === shiftLineId);
                 if (line !== undefined) {
                   setRecording(line);
-                  setScrap('');
                   setRecycled('');
                   setNotes('');
                 }
@@ -119,7 +113,7 @@ export function RecyclerPage(): ReactElement {
 
       {canRecord && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No recycling line is open. Scrap is recorded on the line that grinds it.
+          No recycling line is open. The output is recorded on the line that grinds it.
         </p>
       )}
 
@@ -161,56 +155,29 @@ export function RecyclerPage(): ReactElement {
             </p>
           ) : (
             <>
-              <div className="mb-4 grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="field-label" htmlFor="scrap-weight">
-                    Scrap weighed in (kg)
-                  </label>
-                  <input
-                    id="scrap-weight"
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    className="field-input text-base"
-                    value={scrap}
-                    onChange={(event) => {
-                      setScrap(event.target.value);
-                    }}
-                  />
-                  {/* The thermo's own waste figure is deliberately not here. It belongs
-                      to the forming machine and shows on the thermo's screens, where it
-                      is visible whether or not the recycler ran that shift. Comparing
-                      the two is a report (specification sections 11 and 13). */}
-                </div>
-
-                <div>
-                  <label className="field-label" htmlFor="recycled-weight">
-                    Recycled material weighed out (kg)
-                  </label>
-                  <input
-                    id="recycled-weight"
-                    type="number"
-                    step="0.001"
-                    min="0"
-                    className="field-input text-base"
-                    value={recycled}
-                    onChange={(event) => {
-                      setRecycled(event.target.value);
-                    }}
-                  />
-                  {draft.data.recycledMaterialName !== null && (
-                    <p className="mt-1 text-xs text-ink-muted">
-                      Added to {draft.data.recycledMaterialName} in the store.
-                    </p>
-                  )}
-                </div>
+              <div className="mb-4 max-w-sm">
+                <label className="field-label" htmlFor="recycled-weight">
+                  Recycled material produced (kg)
+                </label>
+                <input
+                  id="recycled-weight"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  className="field-input text-base"
+                  value={recycled}
+                  onChange={(event) => {
+                    setRecycled(event.target.value);
+                  }}
+                />
+                {draft.data.recycledMaterialName !== null && (
+                  <p className="mt-1 text-xs text-ink-muted">
+                    Added to {draft.data.recycledMaterialName} in the store.
+                  </p>
+                )}
               </div>
 
-              <div className="mb-4 rounded-control bg-canvas px-4 py-3">
-                <Loss scrap={scrapNumber} recycled={recycledNumber} />
-              </div>
-
-              <div className="mb-4">
+              <div className="mb-4 max-w-sm">
                 <label className="field-label" htmlFor="recycler-notes">
                   Note <span className="font-normal text-ink-muted">(optional)</span>
                 </label>
@@ -262,11 +229,7 @@ export function RecyclerPage(): ReactElement {
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Shift</th>
                 <th className="px-4 py-3 font-semibold">Line</th>
-                <th className="px-4 py-3 text-right font-semibold">Scrap in</th>
-                <th className="px-4 py-3 text-right font-semibold">Recycled out</th>
-                <th className="px-4 py-3 text-right font-semibold">
-                  Lost in grinding
-                </th>
+                <th className="px-4 py-3 text-right font-semibold">Produced</th>
                 <th className="px-4 py-3 font-semibold">Recorded by</th>
               </tr>
             </thead>
@@ -277,14 +240,8 @@ export function RecyclerPage(): ReactElement {
                     {record.shiftName} · {formatDate(record.productionDate)}
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{record.productionLineName}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {record.scrapWeight} kg
-                  </td>
                   <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
                     {record.recycledMaterialWeight} kg
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <LossBadge value={record.lossPercentage} />
                   </td>
                   <td className="px-4 py-3 text-ink-soft">
                     {record.recordedByName}
@@ -295,73 +252,25 @@ export function RecyclerPage(): ReactElement {
                 </tr>
               ))}
             </tbody>
+            {/* What the shifts on this list produced altogether, so the figure does not
+                have to be added up by hand. */}
+            <tfoot>
+              <tr className="border-t-2 border-line font-semibold">
+                <td className="px-4 py-3 text-ink" colSpan={2}>
+                  {records.data.length} shift{records.data.length === 1 ? '' : 's'}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                  {records.data
+                    .reduce((sum, r) => sum + r.recycledMaterialWeight, 0)
+                    .toFixed(1)}{' '}
+                  kg
+                </td>
+                <td className="px-4 py-3" />
+              </tr>
+            </tfoot>
           </table>
         </div>
       )}
     </>
-  );
-}
-
-/**
- * What the grinder lost, as the operator types, so he sees it before saving.
- *
- * <b>Named in full on purpose.</b> This is a share of the scrap that went into the
- * grinder, not a share of the roll — the waste percentage on the factory's thermo form
- * is scrap over roll weight and answers a different question. A percentage with no
- * statement of what it is a share of invites the reader to assume the wrong one.
- *
- * Says nothing at all where no scrap was weighed: a share of nothing is not a number,
- * and showing 0% would read as a perfect shift.
- */
-function Loss({ scrap, recycled }: { scrap: number; recycled: number }): ReactElement {
-  if (scrap <= 0) {
-    return (
-      <p className="text-sm text-ink-muted">
-        {recycled > 0
-          ? 'No scrap was weighed in, so there is nothing to work the grinder’s loss out of — this is an old pile being ground.'
-          : 'Weigh the scrap, what came out of it, or both.'}
-      </p>
-    );
-  }
-
-  const loss = ((scrap - recycled) / scrap) * 100;
-
-  return (
-    <div className="flex flex-wrap items-baseline justify-between gap-2">
-      <span className="text-sm text-ink-soft">
-        Lost in grinding
-        <span className="ml-1 text-xs text-ink-muted">— share of the scrap</span>
-      </span>
-      <span className="font-bold text-ink tabular-nums">
-        {loss.toFixed(2)}%
-        <span className="ml-2 text-sm font-normal text-ink-muted">
-          {(scrap - recycled).toFixed(3)} kg of {scrap.toFixed(3)} kg
-        </span>
-      </span>
-      {loss < 0 && (
-        <p className="w-full text-xs text-ink-muted">
-          More came out than went in, so this shift ground scrap it did not collect. That
-          is allowed.
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** Never a red badge: a high loss is the factory's news, not the system's complaint. */
-function LossBadge({ value }: { value: number | null }): ReactElement {
-  if (value === null) {
-    return <span className="text-ink-muted">—</span>;
-  }
-
-  return (
-    <span
-      className={[
-        'rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums',
-        value < 0 ? 'bg-brand-50 text-brand-700' : 'bg-canvas text-ink-soft',
-      ].join(' ')}
-    >
-      {value.toFixed(2)}%
-    </span>
   );
 }
