@@ -163,6 +163,11 @@
     border: none !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    /* Half a millimetre short of the page, deliberately. Exactly filling it leaves the
+       paginator no slack at all, and a fraction of a pixel of rounding at print DPI is
+       then enough to spill an empty sheet — a wasted sticker on every print. Label
+       printers want a little tolerance at the edge anyway. */
+    height: 69.5mm;
     /* Never split down the middle. */
     break-inside: avoid;
     page-break-inside: avoid;
@@ -176,9 +181,4 @@
     break-before: page;
     page-break-before: always;
   }
-}
-
-@page {
-  size: 100mm 70mm;
-  margin: 4mm;
 }
