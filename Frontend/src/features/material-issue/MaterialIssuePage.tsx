@@ -67,6 +67,8 @@ export function MaterialIssuePage(): ReactElement {
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: ['issue-tickets'] });
     void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    // Issuing and returning both post movements, so the history is stale too.
+    void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
   }
 
   const open = useMutation({

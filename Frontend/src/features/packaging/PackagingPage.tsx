@@ -87,6 +87,8 @@ export function PackagingPage(): ReactElement {
       setNotes('');
       void queryClient.invalidateQueries({ queryKey: ['packaging'] });
       void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      // Every saved line posts a movement, so the history is stale too.
+      void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
     },
     onError: (caught: unknown) => {
       setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');

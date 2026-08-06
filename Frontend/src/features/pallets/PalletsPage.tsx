@@ -76,6 +76,13 @@ export function PalletsPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: ['pallets'] });
     void queryClient.invalidateQueries({ queryKey: ['pallet'] });
     void queryClient.invalidateQueries({ queryKey: ['available-bags'] });
+
+    // Starting a pallet takes a wooden pallet out of the store and giving it up puts it
+    // back, so the store's figure is now wrong until it is asked again. Without this the
+    // inventory screen serves its cached number and the movement seems not to have
+    // happened (specification section 10).
+    void queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
   }
 
   const startPallet = useMutation({
