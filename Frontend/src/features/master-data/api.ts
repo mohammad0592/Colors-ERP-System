@@ -1,4 +1,4 @@
-import { apiRequest } from '../../lib/apiClient';
+﻿import { apiRequest } from '../../lib/apiClient';
 
 /**
  * Types and calls for the master data lists, mirroring the C# records in
@@ -75,6 +75,12 @@ export interface UnitDto extends LookupDto {
 export interface ColorDto extends LookupDto {
   /** One capital letter used inside every roll code: W, G, Y, B. */
   code: string;
+  /**
+   * Decides which recipes may use this colour: a black-only recipe needs it, and every
+   * other recipe refuses it. A flag, not a check on the name or the letter B — Blue
+   * starts with B too.
+   */
+  isBlack: boolean;
 }
 
 export interface ShiftDto extends LookupDto {
@@ -170,7 +176,10 @@ export const materialCategoriesApi = crudFor<
   MaterialCategoryDto,
   { name: string; issuedOnTickets: boolean }
 >('/api/material-categories');
-export const colorsApi = crudFor<ColorDto, { name: string; code: string }>('/api/colors');
+export const colorsApi = crudFor<
+  ColorDto,
+  { name: string; code: string; isBlack: boolean }
+>('/api/colors');
 export const mouldsApi = crudFor<LookupDto, { name: string }>('/api/moulds');
 export const productsApi = crudFor<ProductDto, SaveProduct>('/api/products');
 export const productTypesApi = crudFor<LookupDto, { name: string }>('/api/product-types');

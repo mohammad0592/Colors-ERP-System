@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using Colors.Application.Features.MasterData;
 using Colors.Domain.Entities.MasterData;
 using Colors.Infrastructure.Persistence;
@@ -259,12 +259,13 @@ public class ColorService(ColorsDbContext db)
     : MasterListService<Color, ColorDto, SaveColorRequest>(db), IColorService
 {
     protected override ColorDto ToDto(Color entity, bool canDelete) =>
-        new(entity.Id, entity.Name, entity.Code, entity.IsActive, canDelete);
+        new(entity.Id, entity.Name, entity.Code, entity.IsBlack, entity.IsActive, canDelete);
 
     protected override void Apply(SaveColorRequest request, Color entity)
     {
         entity.Name = request.Name.Trim();
         entity.Code = request.Code.Trim().ToUpperInvariant();
+        entity.IsBlack = request.IsBlack;
     }
 
     protected override async Task<string?> ValidateAsync(

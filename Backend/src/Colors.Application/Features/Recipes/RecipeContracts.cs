@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Recipes;
 
@@ -13,6 +13,9 @@ public sealed record RecipeFamilyDto(
     int ProductTypeId,
     string ProductTypeName,
     bool UsesRecycle,
+    // Which colours it may be made in: black-only recipes need black, and every other
+    // recipe refuses it (specification section 5).
+    bool BlackOnly,
     bool IsAbsorbent,
     string? Description,
     bool IsActive,
@@ -25,6 +28,7 @@ public sealed record SaveRecipeFamilyRequest(
     string Code,
     int ProductTypeId,
     bool UsesRecycle,
+    bool BlackOnly,
     bool IsAbsorbent,
     string? Description);
 

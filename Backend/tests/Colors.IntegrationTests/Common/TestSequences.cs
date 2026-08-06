@@ -43,9 +43,37 @@ public static class TestSequences
     /// turns and share. Nothing here needs a colour of its own: roll codes are made
     /// unique by their serial and date, not by their letter.
     /// </summary>
+    /// <summary>
+    /// Kept out of the ordinary rotation and used only for the black colour, so a test
+    /// asking for "any colour" can never be handed the one that changes which recipes
+    /// are allowed (specification section 5).
+    /// </summary>
+    private const char BlackCode = 'K';
+
+    /// <summary>
+    /// The black colour — the one a Black recipe needs and every other recipe refuses.
+    /// Shared, like the rest: a colour code is one letter and unique.
+    /// </summary>
+    public static async Task<Color> BlackColourAsync(ColorsDbContext db)
+    {
+        var existing = await db.Colors.FirstOrDefaultAsync(c => c.Code == BlackCode.ToString());
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        var colour = new Color { Name = "Colour Black", Code = BlackCode.ToString(), IsBlack = true };
+        db.Colors.Add(colour);
+        await db.SaveChangesAsync();
+
+        return colour;
+    }
+
     public static async Task<Color> ColourAsync(ColorsDbContext db)
     {
-        var code = ((char)('A' + (Interlocked.Increment(ref _letter) % 26))).ToString();
+        // Twenty-five letters, not twenty-six: K belongs to black.
+        var letters = "ABCDEFGHIJLMNOPQRSTUVWXYZ";
+        var code = letters[Interlocked.Increment(ref _letter) % letters.Length].ToString();
 
         var existing = await db.Colors.FirstOrDefaultAsync(c => c.Code == code);
         if (existing is not null)

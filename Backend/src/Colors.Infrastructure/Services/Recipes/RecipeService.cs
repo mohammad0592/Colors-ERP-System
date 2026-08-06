@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Recipes;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
@@ -447,6 +447,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
         family.Code = request.Code.Trim();
         family.ProductTypeId = request.ProductTypeId;
         family.UsesRecycle = request.UsesRecycle;
+        family.BlackOnly = request.BlackOnly;
         family.IsAbsorbent = request.IsAbsorbent;
         family.Description = Trimmed(request.Description);
     }
@@ -462,6 +463,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
             family.ProductTypeId,
             family.ProductType.Name,
             family.UsesRecycle,
+            family.BlackOnly,
             family.IsAbsorbent,
             family.Description,
             family.IsActive,

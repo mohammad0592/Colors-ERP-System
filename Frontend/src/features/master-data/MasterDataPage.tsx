@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   colorsApi,
@@ -121,6 +121,13 @@ export function MasterDataPage(): ReactElement {
               label: 'Code letter',
               maxLength: 1,
               hint: 'One letter A–Z, unique. It appears inside every roll code — the W in 01WN180726A.',
+            },
+            // Not read off the name or the letter B, which Blue starts with too.
+            {
+              key: 'isBlack',
+              label: 'This is black',
+              type: 'checkbox',
+              hint: 'Black recipes can only be made in this colour, and every other recipe refuses it.',
             },
           ]}
         />

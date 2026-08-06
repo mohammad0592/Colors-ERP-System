@@ -218,6 +218,15 @@ public class ProductionService(
             return InvalidRoll("Choose an active colour.");
         }
 
+        // The recipe and the colour have to agree. A Black recipe is 35% recycled
+        // material, which is dark, so it cannot be made in white — and black is made on
+        // that recipe rather than the plain one, which is what "Except Black" means
+        // (specification section 5).
+        if (!RecipeColour.Agree(recipe.Family, colour))
+        {
+            return InvalidRoll(RecipeColour.RefusalFor(recipe.Family, colour));
+        }
+
         if (string.IsNullOrWhiteSpace(recipe.Family.Code))
         {
             return InvalidRoll(

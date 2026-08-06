@@ -28,6 +28,22 @@ public class RecipeFamily : MasterEntity
     public bool UsesRecycle { get; set; }
 
     /// <summary>
+    /// True for the Black families: a roll made to this recipe must be black, and a
+    /// roll made to any other recipe must not be (specification section 5).
+    ///
+    /// The first half is physics — 35% recycled material is dark, and no amount of
+    /// white colouring hides it. The second half is the factory's own policy, and it is
+    /// what "Except Black" is named for: black goes on the recipe that uses recycle,
+    /// because that is the cheap one and the reason the black recipes exist at all.
+    ///
+    /// Its own column rather than a reading of <see cref="UsesRecycle"/>, even though
+    /// the same two families carry both today. One is what goes into the mixer, the
+    /// other is what may come out of it — a recycled recipe in dark grey would want one
+    /// true and the other false.
+    /// </summary>
+    public bool BlackOnly { get; set; }
+
+    /// <summary>
     /// True for the ABS families. Copied onto every bag, because a pallet may only
     /// hold one type and the check must not walk five joins on each barcode scan.
     /// Never matched on the family's name — names must not drive logic.

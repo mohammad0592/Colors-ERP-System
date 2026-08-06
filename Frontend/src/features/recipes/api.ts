@@ -1,4 +1,4 @@
-import { apiRequest } from '../../lib/apiClient';
+﻿import { apiRequest } from '../../lib/apiClient';
 
 /**
  * Recipes, mirroring the C# records in Colors.Application.Features.Recipes.
@@ -14,6 +14,11 @@ export interface RecipeFamilyDto {
   productTypeId: number;
   productTypeName: string;
   usesRecycle: boolean;
+  /**
+   * Which colours it may be made in: a black-only recipe needs black, and every other
+   * recipe refuses black.
+   */
+  blackOnly: boolean;
   isAbsorbent: boolean;
   description: string | null;
   isActive: boolean;
@@ -26,6 +31,7 @@ export interface SaveRecipeFamily {
   name: string;
   productTypeId: number;
   usesRecycle: boolean;
+  blackOnly: boolean;
   isAbsorbent: boolean;
   description: string | null;
 }

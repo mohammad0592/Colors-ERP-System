@@ -1,4 +1,4 @@
-using Colors.Domain.Constants;
+﻿using Colors.Domain.Constants;
 using Colors.Domain.Entities.MasterData;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -119,18 +119,22 @@ public static class MasterDataSeeder
         }
 
         // --- Colours, with the letters used inside roll codes ------------------
-        var colors = new (string Name, string Code)[]
+        // IsBlack decides which recipes a colour may be used with: the two Black
+        // families need it, and the two Except Black families refuse it (specification
+        // section 5). A flag rather than a check on the name or the letter B, which
+        // Blue also starts with.
+        var colors = new (string Name, string Code, bool IsBlack)[]
         {
-            ("White", "W"),
-            ("Green", "G"),
-            ("Yellow", "Y"),
-            ("Black", "B"),
+            ("White", "W", false),
+            ("Green", "G", false),
+            ("Yellow", "Y", false),
+            ("Black", "B", true),
         };
         if (!await db.Colors.AnyAsync(cancellationToken))
         {
-            foreach (var (name, code) in colors)
+            foreach (var (name, code, isBlack) in colors)
             {
-                db.Colors.Add(new Color { Name = name, Code = code });
+                db.Colors.Add(new Color { Name = name, Code = code, IsBlack = isBlack });
                 before++;
             }
         }

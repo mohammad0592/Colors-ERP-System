@@ -536,6 +536,30 @@ The factory has **four main recipes** and creates variations often — *"the fac
 | 3 | ABS Except Black | Yes | GPPS 100% · Absorbent 3–4% · Colouring 1.5–2% · Antistatic 1.5–3% · Talc 1% |
 | 4 | ABS Black | Yes | GPPS 65% · Recycle 35% · Absorbent 3–4% · Colouring 1.5–2% · Antistatic 1.5–3% · Talc 1% |
 
+### A recipe and a colour have to agree
+
+The names say it: two families are **Black**, two are **Except Black**. The system refuses a roll where the recipe and the colour disagree, in **both** directions.
+
+| Recipe | Colour | |
+|---|---|---|
+| Normal Black, ABS Black | Black | ✔ |
+| Normal Black, ABS Black | White, Green, Yellow… | ✘ refused |
+| Normal Except Black, ABS Except Black | White, Green, Yellow… | ✔ |
+| Normal Except Black, ABS Except Black | Black | ✘ refused |
+
+The first refusal is physics. A Black recipe replaces **35% of the GPPS with recycled material**, which is dark — no amount of white colouring hides it, so a white roll cannot be made from that mix. The second is the factory's own policy, and it is what the family is named for: black goes on the recipe that uses recycle, because that is the cheap one and the whole reason the black recipes exist.
+
+**`RecipeFamilies.BlackOnly`** and **`Colors.IsBlack`**, and the rule is that they must be equal:
+
+```
+family.BlackOnly  ==  colour.IsBlack     →  allowed
+                                          otherwise refused
+```
+
+One comparison covers both directions. Two tick boxes rather than a list of permitted colours per family: a new colour is then allowed everywhere it should be without anybody remembering to add it to three lists, and a colour left out of a list is a refusal nobody can explain.
+
+`BlackOnly` is its own column and not read off `UsesRecycle`, even though the same two families carry both today. They mean different things — one is what goes in the mixer, the other is what may come out — and a future recycled recipe in dark grey would need one true and the other false.
+
 ### How percentages work
 
 The percentages do not add to 100, and that is correct. **GPPS + Recycle is the 100% base**, and everything else is added on top of it — the standard "parts per hundred resin" method.

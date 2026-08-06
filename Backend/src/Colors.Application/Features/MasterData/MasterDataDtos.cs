@@ -1,4 +1,4 @@
-namespace Colors.Application.Features.MasterData;
+﻿namespace Colors.Application.Features.MasterData;
 
 /// <summary>
 /// Shapes crossing the API for master data. Times travel as "HH:mm" strings and
@@ -87,10 +87,21 @@ public sealed record UnitDto(int Id, string Name, string Symbol, bool IsActive, 
 
 public sealed record SaveUnitRequest(string Name, string Symbol);
 
-public sealed record ColorDto(int Id, string Name, string Code, bool IsActive, bool CanDelete);
+/// <summary>
+/// A plate colour. <c>IsBlack</c> decides which recipes may use it: a black-only recipe
+/// needs it, and every other recipe refuses it (specification section 5). A flag rather
+/// than a check on the name or the letter B, which Blue also starts with.
+/// </summary>
+public sealed record ColorDto(
+    int Id,
+    string Name,
+    string Code,
+    bool IsBlack,
+    bool IsActive,
+    bool CanDelete);
 
 // Code is one capital letter for the roll code: W, G, Y, B.
-public sealed record SaveColorRequest(string Name, string Code);
+public sealed record SaveColorRequest(string Name, string Code, bool IsBlack);
 
 public sealed record ShiftDto(
     int Id,

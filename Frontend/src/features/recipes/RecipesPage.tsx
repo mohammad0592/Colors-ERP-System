@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -134,6 +134,7 @@ export function RecipesPage(): ReactElement {
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {family.usesRecycle && <Tag label="Uses recycle" />}
+              {family.blackOnly && <Tag label="Black only" />}
               {family.isAbsorbent && <Tag label="Absorbent" />}
               <Tag
                 label={`${String(family.versionCount)} version${family.versionCount === 1 ? '' : 's'}`}

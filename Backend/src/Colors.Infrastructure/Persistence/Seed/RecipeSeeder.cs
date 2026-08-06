@@ -1,4 +1,4 @@
-using Colors.Domain.Entities.Recipes;
+﻿using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Services.Recipes;
@@ -28,6 +28,9 @@ public static class RecipeSeeder
         // colour letter is what separates them (specification section 8).
         string Code,
         bool UsesRecycle,
+        // Which colours it may be made in. The two Black families need black; the two
+        // Except Black families refuse it (specification section 5).
+        bool BlackOnly,
         bool IsAbsorbent,
         string Description,
         Ingredient[] Ingredients);
@@ -38,6 +41,7 @@ public static class RecipeSeeder
             "Normal (Except Black)",
             Code: "N",
             UsesRecycle: false,
+            BlackOnly: false,
             IsAbsorbent: false,
             "Plain plates in any colour but black.",
             [
@@ -50,6 +54,7 @@ public static class RecipeSeeder
             "Normal Black",
             Code: "N",
             UsesRecycle: true,
+            BlackOnly: true,
             IsAbsorbent: false,
             "Black plates. A third of the polymer is the factory's own recycled material.",
             [
@@ -63,6 +68,7 @@ public static class RecipeSeeder
             "ABS (Except Black)",
             Code: "Abs",
             UsesRecycle: false,
+            BlackOnly: false,
             IsAbsorbent: true,
             "Absorbent plates in any colour but black.",
             [
@@ -76,6 +82,7 @@ public static class RecipeSeeder
             "ABS Black",
             Code: "Abs",
             UsesRecycle: true,
+            BlackOnly: true,
             IsAbsorbent: true,
             "Absorbent black plates, with recycled material in the polymer.",
             [
@@ -146,6 +153,7 @@ public static class RecipeSeeder
                 Code = family.Code,
                 ProductTypeId = productType.Id,
                 UsesRecycle = family.UsesRecycle,
+                BlackOnly = family.BlackOnly,
                 IsAbsorbent = family.IsAbsorbent,
                 Description = family.Description,
                 Versions =

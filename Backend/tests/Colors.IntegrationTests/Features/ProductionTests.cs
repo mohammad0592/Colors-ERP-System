@@ -62,6 +62,94 @@ public class ProductionTests(DatabaseFixture fixture)
         return (colour.Id, family.Versions[0].Id);
     }
 
+    /// <summary>
+    /// A Black family — one that replaces 35% of its GPPS with recycle — and the black
+    /// colour it must be made in (specification section 5).
+    /// </summary>
+    private static async Task<(int BlackColorId, int BlackRecipeId)> BlackRecipeAsync(
+        ColorsDbContext db,
+        string suffix,
+        int authorUserId)
+    {
+        var black = await TestSequences.BlackColourAsync(db);
+        var productType = await db.ProductTypes.FirstAsync();
+
+        var family = new RecipeFamily
+        {
+            Name = $"Family Black {suffix}",
+            Code = "N",
+            ProductTypeId = productType.Id,
+            UsesRecycle = true,
+            BlackOnly = true,
+            Versions =
+            [
+                new RecipeVersion
+                {
+                    RecipeNumber = TestSequences.NextRecipeNumber(),
+                    VersionNumber = 1,
+                    Status = RecipeVersionStatus.Current,
+                    CreatedByUserId = authorUserId,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                },
+            ],
+        };
+
+        db.RecipeFamilies.Add(family);
+        await db.SaveChangesAsync();
+
+        return (black.Id, family.Versions[0].Id);
+    }
+
+    [Fact]
+    public async Task A_black_recipe_cannot_be_made_in_another_colour()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "BLK1");
+        var (colourId, _) = await RecipeAndColourAsync(db, "BLK1", ids.UserId);
+        var (_, blackRecipeId) = await BlackRecipeAsync(db, "BLK1", ids.UserId);
+        var batchId = await BatchAsync(db, ids);
+
+        // A third of the polymer is recycled material, which is dark. No amount of
+        // white colouring hides it, so this roll cannot exist.
+        var roll = await NewService(db).CreateRollAsync(
+            new CreateRollRequest(batchId, blackRecipeId, colourId, null, null), ids.UserId);
+
+        Assert.False(roll.IsSuccess);
+        Assert.Contains("only be made in black", roll.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task An_except_black_recipe_cannot_be_made_in_black()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "BLK2");
+        var (_, plainRecipeId) = await RecipeAndColourAsync(db, "BLK2", ids.UserId);
+        var (blackColourId, _) = await BlackRecipeAsync(db, "BLK2", ids.UserId);
+        var batchId = await BatchAsync(db, ids);
+
+        // The other direction, and the factory's own policy: black is made on the
+        // recipe that uses recycle, which is the whole reason that recipe exists.
+        var roll = await NewService(db).CreateRollAsync(
+            new CreateRollRequest(batchId, plainRecipeId, blackColourId, null, null), ids.UserId);
+
+        Assert.False(roll.IsSuccess);
+        Assert.Contains("cannot be made in", roll.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_black_recipe_in_black_is_allowed()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "BLK3");
+        var (blackColourId, blackRecipeId) = await BlackRecipeAsync(db, "BLK3", ids.UserId);
+        var batchId = await BatchAsync(db, ids);
+
+        var roll = await NewService(db).CreateRollAsync(
+            new CreateRollRequest(batchId, blackRecipeId, blackColourId, null, null), ids.UserId);
+
+        Assert.True(roll.IsSuccess, roll.Message);
+    }
+
     private static async Task<int> BatchAsync(ColorsDbContext db, FactoryData.Ids ids)
     {
         var started = await NewService(db).StartBatchAsync(
