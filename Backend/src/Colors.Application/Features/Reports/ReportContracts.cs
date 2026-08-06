@@ -96,6 +96,57 @@ public sealed record ShiftSummaryReportDto(
     decimal RecycledMaterialProduced,
     IReadOnlyList<ShiftProductLineDto> Products);
 
+// ---------- consumption ----------
+
+/// <summary>How much of one material a group of shifts consumed.</summary>
+public sealed record ConsumptionMaterialDto(
+    int MaterialId,
+    string MaterialCode,
+    string MaterialName,
+    string UnitSymbol,
+    decimal Issued,
+    decimal Returned,
+    decimal NetUsed,
+    /// <summary>
+    /// Used per kilogram of roll the group produced, so a long shift and a short one can
+    /// be compared. Null where nothing was weighed off the extruder.
+    /// </summary>
+    decimal? PerKilogramOfRoll);
+
+/// <summary>One shift, or one recipe, with everything it consumed.</summary>
+public sealed record ConsumptionGroupDto(
+    string Label,
+    int? ShiftReportId,
+    DateOnly? ProductionDate,
+    string? ShiftName,
+    int? RecipeNumber,
+    string? RecipeFamilyName,
+    /// <summary>How many shifts are behind this row. Always 1 when grouped by shift.</summary>
+    int Shifts,
+    int RollsProduced,
+    decimal RollWeightProduced,
+    decimal TotalUsed,
+    IReadOnlyList<ConsumptionMaterialDto> Materials);
+
+public sealed record ConsumptionReportDto(
+    DateOnly From,
+    DateOnly To,
+    string GroupedBy,
+    IReadOnlyList<ConsumptionGroupDto> Groups,
+    /// <summary>
+    /// Shifts left out of a by-recipe report because they ran more than one recipe, so
+    /// their material cannot be attributed to either. Counted and said, never dropped in
+    /// silence.
+    /// </summary>
+    int MixedRecipeShifts);
+
+/// <summary>How consumption is grouped.</summary>
+public enum ConsumptionGrouping
+{
+    Shift = 1,
+    Recipe = 2,
+}
+
 /// <summary>
 /// Reports (specification section 13).
 ///
@@ -120,5 +171,18 @@ public interface IReportsService
     /// <summary>The paper form's summary block, worked out rather than typed.</summary>
     Task<Result<ShiftSummaryReportDto>> GetShiftSummaryAsync(
         int shiftReportId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// What was consumed over a stretch of days, by shift or by recipe.
+    ///
+    /// By recipe only counts a shift whose rolls were all made to <b>one</b> recipe. A
+    /// shift that switched recipe cannot say which of them its material went into, so it
+    /// is left out and counted separately rather than guessed at.
+    /// </summary>
+    Task<Result<ConsumptionReportDto>> GetConsumptionAsync(
+        DateOnly from,
+        DateOnly to,
+        ConsumptionGrouping grouping,
         CancellationToken cancellationToken = default);
 }

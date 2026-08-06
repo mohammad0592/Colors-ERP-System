@@ -80,6 +80,42 @@ export interface ShiftSummaryReportDto {
   products: ShiftProductLineDto[];
 }
 
+export interface ConsumptionMaterialDto {
+  materialId: number;
+  materialCode: string;
+  materialName: string;
+  unitSymbol: string;
+  issued: number;
+  returned: number;
+  netUsed: number;
+  /** Used per kilogram of roll, so a long shift and a short one can be compared. */
+  perKilogramOfRoll: number | null;
+}
+
+export interface ConsumptionGroupDto {
+  label: string;
+  shiftReportId: number | null;
+  productionDate: string | null;
+  shiftName: string | null;
+  recipeNumber: number | null;
+  recipeFamilyName: string | null;
+  /** How many shifts are behind this row. Always 1 when grouped by shift. */
+  shifts: number;
+  rollsProduced: number;
+  rollWeightProduced: number;
+  totalUsed: number;
+  materials: ConsumptionMaterialDto[];
+}
+
+export interface ConsumptionReportDto {
+  from: string;
+  to: string;
+  groupedBy: string;
+  groups: ConsumptionGroupDto[];
+  /** Shifts left out of a by-recipe report because they ran more than one recipe. */
+  mixedRecipeShifts: number;
+}
+
 export const reportsApi = {
   materialWaste: (shiftReportId: number): Promise<MaterialWasteReportDto> =>
     apiRequest<MaterialWasteReportDto>(
@@ -89,5 +125,14 @@ export const reportsApi = {
   shiftSummary: (shiftReportId: number): Promise<ShiftSummaryReportDto> =>
     apiRequest<ShiftSummaryReportDto>(
       `/api/reports/shift-summary/${String(shiftReportId)}`,
+    ),
+
+  consumption: (
+    from: string,
+    to: string,
+    groupBy: 'Shift' | 'Recipe',
+  ): Promise<ConsumptionReportDto> =>
+    apiRequest<ConsumptionReportDto>(
+      `/api/reports/consumption?from=${from}&to=${to}&groupBy=${groupBy}`,
     ),
 };

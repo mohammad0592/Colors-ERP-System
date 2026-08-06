@@ -36,4 +36,26 @@ public class ReportsController(IReportsService reports) : ApiControllerBase
     {
         return ToResponse(await reports.GetShiftSummaryAsync(shiftReportId, cancellationToken));
     }
+
+    /// <summary>
+    /// What was consumed over a stretch of days, by shift or by recipe.
+    ///
+    /// The last thirty days when no dates are given — the range a supervisor asks about
+    /// without having to think about it.
+    /// </summary>
+    [HttpGet("consumption")]
+    public async Task<IActionResult> GetConsumption(
+        [FromQuery] DateOnly? from = null,
+        [FromQuery] DateOnly? to = null,
+        [FromQuery] ConsumptionGrouping groupBy = ConsumptionGrouping.Shift,
+        CancellationToken cancellationToken = default)
+    {
+        // Tomorrow, not today: a night shift that starts this evening carries tomorrow's
+        // production date, and a range ending today would hide the shift now running.
+        var last = to ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
+        var first = from ?? last.AddDays(-31);
+
+        return ToResponse(
+            await reports.GetConsumptionAsync(first, last, groupBy, cancellationToken));
+    }
 }

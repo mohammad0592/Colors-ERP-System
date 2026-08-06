@@ -1,6 +1,7 @@
-using Colors.Application.Features.MaterialIssue;
+﻿using Colors.Application.Features.MaterialIssue;
 using Colors.Application.Features.Production;
 using Colors.Application.Features.Recycler;
+using Colors.Application.Features.Reports;
 using Colors.Application.Features.Thermo;
 using Colors.Domain.Constants;
 using Colors.Domain.Entities.Recipes;
@@ -148,10 +149,14 @@ public class ReportsTests(DatabaseFixture fixture)
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 
-        await production.SaveTestReportAsync(
+        var measured = await production.SaveTestReportAsync(
             roll.Value!.Id,
             new SaveRollTestRequest(rollWeight, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
             ids.UserId);
+
+        // Loud, because a roll weight outside the 50–150 kg range is refused here and a
+        // silent failure would surface much later as a puzzling report.
+        Assert.True(measured.IsSuccess, measured.Message);
 
         var run = await thermo.StartRunAsync(
             new StartThermoRunRequest(null, roll.Value.Id, ids.ThermoShiftLineId, null, null),
@@ -395,6 +400,129 @@ public class ReportsTests(DatabaseFixture fixture)
 
         // Not zero percent, which would read as a shift that wasted nothing.
         Assert.Null(summary.Value.LossPercentage);
+    }
+
+    /// <summary>The day the factory this test built worked on.</summary>
+    private static async Task<DateOnly> DayOfAsync(ColorsDbContext db, FactoryData.Ids ids) =>
+        await db.ShiftReports
+            .Where(r => r.Id == ids.ShiftReportId)
+            .Select(r => r.ProductionDate)
+            .FirstAsync();
+
+    [Fact]
+    public async Task Consumption_by_shift_shows_what_that_shift_used()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "RPT9");
+        var recipe = await RecipeAsync(db, ids, "RPT9");
+
+        await IssueAsync(db, ids, [(ids.GppsId, 300m, 100m), (ids.TalcId, 6m, 1m)]);
+        await FormedRollAsync(db, ids, recipe, 100m, 10, 10m);
+
+        var day = await DayOfAsync(db, ids);
+        var report = await NewService(db).GetConsumptionAsync(
+            day, day, ConsumptionGrouping.Shift);
+
+        Assert.True(report.IsSuccess, report.Message);
+
+        var group = Assert.Single(report.Value!.Groups, g => g.ShiftReportId == ids.ShiftReportId);
+
+        // 200 of GPPS and 5 of talc.
+        Assert.Equal(205m, group.TotalUsed);
+        Assert.Equal(1, group.Shifts);
+        Assert.Equal(1, group.RollsProduced);
+        Assert.Equal(100m, group.RollWeightProduced);
+
+        var gpps = group.Materials.First(m => m.MaterialId == ids.GppsId);
+        Assert.Equal(300m, gpps.Issued);
+        Assert.Equal(100m, gpps.Returned);
+        Assert.Equal(200m, gpps.NetUsed);
+
+        // 200 kg of GPPS across 100 kg of roll is 2 kg per kilogram — the figure that
+        // lets a long shift and a short one be read against each other.
+        Assert.Equal(2m, gpps.PerKilogramOfRoll);
+    }
+
+    [Fact]
+    public async Task Consumption_by_recipe_adds_its_shifts_together()
+    {
+        await using var db = fixture.CreateContext();
+
+        var first = await FactoryData.CreateAsync(db, "RPT10a");
+        var recipe = await RecipeAsync(db, first, "RPT10");
+        await IssueAsync(db, first, [(first.GppsId, 300m, 0m)]);
+        await FormedRollAsync(db, first, recipe, 100m, 10, 10m);
+        var dayOne = await DayOfAsync(db, first);
+
+        // A second shift on another day, run to the same recipe.
+        var second = await FactoryData.CreateAsync(db, "RPT10b");
+        await IssueAsync(db, second, [(second.GppsId, 200m, 0m)]);
+        await FormedRollAsync(db, second, recipe, 100m, 10, 10m);
+        var dayTwo = await DayOfAsync(db, second);
+
+        var report = await NewService(db).GetConsumptionAsync(
+            dayOne < dayTwo ? dayOne : dayTwo,
+            dayOne > dayTwo ? dayOne : dayTwo,
+            ConsumptionGrouping.Recipe);
+
+        var group = Assert.Single(
+            report.Value!.Groups, g => g.RecipeNumber == recipe.RecipeNumber);
+
+        // Two shifts, one row: 300 + 200.
+        Assert.Equal(2, group.Shifts);
+        Assert.Equal(500m, group.TotalUsed);
+        Assert.Equal(200m, group.RollWeightProduced);
+    }
+
+    [Fact]
+    public async Task A_shift_that_switched_recipe_is_left_out_of_the_recipe_report()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "RPT11");
+        var one = await RecipeAsync(db, ids, "RPT11a");
+        var two = await RecipeAsync(db, ids, "RPT11b");
+
+        await IssueAsync(db, ids, [(ids.GppsId, 400m, 0m)]);
+        await FormedRollAsync(db, ids, one, 100m, 10, 10m);
+        await FormedRollAsync(db, ids, two, 100m, 10, 10m);
+
+        var day = await DayOfAsync(db, ids);
+
+        // By shift it is one plain row — a shift always knows what it used.
+        var byShift = await NewService(db).GetConsumptionAsync(
+            day, day, ConsumptionGrouping.Shift);
+
+        Assert.Contains(byShift.Value!.Groups, g => g.ShiftReportId == ids.ShiftReportId);
+
+        // By recipe it cannot be attributed to either, so it is left out — and counted,
+        // so the reader knows something is missing rather than reading a short total as
+        // the whole truth.
+        var byRecipe = await NewService(db).GetConsumptionAsync(
+            day, day, ConsumptionGrouping.Recipe);
+
+        Assert.DoesNotContain(
+            byRecipe.Value!.Groups, g => g.RecipeNumber == one.RecipeNumber);
+        Assert.DoesNotContain(
+            byRecipe.Value.Groups, g => g.RecipeNumber == two.RecipeNumber);
+        Assert.True(byRecipe.Value.MixedRecipeShifts >= 1);
+
+        // And it is left out rather than swept into a nameless row. Every group on a
+        // by-recipe report names its recipe, or the report is claiming a total for
+        // material it cannot attribute.
+        Assert.All(byRecipe.Value.Groups, g => Assert.NotNull(g.RecipeNumber));
+    }
+
+    [Fact]
+    public async Task A_range_the_wrong_way_round_is_refused()
+    {
+        await using var db = fixture.CreateContext();
+
+        var report = await NewService(db).GetConsumptionAsync(
+            new DateOnly(2026, 8, 10),
+            new DateOnly(2026, 8, 1),
+            ConsumptionGrouping.Shift);
+
+        Assert.False(report.IsSuccess);
     }
 
     [Fact]

@@ -4,19 +4,22 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { reportsApi } from './api';
+import { ConsumptionReport } from './ConsumptionReport';
 import { MaterialWasteReport } from './MaterialWasteReport';
 import { ShiftSummaryReport } from './ShiftSummaryReport';
 
 /**
  * Reports (specification section 13).
  *
- * Both of these are reads over records that already exist — nothing here is stored, so a
- * report cannot disagree with the data underneath it. Pick a shift, and the two reports
- * the factory reads every day answer for it.
+ * Every one is a read over records that already exist — nothing here is stored, so a
+ * report cannot disagree with the data underneath it.
+ *
+ * Two of them answer for one shift, so they share a shift picker. Consumption reads a
+ * stretch of days instead and carries its own dates, so the picker steps out of its way.
  */
 export function ReportsPage(): ReactElement {
   const [shiftReportId, setShiftReportId] = useState<number | null>(null);
-  const [report, setReport] = useState<'waste' | 'summary'>('waste');
+  const [report, setReport] = useState<'waste' | 'summary' | 'consumption'>('waste');
 
   // Newest first: the shift being asked about is nearly always the last one.
   const shifts = useQuery({
@@ -45,6 +48,7 @@ export function ReportsPage(): ReactElement {
         subtitle="Worked out from what the shift recorded, never typed and never stored — so a report cannot disagree with the data behind it."
       />
 
+      {report !== 'consumption' && (
       <section className="card mb-6 p-4">
         <label className="field-label" htmlFor="report-shift">
           Shift
@@ -72,6 +76,7 @@ export function ReportsPage(): ReactElement {
           </p>
         )}
       </section>
+      )}
 
       <section className="mb-6 flex flex-wrap gap-2">
         <Chip
@@ -88,9 +93,18 @@ export function ReportsPage(): ReactElement {
             setReport('summary');
           }}
         />
+        <Chip
+          label="Consumption"
+          active={report === 'consumption'}
+          onClick={() => {
+            setReport('consumption');
+          }}
+        />
       </section>
 
-      {chosen === null ? null : report === 'waste' ? (
+      {report === 'consumption' ? (
+        <ConsumptionReport />
+      ) : chosen === null ? null : report === 'waste' ? (
         <>
           {waste.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
           {waste.isError && <p className="p-6 text-bad">Could not load the report.</p>}

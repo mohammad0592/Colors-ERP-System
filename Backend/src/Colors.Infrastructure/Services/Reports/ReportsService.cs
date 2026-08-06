@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Reports;
 using Colors.Domain.Common;
 using Colors.Domain.Enums;
@@ -163,6 +163,166 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 .ToList()));
     }
 
+    public async Task<Result<ConsumptionReportDto>> GetConsumptionAsync(
+        DateOnly from,
+        DateOnly to,
+        ConsumptionGrouping grouping,
+        CancellationToken cancellationToken = default)
+    {
+        if (to < from)
+        {
+            return Result<ConsumptionReportDto>.Failure(
+                ErrorCode.ValidationFailed, "The last day cannot be before the first.");
+        }
+
+        // One row per shift first, whichever grouping was asked for: a recipe's usage is
+        // its shifts added together, and a shift is the only thing material is ever
+        // issued to (specification section 13).
+        var shifts = await db.ShiftReports
+            .Where(r => r.ProductionDate >= from && r.ProductionDate <= to)
+            .Select(r => new
+            {
+                r.Id,
+                r.ProductionDate,
+                ShiftName = r.Shift.Name,
+                LineIds = r.Lines.Select(l => l.Id).ToList(),
+            })
+            .ToListAsync(cancellationToken);
+
+        if (shifts.Count == 0)
+        {
+            return Result<ConsumptionReportDto>.Success(new ConsumptionReportDto(
+                from, to, grouping.ToString(), [], 0));
+        }
+
+        var allLineIds = shifts.SelectMany(s => s.LineIds).ToList();
+
+        var used = await db.MaterialIssueTickets
+            .Where(t => allLineIds.Contains(t.ShiftLineId))
+            .SelectMany(t => t.Lines, (t, l) => new UsedLine(
+                t.ShiftLineId,
+                l.MaterialId,
+                l.Material.Code,
+                l.Material.Name,
+                l.Material.BaseUnit.Symbol,
+                l.IssuedQuantity,
+                l.ReturnedQuantity))
+            .ToListAsync(cancellationToken);
+
+        var rolls = await db.Rolls
+            .Where(r => allLineIds.Contains(r.Batch.ShiftLineId))
+            .Select(r => new
+            {
+                ShiftLineId = r.Batch.ShiftLineId,
+                r.RecipeVersionId,
+                r.RecipeVersion.RecipeNumber,
+                FamilyName = r.RecipeVersion.Family.Name,
+                Weight = r.TestReport == null ? (decimal?)null : r.TestReport.Weight,
+            })
+            .ToListAsync(cancellationToken);
+
+        // Everything a shift did, gathered once and then arranged whichever way was
+        // asked for.
+        var perShift = shifts.Select(s =>
+        {
+            var lines = s.LineIds;
+            var shiftRolls = rolls.Where(r => lines.Contains(r.ShiftLineId)).ToList();
+            var recipes = shiftRolls.Select(r => r.RecipeVersionId).Distinct().ToList();
+
+            return new
+            {
+                s.Id,
+                s.ProductionDate,
+                s.ShiftName,
+                Used = used.Where(u => lines.Contains(u.ShiftLineId)).ToList(),
+                Rolls = shiftRolls.Count,
+                RollWeight = shiftRolls.Sum(r => r.Weight ?? 0m),
+                RecipeCount = recipes.Count,
+                RecipeNumber = recipes.Count == 1 ? shiftRolls[0].RecipeNumber : (int?)null,
+                FamilyName = recipes.Count == 1 ? shiftRolls[0].FamilyName : null,
+            };
+        }).ToList();
+
+        List<ConsumptionGroupDto> groups;
+        var mixed = 0;
+
+        if (grouping == ConsumptionGrouping.Recipe)
+        {
+            // A shift that switched recipe cannot say which of them its material went
+            // into. Left out, and counted so the reader knows what is missing.
+            mixed = perShift.Count(s => s.RecipeCount > 1);
+
+            groups = perShift
+                .Where(s => s.RecipeNumber is not null)
+                .GroupBy(s => new { s.RecipeNumber, s.FamilyName })
+                .Select(g => new ConsumptionGroupDto(
+                    $"Recipe {g.Key.RecipeNumber} — {g.Key.FamilyName}",
+                    null,
+                    null,
+                    null,
+                    g.Key.RecipeNumber,
+                    g.Key.FamilyName,
+                    g.Count(),
+                    g.Sum(s => s.Rolls),
+                    g.Sum(s => s.RollWeight),
+                    g.SelectMany(s => s.Used).Sum(u => u.Issued - u.Returned),
+                    Materials(
+                        g.SelectMany(s => s.Used),
+                        g.Sum(s => s.RollWeight))))
+                .OrderBy(g => g.RecipeNumber)
+                .ToList();
+        }
+        else
+        {
+            groups = perShift
+                .OrderByDescending(s => s.ProductionDate)
+                .ThenBy(s => s.ShiftName)
+                .Select(s => new ConsumptionGroupDto(
+                    $"{s.ProductionDate:dd/MM/yyyy} — shift {s.ShiftName}",
+                    s.Id,
+                    s.ProductionDate,
+                    s.ShiftName,
+                    s.RecipeNumber,
+                    s.FamilyName,
+                    1,
+                    s.Rolls,
+                    s.RollWeight,
+                    s.Used.Sum(u => u.Issued - u.Returned),
+                    Materials(s.Used, s.RollWeight)))
+                .ToList();
+        }
+
+        // A row that consumed nothing and made nothing is noise on a range report.
+        groups = groups.Where(g => g.Materials.Count > 0 || g.RollsProduced > 0).ToList();
+
+        return Result<ConsumptionReportDto>.Success(new ConsumptionReportDto(
+            from, to, grouping.ToString(), groups, mixed));
+
+        // The per-material rows, with usage per kilogram of roll so a long shift and a
+        // short one can be read against each other.
+        static IReadOnlyList<ConsumptionMaterialDto> Materials(
+            IEnumerable<UsedLine> lines,
+            decimal rollWeight) =>
+            lines
+                .GroupBy(l => new { l.MaterialId, l.Code, l.Name, l.UnitSymbol })
+                .Select(g =>
+                {
+                    var net = g.Sum(l => l.Issued - l.Returned);
+
+                    return new ConsumptionMaterialDto(
+                        g.Key.MaterialId,
+                        g.Key.Code,
+                        g.Key.Name,
+                        g.Key.UnitSymbol,
+                        g.Sum(l => l.Issued),
+                        g.Sum(l => l.Returned),
+                        net,
+                        rollWeight == 0 ? null : Math.Round(net / rollWeight, 4));
+                })
+                .OrderByDescending(m => m.NetUsed)
+                .ToList();
+    }
+
     public async Task<Result<ShiftSummaryReportDto>> GetShiftSummaryAsync(
         int shiftReportId,
         CancellationToken cancellationToken = default)
@@ -272,4 +432,18 @@ public class ReportsService(ColorsDbContext db) : IReportsService
             recycled,
             products));
     }
+
+    /// <summary>
+    /// One issue-ticket line flattened onto its shift line, which is the only thing
+    /// material is ever issued to. Named rather than anonymous so the grouping below
+    /// stays readable and typed.
+    /// </summary>
+    private sealed record UsedLine(
+        int ShiftLineId,
+        int MaterialId,
+        string Code,
+        string Name,
+        string UnitSymbol,
+        decimal Issued,
+        decimal Returned);
 }
