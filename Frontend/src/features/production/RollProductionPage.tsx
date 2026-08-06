@@ -1,11 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
-import { LabelDialog } from '../labels/LabelDialog';
+import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { colorsApi } from '../master-data/api';
 import { recipesApi } from '../recipes/api';
 import { shiftReportsApi } from '../shifts/api';
@@ -418,7 +418,7 @@ export function RollProductionPage(): ReactElement {
       )}
 
       {printing !== null && (
-        <LabelDialog
+        <LabelPrintScreen
           barcodes={printing.barcodes}
           {...(printing.headline === undefined ? {} : { headline: printing.headline })}
           onClose={() => {

@@ -1,8 +1,8 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { formatDate } from '../shifts/shiftFormat';
 import { producedStockApi, type ProducedKind } from './api';
-import { LabelDialog } from './LabelDialog';
+import { LabelPrintScreen } from './LabelPrintScreen';
 
 /**
  * Rolls, bags and pallets as stock (specification sections 8 to 10).
@@ -176,7 +176,7 @@ export function ProducedStockTab(): ReactElement {
       )}
 
       {labelFor !== null && (
-        <LabelDialog
+        <LabelPrintScreen
           barcodes={[labelFor]}
           onClose={() => {
             setLabelFor(null);

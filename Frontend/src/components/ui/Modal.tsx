@@ -5,23 +5,10 @@ interface ModalProps {
   title: string;
   onClose: () => void;
   children: ReactNode;
-  /**
-   * True when the dialog's contents are meant to reach a printer.
-   *
-   * On screen a dialog is a fixed overlay that scrolls inside itself. Printed, that
-   * would clip the job to whatever happened to be visible — one label out of fourteen.
-   * The flag lets the print stylesheet turn this one back into an ordinary block.
-   */
-  printable?: boolean;
 }
 
 /** A centred dialog over a dimmed page. Closes on Escape or the backdrop. */
-export function Modal({
-  title,
-  onClose,
-  children,
-  printable = false,
-}: ModalProps): ReactElement {
+export function Modal({ title, onClose, children }: ModalProps): ReactElement {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') {
@@ -36,12 +23,7 @@ export function Modal({
   }, [onClose]);
 
   return (
-    <div
-      className={[
-        'fixed inset-0 z-50 grid place-items-center p-4',
-        printable ? 'printable-modal' : '',
-      ].join(' ')}
-    >
+    <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <button
         type="button"
         aria-label="Close"

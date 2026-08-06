@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
-import { LabelDialog } from '../labels/LabelDialog';
+import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { formatDate } from '../shifts/shiftFormat';
 import { thermoApi, type ThermoRunDto, type ThermoRunSummaryDto } from './api';
 import { ThermoTestDialog } from './ThermoTestDialog';
@@ -186,7 +186,7 @@ export function ThermoTestsPage(): ReactElement {
       </div>
 
       {printing !== null && (
-        <LabelDialog
+        <LabelPrintScreen
           barcodes={printing.barcodes}
           {...(printing.headline === undefined ? {} : { headline: printing.headline })}
           onClose={() => {

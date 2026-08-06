@@ -1,10 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
-import { LabelDialog } from '../labels/LabelDialog';
+import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { palletsApi } from './api';
@@ -319,7 +319,7 @@ export function PalletsPage(): ReactElement {
       )}
 
       {labelFor !== null && (
-        <LabelDialog
+        <LabelPrintScreen
           barcodes={[labelFor]}
           onClose={() => {
             setLabelFor(null);
