@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
@@ -143,6 +143,7 @@ export function RollProductionPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">Colour</th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 text-right font-semibold">Weight</th>
+              <th className="px-4 py-3 text-right font-semibold">Length</th>
               <th className="px-4 py-3 font-semibold">Made by</th>
               <th className="px-4 py-3 font-semibold">Out at</th>
             </tr>
@@ -150,7 +151,7 @@ export function RollProductionPage(): ReactElement {
           <tbody>
             {rolls.data.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
+                <td colSpan={9} className="px-4 py-8 text-center text-ink-muted">
                   No rolls yet.
                 </td>
               </tr>
@@ -185,6 +186,9 @@ export function RollProductionPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                   {roll.weight ?? '—'}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  {roll.length ?? '—'}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{roll.producedByName}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-ink-muted">

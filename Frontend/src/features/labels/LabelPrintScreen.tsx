@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery } from '@tanstack/react-query';
 import QRCode from 'qrcode';
 import { useEffect, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
@@ -191,6 +191,7 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
             <Field label="Pieces · العدد" value={String(label.pieceCount)} />
           )}
           {label.weight !== null && <Field label="Weight" value={`${String(label.weight)} kg`} />}
+          {label.length !== null && <Field label="Length" value={String(label.length)} />}
           {label.shiftName !== null && <Field label="Shift · الوردية" value={label.shiftName} />}
           <Field
             label="Date · الوقت"

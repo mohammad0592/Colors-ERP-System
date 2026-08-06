@@ -1,4 +1,4 @@
-import { apiRequest } from '../../lib/apiClient';
+﻿import { apiRequest } from '../../lib/apiClient';
 
 /**
  * Produced stock and its labels, mirroring
@@ -19,6 +19,8 @@ export interface ProducedStockItemDto {
   /** Its batch, the pallet it sits on, or the line that built it. */
   whereabouts: string;
   weight: number | null;
+  /** A roll only. Bags and pallets are counted, not measured by length. */
+  length: number | null;
   pieceCount: number | null;
   productionDate: string;
   createdAt: string;
@@ -36,6 +38,7 @@ export interface BarcodeLabelDto {
   colorName: string | null;
   pieceCount: number | null;
   weight: number | null;
+  length: number | null;
   shiftName: string | null;
   productionDate: string;
   createdAt: string;

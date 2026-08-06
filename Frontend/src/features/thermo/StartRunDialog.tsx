@@ -1,4 +1,4 @@
-import { useState, type ReactElement } from 'react';
+﻿import { useState, type ReactElement } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { formatDate } from '../shifts/shiftFormat';
@@ -132,6 +132,7 @@ export function StartRunDialog({
             <strong className="font-mono text-ink">{chosen.rollCode}</strong> ·{' '}
             {chosen.colorName} · recipe {chosen.recipeNumber} {chosen.recipeFamilyName}
             {chosen.weight !== null && <> · {chosen.weight} kg</>}
+            {chosen.length !== null && <> · length {chosen.length}</>}
             {chosen.isAbsorbent && (
               <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
                 Absorbent

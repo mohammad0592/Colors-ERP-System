@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Thermo;
 
@@ -101,7 +101,8 @@ public sealed record AvailableRollDto(
     string RecipeFamilyName,
     bool IsAbsorbent,
     DateOnly ProductionDate,
-    decimal? Weight);
+    decimal? Weight,
+    decimal? Length);
 
 /// <summary>
 /// Puts a roll into the thermo. The operator scans the barcode — he never types the

@@ -121,6 +121,7 @@ public class ProductionService(
                 names.GetValueOrDefault(r.ProducedByUserId, "—"),
                 r.ProducedAt,
                 r.TestReport?.Weight,
+                r.TestReport?.Length,
                 r.TestReport?.AverageThickness))
             .ToList();
     }

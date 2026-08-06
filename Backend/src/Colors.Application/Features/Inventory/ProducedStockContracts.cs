@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Inventory;
 
@@ -23,6 +23,8 @@ public sealed record ProducedStockItemDto(
     // Where it is now — its batch, the pallet it sits on, the line that built it.
     string Whereabouts,
     decimal? Weight,
+    // A roll only. Bags and pallets are counted, not measured by length.
+    decimal? Length,
     int? PieceCount,
     DateOnly ProductionDate,
     DateTimeOffset CreatedAt);
@@ -41,6 +43,7 @@ public sealed record BarcodeLabelDto(
     string? ColorName,
     int? PieceCount,
     decimal? Weight,
+    decimal? Length,
     string? ShiftName,
     DateOnly ProductionDate,
     DateTimeOffset CreatedAt);

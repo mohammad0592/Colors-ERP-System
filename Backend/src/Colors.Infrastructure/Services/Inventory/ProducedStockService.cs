@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Inventory;
 using Colors.Domain.Common;
 using Colors.Domain.Enums;
@@ -161,6 +161,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 // is not a thing anybody in the factory knows (specification section 8).
                 $"Shift {r.Batch.ShiftLine.ShiftReport.Shift.Name}",
                 r.TestReport?.Weight,
+                r.TestReport?.Length,
                 null,
                 r.ProductionDate,
                 r.ProducedAt))
@@ -206,6 +207,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                     ? $"Pallet {pallet} · from roll {b.ThermoProduction.Roll.RollCode}"
                     : $"From roll {b.ThermoProduction.Roll.RollCode}",
                 b.Weight,
+                null,
                 b.PieceCount,
                 b.ThermoProduction.ShiftLine.ShiftReport.ProductionDate,
                 b.CreatedAt))
@@ -244,6 +246,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                     p.Status is PalletStatus.Empty or PalletStatus.Opened,
                     $"{live.Count} bag{(live.Count == 1 ? "" : "s")} · {p.ShiftLine.ProductionLine.Name}",
                     live.Sum(a => a.ProducedBag.Weight),
+                    null,
                     live.Sum(a => a.ProducedBag.PieceCount),
                     p.ShiftLine.ShiftReport.ProductionDate,
                     p.CreatedAt);
@@ -278,6 +281,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 roll.Color.Name,
                 null,
                 roll.TestReport?.Weight,
+                roll.TestReport?.Length,
                 roll.Batch.ShiftLine.ShiftReport.Shift.Name,
                 roll.ProductionDate,
                 roll.ProducedAt));
@@ -315,6 +319,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             bag.Color.Name,
             bag.PieceCount,
             bag.Weight,
+            null,
             // The thermo shift, which is not the shift inside the roll code — the two
             // are genuinely different, which is why the run is its own record.
             bag.ThermoProduction.ShiftLine.ShiftReport.Shift.Name,
@@ -352,6 +357,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             pallet.Color?.Name,
             live.Sum(a => a.ProducedBag.PieceCount),
             live.Sum(a => a.ProducedBag.Weight),
+            null,
             pallet.ShiftLine.ShiftReport.Shift.Name,
             pallet.ShiftLine.ShiftReport.ProductionDate,
             pallet.CreatedAt));

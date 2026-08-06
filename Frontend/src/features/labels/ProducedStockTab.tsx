@@ -105,6 +105,7 @@ export function ProducedStockTab(): ReactElement {
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Where</th>
                 <th className="px-4 py-3 text-right font-semibold">Weight</th>
+                <th className="px-4 py-3 text-right font-semibold">Length</th>
                 <th className="px-4 py-3 text-right font-semibold">Pieces</th>
                 <th className="px-4 py-3 font-semibold">Made</th>
                 <th className="px-4 py-3" />
@@ -113,7 +114,7 @@ export function ProducedStockTab(): ReactElement {
             <tbody>
               {items.data.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-8 text-center text-ink-muted">
+                  <td colSpan={11} className="px-4 py-8 text-center text-ink-muted">
                     {search === '' && status === ''
                       ? 'Nothing has been made yet.'
                       : 'Nothing matches. Try a shorter search, or clear the status.'}
@@ -146,6 +147,9 @@ export function ProducedStockTab(): ReactElement {
                   <td className="px-4 py-3 text-ink-soft">{item.whereabouts}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                     {item.weight ?? '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                    {item.length ?? '—'}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                     {item.pieceCount?.toLocaleString('en-GB') ?? '—'}

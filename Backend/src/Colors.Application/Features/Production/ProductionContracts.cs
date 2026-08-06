@@ -36,7 +36,10 @@ public sealed record RollSummaryDto(
     bool NeedsTest,
     string ProducedByName,
     DateTimeOffset ProducedAt,
+    // All three come from the roll's measurements, so all three are null until it has
+    // been measured.
     decimal? Weight,
+    decimal? Length,
     decimal? AverageThickness);
 
 public sealed record RollTestReportDto(

@@ -106,7 +106,8 @@ public class ThermoService(
                 r.RecipeVersion.Family.Name,
                 r.RecipeVersion.Family.IsAbsorbent,
                 r.ProductionDate,
-                r.TestReport?.Weight))
+                r.TestReport?.Weight,
+                r.TestReport?.Length))
             .ToList();
     }
 

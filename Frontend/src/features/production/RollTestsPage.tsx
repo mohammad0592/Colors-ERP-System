@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
@@ -80,11 +80,11 @@ export function RollTestsPage(): ReactElement {
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Roll code</th>
-              <th className="px-4 py-3 font-semibold">Batch</th>
               <th className="px-4 py-3 font-semibold">Recipe</th>
               <th className="px-4 py-3 font-semibold">Colour</th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 text-right font-semibold">Weight</th>
+              <th className="px-4 py-3 text-right font-semibold">Length</th>
               <th className="px-4 py-3 text-right font-semibold">Avg thickness</th>
               <th className="px-4 py-3" />
             </tr>
@@ -107,7 +107,6 @@ export function RollTestsPage(): ReactElement {
                     {formatDate(roll.productionDate)}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-ink-soft">{roll.batchNumber}</td>
                 <td className="px-4 py-3 text-ink-soft">
                   {roll.recipeNumber}
                   <span className="ml-2 text-xs text-ink-muted">
@@ -120,6 +119,9 @@ export function RollTestsPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                   {roll.weight ?? '—'}
+                </td>
+                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  {roll.length ?? '—'}
                 </td>
                 <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                   {roll.averageThickness ?? '—'}

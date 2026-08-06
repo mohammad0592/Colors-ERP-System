@@ -1,4 +1,4 @@
-import { apiRequest } from '../../lib/apiClient';
+﻿import { apiRequest } from '../../lib/apiClient';
 
 /**
  * Line 2 — thermoforming, mirroring Colors.Application.Features.Thermo.
@@ -101,6 +101,7 @@ export interface AvailableRollDto {
   isAbsorbent: boolean;
   productionDate: string;
   weight: number | null;
+  length: number | null;
 }
 
 export const thermoApi = {

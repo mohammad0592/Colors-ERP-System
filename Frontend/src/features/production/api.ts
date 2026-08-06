@@ -62,10 +62,12 @@ export interface RollSummaryDto {
   producedByName: string;
   producedAt: string;
   weight: number | null;
+  length: number | null;
   averageThickness: number | null;
 }
 
-export interface RollDto extends Omit<RollSummaryDto, 'weight' | 'averageThickness'> {
+export interface RollDto
+  extends Omit<RollSummaryDto, 'weight' | 'length' | 'averageThickness'> {
   notes: string | null;
   testReport: RollTestReportDto | null;
 }
