@@ -67,7 +67,7 @@ public sealed record PalletDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? CompletedAt,
     DateTimeOffset? ShippedAt,
-    // Set only on a pallet given up on. Its wooden pallet went back to the store.
+    // Set only on a cancelled pallet. Its wooden pallet went back to the store.
     DateTimeOffset? CancelledAt,
     string? CancelledByName,
     string? CancellationReason,
@@ -105,9 +105,9 @@ public sealed record ScanBagRequest(string? BagBarcode, int? ProducedBagId);
 public sealed record ReverseAssignmentRequest(string Reason);
 
 /// <summary>
-/// Gives up on a pallet started by mistake and sends its wooden pallet back to the
-/// store. Only an empty one, and the reason is required for the same reason a reversal
-/// needs one.
+/// Cancels a pallet started by mistake and sends its wooden pallet back to the store.
+/// Only an empty one, and the reason is required for the same reason a reversal needs
+/// one.
 /// </summary>
 public sealed record CancelPalletRequest(string Reason);
 

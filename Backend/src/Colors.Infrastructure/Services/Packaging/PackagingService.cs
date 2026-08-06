@@ -254,8 +254,8 @@ public class PackagingService(
             .ToListAsync(cancellationToken);
 
         // Shown so the operator can see the shift's shape, not deducted here: the wood
-        // left the store when each pallet was started. A pallet given up on does not
-        // count, because its wood went back.
+        // left the store when each pallet was started. A cancelled pallet does not count,
+        // because its wood went back.
         var pallets = await db.WoodenPallets
             .CountAsync(
                 p => p.ShiftLineId == shiftLineId && p.CancelledAt == null, cancellationToken);

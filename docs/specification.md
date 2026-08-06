@@ -1054,14 +1054,14 @@ On 2 July: one green roll made 14 bags; four yellow rolls made 12 + 9 + 12 + 14 
 **Neither is the status.** The five states are read off what is already true:
 
 ```
-CancelledAt set      →  Given up
+CancelledAt set      →  Cancelled
 ShippedAt set        →  Shipped
 CompletedAt set      →  Completed
 at least one bag     →  Opened
 none of the above    →  Empty
 ```
 
-Shipping, completing and giving up are *events*, so they are dates. Empty and Opened are not events at all — they are just "does this pallet have bags on it", which the assignments already answer. A stored status would be a second copy of that, free to drift: a pallet reading `Opened` while holding nothing, with no way to say which of the two is right. This is the [calculated or stored](#calculated-or-stored) rule: the count is not master data and cannot be edited behind the pallet's back, so it is worked out.
+Shipping, completing and cancelling are *events*, so they are dates. Empty and Opened are not events at all — they are just "does this pallet have bags on it", which the assignments already answer. A stored status would be a second copy of that, free to drift: a pallet reading `Opened` while holding nothing, with no way to say which of the two is right. This is the [calculated or stored](#calculated-or-stored) rule: the count is not master data and cannot be edited behind the pallet's back, so it is worked out.
 
 ### A pallet needs a pallet
 
@@ -1075,22 +1075,24 @@ Two things fall out of it, and both are the point:
 
 **Nothing about pallets is counted at shift end.** Wooden pallets are *not* one of the materials worked out from production on the packaging record — they never appear on that form at all. The old rule deducted one per pallet **completed**, at shift close, and it left a hole: a pallet started in one shift and still half-built when that shift ended was counted by nobody. Its own shift had passed, and the next shift only counts its own pallets. Under this rule there is no completion to wait for and no shift boundary to fall through.
 
-### Giving up on a pallet
+### Cancelling a pallet
 
-A pallet started by mistake — wrong line, wrong moment — can be **given up on**, and its wooden pallet goes back to the store.
+A pallet started by mistake — wrong line, wrong moment — can be **cancelled**, and its wooden pallet goes back to the store.
 
-**Only while it is empty.** Once a bag is on it the wood is under the bags and the pallet is real; the way back is to take the bags off, one reversal at a time, and then give it up.
+**Only while it is empty.** Once a bag is on it the wood is under the bags and the pallet is real; the way back is to take the bags off, one reversal at a time, and then cancel it.
 
-A reason is required, exactly as a reversal needs one. The pallet is never deleted: it keeps its number, its barcode and its place in the record, with `CancelledAt`, who gave up on it, and why. Its status reads **Given up**, it takes no more bags, and it is not counted among the shift's pallets.
+A reason is required, exactly as a reversal needs one. The pallet is never deleted: it keeps its number, its barcode and its place in the record, with `CancelledAt`, who cancelled it, and why. Its status reads **Cancelled**, it takes no more bags, and it is not counted among the shift's pallets.
 
 **`WoodenPallets`** gains — CancelledAt · CancelledByUserId (FK) · CancellationReason
 
 ```
 Started      →  1 wooden pallet OUT of the store   (Packaging Consumption)
-Given up     →  1 wooden pallet BACK to the store  (Return)
+Cancelled    →  1 wooden pallet BACK to the store  (Return)
 Completed    →  nothing moves; the wood went out at the start
 Shift close  →  nothing moves either
 ```
+
+**The number is a name, not a count.** A cancelled pallet keeps its number and it is never given to another pallet — two pallets sharing a number would mean one barcode naming two things. So the numbering has gaps, and that is correct. Nothing counts pallets by reading the highest number: every real count filters cancelled ones out, and the store is right on its own because the wood went back.
 
 ### The rule the factory gave
 

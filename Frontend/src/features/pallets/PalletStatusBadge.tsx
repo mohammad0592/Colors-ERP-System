@@ -10,7 +10,7 @@ const tones: Record<PalletStatus, { label: string; className: string }> = {
   Opened: { label: 'Building', className: 'bg-brand-50 text-brand-700' },
   Completed: { label: 'Full', className: 'bg-ok-soft text-ok' },
   Shipped: { label: 'Shipped', className: 'bg-canvas text-ink-soft' },
-  Cancelled: { label: 'Given up', className: 'bg-bad-soft text-bad' },
+  Cancelled: { label: 'Cancelled', className: 'bg-bad-soft text-bad' },
 };
 
 export function PalletStatusBadge({ status }: { status: PalletStatus }): ReactElement {

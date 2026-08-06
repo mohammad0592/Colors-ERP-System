@@ -564,7 +564,7 @@ public class PalletTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task Giving_up_on_an_empty_pallet_sends_its_wood_back()
+    public async Task Cancelling_an_empty_pallet_sends_its_wood_back()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PAL22");
@@ -587,7 +587,7 @@ public class PalletTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task A_pallet_with_bags_on_it_cannot_be_given_up_on()
+    public async Task A_pallet_with_bags_on_it_cannot_be_cancelled()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PAL23");
@@ -610,7 +610,7 @@ public class PalletTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task Giving_up_needs_a_reason_and_only_happens_once()
+    public async Task Cancelling_needs_a_reason_and_only_happens_once()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PAL24");
@@ -636,7 +636,7 @@ public class PalletTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task A_bag_cannot_go_on_a_pallet_that_was_given_up_on()
+    public async Task A_bag_cannot_go_on_a_cancelled_pallet()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PAL25");
@@ -651,7 +651,7 @@ public class PalletTests(DatabaseFixture fixture)
             pallet.Id, new ScanBagRequest(bags[0].Barcode, null), ids.UserId);
 
         Assert.False(scanned.IsSuccess);
-        Assert.Contains("given up on", scanned.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("was cancelled", scanned.Message!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

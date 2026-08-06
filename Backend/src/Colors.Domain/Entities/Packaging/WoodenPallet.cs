@@ -53,7 +53,7 @@ public class WoodenPallet
     public DateTimeOffset? ShippedAt { get; set; }
 
     /// <summary>
-    /// Set when a pallet started by mistake is given up on. Only ever on an empty one:
+    /// Set when a pallet started by mistake is cancelled. Only ever on an empty one:
     /// once a bag is on it the wood is under the bags and the pallet is real.
     /// </summary>
     public DateTimeOffset? CancelledAt { get; set; }

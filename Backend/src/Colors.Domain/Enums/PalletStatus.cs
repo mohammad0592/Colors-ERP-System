@@ -20,7 +20,7 @@ public enum PalletStatus
     Shipped = 4,
 
     /// <summary>
-    /// Started by mistake and given up on. Its wooden pallet went back to the store,
+    /// Started by mistake and cancelled. Its wooden pallet went back to the store,
     /// because a pallet that never held a bag used no wood.
     /// </summary>
     Cancelled = 5,

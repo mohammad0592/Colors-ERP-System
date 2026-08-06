@@ -201,7 +201,7 @@ public class PalletService(
         var reason = Trimmed(request.Reason);
         if (reason is null)
         {
-            return Invalid("Say why the pallet is being given up on.");
+            return Invalid("Say why the pallet is being cancelled.");
         }
 
         var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
@@ -212,7 +212,7 @@ public class PalletService(
 
         if (pallet.CancelledAt is not null)
         {
-            return Invalid($"Pallet {pallet.PalletNumber} has already been given up on.");
+            return Invalid($"Pallet {pallet.PalletNumber} has already been cancelled.");
         }
 
         if (pallet.ShippedAt is not null || pallet.CompletedAt is not null)
@@ -228,7 +228,7 @@ public class PalletService(
         {
             return Invalid(
                 $"Pallet {pallet.PalletNumber} has bags on it. Take them off before "
-                + "giving it up.");
+                + "cancelling it.");
         }
 
         var shiftLine = await db.ShiftLines
@@ -258,7 +258,7 @@ public class PalletService(
                 MovementTypeNames.Return,
                 1m,
                 userId,
-                $"Pallet {pallet.PalletNumber} given up on: {reason}",
+                $"Pallet {pallet.PalletNumber} cancelled: {reason}",
                 null,
                 shiftLine.ShiftReportId,
                 cancellationToken);
@@ -299,8 +299,8 @@ public class PalletService(
         if (pallet.CancelledAt is not null)
         {
             return Invalid(
-                $"Pallet {pallet.PalletNumber} was given up on and its wood went back to "
-                + "the store. Start a new one.");
+                $"Pallet {pallet.PalletNumber} was cancelled and its wooden pallet went "
+                + "back to the store. Start a new one.");
         }
 
         if (pallet.ShippedAt is not null)

@@ -9,7 +9,7 @@ import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { palletsApi } from './api';
-import { GiveUpPalletDialog } from './GiveUpPalletDialog';
+import { CancelPalletDialog } from './CancelPalletDialog';
 import { PalletCard } from './PalletCard';
 import { PalletScanBox } from './PalletScanBox';
 import { PalletStatusBadge } from './PalletStatusBadge';
@@ -34,7 +34,7 @@ export function PalletsPage(): ReactElement {
   const [openOnly, setOpenOnly] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [reversing, setReversing] = useState<{ id: number; barcode: string } | null>(null);
-  const [givingUp, setGivingUp] = useState<{ id: number; number: number } | null>(null);
+  const [cancelling, setCancelling] = useState<{ id: number; number: number } | null>(null);
   const [labelFor, setLabelFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -77,7 +77,7 @@ export function PalletsPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: ['pallet'] });
     void queryClient.invalidateQueries({ queryKey: ['available-bags'] });
 
-    // Starting a pallet takes a wooden pallet out of the store and giving it up puts it
+    // Starting a pallet takes a wooden pallet out of the store and cancelling puts it
     // back, so the store's figure is now wrong until it is asked again. Without this the
     // inventory screen serves its cached number and the movement seems not to have
     // happened (specification section 10).
@@ -213,17 +213,17 @@ export function PalletsPage(): ReactElement {
                     type="button"
                     className="text-sm font-medium text-ink-soft hover:text-bad hover:underline"
                     onClick={() => {
-                      setGivingUp({ id: open.id, number: open.palletNumber });
+                      setCancelling({ id: open.id, number: open.palletNumber });
                     }}
                   >
-                    Give it up
+                    Cancel this pallet
                   </button>
                 )}
               </div>
 
               {open.cancelledAt !== null && (
                 <p className="mb-5 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-                  Given up on by {open.cancelledByName} — {open.cancellationReason}. Its
+                  Cancelled by {open.cancelledByName} — {open.cancellationReason}. Its
                   wooden pallet went back to the store.
                 </p>
               )}
@@ -351,14 +351,14 @@ export function PalletsPage(): ReactElement {
         />
       )}
 
-      {givingUp !== null && (
-        <GiveUpPalletDialog
-          palletId={givingUp.id}
-          palletNumber={givingUp.number}
+      {cancelling !== null && (
+        <CancelPalletDialog
+          palletId={cancelling.id}
+          palletNumber={cancelling.number}
           onClose={() => {
-            setGivingUp(null);
+            setCancelling(null);
           }}
-          onGivenUp={invalidate}
+          onCancelled={invalidate}
         />
       )}
 

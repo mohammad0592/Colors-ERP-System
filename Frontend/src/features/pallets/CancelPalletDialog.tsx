@@ -3,26 +3,26 @@ import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { palletsApi, type PalletDto } from './api';
 
-interface GiveUpPalletDialogProps {
+interface CancelPalletDialogProps {
   palletId: number;
   palletNumber: number;
   onClose: () => void;
-  onGivenUp: (pallet: PalletDto) => void;
+  onCancelled: (pallet: PalletDto) => void;
 }
 
 /**
- * Giving up on a pallet started by mistake (specification section 10).
+ * Cancelling a pallet started by mistake (specification section 10).
  *
- * The wooden pallet went out of the store the moment this one was started, so giving up
+ * The wooden pallet came out of the store the moment this one was started, so cancelling
  * puts it back. Only ever offered on an empty pallet — once a bag is on it the wood is
  * under the bags, and taking the bags off is the way back.
  */
-export function GiveUpPalletDialog({
+export function CancelPalletDialog({
   palletId,
   palletNumber,
   onClose,
-  onGivenUp,
-}: GiveUpPalletDialogProps): ReactElement {
+  onCancelled,
+}: CancelPalletDialogProps): ReactElement {
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -32,7 +32,7 @@ export function GiveUpPalletDialog({
     setIsSaving(true);
     try {
       const pallet = await palletsApi.cancel(palletId, reason.trim());
-      onGivenUp(pallet);
+      onCancelled(pallet);
       onClose();
     } catch (caught) {
       setError(
@@ -44,7 +44,7 @@ export function GiveUpPalletDialog({
   }
 
   return (
-    <Modal title={`Give up on pallet ${String(palletNumber)}`} onClose={onClose}>
+    <Modal title={`Cancel pallet ${String(palletNumber)}`} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -53,11 +53,11 @@ export function GiveUpPalletDialog({
         noValidate
       >
         <div className="mb-4">
-          <label className="field-label" htmlFor="give-up-reason">
-            Why is it being given up on?
+          <label className="field-label" htmlFor="cancel-reason">
+            Why is it being cancelled?
           </label>
           <input
-            id="give-up-reason"
+            id="cancel-reason"
             className="field-input"
             maxLength={300}
             placeholder="Started on the wrong line"
@@ -83,7 +83,7 @@ export function GiveUpPalletDialog({
           className="btn-primary"
           disabled={isSaving || reason.trim() === ''}
         >
-          {isSaving ? 'Saving…' : 'Give it up'}
+          {isSaving ? 'Saving…' : 'Cancel this pallet'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
           The wooden pallet goes back to the store and can be used for the next one. The

@@ -51,7 +51,7 @@ export interface PalletBagDto {
 
 export interface PalletDto extends PalletSummaryDto {
   shippedAt: string | null;
-  /** Set only on a pallet given up on. Its wooden pallet went back to the store. */
+  /** Set only on a cancelled pallet. Its wooden pallet went back to the store. */
   cancelledAt: string | null;
   cancelledByName: string | null;
   cancellationReason: string | null;
@@ -91,7 +91,7 @@ export const palletsApi = {
       body: { shiftLineId, notes },
     }),
 
-  /** Gives up on an empty pallet and sends its wooden pallet back to the store. */
+  /** Cancels an empty pallet and sends its wooden pallet back to the store. */
   cancel: (palletId: number, reason: string): Promise<PalletDto> =>
     apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/cancel`, {
       method: 'POST',

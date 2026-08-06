@@ -27,7 +27,7 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
                 "(\"ColorId\" IS NULL) = (\"ProductId\" IS NULL)");
 
             // Cancelling is one act with a date, a person and a reason — all three or
-            // none. And a pallet given up on was never filled, so it cannot also be
+            // none. And a cancelled pallet was never filled, so it cannot also be
             // finished or shipped.
             t.HasCheckConstraint(
                 "ck_pallets_cancelled_together",
