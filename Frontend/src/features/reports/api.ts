@@ -116,6 +116,53 @@ export interface ConsumptionReportDto {
   mixedRecipeShifts: number;
 }
 
+export interface PalletProductLineDto {
+  productId: number;
+  productName: string;
+  palletsCompleted: number;
+  bags: number;
+  pieces: number;
+  weight: number;
+  /** The product's own bags-per-pallet, for reading the bag count against. */
+  bagsPerPallet: number;
+}
+
+export interface PalletProductionReportDto {
+  from: string;
+  to: string;
+  palletsStarted: number;
+  palletsCompleted: number;
+  /** Started and given up on. Their wood went back, so they consumed nothing. */
+  palletsCancelled: number;
+  /** Started and still being filled — no product until the first bag lands. */
+  palletsStillOpen: number;
+  products: PalletProductLineDto[];
+}
+
+export interface RecycledShiftLineDto {
+  shiftReportId: number;
+  productionDate: string;
+  shiftName: string;
+  productionLineName: string;
+  produced: number;
+  recordedByName: string;
+  notes: string | null;
+}
+
+export interface RecycledMaterialReportDto {
+  from: string;
+  to: string;
+  materialName: string | null;
+  totalProduced: number;
+  /** How much the mixer took back out — the black recipes are all that consume it. */
+  totalConsumed: number;
+  /** Produced less consumed. Negative means the pile is being drawn down. */
+  difference: number;
+  /** What the store holds now, which no date range changes. */
+  inStock: number;
+  shifts: RecycledShiftLineDto[];
+}
+
 export const reportsApi = {
   materialWaste: (shiftReportId: number): Promise<MaterialWasteReportDto> =>
     apiRequest<MaterialWasteReportDto>(
@@ -134,5 +181,15 @@ export const reportsApi = {
   ): Promise<ConsumptionReportDto> =>
     apiRequest<ConsumptionReportDto>(
       `/api/reports/consumption?from=${from}&to=${to}&groupBy=${groupBy}`,
+    ),
+
+  palletProduction: (from: string, to: string): Promise<PalletProductionReportDto> =>
+    apiRequest<PalletProductionReportDto>(
+      `/api/reports/pallet-production?from=${from}&to=${to}`,
+    ),
+
+  recycledMaterial: (from: string, to: string): Promise<RecycledMaterialReportDto> =>
+    apiRequest<RecycledMaterialReportDto>(
+      `/api/reports/recycled-material?from=${from}&to=${to}`,
     ),
 };

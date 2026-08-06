@@ -147,6 +147,62 @@ public enum ConsumptionGrouping
     Recipe = 2,
 }
 
+// ---------- pallet production ----------
+
+/// <summary>One product, and the pallets of it that were finished.</summary>
+public sealed record PalletProductLineDto(
+    int ProductId,
+    string ProductName,
+    int PalletsCompleted,
+    int Bags,
+    int Pieces,
+    decimal Weight,
+    /// <summary>The product's own bags-per-pallet, for reading the bag count against.</summary>
+    int BagsPerPallet);
+
+public sealed record PalletProductionReportDto(
+    DateOnly From,
+    DateOnly To,
+    int PalletsStarted,
+    int PalletsCompleted,
+    /// <summary>Started and given up on. Their wood went back, so they consumed nothing.</summary>
+    int PalletsCancelled,
+    /// <summary>
+    /// Started, still being filled, and not yet finished. They have no product until
+    /// their first bag lands, so they cannot be counted under one — shown on their own
+    /// rather than left out silently.
+    /// </summary>
+    int PalletsStillOpen,
+    IReadOnlyList<PalletProductLineDto> Products);
+
+// ---------- recycled material ----------
+
+/// <summary>What one shift's recycler produced.</summary>
+public sealed record RecycledShiftLineDto(
+    int ShiftReportId,
+    DateOnly ProductionDate,
+    string ShiftName,
+    string ProductionLineName,
+    decimal Produced,
+    string RecordedByName,
+    string? Notes);
+
+public sealed record RecycledMaterialReportDto(
+    DateOnly From,
+    DateOnly To,
+    string? MaterialName,
+    decimal TotalProduced,
+    /// <summary>
+    /// How much of it the mixer took back out over the same days — the black recipes are
+    /// the only thing that consumes it (specification section 5).
+    /// </summary>
+    decimal TotalConsumed,
+    /// <summary>Produced less consumed. Negative means the pile is being drawn down.</summary>
+    decimal Difference,
+    /// <summary>What the store holds now, which no date range can change.</summary>
+    decimal InStock,
+    IReadOnlyList<RecycledShiftLineDto> Shifts);
+
 /// <summary>
 /// Reports (specification section 13).
 ///
@@ -184,5 +240,25 @@ public interface IReportsService
         DateOnly from,
         DateOnly to,
         ConsumptionGrouping grouping,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pallets finished over a stretch of days, by the product on them.
+    ///
+    /// A pallet takes its product from its first bag, so one still empty belongs to no
+    /// product yet and is counted on its own.
+    /// </summary>
+    Task<Result<PalletProductionReportDto>> GetPalletProductionAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Recycled material made over a stretch of days, against how much the mixer took
+    /// back out — the black recipes are the only thing that consumes it.
+    /// </summary>
+    Task<Result<RecycledMaterialReportDto>> GetRecycledMaterialAsync(
+        DateOnly from,
+        DateOnly to,
         CancellationToken cancellationToken = default);
 }

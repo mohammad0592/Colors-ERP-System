@@ -50,12 +50,46 @@ public class ReportsController(IReportsService reports) : ApiControllerBase
         [FromQuery] ConsumptionGrouping groupBy = ConsumptionGrouping.Shift,
         CancellationToken cancellationToken = default)
     {
-        // Tomorrow, not today: a night shift that starts this evening carries tomorrow's
-        // production date, and a range ending today would hide the shift now running.
-        var last = to ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
-        var first = from ?? last.AddDays(-31);
+        var (first, last) = Range(from, to);
 
         return ToResponse(
             await reports.GetConsumptionAsync(first, last, groupBy, cancellationToken));
+    }
+
+    /// <summary>Pallets finished over a stretch of days, by the product on them.</summary>
+    [HttpGet("pallet-production")]
+    public async Task<IActionResult> GetPalletProduction(
+        [FromQuery] DateOnly? from = null,
+        [FromQuery] DateOnly? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (first, last) = Range(from, to);
+
+        return ToResponse(
+            await reports.GetPalletProductionAsync(first, last, cancellationToken));
+    }
+
+    /// <summary>Recycled material made, against how much the mixer took back out.</summary>
+    [HttpGet("recycled-material")]
+    public async Task<IActionResult> GetRecycledMaterial(
+        [FromQuery] DateOnly? from = null,
+        [FromQuery] DateOnly? to = null,
+        CancellationToken cancellationToken = default)
+    {
+        var (first, last) = Range(from, to);
+
+        return ToResponse(
+            await reports.GetRecycledMaterialAsync(first, last, cancellationToken));
+    }
+
+    /// <summary>
+    /// The last month when no dates are given, ending <b>tomorrow</b>: a night shift
+    /// starting this evening carries tomorrow's production date, and a range ending today
+    /// would hide the shift that is running while the report is read.
+    /// </summary>
+    private static (DateOnly First, DateOnly Last) Range(DateOnly? from, DateOnly? to)
+    {
+        var last = to ?? DateOnly.FromDateTime(DateTime.UtcNow).AddDays(1);
+        return (from ?? last.AddDays(-31), last);
     }
 }

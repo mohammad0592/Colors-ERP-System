@@ -1,4 +1,5 @@
 ﻿using Colors.Application.Features.MaterialIssue;
+using Colors.Application.Features.Pallets;
 using Colors.Application.Features.Production;
 using Colors.Application.Features.Recycler;
 using Colors.Application.Features.Reports;
@@ -10,6 +11,7 @@ using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.Barcodes;
 using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.MaterialIssue;
+using Colors.Infrastructure.Services.Pallets;
 using Colors.Infrastructure.Services.Production;
 using Colors.Infrastructure.Services.Recycler;
 using Colors.Infrastructure.Services.Reports;
@@ -510,6 +512,138 @@ public class ReportsTests(DatabaseFixture fixture)
         // by-recipe report names its recipe, or the report is claiming a total for
         // material it cannot attribute.
         Assert.All(byRecipe.Value.Groups, g => Assert.NotNull(g.RecipeNumber));
+    }
+
+    [Fact]
+    public async Task Pallet_production_counts_finished_pallets_by_product()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "RPT12");
+        var recipe = await RecipeAsync(db, ids, "RPT12");
+
+        // 16 bags: fifteen fill a plate pallet, one is left over.
+        await FormedRollAsync(db, ids, recipe, 100m, 16, 10m);
+
+        var bags = await db.ProducedBags
+            .Where(b => b.ThermoProduction.ShiftLineId == ids.ThermoShiftLineId)
+            .OrderBy(b => b.Id)
+            .ToListAsync();
+
+        var pallets = new PalletService(
+            db,
+            new BarcodeService(db, TimeProvider.System),
+            new StockLedger(db, TimeProvider.System),
+            TimeProvider.System);
+
+        var codes = await db.Barcodes
+            .Where(b => b.ObjectType == BarcodeObjectType.Bag)
+            .ToDictionaryAsync(b => b.ObjectId, b => b.Value);
+
+        // One pallet filled to its fifteen, one started and left half-built, one given
+        // up on. Only the first should reach a product row.
+        var full = await pallets.StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+        Assert.True(full.IsSuccess, full.Message);
+
+        foreach (var bag in bags.Take(15))
+        {
+            var scanned = await pallets.ScanBagAsync(
+                full.Value!.Id, new ScanBagRequest(codes[bag.Id], null), ids.UserId);
+            Assert.True(scanned.IsSuccess, scanned.Message);
+        }
+
+        var halfBuilt = await pallets.StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+        await pallets.ScanBagAsync(
+            halfBuilt.Value!.Id, new ScanBagRequest(codes[bags[15].Id], null), ids.UserId);
+
+        var givenUp = await pallets.StartPalletAsync(
+            new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId);
+        await pallets.CancelPalletAsync(
+            givenUp.Value!.Id, new CancelPalletRequest("Started by mistake"), ids.UserId);
+
+        var day = await DayOfAsync(db, ids);
+        var report = await NewService(db).GetPalletProductionAsync(day, day);
+
+        Assert.True(report.IsSuccess, report.Message);
+        Assert.Equal(3, report.Value!.PalletsStarted);
+        Assert.Equal(1, report.Value.PalletsCompleted);
+        Assert.Equal(1, report.Value.PalletsCancelled);
+        Assert.Equal(1, report.Value.PalletsStillOpen);
+
+        // Only the finished one is under a product: a pallet still being filled could
+        // still change, and one given up on held nothing.
+        var product = Assert.Single(report.Value.Products);
+        Assert.Equal(1, product.PalletsCompleted);
+        Assert.Equal(15, product.Bags);
+        Assert.Equal(7500, product.Pieces);
+        Assert.Equal(15, product.BagsPerPallet);
+    }
+
+    [Fact]
+    public async Task Recycled_material_shows_what_was_made_against_what_was_used()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "RPT13");
+
+        // The recycled material is named by a flag, so the report can find it whatever
+        // the row is called.
+        var material = await db.Materials.FirstOrDefaultAsync(m => m.IsRecycledOutput);
+        if (material is null)
+        {
+            var category = await db.MaterialCategories.FirstAsync(c => c.IssuedOnTickets);
+            var unit = await db.Units.FirstAsync(u => u.Name == "Kilogram");
+            material = new Domain.Entities.MasterData.Material
+            {
+                Code = "RRPT13",
+                Name = "Recycled Material",
+                CategoryId = category.Id,
+                BaseUnitId = unit.Id,
+                MinQuantity = 0,
+                IsRecycledOutput = true,
+            };
+            db.Materials.Add(material);
+            await db.SaveChangesAsync();
+        }
+
+        var line = new Domain.Entities.MasterData.ProductionLine
+        {
+            Name = "Recycler RPT13",
+            Recycles = true,
+        };
+        db.ProductionLines.Add(line);
+        await db.SaveChangesAsync();
+
+        var shiftReport = await db.ShiftReports
+            .Include(r => r.Lines)
+            .FirstAsync(r => r.Id == ids.ShiftReportId);
+
+        var shiftLine = new Domain.Entities.Shifts.ShiftLine { ProductionLineId = line.Id };
+        shiftReport.Lines.Add(shiftLine);
+        await db.SaveChangesAsync();
+
+        // 200 kg made this shift.
+        await new RecyclerService(db, new StockLedger(db, TimeProvider.System), TimeProvider.System)
+            .SaveAsync(new SaveRecyclerProductionRequest(shiftLine.Id, 200m, null), ids.UserId);
+
+        // And 80 kg of it taken back out by the mixer.
+        await IssueAsync(db, ids, [(material.Id, 100m, 20m)]);
+
+        var day = await DayOfAsync(db, ids);
+        var report = await NewService(db).GetRecycledMaterialAsync(day, day);
+
+        Assert.True(report.IsSuccess, report.Message);
+        Assert.Equal(200m, report.Value!.TotalProduced);
+        Assert.Equal(80m, report.Value.TotalConsumed);
+
+        // Made more than was taken, so the pile grew by 120 over these days.
+        Assert.Equal(120m, report.Value.Difference);
+
+        var shift = Assert.Single(
+            report.Value.Shifts, s => s.ShiftReportId == ids.ShiftReportId);
+
+        Assert.Equal(200m, shift.Produced);
+        Assert.Equal("Recycler RPT13", shift.ProductionLineName);
     }
 
     [Fact]

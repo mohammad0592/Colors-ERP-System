@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { reportsApi } from './api';
+import type { DateRange } from './dateRange';
 
 /**
  * Consumption by shift and by recipe (specification section 13).
@@ -9,24 +10,8 @@ import { reportsApi } from './api';
  * so a recipe's usage is its shifts added together — which is why a shift that switched
  * recipe cannot be attributed to either, and is counted separately instead of guessed at.
  */
-/**
- * A date this many days from now, as the yyyy-mm-dd a date input wants.
- *
- * The range ends <b>tomorrow</b> rather than today: a night shift starting this evening
- * carries tomorrow's production date, so a range ending today would hide the shift that
- * is running while the report is read.
- */
-function dayFromNow(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-}
-
-export function ConsumptionReport(): ReactElement {
-  // Read once, when the screen opens, rather than on every render — the clock is not a
-  // pure value and the range must not shift under the reader.
-  const [from, setFrom] = useState(() => dayFromNow(-30));
-  const [to, setTo] = useState(() => dayFromNow(1));
+export function ConsumptionReport({ range }: { range: DateRange }): ReactElement {
+  const { from, to } = range;
   const [groupBy, setGroupBy] = useState<'Shift' | 'Recipe'>('Shift');
   const [open, setOpen] = useState<string | null>(null);
 
@@ -37,51 +22,21 @@ export function ConsumptionReport(): ReactElement {
 
   return (
     <>
-      <section className="card mb-4 flex flex-wrap items-end gap-4 p-4">
-        <div>
-          <label className="field-label" htmlFor="consumption-from">
-            From
-          </label>
-          <input
-            id="consumption-from"
-            type="date"
-            className="field-input"
-            value={from}
-            onChange={(event) => {
-              setFrom(event.target.value);
-            }}
-          />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="consumption-to">
-            To
-          </label>
-          <input
-            id="consumption-to"
-            type="date"
-            className="field-input"
-            value={to}
-            onChange={(event) => {
-              setTo(event.target.value);
-            }}
-          />
-        </div>
-        <div>
-          <label className="field-label" htmlFor="consumption-group">
-            Grouped by
-          </label>
-          <select
-            id="consumption-group"
-            className="field-input"
-            value={groupBy}
-            onChange={(event) => {
-              setGroupBy(event.target.value === 'Recipe' ? 'Recipe' : 'Shift');
-            }}
-          >
-            <option value="Shift">Shift</option>
-            <option value="Recipe">Recipe</option>
-          </select>
-        </div>
+      <section className="card mb-4 p-4">
+        <label className="field-label" htmlFor="consumption-group">
+          Grouped by
+        </label>
+        <select
+          id="consumption-group"
+          className="field-input max-w-xs"
+          value={groupBy}
+          onChange={(event) => {
+            setGroupBy(event.target.value === 'Recipe' ? 'Recipe' : 'Shift');
+          }}
+        >
+          <option value="Shift">Shift</option>
+          <option value="Recipe">Recipe</option>
+        </select>
       </section>
 
       {report.isPending && <p className="p-6 text-ink-muted">Loading…</p>}

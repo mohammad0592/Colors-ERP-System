@@ -323,6 +323,142 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 .ToList();
     }
 
+    public async Task<Result<PalletProductionReportDto>> GetPalletProductionAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default)
+    {
+        if (to < from)
+        {
+            return Result<PalletProductionReportDto>.Failure(
+                ErrorCode.ValidationFailed, "The last day cannot be before the first.");
+        }
+
+        // A pallet belongs to the shift it was started on, which is where its wood came
+        // from (specification section 10).
+        var pallets = await db.WoodenPallets
+            .Where(p => p.ShiftLine.ShiftReport.ProductionDate >= from
+                        && p.ShiftLine.ShiftReport.ProductionDate <= to)
+            .Select(p => new
+            {
+                p.Id,
+                p.ProductId,
+                ProductName = p.Product == null ? null : p.Product.Name,
+                BagsPerPallet = p.Product == null ? 0 : p.Product.BagsPerPallet,
+                Completed = p.CompletedAt != null,
+                Cancelled = p.CancelledAt != null,
+                Bags = p.Assignments.Count(a => a.ReversedAt == null),
+                Pieces = p.Assignments
+                    .Where(a => a.ReversedAt == null)
+                    .Sum(a => (int?)a.ProducedBag.PieceCount) ?? 0,
+                Weight = p.Assignments
+                    .Where(a => a.ReversedAt == null)
+                    .Sum(a => (decimal?)a.ProducedBag.Weight) ?? 0m,
+            })
+            .ToListAsync(cancellationToken);
+
+        // Only finished pallets are counted under a product. A pallet still being filled
+        // could still change what it holds, and one given up on held nothing at all.
+        var products = pallets
+            .Where(p => p.Completed && !p.Cancelled && p.ProductId is not null)
+            .GroupBy(p => new { p.ProductId, p.ProductName, p.BagsPerPallet })
+            .Select(g => new PalletProductLineDto(
+                g.Key.ProductId!.Value,
+                g.Key.ProductName!,
+                g.Count(),
+                g.Sum(p => p.Bags),
+                g.Sum(p => p.Pieces),
+                Math.Round(g.Sum(p => p.Weight), 3),
+                g.Key.BagsPerPallet))
+            .OrderByDescending(p => p.PalletsCompleted)
+            .ThenBy(p => p.ProductName)
+            .ToList();
+
+        return Result<PalletProductionReportDto>.Success(new PalletProductionReportDto(
+            from,
+            to,
+            pallets.Count,
+            pallets.Count(p => p.Completed && !p.Cancelled),
+            pallets.Count(p => p.Cancelled),
+            pallets.Count(p => !p.Completed && !p.Cancelled),
+            products));
+    }
+
+    public async Task<Result<RecycledMaterialReportDto>> GetRecycledMaterialAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default)
+    {
+        if (to < from)
+        {
+            return Result<RecycledMaterialReportDto>.Failure(
+                ErrorCode.ValidationFailed, "The last day cannot be before the first.");
+        }
+
+        // Which material the recycler makes is a flag on the row, never its name
+        // (specification section 11).
+        var material = await db.Materials
+            .Where(m => m.IsRecycledOutput)
+            .Select(m => new { m.Id, m.Name })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        var made = await db.RecyclerProductions
+            .Where(r => r.ShiftLine.ShiftReport.ProductionDate >= from
+                        && r.ShiftLine.ShiftReport.ProductionDate <= to)
+            .OrderByDescending(r => r.ShiftLine.ShiftReport.ProductionDate)
+            .Select(r => new
+            {
+                r.ShiftLine.ShiftReportId,
+                r.ShiftLine.ShiftReport.ProductionDate,
+                ShiftName = r.ShiftLine.ShiftReport.Shift.Name,
+                LineName = r.ShiftLine.ProductionLine.Name,
+                r.RecycledMaterialWeight,
+                r.RecordedByUserId,
+                r.Notes,
+            })
+            .ToListAsync(cancellationToken);
+
+        var names = await UserNamesAsync(made.Select(m => m.RecordedByUserId), cancellationToken);
+
+        // The other half of the question: how much the mixer took back out. Only the
+        // black recipes use it, so this is what the pile is for.
+        var consumed = material is null
+            ? 0m
+            : await db.MaterialIssueTickets
+                .Where(t => t.ShiftLine.ShiftReport.ProductionDate >= from
+                            && t.ShiftLine.ShiftReport.ProductionDate <= to)
+                .SelectMany(t => t.Lines)
+                .Where(l => l.MaterialId == material.Id)
+                .SumAsync(l => (decimal?)(l.IssuedQuantity - l.ReturnedQuantity), cancellationToken)
+                ?? 0m;
+
+        var inStock = material is null
+            ? 0m
+            : await db.MaterialInventory
+                .Where(i => i.MaterialId == material.Id)
+                .Select(i => i.CurrentQuantity)
+                .FirstOrDefaultAsync(cancellationToken);
+
+        var produced = made.Sum(m => m.RecycledMaterialWeight);
+
+        return Result<RecycledMaterialReportDto>.Success(new RecycledMaterialReportDto(
+            from,
+            to,
+            material?.Name,
+            produced,
+            consumed,
+            Math.Round(produced - consumed, 3),
+            inStock,
+            made.Select(m => new RecycledShiftLineDto(
+                m.ShiftReportId,
+                m.ProductionDate,
+                m.ShiftName,
+                m.LineName,
+                m.RecycledMaterialWeight,
+                names.GetValueOrDefault(m.RecordedByUserId, "—"),
+                m.Notes)).ToList()));
+    }
+
     public async Task<Result<ShiftSummaryReportDto>> GetShiftSummaryAsync(
         int shiftReportId,
         CancellationToken cancellationToken = default)
@@ -431,6 +567,21 @@ public class ReportsService(ColorsDbContext db) : IReportsService
             pallets.Count(c => c is not null),
             recycled,
             products));
+    }
+
+    private async Task<Dictionary<int, string>> UserNamesAsync(
+        IEnumerable<int> ids,
+        CancellationToken cancellationToken)
+    {
+        var wanted = ids.Distinct().ToList();
+        if (wanted.Count == 0)
+        {
+            return [];
+        }
+
+        return await db.Set<ApplicationUser>()
+            .Where(u => wanted.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName, cancellationToken);
     }
 
     /// <summary>
