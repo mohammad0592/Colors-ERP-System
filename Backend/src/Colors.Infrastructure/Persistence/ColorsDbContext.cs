@@ -66,6 +66,9 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<PackagingConsumptionLine> PackagingConsumptionLines =>
         Set<PackagingConsumptionLine>();
 
+    // The recycler — specification section 11.
+    public DbSet<RecyclerProduction> RecyclerProductions => Set<RecyclerProduction>();
+
     // Barcodes — specification section 12. One table for rolls, bags and pallets.
     public DbSet<Barcode> Barcodes => Set<Barcode>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();

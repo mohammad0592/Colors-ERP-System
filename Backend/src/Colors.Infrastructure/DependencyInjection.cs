@@ -5,6 +5,7 @@ using Colors.Application.Features.MaterialIssue;
 using Colors.Application.Features.Production;
 using Colors.Application.Features.MasterData;
 using Colors.Application.Features.Packaging;
+using Colors.Application.Features.Recycler;
 using Colors.Application.Features.Pallets;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
@@ -20,6 +21,7 @@ using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.MaterialIssue;
 using Colors.Infrastructure.Services.Production;
 using Colors.Infrastructure.Services.Packaging;
+using Colors.Infrastructure.Services.Recycler;
 using Colors.Infrastructure.Services.Pallets;
 using Colors.Infrastructure.Services.People;
 using Colors.Infrastructure.Services.Recipes;
@@ -136,6 +138,9 @@ public static class DependencyInjection
         // Pallets and packaging (specification section 10).
         services.AddScoped<IPalletService, PalletService>();
         services.AddScoped<IPackagingService, PackagingService>();
+
+        // Line 3, the recycler (specification section 11).
+        services.AddScoped<IRecyclerService, RecyclerService>();
 
         // Rolls, bags and pallets as stock, and the labels that go on them
         // (specification sections 8 to 12).

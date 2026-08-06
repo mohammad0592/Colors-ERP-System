@@ -734,6 +734,7 @@ public class ShiftReportService(
                     line.ProductionLine.MakesRolls,
                     line.ProductionLine.FormsBags,
                     line.ProductionLine.TakesRawMaterial,
+                    line.ProductionLine.Recycles,
                     line.MouldId,
                     line.Mould?.Name,
                     Format(line.ProductionStartTime),

@@ -9,13 +9,6 @@ import { ComingSoon } from '../components/ui/ComingSoon';
  */
 const planned: { path: string; title: string; phase: string; description: string }[] = [
   {
-    path: '/production/recycler',
-    title: 'Recycler',
-    phase: 'Phase 12',
-    description:
-      'Scrap weighed in, recycled material weighed out, and the result added back to the store.',
-  },
-  {
     path: '/reports',
     title: 'Reports',
     phase: 'Phase 13',

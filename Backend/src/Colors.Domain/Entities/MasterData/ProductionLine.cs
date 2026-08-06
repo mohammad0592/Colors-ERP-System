@@ -35,4 +35,11 @@ public class ProductionLine : MasterEntity
 
     /// <summary>True for the extruder: only this line appears on a material issue ticket.</summary>
     public bool TakesRawMaterial { get; set; }
+
+    /// <summary>
+    /// True for the recycler: scrap weighed in and recycled material weighed out are
+    /// recorded against this line, and its output goes back into the store
+    /// (specification section 11).
+    /// </summary>
+    public bool Recycles { get; set; }
 }

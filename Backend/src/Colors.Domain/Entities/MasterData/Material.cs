@@ -44,6 +44,16 @@ public class Material : MasterEntity
     /// </summary>
     public CountedPackaging CountedAs { get; set; }
 
+    /// <summary>
+    /// True for the one material the recycler makes (specification section 11).
+    ///
+    /// Only one row may carry it — a partial unique index sees to that — because the
+    /// recycler adds its output to exactly one pile. A flag rather than a search for a
+    /// material named "Recycled Material": renaming that row would send a shift's output
+    /// nowhere, with no error to notice.
+    /// </summary>
+    public bool IsRecycledOutput { get; set; }
+
     /// <summary>Reserved for a future version; v1 barcodes rolls, bags and pallets only.</summary>
     public bool BarcodeTracked { get; set; }
 

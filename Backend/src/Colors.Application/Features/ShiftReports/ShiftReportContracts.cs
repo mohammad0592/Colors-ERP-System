@@ -38,6 +38,7 @@ public sealed record ShiftLineDto(
     bool MakesRolls,
     bool FormsBags,
     bool TakesRawMaterial,
+    bool Recycles,
     // Which template is bolted in this shift. Everything formed on the line inherits
     // it, so it is chosen once rather than per roll.
     int? MouldId,

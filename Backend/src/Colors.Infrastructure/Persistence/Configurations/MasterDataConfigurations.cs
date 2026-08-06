@@ -138,6 +138,13 @@ public class MaterialConfiguration : IEntityTypeConfiguration<Material>
             .HasFilter("\"CountedAs\" <> 'None'")
             .HasDatabaseName("ux_materials_counted_as");
 
+        // And only one can be what the recycler makes, for the same reason: its output
+        // goes into exactly one pile (specification section 11).
+        builder.HasIndex(e => e.IsRecycledOutput)
+            .IsUnique()
+            .HasFilter("\"IsRecycledOutput\"")
+            .HasDatabaseName("ux_materials_recycled_output");
+
         builder.HasOne(e => e.Category)
             .WithMany()
             .HasForeignKey(e => e.CategoryId)

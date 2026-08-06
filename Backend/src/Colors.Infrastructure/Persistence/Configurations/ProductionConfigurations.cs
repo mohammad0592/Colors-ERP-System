@@ -236,3 +236,42 @@ public class ProducedBagConfiguration : IEntityTypeConfiguration<ProducedBag>
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class RecyclerProductionConfiguration : IEntityTypeConfiguration<RecyclerProduction>
+{
+    public void Configure(EntityTypeBuilder<RecyclerProduction> builder)
+    {
+        builder.ToTable("RecyclerProductions", t =>
+        {
+            // Neither weight can be negative, and a record where nothing was weighed at
+            // all is not a record of anything (specification section 11).
+            t.HasCheckConstraint(
+                "ck_recycler_weights",
+                "\"ScrapWeight\" >= 0 AND \"RecycledMaterialWeight\" >= 0 "
+                + "AND (\"ScrapWeight\" > 0 OR \"RecycledMaterialWeight\" > 0)");
+        });
+
+        builder.Property(e => e.ScrapWeight).HasPrecision(18, 3);
+        builder.Property(e => e.RecycledMaterialWeight).HasPrecision(18, 3);
+        builder.Property(e => e.Notes).HasMaxLength(500);
+
+        // Worked out from the two weights on the row.
+        builder.Ignore(e => e.LossPercentage);
+
+        // Once per line of the shift. A second record would add the same recycled
+        // material to the store twice, and no reader could say which was meant.
+        builder.HasIndex(e => e.ShiftLineId)
+            .IsUnique()
+            .HasDatabaseName("ux_recycler_shift_line");
+
+        builder.HasOne(e => e.ShiftLine)
+            .WithMany()
+            .HasForeignKey(e => e.ShiftLineId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.RecordedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}

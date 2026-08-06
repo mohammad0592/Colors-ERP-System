@@ -38,16 +38,17 @@ public static class MasterDataSeeder
         // The other three say what each line does — which one a batch may start on,
         // which one forms bags, and which one appears on an issue ticket. Seeded as the
         // factory works today; each is a tick box in Master Data afterwards.
-        var lines = new (string Name, bool Settings, bool Rolls, bool Bags, bool RawMaterial)[]
+        var lines =
+            new (string Name, bool Settings, bool Rolls, bool Bags, bool RawMaterial, bool Recycles)[]
         {
-            ("Extruder", false, true, false, true),
-            ("Thermo", true, false, true, false),
-            ("Recycler", false, false, false, false),
+            ("Extruder", false, true, false, true, false),
+            ("Thermo", true, false, true, false, false),
+            ("Recycler", false, false, false, false, true),
         };
 
         if (!await db.ProductionLines.AnyAsync(cancellationToken))
         {
-            foreach (var (name, settings, rolls, bags, rawMaterial) in lines)
+            foreach (var (name, settings, rolls, bags, rawMaterial, recycles) in lines)
             {
                 db.ProductionLines.Add(new ProductionLine
                 {
@@ -56,6 +57,7 @@ public static class MasterDataSeeder
                     MakesRolls = rolls,
                     FormsBags = bags,
                     TakesRawMaterial = rawMaterial,
+                    Recycles = recycles,
                 });
                 before++;
             }
@@ -284,6 +286,9 @@ public static class MasterDataSeeder
                     BaseUnitId = unitId,
                     UnitWeight = unitWeight,
                     CountedAs = countedAs,
+                    // What the recycler makes. Only one row may carry it
+                    // (specification section 11).
+                    IsRecycledOutput = code == "MAT0002",
                 });
                 before++;
             }

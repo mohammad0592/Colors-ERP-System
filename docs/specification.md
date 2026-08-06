@@ -400,18 +400,19 @@ The database's restrict foreign keys are the backstop — even a bug in the chec
 
 ### Production lines
 
-**`ProductionLines`** — Id · Name · **RecordsMachineSettings** · **MakesRolls** · **FormsBags** · **TakesRawMaterial** · IsActive
+**`ProductionLines`** — Id · Name · **RecordsMachineSettings** · **MakesRolls** · **FormsBags** · **TakesRawMaterial** · **Recycles** · IsActive
 Three rows: Extruder, Thermo, Recycler.
 
 `RecordsMachineSettings` is true for **Thermo only**. It decides whether a shift line asks for forming speed, feed distance and cycle time — the extruder and the recycler have no such settings, so their part of the shift never shows those boxes.
 
-The other three say **what the line does**, and each one answers a question the system could not answer before:
+The other four say **what the line does**, and each one answers a question the system could not answer before:
 
 | Flag | True for | What it decides |
 |---|---|---|
 | `MakesRolls` | Extruder | Whether a batch can be started on this line, and a roll logged against it |
 | `FormsBags` | Thermo | Whether a roll can be put into this line and bags come out of it |
 | `TakesRawMaterial` | Extruder | Whether the line appears on a material issue ticket |
+| `Recycles` | Recycler | Whether scrap and recycled output can be recorded against this line |
 
 Until these existed, every screen offered every open line. A batch could be started on the thermo, which does not mix; a forming run could be started on the extruder, which has no mould. Both were possible because nothing in the data said otherwise — only the name of the line, and names must never drive logic.
 
@@ -1247,11 +1248,36 @@ A gap means bags are being wasted, torn or used elsewhere.
 
 At the end of the shift all scrap is collected and weighed, recycled, and the output weighed again.
 
-**`RecyclerProductions`** — Id · **ShiftLineId** (FK) · **ScrapWeight** · **RecycledMaterialWeight** · RecordedByUserId · RecordedAt · Notes
+**`RecyclerProductions`** — Id · **ShiftLineId** (FK, unique) · **ScrapWeight** · **RecycledMaterialWeight** · RecordedByUserId · RecordedAt · Notes
 
-`LossPercentage` is **calculated**, not stored: `(Scrap − Recycled) ÷ Scrap`.
+`LossPercentage` is **calculated**, not stored: `(Scrap − Recycled) ÷ Scrap`. Every input is on the row and frozen once written, which is the [calculated or stored](#calculated-or-stored) rule exactly.
 
 Saving the record posts a `Production` movement that increases **Recycled Material** in the store. One material, no split.
+
+**Written once per line of the shift**, like the packaging record, and guarded by a unique index on `ShiftLineId`. A second record would double the recycled material added to the store and there would be no way to say which one was meant.
+
+### Which line, and which material
+
+Two flags, because neither may be worked out from a name:
+
+- **`ProductionLines.Recycles`** — where scrap can be recorded. True for the Recycler row.
+- **`Materials.IsRecycledOutput`** — what the recycler makes. True for Recycled Material, and **only one material may carry it**, enforced by a partial unique index the same way `CountedAs` is.
+
+The alternative — looking for a material called "Recycled Material" — fails silently the day somebody renames the row: no error, just a shift's output quietly going nowhere.
+
+### More can come out than went in
+
+**The recycled weight is allowed to exceed the scrap weight.** The recycler grinds whatever is in front of it, and that can include scrap left over from an earlier shift. Refusing it would force the operator to write a figure he did not weigh.
+
+So `LossPercentage` can be **negative**, and that is information rather than an error: it says this shift ground more than it collected. Where scrap is zero the percentage is **not defined at all** and is shown as nothing, never as zero.
+
+```
+Scrap 200, recycled 180  →  loss 10%     normal
+Scrap 200, recycled 220  →  loss −10%    ground some of yesterday's pile
+Scrap 0,   recycled 150  →  loss —       only old scrap was ground
+```
+
+Both weights may be zero on their own, but **not both at once** — a record saying nothing happened is not a record.
 
 ### The free accuracy check
 
@@ -1262,7 +1288,11 @@ Thermo calculated:  171 kg  (445.5 − 30,500 × 9 g)
 Recycler weighed:   ??? kg
 ```
 
-If these differ a lot, either the plate weight is wrong or scrap is going missing. Both numbers already exist — the check is free.
+If these differ a lot, either the plate weight is wrong or scrap is going missing. Both numbers already exist — the check is free, so the recycler screen shows the thermo's figure beside the box the operator is typing into. It is shown, never enforced: the two are measured different ways and a shift that grinds old scrap breaks the comparison honestly.
+
+### Closing the shift does not wait for it
+
+The recycler does not run every shift. A shift closes when its tickets are closed and no roll is left in the thermo — the recycler's record is not on that list, because blocking would trap a supervisor who has nothing to record.
 
 ---
 

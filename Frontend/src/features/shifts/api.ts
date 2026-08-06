@@ -49,6 +49,7 @@ export interface ShiftLineDto {
   makesRolls: boolean;
   formsBags: boolean;
   takesRawMaterial: boolean;
+  recycles: boolean;
   /**
    * Which template is bolted in this shift. Everything formed on the line inherits it,
    * so it is chosen once rather than per roll.

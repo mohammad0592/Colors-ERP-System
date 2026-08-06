@@ -14,6 +14,7 @@ import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { PackagingPage } from './features/packaging/PackagingPage';
 import { PalletsPage } from './features/pallets/PalletsPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
+import { RecyclerPage } from './features/recycler/RecyclerPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
 import { TracePage } from './features/trace/TracePage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
@@ -137,6 +138,23 @@ export default function App(): ReactElement {
                 >
                   <Route path="/production/pallets" element={<PalletsPage />} />
                   <Route path="/production/packaging" element={<PackagingPage />} />
+                </Route>
+
+                {/* Line 3, the recycler (specification section 11). Reading is open to
+                    the supervisor as well: the weighed scrap is one half of the free
+                    check against what the thermo calculated. */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[
+                        RoleNames.Administrator,
+                        RoleNames.Supervisor,
+                        RoleNames.RecyclerOperator,
+                      ]}
+                    />
+                  }
+                >
+                  <Route path="/production/recycler" element={<RecyclerPage />} />
                 </Route>
 
                 {/* Master data changes affect every screen, so only the

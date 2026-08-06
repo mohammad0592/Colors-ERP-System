@@ -15,10 +15,12 @@ import { packagingApi } from './api';
 /**
  * What packaging a shift used (specification section 10).
  *
- * Three materials arrive already answered — large bags, small bags and wooden pallets
- * come from what the shift produced, so the operator cannot get them wrong. The 2 July
- * form says 6.1 large bags where 61 were used, and 4.14 small where 122 were, which is
- * what typing them by hand does.
+ * The bag materials arrive already answered — they come from what the shift produced, so
+ * the operator cannot get them wrong. The 2 July form says 6.1 large bags where 61 were
+ * used, and 4.14 small where 122 were, which is what typing them by hand does.
+ *
+ * Wooden pallets are not on this form. Each one left the store as its pallet was
+ * started (specification section 10).
  *
  * The weights stay typed, because the factory already weighs them. That is what makes
  * the check free: counted against weighed, with no extra work for anybody.
