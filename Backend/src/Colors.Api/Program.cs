@@ -25,7 +25,7 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 
 // Lets the React development server reach the API. Not needed in production,
 // where both are served from the same address.
-builder.Services.AddFrontendCors(builder.Configuration);
+builder.Services.AddFrontendCors(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

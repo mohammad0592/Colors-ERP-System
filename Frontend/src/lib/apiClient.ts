@@ -8,7 +8,19 @@ import {
   setRefreshToken,
 } from './tokenStorage';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5211';
+/**
+ * Where the API is.
+ *
+ * `VITE_API_URL` wins when it is set. Otherwise the API is assumed to be on **the same
+ * machine that served this page**, on its own port — never on `localhost`, because a
+ * phone's localhost is the phone itself. That one word is the difference between the
+ * screens working on a tablet on the factory floor and every request failing.
+ *
+ * In production both come from one address and this resolves to that address anyway.
+ */
+const BASE_URL: string =
+  import.meta.env.VITE_API_URL ??
+  `${window.location.protocol}//${window.location.hostname}:5211`;
 
 /**
  * An error the worker can be shown.

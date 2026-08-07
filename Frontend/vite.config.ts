@@ -10,5 +10,10 @@ export default defineConfig({
     // origin, so a silent move to 5174 would break every request with a CORS error
     // that looks like a bug in the code.
     strictPort: true,
+    // Listen on every network card, not only the loopback, so the screens can be opened
+    // on a phone or a tablet on the same network — which is how the factory will
+    // actually use them. Development only; in production one Windows Server serves the
+    // built files and the API together (specification section 15).
+    host: true,
   },
 });
