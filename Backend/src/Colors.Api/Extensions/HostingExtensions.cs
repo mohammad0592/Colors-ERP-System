@@ -51,12 +51,73 @@ public static class HostingExtensions
         }
 
         var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-        if (string.IsNullOrWhiteSpace(url))
+        if (!string.IsNullOrWhiteSpace(url))
         {
+            builder.Configuration["ConnectionStrings:ColorsDb"] = TranslateDatabaseUrl(url);
             return;
         }
 
-        builder.Configuration["ConnectionStrings:ColorsDb"] = TranslateDatabaseUrl(url);
+        // Nothing anywhere. Stop here rather than three lines later in Infrastructure,
+        // whose message is written for a developer at his own machine and tells a cloud
+        // server to run `dotnet user-secrets` — a tool that does not exist there. The
+        // message below is the difference between a twenty-second fix and an evening.
+        throw new InvalidOperationException(NoDatabaseMessage(builder.Environment.EnvironmentName));
+    }
+
+    /// <summary>
+    /// What to do when no database address was given, written for whoever is reading it.
+    ///
+    /// It lists the names of the environment variables that <i>are</i> present and look
+    /// like they concern a database — names only, never values, because a log is not a
+    /// place for a password. On a cloud host that list is usually the whole answer: it
+    /// shows at a glance whether the database was connected to this service at all.
+    /// </summary>
+    private static string NoDatabaseMessage(string environmentName)
+    {
+        var candidates = Environment.GetEnvironmentVariables()
+            .Cast<System.Collections.DictionaryEntry>()
+            .Select(entry => entry.Key.ToString() ?? string.Empty)
+            .Where(name => name.Contains("DATABASE", StringComparison.OrdinalIgnoreCase)
+                        || name.Contains("POSTGRES", StringComparison.OrdinalIgnoreCase)
+                        || name.StartsWith("PG", StringComparison.OrdinalIgnoreCase)
+                        || name.Contains("ConnectionStrings", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        var found = candidates.Count > 0
+            ? string.Join(", ", candidates)
+            : "none — nothing here mentions a database at all";
+
+        // Kept out of the interpolated text below: the braces in it are Railway's own
+        // syntax, and doubling them to escape them makes the line unreadable in source
+        // and easy to get wrong in a message whose whole job is to be copied correctly.
+        const string railwayExample = "DATABASE_URL = ${{Postgres.DATABASE_URL}}";
+
+        return $"""
+            No database address was given, so the system cannot start.
+
+            It looked for, in this order:
+              1. ConnectionStrings:ColorsDb   (appsettings, or user-secrets in development)
+              2. ConnectionStrings__ColorsDb  (an environment variable)
+              3. DATABASE_URL                 (how cloud hosts usually give it)
+
+            Database-related variables this process can actually see:
+              {found}
+
+            Environment: {environmentName}
+
+            On a cloud host, an empty or unhelpful list above usually means the database
+            was created but never attached to THIS service. A database's DATABASE_URL
+            belongs to the database, not to the application — the application needs its
+            own variable pointing at it. On Railway that is a variable reference such as:
+
+                {railwayExample}
+
+            On the factory server, set it for the whole machine (see
+            docs/running-the-system.md, "First time on the factory server"):
+
+                [Environment]::SetEnvironmentVariable('ConnectionStrings__ColorsDb', '...', 'Machine')
+            """;
     }
 
     /// <summary>
