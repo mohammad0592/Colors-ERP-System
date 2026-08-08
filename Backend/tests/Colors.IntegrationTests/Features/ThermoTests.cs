@@ -1,6 +1,5 @@
 ﻿using Colors.Application.Features.Production;
 using Colors.Application.Features.Thermo;
-using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Persistence;

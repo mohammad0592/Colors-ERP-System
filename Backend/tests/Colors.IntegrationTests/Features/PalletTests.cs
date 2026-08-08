@@ -463,13 +463,7 @@ public class PalletTests(DatabaseFixture fixture)
         Assert.Contains("not a bag", scanned.Message!, StringComparison.OrdinalIgnoreCase);
     }
 
-    /// <summary>
-    /// Leaves exactly <paramref name="quantity"/> empty wooden pallets in the store.
-    ///
-    /// The suite shares one database and every factory receives a hundred, so a test
-    /// about running out has to issue the pile down to the figure it wants. Nothing is
-    /// put back afterwards — the next factory receives its own hundred.
-    /// </summary>
+    /// <summary>The wooden pallet material and how many of them the store holds.</summary>
     private static async Task<(int Id, decimal InStock)> WoodAsync(ColorsDbContext db)
     {
         var wood = await db.Materials.FirstAsync(

@@ -2,7 +2,7 @@
 
 namespace Colors.Application.Features.Production;
 
-/// <summary>Shapes crossing the API for line 1. Specification section 8.</summary>
+// Shapes crossing the API for line 1. Specification section 8.
 
 public sealed record BatchSummaryDto(
     int Id,

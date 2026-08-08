@@ -1,9 +1,9 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Domain.Enums;
 
 namespace Colors.Application.Features.Barcodes;
 
-/// <summary>Shapes crossing the API for barcodes. Specification section 12.</summary>
+// Shapes crossing the API for barcodes. Specification section 12.
 
 public sealed record BarcodeDto(
     int Id,

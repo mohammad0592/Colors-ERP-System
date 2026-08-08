@@ -1,8 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Reports;
 
-/// <summary>Shapes crossing the API for reports. Specification section 13.</summary>
+// Shapes crossing the API for reports. Specification section 13.
 
 // ---------- material waste control ----------
 
@@ -21,15 +21,15 @@ public sealed record MaterialWasteLineDto(
     decimal Issued,
     decimal Returned,
     decimal NetUsed,
-    /// <summary>The recipe's target for this material, or null where it names none.</summary>
+    // The recipe's target for this material, or null where it names none.
     decimal? TargetPercentage,
-    /// <summary>Target percentage of the resin actually used. Null where unknown.</summary>
+    // Target percentage of the resin actually used. Null where unknown.
     decimal? Required,
-    /// <summary>Used less required. Positive means more went in than the recipe asks.</summary>
+    // Used less required. Positive means more went in than the recipe asks.
     decimal? Difference,
-    /// <summary>The difference as a share of what was required. Null where required is nothing.</summary>
+    // The difference as a share of what was required. Null where required is nothing.
     decimal? DifferencePercentage,
-    /// <summary>True where the used share falls outside the min–max the supervisor set.</summary>
+    // True where the used share falls outside the min–max the supervisor set.
     bool OutsideRange);
 
 public sealed record MaterialWasteReportDto(
@@ -37,18 +37,16 @@ public sealed record MaterialWasteReportDto(
     DateOnly ProductionDate,
     string ShiftName,
     string Status,
-    /// <summary>The recipe every roll on this shift was made to, where there is only one.</summary>
+    // The recipe every roll on this shift was made to, where there is only one.
     int? RecipeNumber,
     string? RecipeFamilyName,
     int? RecipeVersionNumber,
-    /// <summary>
-    /// How many different recipes the shift's rolls used. More than one and there is no
-    /// single requirement to compare against, so the required column is left empty.
-    /// </summary>
+    // How many different recipes the shift's rolls used. More than one and there is no
+    // single requirement to compare against, so the required column is left empty.
     int RecipeCount,
-    /// <summary>Base resin actually used — the 100% the percentages are shares of.</summary>
+    // Base resin actually used — the 100% the percentages are shares of.
     decimal ResinUsed,
-    /// <summary>What the extruder made, for reading the usage against.</summary>
+    // What the extruder made, for reading the usage against.
     int RollsProduced,
     decimal RollWeightProduced,
     IReadOnlyList<MaterialWasteLineDto> Lines);
@@ -65,11 +63,11 @@ public sealed record ShiftProductLineDto(
     decimal RollWeightUsed,
     int BagCount,
     int PieceCount,
-    /// <summary>Pieces × each roll's own measured plate weight, never one shared figure.</summary>
+    // Pieces × each roll's own measured plate weight, never one shared figure.
     decimal ProductWeight,
-    /// <summary>Roll weight less product weight — what the forming threw away.</summary>
+    // Roll weight less product weight — what the forming threw away.
     decimal LossWeight,
-    /// <summary>Loss as a share of the roll weight. Null where no roll was weighed.</summary>
+    // Loss as a share of the roll weight. Null where no roll was weighed.
     decimal? LossPercentage);
 
 public sealed record ShiftSummaryReportDto(
@@ -107,10 +105,8 @@ public sealed record ConsumptionMaterialDto(
     decimal Issued,
     decimal Returned,
     decimal NetUsed,
-    /// <summary>
-    /// Used per kilogram of roll the group produced, so a long shift and a short one can
-    /// be compared. Null where nothing was weighed off the extruder.
-    /// </summary>
+    // Used per kilogram of roll the group produced, so a long shift and a short one can
+    // be compared. Null where nothing was weighed off the extruder.
     decimal? PerKilogramOfRoll);
 
 /// <summary>One shift, or one recipe, with everything it consumed.</summary>
@@ -121,7 +117,7 @@ public sealed record ConsumptionGroupDto(
     string? ShiftName,
     int? RecipeNumber,
     string? RecipeFamilyName,
-    /// <summary>How many shifts are behind this row. Always 1 when grouped by shift.</summary>
+    // How many shifts are behind this row. Always 1 when grouped by shift.
     int Shifts,
     int RollsProduced,
     decimal RollWeightProduced,
@@ -133,11 +129,9 @@ public sealed record ConsumptionReportDto(
     DateOnly To,
     string GroupedBy,
     IReadOnlyList<ConsumptionGroupDto> Groups,
-    /// <summary>
-    /// Shifts left out of a by-recipe report because they ran more than one recipe, so
-    /// their material cannot be attributed to either. Counted and said, never dropped in
-    /// silence.
-    /// </summary>
+    // Shifts left out of a by-recipe report because they ran more than one recipe, so
+    // their material cannot be attributed to either. Counted and said, never dropped in
+    // silence.
     int MixedRecipeShifts);
 
 /// <summary>How consumption is grouped.</summary>
@@ -157,7 +151,7 @@ public sealed record PalletProductLineDto(
     int Bags,
     int Pieces,
     decimal Weight,
-    /// <summary>The product's own bags-per-pallet, for reading the bag count against.</summary>
+    // The product's own bags-per-pallet, for reading the bag count against.
     int BagsPerPallet);
 
 public sealed record PalletProductionReportDto(
@@ -165,13 +159,11 @@ public sealed record PalletProductionReportDto(
     DateOnly To,
     int PalletsStarted,
     int PalletsCompleted,
-    /// <summary>Started and given up on. Their wood went back, so they consumed nothing.</summary>
+    // Started and given up on. Their wood went back, so they consumed nothing.
     int PalletsCancelled,
-    /// <summary>
-    /// Started, still being filled, and not yet finished. They have no product until
-    /// their first bag lands, so they cannot be counted under one — shown on their own
-    /// rather than left out silently.
-    /// </summary>
+    // Started, still being filled, and not yet finished. They have no product until
+    // their first bag lands, so they cannot be counted under one — shown on their own
+    // rather than left out silently.
     int PalletsStillOpen,
     IReadOnlyList<PalletProductLineDto> Products);
 
@@ -192,14 +184,12 @@ public sealed record RecycledMaterialReportDto(
     DateOnly To,
     string? MaterialName,
     decimal TotalProduced,
-    /// <summary>
-    /// How much of it the mixer took back out over the same days — the black recipes are
-    /// the only thing that consumes it (specification section 5).
-    /// </summary>
+    // How much of it the mixer took back out over the same days — the black recipes are
+    // the only thing that consumes it (specification section 5).
     decimal TotalConsumed,
-    /// <summary>Produced less consumed. Negative means the pile is being drawn down.</summary>
+    // Produced less consumed. Negative means the pile is being drawn down.
     decimal Difference,
-    /// <summary>What the store holds now, which no date range can change.</summary>
+    // What the store holds now, which no date range can change.
     decimal InStock,
     IReadOnlyList<RecycledShiftLineDto> Shifts);
 

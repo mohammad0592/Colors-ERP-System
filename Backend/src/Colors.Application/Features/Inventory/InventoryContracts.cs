@@ -1,8 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Inventory;
 
-/// <summary>Shapes crossing the API for the store. Specification section 6.</summary>
+// Shapes crossing the API for the store. Specification section 6.
 
 /// <summary>
 /// One material's balance, always in its base unit. <c>IsBelowMinimum</c> is worked out

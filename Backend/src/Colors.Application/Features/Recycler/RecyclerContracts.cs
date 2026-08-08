@@ -1,8 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Recycler;
 
-/// <summary>Shapes crossing the API for the recycler. Specification section 11.</summary>
+// Shapes crossing the API for the recycler. Specification section 11.
 
 public sealed record RecyclerProductionDto(
     int Id,
@@ -29,7 +29,7 @@ public sealed record RecyclerDraftDto(
     string ProductionLineName,
     string ShiftName,
     DateOnly ProductionDate,
-    /// <summary>The material the output is added to, so the screen can name it.</summary>
+    // The material the output is added to, so the screen can name it.
     string? RecycledMaterialName,
     bool AlreadyRecorded,
     RecyclerProductionDto? Recorded);

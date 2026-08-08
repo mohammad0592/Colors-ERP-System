@@ -1,9 +1,9 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Reports;
 
 namespace Colors.Application.Features.Dashboard;
 
-/// <summary>Shapes crossing the API for the home screen. Specification section 13.</summary>
+// Shapes crossing the API for the home screen. Specification section 13.
 
 /// <summary>
 /// One thing waiting for somebody.
@@ -13,21 +13,19 @@ namespace Colors.Application.Features.Dashboard;
 /// five of them zero, teaches people to stop reading it.
 /// </summary>
 public sealed record DashboardAlertDto(
-    /// <summary>What kind of thing is waiting, so the screen knows where to send the reader.</summary>
+    // What kind of thing is waiting, so the screen knows where to send the reader.
     string Kind,
-    /// <summary>
-    /// What to call one of them, and what to call several.
-    ///
-    /// Both are given because English plurals cannot be worked out from the singular —
-    /// a screen that adds an "s" produces "3 Roll waiting to be measureds", which is
-    /// exactly what happened before this field existed.
-    /// </summary>
+    // What to call one of them, and what to call several.
+    //
+    // Both are given because English plurals cannot be worked out from the singular —
+    // a screen that adds an "s" produces "3 Roll waiting to be measureds", which is
+    // exactly what happened before this field existed.
     string Label,
     string LabelPlural,
     int Count,
-    /// <summary>A sentence saying why it matters, in the factory's own terms.</summary>
+    // A sentence saying why it matters, in the factory's own terms.
     string Detail,
-    /// <summary>True where this stops a shift from closing (specification section 2).</summary>
+    // True where this stops a shift from closing (specification section 2).
     bool BlocksShiftClose);
 
 public sealed record DashboardShiftDto(
@@ -39,12 +37,10 @@ public sealed record DashboardShiftDto(
     IReadOnlyList<string> LineNames);
 
 public sealed record DashboardDto(
-    /// <summary>The shift running now, or null when the factory is between shifts.</summary>
+    // The shift running now, or null when the factory is between shifts.
     DashboardShiftDto? OpenShift,
-    /// <summary>
-    /// What that shift has made so far. The same figures the shift summary report gives,
-    /// read through the same code so the home screen cannot disagree with it.
-    /// </summary>
+    // What that shift has made so far. The same figures the shift summary report gives,
+    // read through the same code so the home screen cannot disagree with it.
     ShiftSummaryReportDto? Summary,
     IReadOnlyList<DashboardAlertDto> NeedsAttention);
 

@@ -1,7 +1,6 @@
 ﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Reports;
 using Colors.Domain.Common;
-using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

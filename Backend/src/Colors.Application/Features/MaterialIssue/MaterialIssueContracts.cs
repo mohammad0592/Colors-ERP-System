@@ -1,8 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.MaterialIssue;
 
-/// <summary>Shapes crossing the API for issue tickets. Specification section 7.</summary>
+// Shapes crossing the API for issue tickets. Specification section 7.
 
 public sealed record IssueTicketLineDto(
     int Id,

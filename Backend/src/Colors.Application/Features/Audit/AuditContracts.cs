@@ -1,6 +1,6 @@
-namespace Colors.Application.Features.Audit;
+﻿namespace Colors.Application.Features.Audit;
 
-/// <summary>Shapes crossing the API for the audit log. Specification section 15.</summary>
+// Shapes crossing the API for the audit log. Specification section 15.
 
 public sealed record AuditEntryDto(
     int Id,

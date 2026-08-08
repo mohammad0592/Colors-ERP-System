@@ -2,7 +2,7 @@
 
 namespace Colors.Application.Features.Recipes;
 
-/// <summary>Shapes crossing the API for recipes. Specification section 5.</summary>
+// Shapes crossing the API for recipes. Specification section 5.
 
 public sealed record RecipeFamilyDto(
     int Id,

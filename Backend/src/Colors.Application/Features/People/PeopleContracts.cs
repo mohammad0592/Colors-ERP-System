@@ -1,4 +1,4 @@
-namespace Colors.Application.Features.People;
+﻿namespace Colors.Application.Features.People;
 
 /// <summary>
 /// A person, as any screen that has to name one needs them. Specification section 3.

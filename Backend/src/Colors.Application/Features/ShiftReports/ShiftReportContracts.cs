@@ -2,7 +2,7 @@
 
 namespace Colors.Application.Features.ShiftReports;
 
-/// <summary>Shapes crossing the API for shift reports. Specification section 2.</summary>
+// Shapes crossing the API for shift reports. Specification section 2.
 
 /// <summary>
 /// One person on a line during a shift, and the jobs they did.

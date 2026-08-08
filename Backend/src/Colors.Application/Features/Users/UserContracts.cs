@@ -1,8 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Users;
 
-/// <summary>Shapes crossing the API for user administration. Specification section 3.</summary>
+// Shapes crossing the API for user administration. Specification section 3.
 
 public sealed record UserDto(
     int Id,
@@ -10,17 +10,13 @@ public sealed record UserDto(
     string FullName,
     bool IsActive,
     DateTimeOffset CreatedAt,
-    /// <summary>
-    /// Every job this person may do. Many-to-many on purpose: one man is the extruder
-    /// operator and its test person today, and the factory wants to split those later
-    /// without anything being rebuilt (specification section 3).
-    /// </summary>
+    // Every job this person may do. Many-to-many on purpose: one man is the extruder
+    // operator and its test person today, and the factory wants to split those later
+    // without anything being rebuilt (specification section 3).
     IReadOnlyList<string> Roles,
-    /// <summary>
-    /// True while five wrong passwords are still locking the account. It clears itself
-    /// after five minutes, but an administrator can free the person immediately — on a
-    /// factory floor, five minutes waiting at a tablet is a real cost.
-    /// </summary>
+    // True while five wrong passwords are still locking the account. It clears itself
+    // after five minutes, but an administrator can free the person immediately — on a
+    // factory floor, five minutes waiting at a tablet is a real cost.
     bool IsLockedOut,
     DateTimeOffset? LockedOutUntil);
 

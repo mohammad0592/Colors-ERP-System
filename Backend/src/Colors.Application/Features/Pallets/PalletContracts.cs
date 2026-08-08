@@ -1,8 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Pallets;
 
-/// <summary>Shapes crossing the API for pallets. Specification section 10.</summary>
+// Shapes crossing the API for pallets. Specification section 10.
 
 public sealed record PalletSummaryDto(
     int Id,

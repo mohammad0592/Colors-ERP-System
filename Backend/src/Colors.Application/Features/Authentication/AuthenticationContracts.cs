@@ -1,4 +1,4 @@
-namespace Colors.Application.Features.Authentication;
+﻿namespace Colors.Application.Features.Authentication;
 
 /// <summary>
 /// Login. Workers sign in with their employee number — the number already printed on

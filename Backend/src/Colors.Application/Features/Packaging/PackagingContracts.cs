@@ -1,8 +1,8 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Packaging;
 
-/// <summary>Shapes crossing the API for packaging. Specification section 10.</summary>
+// Shapes crossing the API for packaging. Specification section 10.
 
 /// <summary>
 /// One packaging material on the form, ready to be filled in.

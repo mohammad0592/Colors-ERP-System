@@ -2,7 +2,7 @@
 
 namespace Colors.Application.Features.Thermo;
 
-/// <summary>Shapes crossing the API for line 2. Specification section 9.</summary>
+// Shapes crossing the API for line 2. Specification section 9.
 
 public sealed record ThermoRunSummaryDto(
     int Id,

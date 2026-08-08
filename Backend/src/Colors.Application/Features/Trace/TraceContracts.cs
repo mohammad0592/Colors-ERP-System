@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 
 namespace Colors.Application.Features.Trace;
 
@@ -28,11 +28,9 @@ public sealed record TraceMixDto(
     DateOnly ProductionDate,
     string ProductionLineName,
     IReadOnlyList<TraceMaterialDto> Materials,
-    /// <summary>
-    /// True always, for now, and shown on the page rather than hidden. The ticket names
-    /// the shift line, not the mix, so the honest sentence is "issued to the shift that
-    /// made this roll" — with one mix per shift that is the same set of materials.
-    /// </summary>
+    // True always, for now, and shown on the page rather than hidden. The ticket names
+    // the shift line, not the mix, so the honest sentence is "issued to the shift that
+    // made this roll" — with one mix per shift that is the same set of materials.
     bool IssuedToShiftNotMix);
 
 public sealed record TraceRollDto(

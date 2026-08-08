@@ -1,7 +1,6 @@
-using Colors.Infrastructure.Persistence;
+﻿using Colors.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Colors.Api.Controllers;
 
