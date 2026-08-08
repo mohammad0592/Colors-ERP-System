@@ -144,8 +144,8 @@ export function StartRunDialog({
         {rolls.length === 0 && (
           <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
             No roll has been measured and left in stock. A roll cannot come here until it
-            has been measured, because once it is formed into plates there is nothing
-            left to measure.
+            has been measured, because once it is formed into plates there is nothing left
+            to measure.
           </p>
         )}
 

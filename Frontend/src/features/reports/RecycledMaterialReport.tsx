@@ -50,9 +50,7 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
           label={data.difference < 0 ? 'Pile shrank by' : 'Pile grew by'}
           value={`${String(Math.abs(data.difference))} kg`}
         >
-          {data.difference < 0
-            ? 'more was used than made'
-            : 'more was made than used'}
+          {data.difference < 0 ? 'more was used than made' : 'more was made than used'}
         </Figure>
         <Figure label="In the store now" value={`${String(data.inStock)} kg`}>
           {data.materialName}

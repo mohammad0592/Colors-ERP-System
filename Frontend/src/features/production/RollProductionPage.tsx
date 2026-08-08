@@ -35,9 +35,10 @@ export function RollProductionPage(): ReactElement {
 
   // The labels to print. Set the moment a roll is logged, so the sticker comes up by
   // itself — nobody should have to go and find a roll in a list to label it.
-  const [printing, setPrinting] = useState<{ barcodes: string[]; headline?: string } | null>(
-    null,
-  );
+  const [printing, setPrinting] = useState<{
+    barcodes: string[];
+    headline?: string;
+  } | null>(null);
 
   const rolls = useQuery({
     queryKey: ['rolls', 'all'],

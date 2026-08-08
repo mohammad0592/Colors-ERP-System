@@ -58,7 +58,10 @@ export function InventoryPage(): ReactElement {
         subtitle="What the store holds, in each material's own unit. Nobody edits a number here — every change is a movement with a reason."
         actions={
           canReceive ? (
-            <Link to="/inventory/receive" className="btn-primary h-touch w-auto px-5 text-base">
+            <Link
+              to="/inventory/receive"
+              className="btn-primary h-touch w-auto px-5 text-base"
+            >
               Receive materials
             </Link>
           ) : undefined
@@ -88,164 +91,172 @@ export function InventoryPage(): ReactElement {
 
       {section === 'materials' && (
         <>
-      <section className="mb-6 flex flex-wrap gap-2">
-        <Chip
-          label="All materials"
-          active={!lowOnly}
-          onClick={() => {
-            setLowOnly(false);
-          }}
-        />
-        <Chip
-          label={`Below minimum (${String(lowCount)})`}
-          active={lowOnly}
-          tone={lowCount > 0 ? 'warn' : 'normal'}
-          onClick={() => {
-            setLowOnly(true);
-          }}
-        />
-      </section>
-
-      <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Code</th>
-              <th className="px-4 py-3 font-semibold">Material</th>
-              <th className="px-4 py-3 font-semibold">Category</th>
-              <th className="px-4 py-3 text-right font-semibold">In stock</th>
-              <th className="px-4 py-3 text-right font-semibold">Minimum</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {stock.data.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                  {lowOnly ? 'Nothing is below its minimum.' : 'No materials yet.'}
-                </td>
-              </tr>
-            )}
-            {stock.data.map((row) => (
-              <tr key={row.materialId} className="border-b border-line last:border-0">
-                <td className="px-4 py-3 font-mono text-xs text-ink-muted">{row.code}</td>
-                <td className="px-4 py-3 font-medium text-ink">
-                  {row.name}
-                  {row.isBelowMinimum && (
-                    <span className="ml-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
-                      Low
-                    </span>
-                  )}
-                </td>
-                <td className="px-4 py-3 text-ink-soft">{row.categoryName}</td>
-                <td className="px-4 py-3 text-right font-semibold text-ink tabular-nums">
-                  {row.currentQuantity} <span className="text-ink-muted">{row.baseUnitSymbol}</span>
-                </td>
-                <td className="px-4 py-3 text-right text-ink-muted tabular-nums">
-                  {row.minQuantity}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end gap-2">
-                    <Action
-                      label="History"
-                      onClick={() => {
-                        setHistoryFor((current) =>
-                          current?.materialId === row.materialId ? null : row,
-                        );
-                      }}
-                    />
-                    {canAdjust && (
-                      <Action
-                        label="Stock count"
-                        onClick={() => {
-                          setAdjusting(row);
-                        }}
-                      />
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <section className="mt-8">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-bold text-ink">
-            {historyFor === null ? 'Recent movements' : `Movements — ${historyFor.name}`}
-          </h2>
-          {historyFor !== null && (
-            <button
-              type="button"
-              className="text-sm font-medium text-brand-700 hover:underline"
+          <section className="mb-6 flex flex-wrap gap-2">
+            <Chip
+              label="All materials"
+              active={!lowOnly}
               onClick={() => {
-                setHistoryFor(null);
+                setLowOnly(false);
               }}
-            >
-              Show every material
-            </button>
-          )}
-        </div>
+            />
+            <Chip
+              label={`Below minimum (${String(lowCount)})`}
+              active={lowOnly}
+              tone={lowCount > 0 ? 'warn' : 'normal'}
+              onClick={() => {
+                setLowOnly(true);
+              }}
+            />
+          </section>
 
-        <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">When</th>
-                <th className="px-4 py-3 font-semibold">Material</th>
-                <th className="px-4 py-3 font-semibold">Movement</th>
-                <th className="px-4 py-3 text-right font-semibold">Quantity</th>
-                <th className="px-4 py-3 font-semibold">By</th>
-                <th className="px-4 py-3 font-semibold">Note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movements.isPending && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-6 text-center text-ink-muted">
-                    Loading…
-                  </td>
+          <div className="card overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
+                  <th className="px-4 py-3 font-semibold">Code</th>
+                  <th className="px-4 py-3 font-semibold">Material</th>
+                  <th className="px-4 py-3 font-semibold">Category</th>
+                  <th className="px-4 py-3 text-right font-semibold">In stock</th>
+                  <th className="px-4 py-3 text-right font-semibold">Minimum</th>
+                  <th className="px-4 py-3" />
                 </tr>
+              </thead>
+              <tbody>
+                {stock.data.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                      {lowOnly ? 'Nothing is below its minimum.' : 'No materials yet.'}
+                    </td>
+                  </tr>
+                )}
+                {stock.data.map((row) => (
+                  <tr key={row.materialId} className="border-b border-line last:border-0">
+                    <td className="px-4 py-3 font-mono text-xs text-ink-muted">
+                      {row.code}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-ink">
+                      {row.name}
+                      {row.isBelowMinimum && (
+                        <span className="ml-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
+                          Low
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-ink-soft">{row.categoryName}</td>
+                    <td className="px-4 py-3 text-right font-semibold text-ink tabular-nums">
+                      {row.currentQuantity}{' '}
+                      <span className="text-ink-muted">{row.baseUnitSymbol}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right text-ink-muted tabular-nums">
+                      {row.minQuantity}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
+                        <Action
+                          label="History"
+                          onClick={() => {
+                            setHistoryFor((current) =>
+                              current?.materialId === row.materialId ? null : row,
+                            );
+                          }}
+                        />
+                        {canAdjust && (
+                          <Action
+                            label="Stock count"
+                            onClick={() => {
+                              setAdjusting(row);
+                            }}
+                          />
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <section className="mt-8">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-bold text-ink">
+                {historyFor === null
+                  ? 'Recent movements'
+                  : `Movements — ${historyFor.name}`}
+              </h2>
+              {historyFor !== null && (
+                <button
+                  type="button"
+                  className="text-sm font-medium text-brand-700 hover:underline"
+                  onClick={() => {
+                    setHistoryFor(null);
+                  }}
+                >
+                  Show every material
+                </button>
               )}
-              {movements.data?.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                    Nothing has moved yet.
-                  </td>
-                </tr>
-              )}
-              {movements.data?.map((move) => (
-                <tr key={move.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
-                    {new Date(move.movementDate).toLocaleString('en-GB', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </td>
-                  <td className="px-4 py-3 text-ink-soft">{move.materialName}</td>
-                  <td className="px-4 py-3 text-ink-soft">{move.movementTypeName}</td>
-                  {/* The sign is shown, never stored — it comes from the movement type. */}
-                  <td
-                    className={[
-                      'px-4 py-3 text-right font-semibold tabular-nums',
-                      move.direction > 0 ? 'text-ok' : 'text-bad',
-                    ].join(' ')}
-                  >
-                    {move.direction > 0 ? '+' : '−'}
-                    {move.quantity} <span className="text-ink-muted">{move.baseUnitSymbol}</span>
-                  </td>
-                  <td className="px-4 py-3 text-ink-soft">{move.userName}</td>
-                  <td className="max-w-md px-4 py-3 text-ink-muted">{move.notes ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            </div>
+
+            <div className="card overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
+                    <th className="px-4 py-3 font-semibold">When</th>
+                    <th className="px-4 py-3 font-semibold">Material</th>
+                    <th className="px-4 py-3 font-semibold">Movement</th>
+                    <th className="px-4 py-3 text-right font-semibold">Quantity</th>
+                    <th className="px-4 py-3 font-semibold">By</th>
+                    <th className="px-4 py-3 font-semibold">Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {movements.isPending && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-ink-muted">
+                        Loading…
+                      </td>
+                    </tr>
+                  )}
+                  {movements.data?.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                        Nothing has moved yet.
+                      </td>
+                    </tr>
+                  )}
+                  {movements.data?.map((move) => (
+                    <tr key={move.id} className="border-b border-line last:border-0">
+                      <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
+                        {new Date(move.movementDate).toLocaleString('en-GB', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-ink-soft">{move.materialName}</td>
+                      <td className="px-4 py-3 text-ink-soft">{move.movementTypeName}</td>
+                      {/* The sign is shown, never stored — it comes from the movement type. */}
+                      <td
+                        className={[
+                          'px-4 py-3 text-right font-semibold tabular-nums',
+                          move.direction > 0 ? 'text-ok' : 'text-bad',
+                        ].join(' ')}
+                      >
+                        {move.direction > 0 ? '+' : '−'}
+                        {move.quantity}{' '}
+                        <span className="text-ink-muted">{move.baseUnitSymbol}</span>
+                      </td>
+                      <td className="px-4 py-3 text-ink-soft">{move.userName}</td>
+                      <td className="max-w-md px-4 py-3 text-ink-muted">
+                        {move.notes ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
         </>
       )}
 

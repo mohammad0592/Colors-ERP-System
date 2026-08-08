@@ -11,11 +11,17 @@ const styles: Record<ShiftReportStatus, { label: string; className: string }> = 
   Correcting: { label: 'Being fixed', className: 'bg-warn-soft text-warn' },
 };
 
-export function ShiftStatusBadge({ status }: { status: ShiftReportStatus }): ReactElement {
+export function ShiftStatusBadge({
+  status,
+}: {
+  status: ShiftReportStatus;
+}): ReactElement {
   const tone = styles[status];
 
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone.className}`}>
+    <span
+      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone.className}`}
+    >
       {tone.label}
     </span>
   );

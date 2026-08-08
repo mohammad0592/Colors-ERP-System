@@ -52,10 +52,10 @@ export function ReopenShiftDialog({
         noValidate
       >
         <p className="mb-4 text-sm leading-relaxed text-ink-soft">
-          Shift <strong>{report.shiftName}</strong> on{' '}
-          {formatDate(report.productionDate)} will accept changes again, with all{' '}
-          {report.lineCount} line{report.lineCount === 1 ? '' : 's'} on it. The reason is
-          kept on the shift for good.
+          Shift <strong>{report.shiftName}</strong> on {formatDate(report.productionDate)}{' '}
+          will accept changes again, with all {report.lineCount} line
+          {report.lineCount === 1 ? '' : 's'} on it. The reason is kept on the shift for
+          good.
         </p>
 
         <div className="mb-4">

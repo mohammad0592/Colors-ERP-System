@@ -76,7 +76,9 @@ export function ThermoProductionPage(): ReactElement {
       setActionError(null);
     },
     onError: (caught: unknown) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+      setActionError(
+        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+      );
     },
     onSettled: invalidate,
   });
@@ -171,7 +173,9 @@ export function ThermoProductionPage(): ReactElement {
             {runs.data.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
-                  {openOnly ? 'Nothing is waiting to be counted.' : 'No roll has been formed yet.'}
+                  {openOnly
+                    ? 'Nothing is waiting to be counted.'
+                    : 'No roll has been formed yet.'}
                 </td>
               </tr>
             )}
@@ -210,9 +214,8 @@ export function ThermoProductionPage(): ReactElement {
                             title: `Take roll ${run.rollCode} out?`,
                             message: (
                               <>
-                                The run ends now. Counting what it made comes next, on
-                                the Thermo Tests screen — and that is what creates the
-                                bags.
+                                The run ends now. Counting what it made comes next, on the
+                                Thermo Tests screen — and that is what creates the bags.
                               </>
                             ),
                             confirmLabel: 'Take it out',

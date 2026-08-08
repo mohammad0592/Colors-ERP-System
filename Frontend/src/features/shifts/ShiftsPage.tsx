@@ -219,9 +219,7 @@ export function ShiftsPage(): ReactElement {
                 <td className="px-4 py-3">
                   <ShiftStatusBadge status={report.status} />
                 </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {report.lineNames.join(', ')}
-                </td>
+                <td className="px-4 py-3 text-ink-soft">{report.lineNames.join(', ')}</td>
                 <td className="px-4 py-3 text-ink-soft">
                   {report.supervisorName ?? '—'}
                 </td>
@@ -254,9 +252,8 @@ export function ShiftsPage(): ReactElement {
                                   {report.lineCount === 1 ? '' : 's'} on it.
                                   <br />
                                   <br />
-                                  Nothing more can be recorded against it, and its
-                                  figures are fixed. Only an administrator can reopen
-                                  it.
+                                  Nothing more can be recorded against it, and its figures
+                                  are fixed. Only an administrator can reopen it.
                                 </>
                               ),
                               confirmLabel: 'Close shift',
@@ -279,11 +276,9 @@ export function ShiftsPage(): ReactElement {
                                 title: 'Discard this shift?',
                                 message: (
                                   <>
-                                    Nothing has been recorded on shift{' '}
-                                    {report.shiftName},{' '}
+                                    Nothing has been recorded on shift {report.shiftName},{' '}
                                     {formatDate(report.productionDate)}, so it can be
-                                    removed. Use this when a shift was opened by
-                                    mistake.
+                                    removed. Use this when a shift was opened by mistake.
                                   </>
                                 ),
                                 confirmLabel: 'Discard',

@@ -78,7 +78,11 @@ export function ResetPasswordDialog({
           </p>
         )}
 
-        <button type="submit" className="btn-primary" disabled={isSaving || password === ''}>
+        <button
+          type="submit"
+          className="btn-primary"
+          disabled={isSaving || password === ''}
+        >
           {isSaving ? 'Saving…' : 'Set it'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">

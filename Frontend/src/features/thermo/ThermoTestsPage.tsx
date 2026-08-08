@@ -26,9 +26,10 @@ export function ThermoTestsPage(): ReactElement {
   // Saving the form is what creates the bags, so the labels come up straight after it.
   // A run makes a dozen or more at once and they print as one job — going to look each
   // one up in a list of five hundred is not a thing anybody would do.
-  const [printing, setPrinting] = useState<{ barcodes: string[]; headline?: string } | null>(
-    null,
-  );
+  const [printing, setPrinting] = useState<{
+    barcodes: string[];
+    headline?: string;
+  } | null>(null);
 
   const runs = useQuery({
     queryKey: ['thermo-runs', 'tests', waitingOnly],
@@ -267,7 +268,13 @@ export function ThermoTestsPage(): ReactElement {
  *
  * A dash, never a zero, until the roll has been weighed and the run counted.
  */
-function Waste({ kg, rollKg }: { kg: number | null; rollKg: number | null }): ReactElement {
+function Waste({
+  kg,
+  rollKg,
+}: {
+  kg: number | null;
+  rollKg: number | null;
+}): ReactElement {
   if (kg === null || rollKg === null || rollKg <= 0) {
     return <span className="text-ink-muted">—</span>;
   }

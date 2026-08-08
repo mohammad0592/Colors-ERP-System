@@ -30,7 +30,10 @@ export function IssueTicketDialog({
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const typed = Object.entries(returns)
-    .map(([materialId, value]) => ({ materialId: Number(materialId), quantity: Number(value) }))
+    .map(([materialId, value]) => ({
+      materialId: Number(materialId),
+      quantity: Number(value),
+    }))
     .filter((line) => value(line.quantity));
 
   function value(quantity: number): boolean {
@@ -109,7 +112,8 @@ export function IssueTicketDialog({
                     {line.returnedQuantity}
                   </td>
                   <td className="px-3 py-2 text-right font-semibold tabular-nums text-ink">
-                    {line.netUsed} <span className="text-ink-muted">{line.baseUnitSymbol}</span>
+                    {line.netUsed}{' '}
+                    <span className="text-ink-muted">{line.baseUnitSymbol}</span>
                   </td>
                   {ticket.isOpen && canIssue && (
                     <td className="py-2 pl-3">

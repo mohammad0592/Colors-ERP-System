@@ -42,7 +42,9 @@ export function UsersPage(): ReactElement {
       invalidate();
     },
     onError: (caught: unknown) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+      setActionError(
+        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+      );
     },
   });
 
@@ -100,7 +102,9 @@ export function UsersPage(): ReactElement {
                     {user.employeeNumber}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={user.isActive ? 'text-ink' : ''}>{user.fullName}</span>
+                    <span className={user.isActive ? 'text-ink' : ''}>
+                      {user.fullName}
+                    </span>
                     {!user.isActive && (
                       <span className="ml-2 rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold text-ink-muted">
                         left

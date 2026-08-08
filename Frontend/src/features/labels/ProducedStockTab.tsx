@@ -131,7 +131,9 @@ export function ProducedStockTab(): ReactElement {
                     {item.barcode}
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{item.kind}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-ink-soft">{item.code}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-ink-soft">
+                    {item.code}
+                  </td>
                   <td className="px-4 py-3 text-ink-soft">{item.description}</td>
                   <td className="px-4 py-3">
                     <span

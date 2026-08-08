@@ -89,10 +89,13 @@ export function MaterialWasteReport({
                     {line.returned === 0 ? '—' : line.returned}
                   </td>
                   <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
-                    {line.netUsed} <span className="text-ink-muted">{line.unitSymbol}</span>
+                    {line.netUsed}{' '}
+                    <span className="text-ink-muted">{line.unitSymbol}</span>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-ink-muted">
-                    {line.targetPercentage === null ? '—' : `${String(line.targetPercentage)}%`}
+                    {line.targetPercentage === null
+                      ? '—'
+                      : `${String(line.targetPercentage)}%`}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                     {line.required ?? '—'}

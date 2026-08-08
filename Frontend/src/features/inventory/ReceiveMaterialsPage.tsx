@@ -50,8 +50,10 @@ export function ReceiveMaterialsPage(): ReactElement {
   const unit = units.data?.find((u) => u.unitId === unitId) ?? null;
 
   const quantityNumber = Number(quantity);
-  const isQuantity = quantity.trim() !== '' && Number.isFinite(quantityNumber) && quantityNumber > 0;
-  const inBaseUnit = isQuantity && unit !== null ? quantityNumber * unit.quantityInBaseUnit : 0;
+  const isQuantity =
+    quantity.trim() !== '' && Number.isFinite(quantityNumber) && quantityNumber > 0;
+  const inBaseUnit =
+    isQuantity && unit !== null ? quantityNumber * unit.quantityInBaseUnit : 0;
 
   const receive = useMutation({
     mutationFn: () =>
@@ -118,7 +120,9 @@ export function ReceiveMaterialsPage(): ReactElement {
               value={materialId ?? ''}
               disabled={receive.isPending}
               onChange={(event) => {
-                setMaterialId(event.target.value === '' ? null : Number(event.target.value));
+                setMaterialId(
+                  event.target.value === '' ? null : Number(event.target.value),
+                );
                 setChosenUnitId(null);
                 setReceived(null);
                 setError(null);
@@ -142,7 +146,8 @@ export function ReceiveMaterialsPage(): ReactElement {
               of {material.name}
               {material.isBelowMinimum && (
                 <span className="font-semibold text-warn">
-                  {' '}— below its minimum of {material.minQuantity}
+                  {' '}
+                  — below its minimum of {material.minQuantity}
                 </span>
               )}
             </p>
@@ -196,12 +201,15 @@ export function ReceiveMaterialsPage(): ReactElement {
 
           {/* The conversion, shown before saving — the storekeeper sees what will
               land in the store rather than trusting it. */}
-          {isQuantity && unit !== null && material !== null && unit.quantityInBaseUnit !== 1 && (
-            <p className="mb-4 rounded-control bg-brand-50 px-4 py-3 text-sm font-medium text-brand-700">
-              {quantityNumber} × {unit.quantityInBaseUnit} = <strong>{inBaseUnit}</strong>{' '}
-              {material.baseUnitSymbol} into the store
-            </p>
-          )}
+          {isQuantity &&
+            unit !== null &&
+            material !== null &&
+            unit.quantityInBaseUnit !== 1 && (
+              <p className="mb-4 rounded-control bg-brand-50 px-4 py-3 text-sm font-medium text-brand-700">
+                {quantityNumber} × {unit.quantityInBaseUnit} ={' '}
+                <strong>{inBaseUnit}</strong> {material.baseUnitSymbol} into the store
+              </p>
+            )}
 
           <div className="mb-4">
             <label className="field-label" htmlFor="rec-notes">
@@ -239,7 +247,9 @@ export function ReceiveMaterialsPage(): ReactElement {
           <button
             type="submit"
             className="btn-primary"
-            disabled={receive.isPending || materialId === null || unitId === null || !isQuantity}
+            disabled={
+              receive.isPending || materialId === null || unitId === null || !isQuantity
+            }
           >
             {receive.isPending ? 'Booking in…' : 'Receive'}
           </button>

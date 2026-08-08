@@ -26,8 +26,7 @@ export function ShiftSummaryReport({
         <p className="text-sm text-ink-muted">
           {report.status}
           {report.supervisorName !== null && ` · ${report.supervisorName}`}
-          {report.electricityUsed !== null &&
-            ` · ${String(report.electricityUsed)} kWh`}
+          {report.electricityUsed !== null && ` · ${String(report.electricityUsed)} kWh`}
         </p>
       </section>
 
@@ -88,8 +87,13 @@ export function ShiftSummaryReport({
             </thead>
             <tbody>
               {report.products.map((product) => (
-                <tr key={product.productId} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 font-medium text-ink">{product.productName}</td>
+                <tr
+                  key={product.productId}
+                  className="border-b border-line last:border-0"
+                >
+                  <td className="px-4 py-3 font-medium text-ink">
+                    {product.productName}
+                  </td>
                   <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
                     {product.rollsUsed}
                   </td>

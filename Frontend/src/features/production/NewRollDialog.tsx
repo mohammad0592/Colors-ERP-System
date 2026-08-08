@@ -63,7 +63,10 @@ export function NewRollDialog({
   }
 
   return (
-    <Modal title={`Log a roll — ${shiftLine.lineName}, ${shiftLine.shiftLabel}`} onClose={onClose}>
+    <Modal
+      title={`Log a roll — ${shiftLine.lineName}, ${shiftLine.shiftLabel}`}
+      onClose={onClose}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -91,8 +94,8 @@ export function NewRollDialog({
             ))}
           </select>
           <p className="mt-1 text-xs text-ink-muted">
-            Asked per roll, not once for the shift: the recipe can change while the same mix is
-            running.
+            Asked per roll, not once for the shift: the recipe can change while the same
+            mix is running.
           </p>
         </div>
 
@@ -134,8 +137,8 @@ export function NewRollDialog({
         </div>
 
         <p className="mb-4 rounded-control bg-canvas px-4 py-3 text-sm text-ink-soft">
-          The roll code and barcode are printed by the system. Nobody types them, so
-          two rolls can never share one.
+          The roll code and barcode are printed by the system. Nobody types them, so two
+          rolls can never share one.
         </p>
 
         {error !== null && (

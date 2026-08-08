@@ -41,7 +41,8 @@ export function RollTestDialog({
   const [isSaving, setIsSaving] = useState(false);
 
   const readings = [rs, rm, lm, ls].map(Number);
-  const allReadings = [rs, rm, lm, ls].every((v) => v.trim() !== '') &&
+  const allReadings =
+    [rs, rm, lm, ls].every((v) => v.trim() !== '') &&
     readings.every((v) => Number.isFinite(v) && v > 0);
 
   const average = allReadings
@@ -50,7 +51,8 @@ export function RollTestDialog({
 
   const weightNumber = Number(weight);
   const weightTyped = weight.trim() !== '' && Number.isFinite(weightNumber);
-  const weightLooksWrong = weightTyped && (weightNumber < MinWeight || weightNumber > MaxWeight);
+  const weightLooksWrong =
+    weightTyped && (weightNumber < MinWeight || weightNumber > MaxWeight);
 
   const complete =
     weightTyped &&
@@ -153,10 +155,34 @@ export function RollTestDialog({
 
         <p className="field-label">Thickness, four readings across the roll</p>
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Reading id="test-rs" label="RS" value={rs} onChange={setRs} disabled={isSaving} />
-          <Reading id="test-rm" label="RM" value={rm} onChange={setRm} disabled={isSaving} />
-          <Reading id="test-lm" label="LM" value={lm} onChange={setLm} disabled={isSaving} />
-          <Reading id="test-ls" label="LS" value={ls} onChange={setLs} disabled={isSaving} />
+          <Reading
+            id="test-rs"
+            label="RS"
+            value={rs}
+            onChange={setRs}
+            disabled={isSaving}
+          />
+          <Reading
+            id="test-rm"
+            label="RM"
+            value={rm}
+            onChange={setRm}
+            disabled={isSaving}
+          />
+          <Reading
+            id="test-lm"
+            label="LM"
+            value={lm}
+            onChange={setLm}
+            disabled={isSaving}
+          />
+          <Reading
+            id="test-ls"
+            label="LS"
+            value={ls}
+            onChange={setLs}
+            disabled={isSaving}
+          />
         </div>
 
         <div className="mb-4 rounded-control bg-canvas px-4 py-3">
@@ -198,9 +224,9 @@ export function RollTestDialog({
           {isSaving ? 'Saving…' : 'Save and release the roll'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The thermo can use the roll once this is saved. Nothing here is compared
-          against a limit — the point is only that the measurement was taken, because
-          after forming there is nothing left to measure.
+          The thermo can use the roll once this is saved. Nothing here is compared against
+          a limit — the point is only that the measurement was taken, because after
+          forming there is nothing left to measure.
         </p>
       </form>
     </Modal>

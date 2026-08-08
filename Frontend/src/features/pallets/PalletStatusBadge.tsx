@@ -17,7 +17,9 @@ export function PalletStatusBadge({ status }: { status: PalletStatus }): ReactEl
   const tone = tones[status];
 
   return (
-    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone.className}`}>
+    <span
+      className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone.className}`}
+    >
       {tone.label}
     </span>
   );

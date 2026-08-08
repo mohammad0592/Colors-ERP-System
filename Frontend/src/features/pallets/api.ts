@@ -76,7 +76,8 @@ export const palletsApi = {
   list: (openOnly = false): Promise<PalletSummaryDto[]> =>
     apiRequest<PalletSummaryDto[]>(`/api/pallets?openOnly=${String(openOnly)}`),
 
-  get: (id: number): Promise<PalletDto> => apiRequest<PalletDto>(`/api/pallets/${String(id)}`),
+  get: (id: number): Promise<PalletDto> =>
+    apiRequest<PalletDto>(`/api/pallets/${String(id)}`),
 
   /** Pass a pallet and only the bags it can actually take come back. */
   availableBags: (palletId?: number): Promise<AvailableBagDto[]> => {

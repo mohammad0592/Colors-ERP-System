@@ -54,7 +54,8 @@ export interface PackagingDraftDto {
 
 export const packagingApi = {
   list: (shiftReportId?: number): Promise<PackagingConsumptionDto[]> => {
-    const query = shiftReportId === undefined ? '' : `?shiftReportId=${String(shiftReportId)}`;
+    const query =
+      shiftReportId === undefined ? '' : `?shiftReportId=${String(shiftReportId)}`;
     return apiRequest<PackagingConsumptionDto[]>(`/api/packaging${query}`);
   },
 

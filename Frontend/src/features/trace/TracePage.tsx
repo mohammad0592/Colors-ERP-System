@@ -66,7 +66,11 @@ export function TracePage(): ReactElement {
               setCode(event.target.value);
             }}
           />
-          <button type="submit" className="btn-primary w-auto" disabled={code.trim() === ''}>
+          <button
+            type="submit"
+            className="btn-primary w-auto"
+            disabled={code.trim() === ''}
+          >
             Trace it
           </button>
         </div>
@@ -109,7 +113,10 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
       </div>
 
       {trace.pallet !== null && (
-        <Step title="On the pallet" subtitle={`Pallet ${String(trace.pallet.palletNumber)}`}>
+        <Step
+          title="On the pallet"
+          subtitle={`Pallet ${String(trace.pallet.palletNumber)}`}
+        >
           <Facts
             rows={[
               ['Barcode', trace.pallet.barcode],
@@ -163,7 +170,10 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
                   ? 'still running'
                   : `${String(trace.thermo.totalTimeMinutes)} min`,
               ],
-              ['Bags made', trace.thermo.bagCount === null ? '—' : String(trace.thermo.bagCount)],
+              [
+                'Bags made',
+                trace.thermo.bagCount === null ? '—' : String(trace.thermo.bagCount),
+              ],
               [
                 'Pieces',
                 trace.thermo.pieceCount === null
@@ -172,7 +182,9 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
               ],
               [
                 'Piece weight',
-                trace.thermo.pieceWeight === null ? '—' : `${String(trace.thermo.pieceWeight)} g`,
+                trace.thermo.pieceWeight === null
+                  ? '—'
+                  : `${String(trace.thermo.pieceWeight)} g`,
               ],
               [
                 'Absorbency',
@@ -190,7 +202,10 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
           <Facts
             rows={[
               ['Barcode', trace.roll.barcode],
-              ['Recipe', `${String(trace.roll.recipeNumber)} · ${trace.roll.recipeFamilyName}`],
+              [
+                'Recipe',
+                `${String(trace.roll.recipeNumber)} · ${trace.roll.recipeFamilyName}`,
+              ],
               ['Colour', trace.roll.colorName],
               ['Status', trace.roll.status],
               [
@@ -198,15 +213,24 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
                 `${trace.roll.shiftName} · ${formatDate(trace.roll.productionDate)}`,
               ],
               ['By', trace.roll.producedByName],
-              ['Weight', trace.roll.weight === null ? 'not measured' : `${String(trace.roll.weight)} kg`],
+              [
+                'Weight',
+                trace.roll.weight === null
+                  ? 'not measured'
+                  : `${String(trace.roll.weight)} kg`,
+              ],
               ['Length', trace.roll.length === null ? '—' : String(trace.roll.length)],
               [
                 'Plate weight',
-                trace.roll.plateWeight === null ? '—' : `${String(trace.roll.plateWeight)} g`,
+                trace.roll.plateWeight === null
+                  ? '—'
+                  : `${String(trace.roll.plateWeight)} g`,
               ],
               [
                 'Thickness',
-                trace.roll.averageThickness === null ? '—' : String(trace.roll.averageThickness),
+                trace.roll.averageThickness === null
+                  ? '—'
+                  : String(trace.roll.averageThickness),
               ],
             ]}
           />
@@ -312,15 +336,21 @@ function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
           <tbody>
             {bags.map((bag) => (
               <tr key={bag.id} className="border-b border-line last:border-0">
-                <td className="py-2 pr-4 font-mono font-semibold text-ink">{bag.barcode}</td>
-                <td className="py-2 pr-4 font-mono text-xs text-ink-soft">{bag.rollCode}</td>
+                <td className="py-2 pr-4 font-mono font-semibold text-ink">
+                  {bag.barcode}
+                </td>
+                <td className="py-2 pr-4 font-mono text-xs text-ink-soft">
+                  {bag.rollCode}
+                </td>
                 <td className="py-2 pr-4 text-ink-soft">
                   {bag.productName} · {bag.colorName}
                 </td>
                 <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">
                   {bag.pieceCount}
                 </td>
-                <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">{bag.weight}</td>
+                <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">
+                  {bag.weight}
+                </td>
                 <td className="py-2 pr-4 text-ink-soft">{bag.status}</td>
                 <td className="py-2 text-ink-soft">{bag.palletNumber ?? '—'}</td>
               </tr>

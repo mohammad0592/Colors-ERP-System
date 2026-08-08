@@ -16,9 +16,10 @@ export interface DateRange {
  * The default range ends <b>tomorrow</b> rather than today: a night shift starting this
  * evening carries tomorrow's production date, so a range ending today would hide the
  * shift that is running while the report is read.
+ *
+ * Re-exported rather than written here. It used to be written here, from `toISOString`,
+ * which reports UTC — so between midnight and three in the morning it gave the day
+ * before, and the range ended *today* instead of tomorrow. It hid the running night
+ * shift, which is the one thing this default exists to show.
  */
-export function dayFromNow(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  return date.toISOString().slice(0, 10);
-}
+export { dayFromNow } from '../../lib/dates';

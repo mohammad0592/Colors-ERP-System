@@ -61,7 +61,10 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
             </thead>
             <tbody>
               {data.products.map((product) => (
-                <tr key={product.productId} className="border-b border-line last:border-0">
+                <tr
+                  key={product.productId}
+                  className="border-b border-line last:border-0"
+                >
                   <td className="px-4 py-3">
                     <span className="font-medium text-ink">{product.productName}</span>
                     <span className="ml-2 text-xs text-ink-muted">

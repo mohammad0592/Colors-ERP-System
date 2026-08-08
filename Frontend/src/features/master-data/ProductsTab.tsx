@@ -225,7 +225,9 @@ function ProductDialog({
   const [smallBagsPerBag, setSmallBagsPerBag] = useState(
     String(product?.smallBagsPerBag ?? 1),
   );
-  const [bagsPerPallet, setBagsPerPallet] = useState(String(product?.bagsPerPallet ?? 21));
+  const [bagsPerPallet, setBagsPerPallet] = useState(
+    String(product?.bagsPerPallet ?? 21),
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -346,8 +348,8 @@ function ProductDialog({
             Absorbent
           </label>
           <p className="mt-1 ml-8 text-xs text-ink-muted">
-            Decided by what is mixed into the roll, not by the mould. A mould can have
-            one absorbent product and one normal one — no more.
+            Decided by what is mixed into the roll, not by the mould. A mould can have one
+            absorbent product and one normal one — no more.
           </p>
         </div>
 

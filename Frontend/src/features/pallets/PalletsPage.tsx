@@ -33,8 +33,12 @@ export function PalletsPage(): ReactElement {
 
   const [openOnly, setOpenOnly] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [reversing, setReversing] = useState<{ id: number; barcode: string } | null>(null);
-  const [cancelling, setCancelling] = useState<{ id: number; number: number } | null>(null);
+  const [reversing, setReversing] = useState<{ id: number; barcode: string } | null>(
+    null,
+  );
+  const [cancelling, setCancelling] = useState<{ id: number; number: number } | null>(
+    null,
+  );
   const [labelFor, setLabelFor] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -95,7 +99,9 @@ export function PalletsPage(): ReactElement {
       setLabelFor(pallet.barcode);
     },
     onError: (caught: unknown) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+      setActionError(
+        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+      );
     },
     onSettled: invalidate,
   });
@@ -175,7 +181,9 @@ export function PalletsPage(): ReactElement {
                   pallet={pallet}
                   isSelected={selectedId === pallet.id}
                   onSelect={() => {
-                    setSelectedId((current) => (current === pallet.id ? null : pallet.id));
+                    setSelectedId((current) =>
+                      current === pallet.id ? null : pallet.id,
+                    );
                   }}
                 />
               ))}
@@ -190,7 +198,9 @@ export function PalletsPage(): ReactElement {
             </div>
           ) : (
             <div className="card p-5">
-              <h2 className="mb-1 font-mono text-lg font-bold text-ink">{open.barcode}</h2>
+              <h2 className="mb-1 font-mono text-lg font-bold text-ink">
+                {open.barcode}
+              </h2>
               <p className="mb-3 text-sm text-ink-muted">
                 Pallet {open.palletNumber} · {open.productionLineName}, shift{' '}
                 {open.shiftName}
@@ -247,7 +257,9 @@ export function PalletsPage(): ReactElement {
                   {open.colorName ?? <span className="text-ink-muted">not set yet</span>}
                 </Row>
                 <Row label="Product">
-                  {open.productName ?? <span className="text-ink-muted">not set yet</span>}
+                  {open.productName ?? (
+                    <span className="text-ink-muted">not set yet</span>
+                  )}
                 </Row>
                 <Row label="Status">
                   <PalletStatusBadge status={open.status} />
@@ -260,9 +272,7 @@ export function PalletsPage(): ReactElement {
 
       {open !== null && (
         <section className="mt-8">
-          <h2 className="mb-3 text-lg font-bold text-ink">
-            What is on {open.barcode}
-          </h2>
+          <h2 className="mb-3 text-lg font-bold text-ink">What is on {open.barcode}</h2>
 
           <div className="card overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -313,7 +323,9 @@ export function PalletsPage(): ReactElement {
                       )}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">{bag.rollCode}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">{bag.pieceCount}</td>
+                    <td className="px-4 py-3 text-right tabular-nums">
+                      {bag.pieceCount}
+                    </td>
                     <td className="px-4 py-3 text-right tabular-nums">{bag.weight}</td>
                     <td className="px-4 py-3">{bag.assignedByName}</td>
                     <td className="px-4 py-3">

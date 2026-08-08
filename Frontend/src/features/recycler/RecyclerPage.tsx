@@ -81,7 +81,9 @@ export function RecyclerPage(): ReactElement {
       void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
     },
     onError: (caught: unknown) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+      setActionError(
+        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+      );
     },
   });
 

@@ -49,10 +49,10 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
           {report.data.mixedRecipeShifts > 0 && (
             <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
               {report.data.mixedRecipeShifts} shift
-              {report.data.mixedRecipeShifts === 1 ? '' : 's'} ran more than one recipe and{' '}
-              {report.data.mixedRecipeShifts === 1 ? 'is' : 'are'} not counted here — its
-              material cannot be said to belong to either recipe. Group by shift to see
-              what it used.
+              {report.data.mixedRecipeShifts === 1 ? '' : 's'} ran more than one recipe
+              and {report.data.mixedRecipeShifts === 1 ? 'is' : 'are'} not counted here —
+              its material cannot be said to belong to either recipe. Group by shift to
+              see what it used.
             </p>
           )}
 
@@ -68,7 +68,9 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                     type="button"
                     className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-canvas"
                     onClick={() => {
-                      setOpen((current) => (current === group.label ? null : group.label));
+                      setOpen((current) =>
+                        current === group.label ? null : group.label,
+                      );
                     }}
                   >
                     <div>
@@ -104,7 +106,9 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                           <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                             <th className="px-5 py-2 font-semibold">Material</th>
                             <th className="px-5 py-2 text-right font-semibold">Issued</th>
-                            <th className="px-5 py-2 text-right font-semibold">Returned</th>
+                            <th className="px-5 py-2 text-right font-semibold">
+                              Returned
+                            </th>
                             <th className="px-5 py-2 text-right font-semibold">Used</th>
                             <th className="px-5 py-2 text-right font-semibold">
                               Per kg of roll
@@ -117,7 +121,9 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                               key={material.materialId}
                               className="border-b border-line last:border-0"
                             >
-                              <td className="px-5 py-2 text-ink">{material.materialName}</td>
+                              <td className="px-5 py-2 text-ink">
+                                {material.materialName}
+                              </td>
                               <td className="px-5 py-2 text-right tabular-nums text-ink-soft">
                                 {material.issued}
                               </td>

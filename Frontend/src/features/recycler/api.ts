@@ -34,7 +34,8 @@ export interface RecyclerDraftDto {
 
 export const recyclerApi = {
   list: (shiftReportId?: number): Promise<RecyclerProductionDto[]> => {
-    const query = shiftReportId === undefined ? '' : `?shiftReportId=${String(shiftReportId)}`;
+    const query =
+      shiftReportId === undefined ? '' : `?shiftReportId=${String(shiftReportId)}`;
     return apiRequest<RecyclerProductionDto[]>(`/api/recycler${query}`);
   },
 

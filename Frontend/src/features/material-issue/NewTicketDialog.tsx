@@ -73,9 +73,9 @@ export function NewTicketDialog({
     return (
       <Modal title="Issue material" onClose={onClose}>
         <p className="text-sm leading-relaxed text-ink-soft">
-          No shift is open, so there is nothing to issue material to. A supervisor
-          opens the shift first — that is what the ticket is recorded against, and what
-          makes the waste figure belong to somebody.
+          No shift is open, so there is nothing to issue material to. A supervisor opens
+          the shift first — that is what the ticket is recorded against, and what makes
+          the waste figure belong to somebody.
         </p>
         {shifts.length > 0 && (
           <p className="mt-3 text-sm text-ink-muted">
@@ -119,14 +119,17 @@ export function NewTicketDialog({
 
         <p className="field-label">What is going out, weighed</p>
         <p className="mb-2 text-xs text-ink-muted">
-          Raw material only. Packaging is not carried out on a ticket — the system
-          counts it at the end of the shift from what was produced.
+          Raw material only. Packaging is not carried out on a ticket — the system counts
+          it at the end of the shift from what was produced.
         </p>
         <div className="mb-4 max-h-72 overflow-y-auto rounded-control border border-line">
           <table className="w-full text-left text-sm">
             <tbody>
               {stock.map((material) => (
-                <tr key={material.materialId} className="border-b border-line last:border-0">
+                <tr
+                  key={material.materialId}
+                  className="border-b border-line last:border-0"
+                >
                   <td className="px-3 py-2">
                     <span className="font-medium text-ink">{material.name}</span>
                     <span className="ml-2 text-xs text-ink-muted">

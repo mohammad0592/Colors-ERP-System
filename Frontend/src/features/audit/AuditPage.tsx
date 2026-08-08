@@ -62,7 +62,9 @@ export function AuditPage(): ReactElement {
             className="field-input"
             value={shiftReportId}
             onChange={(event) => {
-              setShiftReportId(event.target.value === '' ? '' : Number(event.target.value));
+              setShiftReportId(
+                event.target.value === '' ? '' : Number(event.target.value),
+              );
             }}
           >
             <option value="">Every shift</option>

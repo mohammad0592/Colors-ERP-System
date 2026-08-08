@@ -1,3 +1,5 @@
+import { today } from '../../lib/dates';
+
 /**
  * Small shared helpers for the shift screens.
  *
@@ -14,12 +16,14 @@ export function formatDate(isoDate: string): string {
   return `${parts[2] ?? ''}/${parts[1] ?? ''}/${parts[0] ?? ''}`;
 }
 
-/** Today, as the "yyyy-MM-dd" the API expects, in the worker's own timezone. */
+/**
+ * Today, as the "yyyy-MM-dd" the API expects, on the clock the worker is looking at.
+ *
+ * This was right, and the reports screen's copy of it was not. Now there is one copy
+ * (see `lib/dates.ts`) and the question cannot be answered two ways again.
+ */
 export function todayIso(): string {
-  const now = new Date();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${String(now.getFullYear())}-${month}-${day}`;
+  return today();
 }
 
 /** A number for the screen, or a dash when the reading has not been taken yet. */

@@ -1,3 +1,5 @@
+import { wordFor } from '../../lib/words';
+
 /**
  * Turning what the log stores into what a supervisor reads.
  *
@@ -70,6 +72,9 @@ const refusals: Record<string, string> = {
   'Inventory.Receive': 'Receiving material',
   'Inventory.Adjust': 'Correcting a stock figure',
   'Auth.Login': 'Signing in',
+  // A screen renewing a sign-in that has run out. It appears in the log without
+  // anybody pressing anything, which is why it says so plainly.
+  'Auth.Refresh': 'Renewing a sign-in',
 };
 
 /**
@@ -85,13 +90,15 @@ export function describe(
   rejected: boolean,
 ): string {
   if (rejected) {
-    return refusals[action] ?? action;
+    return wordFor(refusals, action);
   }
 
-  const deed = deeds[action] ?? action;
-  const thing = things[objectType] ?? objectType;
+  const deed = wordFor(deeds, action);
+  const thing = wordFor(things, objectType);
 
-  return objectId === null ? `${deed} ${thing}` : `${deed} ${thing} (#${String(objectId)})`;
+  return objectId === null
+    ? `${deed} ${thing}`
+    : `${deed} ${thing} (#${String(objectId)})`;
 }
 
 /**
@@ -101,16 +108,48 @@ export function describe(
  * against the entity it changed; a refused scan never touched an entity and is recorded
  * against the shape the screen asked for. Filtering on one name alone would show the
  * corrections and quietly hide the refusals — the half a supervisor came for.
+ *
+ * So every group lists the table names and the DTO names side by side. The rule for
+ * adding one: a refusal is logged against the type the endpoint returns, which for a
+ * write is its DTO and for a delete is the row's DTO (see `ApiControllerBase`).
+ *
+ * Nothing is ever lost by leaving a name out — "Anything" is the default and shows the
+ * lot. What is lost is the ability to *find* it, which is the whole point of the screen.
  */
 export const filterableThings: { value: string; label: string }[] = [
-  { value: 'WoodenPallet,BagPalletAssignment,PalletDto', label: 'Pallets and bags on them' },
+  {
+    value: 'WoodenPallet,BagPalletAssignment,PalletDto',
+    label: 'Pallets and bags on them',
+  },
+  { value: 'RollDto', label: 'Rolls' },
+  { value: 'ThermoRunDto', label: 'Thermoforming runs' },
+  { value: 'PackagingConsumptionDto', label: 'Packaging' },
+  { value: 'RecyclerProductionDto', label: 'The recycler' },
   { value: 'ShiftReport,ShiftReportDto', label: 'Shifts' },
   { value: 'MaterialIssueTicket,IssueTicketDto', label: 'Issue tickets' },
-  { value: 'RecipeFamily,RecipeVersion,RecipeIngredient,RecipeVersionDto', label: 'Recipes' },
+  { value: 'MaterialStockDto', label: 'Stock figures' },
+  {
+    value: 'RecipeFamily,RecipeVersion,RecipeIngredient,RecipeFamilyDto,RecipeVersionDto',
+    label: 'Recipes',
+  },
   { value: 'ApplicationUser,ApplicationRole,UserDto', label: 'Workers and roles' },
-  { value: 'Material,MaterialCategory,MaterialPackaging', label: 'Materials' },
-  { value: 'Product,ProductType,Mould', label: 'Products and moulds' },
-  { value: 'Color,Unit,ProductionLine,Shift,MovementType', label: 'Other master data' },
-  { value: 'RecyclerProductionDto', label: 'The recycler' },
-  { value: 'PackagingConsumptionDto', label: 'Packaging' },
+  // Sign-ins that were refused: a wrong password, a locked account, a session that ran
+  // out. The one kind of line that is about somebody who could not get in at all.
+  { value: 'AuthenticationResult', label: 'Signing in' },
+  {
+    value:
+      'Material,MaterialCategory,MaterialPackaging,MaterialDto,MaterialCategoryDto,MaterialPackagingDto',
+    label: 'Materials',
+  },
+  // Moulds and product types share `LookupDto` on the server — both are a name and a
+  // flag — so they cannot be told apart by type, and they sit in one group.
+  {
+    value: 'Product,ProductType,Mould,ProductDto,LookupDto',
+    label: 'Products and moulds',
+  },
+  {
+    value:
+      'Color,Unit,ProductionLine,Shift,MovementType,ColorDto,UnitDto,ProductionLineDto,ShiftDto',
+    label: 'Other master data',
+  },
 ];

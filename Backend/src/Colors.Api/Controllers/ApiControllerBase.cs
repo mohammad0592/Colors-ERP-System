@@ -16,7 +16,13 @@ namespace Colors.Api.Controllers;
 /// </summary>
 public abstract class ApiControllerBase : ControllerBase
 {
-    protected IActionResult ToResponse<T>(Result<T> result)
+    /// <param name="result">What the service decided, and the value if it succeeded.</param>
+    /// <param name="objectType">
+    /// What the refusal was about, when the result type does not say. A delete returns
+    /// <c>Result&lt;bool&gt;</c>, so the log would otherwise record a refused delete
+    /// against "Boolean" — a line no filter matches and nobody can read.
+    /// </param>
+    protected IActionResult ToResponse<T>(Result<T> result, string? objectType = null)
     {
         if (result.IsSuccess)
         {
@@ -39,7 +45,7 @@ public abstract class ApiControllerBase : ControllerBase
                     userId,
                     $"{ControllerContext.ActionDescriptor.ControllerName}"
                         + $".{ControllerContext.ActionDescriptor.ActionName}",
-                    typeof(T).Name,
+                    objectType ?? typeof(T).Name,
                     result.Message);
         }
 

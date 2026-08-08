@@ -58,10 +58,7 @@ export function LabelPrintScreen({
   const many = barcodes.length > 1;
 
   return createPortal(
-    <div
-      id="label-print-root"
-      className="fixed inset-0 z-50 grid place-items-center p-4"
-    >
+    <div id="label-print-root" className="fixed inset-0 z-50 grid place-items-center p-4">
       {/* Everything marked `no-print` is the dialog around the labels — it must not
           reach the printer, and it must not take up space there either. */}
       <button
@@ -97,7 +94,9 @@ export function LabelPrintScreen({
         </div>
 
         {labels.isPending && <p className="no-print text-ink-muted">Loading…</p>}
-        {labels.isError && <p className="no-print text-bad">Could not load these labels.</p>}
+        {labels.isError && (
+          <p className="no-print text-bad">Could not load these labels.</p>
+        )}
 
         {labels.data?.length === 0 && (
           <p className="no-print text-ink-muted">No label was found for this.</p>
@@ -118,12 +117,13 @@ export function LabelPrintScreen({
                 window.print();
               }}
             >
-              {many ? `Print all ${String(labels.data.length)} labels` : 'Print this label'}
+              {many
+                ? `Print all ${String(labels.data.length)} labels`
+                : 'Print this label'}
             </button>
             <p className="no-print mt-2 text-xs text-ink-muted">
-              Each label prints at 100 × 70 mm, one to a page. Reprinting is allowed —
-              the barcode never changes, so an old label and a new one name the same
-              thing.
+              Each label prints at 100 × 70 mm, one to a page. Reprinting is allowed — the
+              barcode never changes, so an old label and a new one name the same thing.
             </p>
           </>
         )}
@@ -172,7 +172,9 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
           <p className="text-[8px] font-bold tracking-widest uppercase">
             Colors — Paper &amp; Plastic
           </p>
-          <p className="truncate text-base leading-tight font-bold">{label.headlineCode}</p>
+          <p className="truncate text-base leading-tight font-bold">
+            {label.headlineCode}
+          </p>
         </div>
         <span className="shrink-0 rounded border border-ink px-1.5 py-0.5 text-[9px] font-bold uppercase">
           {label.kind}
@@ -181,7 +183,9 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
 
       <div className="flex min-h-0 flex-1 gap-3">
         <div className="min-w-0 flex-1 text-[10px] leading-tight">
-          {label.productName !== null && <Field label="Product" value={label.productName} />}
+          {label.productName !== null && (
+            <Field label="Product" value={label.productName} />
+          )}
           {label.colorName !== null && <Field label="Colour" value={label.colorName} />}
           {label.rollCode !== null && (
             /* رقم الرول — already on the factory's own bag label today. */
@@ -190,15 +194,22 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
           {label.pieceCount !== null && (
             <Field label="Pieces · العدد" value={String(label.pieceCount)} />
           )}
-          {label.weight !== null && <Field label="Weight" value={`${String(label.weight)} kg`} />}
+          {label.weight !== null && (
+            <Field label="Weight" value={`${String(label.weight)} kg`} />
+          )}
           {label.length !== null && <Field label="Length" value={String(label.length)} />}
-          {label.shiftName !== null && <Field label="Shift · الوردية" value={label.shiftName} />}
+          {label.shiftName !== null && (
+            <Field label="Shift · الوردية" value={label.shiftName} />
+          )}
           <Field
             label="Date · الوقت"
-            value={`${made.toLocaleDateString('en-GB')} ${made.toLocaleTimeString('en-GB', {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}`}
+            value={`${made.toLocaleDateString('en-GB')} ${made.toLocaleTimeString(
+              'en-GB',
+              {
+                hour: '2-digit',
+                minute: '2-digit',
+              },
+            )}`}
           />
         </div>
 

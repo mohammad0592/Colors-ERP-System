@@ -75,6 +75,9 @@ public abstract class MasterDataControllerBase<TDto, TUpsert>(IMasterListService
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var result = await service.DeleteAsync(id, cancellationToken);
-        return result.IsSuccess ? NoContent() : ToResponse(result);
+
+        // The refusal is about the row, not about the `bool` that carries the answer.
+        // Without this the audit log records it against "Boolean".
+        return result.IsSuccess ? NoContent() : ToResponse(result, typeof(TDto).Name);
     }
 }

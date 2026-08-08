@@ -70,12 +70,8 @@ export function ShiftLineForm({
         // Never sent for a line that has no such settings — the server refuses them
         // there, and an old value left in state must not sneak through.
         machineSpeed: line.recordsMachineSettings ? toNumberOrNull(machineSpeed) : null,
-        feedDistanceMm: line.recordsMachineSettings
-          ? toNumberOrNull(feedDistance)
-          : null,
-        cycleTimeSeconds: line.recordsMachineSettings
-          ? toNumberOrNull(cycleTime)
-          : null,
+        feedDistanceMm: line.recordsMachineSettings ? toNumberOrNull(feedDistance) : null,
+        cycleTimeSeconds: line.recordsMachineSettings ? toNumberOrNull(cycleTime) : null,
         workers,
       });
       setSavedAt(Date.now());
@@ -112,9 +108,7 @@ export function ShiftLineForm({
               value={mouldId ?? ''}
               disabled={disabled}
               onChange={(event) => {
-                setMouldId(
-                  event.target.value === '' ? null : Number(event.target.value),
-                );
+                setMouldId(event.target.value === '' ? null : Number(event.target.value));
               }}
             >
               <option value="">Not mounted yet</option>

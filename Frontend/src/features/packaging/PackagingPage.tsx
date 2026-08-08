@@ -31,7 +31,9 @@ export function PackagingPage(): ReactElement {
   const canRecord = hasRole(RoleNames.Administrator, RoleNames.PackagingOperator);
 
   const [recording, setRecording] = useState<StartableLine | null>(null);
-  const [typed, setTyped] = useState<Record<number, { quantity: string; weight: string }>>({});
+  const [typed, setTyped] = useState<
+    Record<number, { quantity: string; weight: string }>
+  >({});
   const [notes, setNotes] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -93,7 +95,9 @@ export function PackagingPage(): ReactElement {
       void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
     },
     onError: (caught: unknown) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+      setActionError(
+        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+      );
     },
   });
 
@@ -191,9 +195,14 @@ export function PackagingPage(): ReactElement {
                   </thead>
                   <tbody>
                     {draft.data.lines.map((line) => (
-                      <tr key={line.materialId} className="border-b border-line last:border-0">
+                      <tr
+                        key={line.materialId}
+                        className="border-b border-line last:border-0"
+                      >
                         <td className="px-2 py-2">
-                          <span className="font-medium text-ink">{line.materialName}</span>
+                          <span className="font-medium text-ink">
+                            {line.materialName}
+                          </span>
                           {line.isCounted && (
                             <span className="ml-2 rounded-full bg-ok-soft px-2 py-0.5 text-xs font-semibold text-ok">
                               counted
@@ -203,7 +212,8 @@ export function PackagingPage(): ReactElement {
                         <td className="px-2 py-2 text-right">
                           {line.isCounted ? (
                             <span className="font-semibold text-ink tabular-nums">
-                              {line.quantity} <span className="text-ink-muted">{line.unitSymbol}</span>
+                              {line.quantity}{' '}
+                              <span className="text-ink-muted">{line.unitSymbol}</span>
                             </span>
                           ) : (
                             <input
@@ -315,7 +325,10 @@ export function PackagingPage(): ReactElement {
               </thead>
               <tbody>
                 {record.lines.map((line) => (
-                  <tr key={line.materialId} className="border-b border-line last:border-0">
+                  <tr
+                    key={line.materialId}
+                    className="border-b border-line last:border-0"
+                  >
                     <td className="py-2 pr-4 text-ink">
                       {line.materialName}
                       {line.isCounted && (

@@ -6,11 +6,7 @@
  */
 
 export type RollStatus =
-  | 'NeedsTest'
-  | 'Available'
-  | 'InThermo'
-  | 'Processed'
-  | 'Scrapped';
+  'NeedsTest' | 'Available' | 'InThermo' | 'Processed' | 'Scrapped';
 
 export interface BatchSummaryDto {
   id: number;
@@ -66,8 +62,10 @@ export interface RollSummaryDto {
   averageThickness: number | null;
 }
 
-export interface RollDto
-  extends Omit<RollSummaryDto, 'weight' | 'length' | 'averageThickness'> {
+export interface RollDto extends Omit<
+  RollSummaryDto,
+  'weight' | 'length' | 'averageThickness'
+> {
   notes: string | null;
   testReport: RollTestReportDto | null;
 }
@@ -75,9 +73,6 @@ export interface RollDto
 export const productionApi = {
   batches: (openOnly = false): Promise<BatchSummaryDto[]> =>
     apiRequest<BatchSummaryDto[]>(`/api/production/batches?openOnly=${String(openOnly)}`),
-
-
-
 
   rolls: (batchId?: number, needsTestOnly = false): Promise<RollSummaryDto[]> => {
     const query = new URLSearchParams({ needsTestOnly: String(needsTestOnly) });

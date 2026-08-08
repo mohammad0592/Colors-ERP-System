@@ -78,7 +78,9 @@ export function MaterialIssuePage(): ReactElement {
       setViewing(full);
     },
     onError: (caught) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+      setActionError(
+        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+      );
     },
   });
 

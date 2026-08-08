@@ -1,3 +1,5 @@
+import { wordFor } from './words';
+
 /**
  * The nine roles, mirroring Colors.Domain.Constants.RoleNames on the server.
  *
@@ -39,8 +41,8 @@ export const roleLabels: Record<RoleName, string> = {
  * added there before the client knows about it must show its raw name rather than
  * crash or render "undefined".
  */
-const lookup: Partial<Record<string, string>> = roleLabels;
+const lookup: Record<string, string> = roleLabels;
 
 export function labelForRole(role: string): string {
-  return lookup[role] ?? role;
+  return wordFor(lookup, role);
 }
