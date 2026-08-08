@@ -16,14 +16,17 @@ public class AuditService(ColorsDbContext db) : IAuditService
 {
     public async Task<IReadOnlyList<AuditEntryDto>> GetAsync(
         int? shiftReportId = null,
-        string? objectType = null,
+        IReadOnlyList<string>? objectTypes = null,
         bool refusalsOnly = false,
         int take = 200,
         CancellationToken cancellationToken = default)
     {
+        var wantedTypes = objectTypes?.Where(t => t.Length > 0).ToList();
+
         var lines = await db.AuditEntries
             .Where(e => shiftReportId == null || e.ShiftReportId == shiftReportId)
-            .Where(e => objectType == null || e.ObjectType == objectType)
+            .Where(e => wantedTypes == null || wantedTypes.Count == 0
+                        || wantedTypes.Contains(e.ObjectType))
             .Where(e => !refusalsOnly || e.Result == AuditResult.Rejected)
             // Newest first: the question is almost always "what just happened".
             .OrderByDescending(e => e.Timestamp)
@@ -75,9 +78,16 @@ public class AuditService(ColorsDbContext db) : IAuditService
             return [];
         }
 
-        return await db.ShiftReports
+        // The parts come back raw and are joined here. Letting the database turn the date
+        // into text gives whatever format it prefers — which came out as 08/07/2026 for
+        // the seventh of August, the one order this factory never uses.
+        var shifts = await db.ShiftReports
             .Where(r => wanted.Contains(r.Id))
-            .Select(r => new { r.Id, Label = r.Shift.Name + " " + r.ProductionDate.ToString() })
-            .ToDictionaryAsync(r => r.Id, r => r.Label, cancellationToken);
+            .Select(r => new { r.Id, r.Shift.Name, r.ProductionDate })
+            .ToListAsync(cancellationToken);
+
+        return shifts.ToDictionary(
+            r => r.Id,
+            r => $"{r.Name} {r.ProductionDate:dd/MM/yyyy}");
     }
 }

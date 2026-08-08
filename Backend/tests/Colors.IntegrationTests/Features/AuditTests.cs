@@ -2,6 +2,7 @@ using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Production;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.Audit;
 using Colors.IntegrationTests.Common;
 using Microsoft.EntityFrameworkCore;
 
@@ -166,5 +167,82 @@ public class AuditTests(DatabaseFixture fixture)
         Assert.Contains("FullName", line.Details);
         Assert.DoesNotContain("PasswordHash", line.Details);
         Assert.DoesNotContain("a-different-hash-entirely", line.Details);
+    }
+
+    [Fact]
+    public async Task Reading_the_log_finds_a_thing_under_every_name_it_is_logged_under()
+    {
+        await using var db = fixture.CreateContext();
+        var service = new AuditService(db);
+
+        var marker = Guid.NewGuid().ToString("N")[..8];
+
+        // The two shapes the same thing takes in the log: a correction recorded against
+        // the entity it changed, and a refusal recorded against what the screen asked
+        // for, because a refusal never touched an entity at all.
+        db.AuditEntries.AddRange(
+            new Domain.Entities.System.AuditEntry
+            {
+                Action = "Modified",
+                ObjectType = $"WoodenPallet{marker}",
+                ObjectId = 1,
+                Result = AuditResult.Success,
+                Timestamp = DateTimeOffset.UtcNow,
+            },
+            new Domain.Entities.System.AuditEntry
+            {
+                Action = "Pallets.ScanBag",
+                ObjectType = $"PalletDto{marker}",
+                Result = AuditResult.Rejected,
+                Details = "No label in the system matches B123456.",
+                Timestamp = DateTimeOffset.UtcNow,
+            });
+
+        await db.SaveChangesAsync();
+
+        // One name finds half the answer...
+        var onlyEntity = await service.GetAsync(objectTypes: [$"WoodenPallet{marker}"]);
+        Assert.Single(onlyEntity);
+
+        // ...and the group finds both, which is what a supervisor asked for.
+        var both = await service.GetAsync(
+            objectTypes: [$"WoodenPallet{marker}", $"PalletDto{marker}"]);
+
+        Assert.Equal(2, both.Count);
+        Assert.Contains(both, l => l.Result == "Success");
+        Assert.Contains(both, l => l.Result == "Rejected");
+    }
+
+    [Fact]
+    public async Task Only_what_was_refused_can_be_asked_for()
+    {
+        await using var db = fixture.CreateContext();
+        var service = new AuditService(db);
+
+        var marker = Guid.NewGuid().ToString("N")[..8];
+
+        db.AuditEntries.AddRange(
+            new Domain.Entities.System.AuditEntry
+            {
+                Action = "Modified",
+                ObjectType = marker,
+                Result = AuditResult.Success,
+                Timestamp = DateTimeOffset.UtcNow,
+            },
+            new Domain.Entities.System.AuditEntry
+            {
+                Action = "Pallets.ScanBag",
+                ObjectType = marker,
+                Result = AuditResult.Rejected,
+                Timestamp = DateTimeOffset.UtcNow,
+            });
+
+        await db.SaveChangesAsync();
+
+        var refused = await service.GetAsync(objectTypes: [marker], refusalsOnly: true);
+
+        // The line nothing else in the system records.
+        var line = Assert.Single(refused);
+        Assert.Equal("Rejected", line.Result);
     }
 }

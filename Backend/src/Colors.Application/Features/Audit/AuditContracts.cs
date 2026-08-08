@@ -23,9 +23,16 @@ public sealed record AuditEntryDto(
 /// </summary>
 public interface IAuditService
 {
+    /// <summary>
+    /// <paramref name="objectTypes"/> is a list because one thing on the factory floor is
+    /// several names in the log: a successful reversal is recorded against the entity it
+    /// changed, while a refused scan never touched an entity at all and is recorded
+    /// against the shape the screen asked for. Filtering on one name alone would quietly
+    /// hide half the answer.
+    /// </summary>
     Task<IReadOnlyList<AuditEntryDto>> GetAsync(
         int? shiftReportId = null,
-        string? objectType = null,
+        IReadOnlyList<string>? objectTypes = null,
         bool refusalsOnly = false,
         int take = 200,
         CancellationToken cancellationToken = default);

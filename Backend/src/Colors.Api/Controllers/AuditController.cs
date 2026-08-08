@@ -24,7 +24,13 @@ public class AuditController(IAuditService audit) : ApiControllerBase
         [FromQuery] int take = 200,
         CancellationToken cancellationToken = default)
     {
+        // Comma separated, because one thing on the floor is several names in the log —
+        // a reversal is against the entity, a refused scan against what the screen asked
+        // for.
+        var types = objectType?.Split(',', StringSplitOptions.RemoveEmptyEntries
+                                            | StringSplitOptions.TrimEntries);
+
         return Ok(await audit.GetAsync(
-            shiftReportId, objectType, refusalsOnly, take, cancellationToken));
+            shiftReportId, types, refusalsOnly, take, cancellationToken));
     }
 }

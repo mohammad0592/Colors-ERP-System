@@ -1,0 +1,116 @@
+/**
+ * Turning what the log stores into what a supervisor reads.
+ *
+ * The log stores what the system knows: `Modified` of a `BagPalletAssignment`, or a
+ * refused `Pallets.ScanBag`. Those are the right things to store — they are exact, and
+ * they never need rewriting when the wording changes — but nobody reads a shift's
+ * history in that language.
+ *
+ * Anything not listed falls through to its raw name rather than being hidden or shown as
+ * "undefined". A new kind of record must appear in the log the day it exists, even if
+ * nobody has written a sentence for it yet.
+ */
+
+/** What kind of thing it happened to. */
+const things: Record<string, string> = {
+  Material: 'a material',
+  MaterialCategory: 'a material category',
+  MaterialPackaging: 'a material packaging',
+  Product: 'a product',
+  ProductType: 'a product type',
+  Mould: 'a mould',
+  Color: 'a colour',
+  Unit: 'a unit',
+  ProductionLine: 'a production line',
+  Shift: 'a shift time',
+  MovementType: 'a movement type',
+  RecipeFamily: 'a recipe',
+  RecipeVersion: 'a recipe version',
+  RecipeIngredient: 'a recipe ingredient',
+  ApplicationUser: 'a worker',
+  ApplicationRole: 'a role',
+  ShiftReport: 'a shift',
+  BagPalletAssignment: 'a bag on a pallet',
+  WoodenPallet: 'a pallet',
+  MaterialIssueTicket: 'an issue ticket',
+};
+
+/** What was done to it. */
+const deeds: Record<string, string> = {
+  Added: 'Created',
+  Modified: 'Changed',
+  Deleted: 'Removed',
+};
+
+/**
+ * A refused attempt, named by the screen it came from rather than by a table — because
+ * a refusal never touched a table.
+ */
+const refusals: Record<string, string> = {
+  'Pallets.ScanBag': 'Scanning a bag onto a pallet',
+  'Pallets.StartPallet': 'Starting a pallet',
+  'Pallets.CancelPallet': 'Cancelling a pallet',
+  'Pallets.ReverseAssignment': 'Taking a bag off a pallet',
+  'Production.CreateRoll': 'Logging a roll',
+  'Production.SaveTestReport': 'Recording a roll test',
+  'Thermo.StartRun': 'Putting a roll into the thermo',
+  'Thermo.FinishRun': 'Taking a roll out of the thermo',
+  'Thermo.SaveTestReport': 'Counting a run',
+  'Packaging.Save': 'Recording packaging',
+  'Recycler.Save': 'Recording what the recycler made',
+  'MaterialIssue.Create': 'Issuing material',
+  'MaterialIssue.RecordReturns': 'Weighing material back in',
+  'MaterialIssue.Close': 'Closing an issue ticket',
+  'ShiftReports.Open': 'Opening a shift',
+  'ShiftReports.Close': 'Closing a shift',
+  'ShiftReports.Reopen': 'Reopening a shift',
+  'Users.Create': 'Adding a worker',
+  'Users.Update': 'Changing a worker',
+  'Users.ResetPassword': 'Setting a password',
+  'Inventory.Receive': 'Receiving material',
+  'Inventory.Adjust': 'Correcting a stock figure',
+  'Auth.Login': 'Signing in',
+};
+
+/**
+ * One line of the log as a sentence.
+ *
+ * A refusal reads as the thing that was attempted; a success reads as what was done and
+ * to what.
+ */
+export function describe(
+  action: string,
+  objectType: string,
+  objectId: number | null,
+  rejected: boolean,
+): string {
+  if (rejected) {
+    return refusals[action] ?? action;
+  }
+
+  const deed = deeds[action] ?? action;
+  const thing = things[objectType] ?? objectType;
+
+  return objectId === null ? `${deed} ${thing}` : `${deed} ${thing} (#${String(objectId)})`;
+}
+
+/**
+ * The kinds of thing worth filtering by, in the order somebody would look for them.
+ *
+ * Each carries <b>every name the log uses for it</b>. A successful reversal is recorded
+ * against the entity it changed; a refused scan never touched an entity and is recorded
+ * against the shape the screen asked for. Filtering on one name alone would show the
+ * corrections and quietly hide the refusals — the half a supervisor came for.
+ */
+export const filterableThings: { value: string; label: string }[] = [
+  { value: 'WoodenPallet,BagPalletAssignment,PalletDto', label: 'Pallets and bags on them' },
+  { value: 'ShiftReport,ShiftReportDto', label: 'Shifts' },
+  { value: 'MaterialIssueTicket,IssueTicketDto', label: 'Issue tickets' },
+  { value: 'RecipeFamily,RecipeVersion,RecipeIngredient,RecipeVersionDto', label: 'Recipes' },
+  { value: 'ApplicationUser,ApplicationRole,UserDto', label: 'Workers and roles' },
+  { value: 'Material,MaterialCategory,MaterialPackaging', label: 'Materials' },
+  { value: 'Product,ProductType,Mould', label: 'Products and moulds' },
+  { value: 'Color,Unit,ProductionLine,Shift,MovementType', label: 'Other master data' },
+  { value: 'RecyclerProductionDto', label: 'The recycler' },
+  { value: 'PackagingConsumptionDto', label: 'Packaging' },
+];

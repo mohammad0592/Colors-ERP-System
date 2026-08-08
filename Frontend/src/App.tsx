@@ -2,6 +2,7 @@
 import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
+import { AuditPage } from './features/audit/AuditPage';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
@@ -182,6 +183,19 @@ export default function App(): ReactElement {
                   }
                 >
                   <Route path="/reports" element={<ReportsPage />} />
+                </Route>
+
+                {/* Who changed what, and what was refused. The administrator answers for
+                    the system and the supervisor for the shift (specification
+                    section 15). */}
+                <Route
+                  element={
+                    <ProtectedRoute
+                      roles={[RoleNames.Administrator, RoleNames.Supervisor]}
+                    />
+                  }
+                >
+                  <Route path="/audit" element={<AuditPage />} />
                 </Route>
 
                 {/* Recipes are the supervisor's job too — he is the one who

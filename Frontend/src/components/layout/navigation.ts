@@ -129,6 +129,12 @@ export const navigation: NavGroup[] = [
         icon: 'reports',
         roles: [RoleNames.Administrator, RoleNames.Supervisor],
       },
+      {
+        label: 'Audit log',
+        path: '/audit',
+        icon: 'search',
+        roles: [RoleNames.Administrator, RoleNames.Supervisor],
+      },
     ],
   },
   {
