@@ -19,14 +19,20 @@
 .PARAMETER To
     A specific release folder name. Defaults to the one before the live release.
 
+.PARAMETER Yes
+    Skips the question. For a scheduled task or a script — never the way to do it by
+    hand, because the question is the point.
+
 .EXAMPLE
     .\Rollback.ps1
     .\Rollback.ps1 -To 2026-08-08_1430
+    .\Rollback.ps1 -Yes
 #>
 [CmdletBinding()]
 param(
     [string]$Root = 'C:\Colors',
-    [string]$To
+    [string]$To,
+    [switch]$Yes
 )
 
 $ErrorActionPreference = 'Stop'
@@ -72,10 +78,19 @@ else {
 Write-Host "Live now:  $live"
 Write-Host "Going to:  $($target.FullName)" -ForegroundColor Yellow
 
-$answer = Read-Host 'Type yes to switch'
-if ($answer -ne 'yes') {
-    Write-Host 'Nothing changed.'
-    return
+# Asked out loud, because this changes what the factory is running. `Read-Host` would
+# throw rather than wait in a window with no keyboard attached — a scheduled task, or a
+# remote session run non-interactively — so that case is handled before it is reached.
+if (-not $Yes) {
+    if (-not [Environment]::UserInteractive -or $Host.Name -eq 'Default Host') {
+        throw 'Nothing changed: there is nobody here to ask. Pass -Yes if that is meant.'
+    }
+
+    $answer = Read-Host 'Type yes to switch'
+    if ($answer -ne 'yes') {
+        Write-Host 'Nothing changed.'
+        return
+    }
 }
 
 Remove-CurrentLink -Path $current

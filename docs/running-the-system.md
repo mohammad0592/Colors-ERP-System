@@ -99,6 +99,56 @@ Now start both as above and sign in as `ADMIN001` with the password from step 4.
 
 ---
 
+## First time on the factory server
+
+The server is **not** the same as a development computer, and one difference stops it dead: `dotnet user-secrets` does not exist there. It is a development tool that reads from your own Windows profile. A published build knows nothing about it.
+
+So the two secrets have to be given to the server another way. Without them the API will not start at all — it checks on startup and says which one is missing, which is better than running and failing later on the first sign-in.
+
+**1. Set the two settings for the machine**, in an administrator PowerShell:
+
+```bash
+[Environment]::SetEnvironmentVariable('ConnectionStrings__ColorsDb', 'Host=localhost;Port=5432;Database=colors_erp;Username=postgres;Password=YOUR_PASSWORD', 'Machine')
+```
+
+```bash
+[Environment]::SetEnvironmentVariable('Jwt__SigningKey', 'a-long-random-text-of-at-least-32-characters', 'Machine')
+```
+
+Note the **two underscores**. That is how a nested setting is written as an environment variable: `ConnectionStrings__ColorsDb` is the same setting as `ConnectionStrings:ColorsDb` on your own machine.
+
+`'Machine'` matters — it sets them for the whole computer, so the Windows service sees them. Set for your user only, they would work when you test by hand and vanish when the service starts.
+
+**2. Say it is a production server:**
+
+```bash
+[Environment]::SetEnvironmentVariable('ASPNETCORE_ENVIRONMENT', 'Production', 'Machine')
+```
+
+This is what switches off the demonstration accounts and the administrator password reset. Both are fenced off outside development on purpose (specification section 3).
+
+**3. Deploy, then create the database:**
+
+```bash
+.\deploy\Deploy.ps1
+```
+
+```bash
+.\deploy\Migrate.ps1
+```
+
+**4. Install the service**, pointing at `current` and never at a dated folder — that link is what a rollback moves:
+
+```bash
+New-Service -Name ColorsErp -BinaryPathName 'C:\Colors\current\api\Colors.Api.exe' -DisplayName 'Colors ERP' -StartupType Automatic
+```
+
+After this the screens and the API are **one address**. The API serves the built screens itself, so there is no second web server to start, and nothing to configure for cross-origin requests.
+
+> Changing an environment variable does not reach a service that is already running. After setting one, `Restart-Service ColorsErp`.
+
+---
+
 ## After changing the database structure
 
 When an entity changes, the database must be updated:

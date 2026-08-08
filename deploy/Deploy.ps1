@@ -36,6 +36,36 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# Runs a command line tool and fails only if the tool itself failed.
+#
+# `$ErrorActionPreference = 'Stop'` is right for everything else in this script, but for
+# an external program it is actively wrong: PowerShell treats anything the program writes
+# to stderr as a terminating error, whatever the program's exit code was. npm writes
+# warnings there as a matter of course — a deprecated package, a node version it would
+# have preferred — so the first harmless warning killed the deployment with a
+# "NativeCommandError" that reads like a crash.
+#
+# The exit code is the tool's actual verdict, so that is what is checked.
+function Invoke-Tool {
+    param(
+        [Parameter(Mandatory)][string]$Description,
+        [Parameter(Mandatory)][scriptblock]$Command
+    )
+
+    $previous = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $Command 2>&1 | ForEach-Object { Write-Host $_ }
+    }
+    finally {
+        $ErrorActionPreference = $previous
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Description failed (exit code $LASTEXITCODE)."
+    }
+}
+
 # Removes the 'current' link without touching what it points at.
 #
 # Remove-Item on a junction asks "the item has children, are you sure?" — which stops a
@@ -64,25 +94,30 @@ Write-Host "Deploying to $release" -ForegroundColor Cyan
 # because nothing points at it until the very last step.
 New-Item -ItemType Directory -Path $release -Force | Out-Null
 
+$apiOutput = Join-Path $release 'api'
+
 Write-Host 'Publishing the API...'
-dotnet publish (Join-Path $repository 'Backend\src\Colors.Api\Colors.Api.csproj') `
-    --configuration Release `
-    --output (Join-Path $release 'api') `
-    --nologo
-if ($LASTEXITCODE -ne 0) { throw 'The API did not publish.' }
+Invoke-Tool 'Publishing the API' {
+    dotnet publish (Join-Path $repository 'Backend\src\Colors.Api\Colors.Api.csproj') `
+        --configuration Release `
+        --output $apiOutput `
+        --nologo
+}
 
 Write-Host 'Building the screens...'
 Push-Location (Join-Path $repository 'Frontend')
 try {
-    npm ci
-    if ($LASTEXITCODE -ne 0) { throw 'npm ci failed.' }
-
-    npm run build
-    if ($LASTEXITCODE -ne 0) { throw 'The screens did not build.' }
+    # `ci`, not `install`: it installs exactly what the lock file says and nothing else,
+    # so what goes to the factory is what was tested rather than whatever was newest
+    # this morning.
+    Invoke-Tool 'Installing the screen packages' { npm ci }
+    Invoke-Tool 'Building the screens' { npm run build }
 
     # The API serves these itself in production, so there is no second web server and no
     # cross-origin request at all.
-    Copy-Item -Path 'dist\*' -Destination (Join-Path $release 'api\wwwroot') -Recurse -Force
+    $wwwroot = Join-Path $apiOutput 'wwwroot'
+    New-Item -ItemType Directory -Path $wwwroot -Force | Out-Null
+    Copy-Item -Path 'dist\*' -Destination $wwwroot -Recurse -Force
 }
 finally {
     Pop-Location
@@ -110,6 +145,37 @@ $old = Get-ChildItem $releases -Directory |
 foreach ($folder in $old) {
     Write-Host "Removing old release $($folder.Name)"
     Remove-Item $folder.FullName -Recurse -Force
+}
+
+# ---------------------------------------------------------------- settings check
+
+# The two settings a published build cannot supply for itself. In development they come
+# from `dotnet user-secrets`, which is a developer's tool reading a developer's Windows
+# profile — a published build knows nothing about it.
+#
+# Checked here rather than left to be discovered: the API validates them on startup and
+# refuses to run, so without this the first sign that anything is wrong is a service that
+# will not start, at whatever hour somebody chose to deploy.
+#
+# This is a warning and not a failure. The deployment itself is sound; it is the machine
+# that is not ready, and saying so is more use than refusing to publish.
+$required = @('ConnectionStrings__ColorsDb', 'Jwt__SigningKey')
+$missing = $required | Where-Object {
+    -not [Environment]::GetEnvironmentVariable($_, 'Machine')
+}
+
+if ($missing) {
+    Write-Host "`nThis machine is missing settings the API needs to start:" -ForegroundColor Yellow
+    foreach ($name in $missing) { Write-Host "    $name" -ForegroundColor Yellow }
+    Write-Host @"
+
+Set each one for the whole machine, not just for you, or the service will not
+see it:
+
+    [Environment]::SetEnvironmentVariable('NAME', 'value', 'Machine')
+
+See docs/running-the-system.md, "First time on the factory server".
+"@ -ForegroundColor Yellow
 }
 
 Write-Host @"

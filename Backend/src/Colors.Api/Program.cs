@@ -69,9 +69,31 @@ app.UseHttpsRedirection();
 
 app.UseCors(CorsExtensions.PolicyName);
 
+// The built screens, served by the API itself (specification section 15). One server,
+// one address, so in the factory there is no second web server to start and no
+// cross-origin request at all.
+//
+// Before authentication on purpose: the sign-in page cannot require a sign-in.
+//
+// In development this finds nothing and does nothing — there is no wwwroot, because the
+// screens are being served by Vite on port 5173 with hot reload.
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// A path under /api that matches no controller is a mistake in the caller, and it has to
+// hear so. Without this the fallback below would hand it the sign-in page with a 200,
+// and a screen would sit there trying to read HTML as JSON.
+app.Map("/api/{**rest}", () => Results.NotFound());
+
+// Everything else is a screen address. The React router runs in the browser, so the
+// server has never heard of /reports or /production/pallets — it must return index.html
+// and let the browser work out which screen that is. Without this, opening a link to a
+// screen, or pressing refresh on one, gives a 404.
+app.MapFallbackToFile("index.html");
 
 app.Run();
