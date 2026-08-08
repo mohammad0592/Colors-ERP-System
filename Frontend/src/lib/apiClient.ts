@@ -1,3 +1,4 @@
+import { resolveApiBaseUrl } from './apiBaseUrl';
 import type { AuthenticationResult, ErrorCode, ProblemResponse } from './apiTypes';
 import {
   clearTokens,
@@ -9,18 +10,17 @@ import {
 } from './tokenStorage';
 
 /**
- * Where the API is.
+ * Where the API is. The reasoning lives in `apiBaseUrl.ts`, with its own tests.
  *
- * `VITE_API_URL` wins when it is set. Otherwise the API is assumed to be on **the same
- * machine that served this page**, on its own port — never on `localhost`, because a
- * phone's localhost is the phone itself. That one word is the difference between the
- * screens working on a tablet on the factory floor and every request failing.
- *
- * In production both come from one address and this resolves to that address anyway.
+ * `import.meta.env.DEV` is the deciding fact: Vite sets it true only while developing,
+ * and a built copy always has it false. That is what tells the screens whether the API
+ * is on a port of its own or at the very address that served them.
  */
-const BASE_URL: string =
-  import.meta.env.VITE_API_URL ??
-  `${window.location.protocol}//${window.location.hostname}:5211`;
+const BASE_URL: string = resolveApiBaseUrl(
+  import.meta.env.VITE_API_URL,
+  import.meta.env.DEV,
+  window.location,
+);
 
 /**
  * An error the worker can be shown.
