@@ -34,6 +34,14 @@ WORKDIR /api
 
 # Same idea: the project files first, so the package restore is reused whenever only
 # the C# changes.
+#
+# These two shared files come first and are not optional. Directory.Build.props is where
+# the .NET version is set, and Directory.Packages.props is where every package version
+# is pinned — no .csproj states either for itself. Without them restore reads a project
+# with no framework at all and stops with "The TargetFramework value '' was not
+# recognized", which sounds like a broken project file and is really a missing one.
+COPY Backend/Directory.Build.props Backend/Directory.Packages.props Backend/
+
 COPY Backend/src/Colors.Domain/Colors.Domain.csproj        Backend/src/Colors.Domain/
 COPY Backend/src/Colors.Application/Colors.Application.csproj Backend/src/Colors.Application/
 COPY Backend/src/Colors.Infrastructure/Colors.Infrastructure.csproj Backend/src/Colors.Infrastructure/

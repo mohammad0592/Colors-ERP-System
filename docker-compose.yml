@@ -21,7 +21,11 @@ services:
     ports:
       - '5433:5432'
     volumes:
-      - db-data:/var/lib/postgresql/data
+      # /var/lib/postgresql, NOT /var/lib/postgresql/data. PostgreSQL 18 changed this:
+      # the data now lives in a version-named folder underneath, so that an upgrade to
+      # 19 can sit beside 18 rather than having to cross a mount boundary. Mounting the
+      # old path makes the container refuse to start and explain itself at length.
+      - db-data:/var/lib/postgresql
     healthcheck:
       # The application starts faster than PostgreSQL does. Without this it would try to
       # connect to a database that is not listening yet, and fall over on first run.
