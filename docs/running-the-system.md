@@ -149,6 +149,50 @@ After this the screens and the API are **one address**. The API serves the built
 
 ---
 
+## The cloud trial
+
+Before go-live the factory tries the system for a few weeks and says what is wrong. That happens on a rented server, not in the factory, because it must be reachable from anywhere and easy to throw away afterwards.
+
+**This is a guest house, not the home.** The real system runs on the Windows Server in the factory. Nothing here changes that, and nothing here is needed for it.
+
+**Everything in the trial is practice.** The factory should be told plainly: enter real work, try to break it, do not be careful. All of it is deleted before go-live.
+
+### The image
+
+The whole system is one Docker image — the API with the screens inside it, exactly as on the factory server. Build and try it on this machine first:
+
+```bash
+docker compose up --build
+```
+
+Then open `http://localhost:8080` and sign in as `ADMIN001`. Stop and throw the trial database away with:
+
+```bash
+docker compose down -v
+```
+
+### Putting it on a host
+
+Any host that runs a Docker image will do — Railway, Render, Fly.io, or a plain server. Give it the image and these settings:
+
+| Setting | What it is |
+|---|---|
+| `ConnectionStrings__ColorsDb` | The database. Most hosts instead give you `DATABASE_URL`, which the system reads by itself. |
+| `Jwt__SigningKey` | Any 32+ random characters. Different from the factory server's. |
+| `Seed__AdminPassword` | The first administrator's password. Everyone else is created from the Users screen. |
+
+Two are already set inside the image and should be left alone: `Hosting__BehindProxy=true`, because every host handles HTTPS itself and the system has to be told so or the site never loads, and `Database__MigrateOnStartup=true`, because a container has no console to run migrations from.
+
+Point the host's health check at `/health`.
+
+### What the trial does not do
+
+- **The data is not brought back.** Nothing copies the trial database onto the factory server. That is on purpose — the trial is practice.
+- **Migrations run on startup here and nowhere else.** The factory server still uses `Migrate.ps1`, after a backup (specification section 15).
+- **No demonstration accounts.** The image runs as Production, so `SUP001` and the rest do not exist. Real people, real accounts.
+
+---
+
 ## After changing the database structure
 
 When an entity changes, the database must be updated:

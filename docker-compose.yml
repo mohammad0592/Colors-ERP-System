@@ -1,0 +1,53 @@
+# The whole system on this machine, the way a cloud host will run it.
+#
+# This is for **trying the image**, not for the factory. It brings up a throwaway
+# database and the application against it, so the image can be proved before anybody
+# pays a hosting company. The factory server does not use any of this — it runs the
+# published build as a Windows service (specification section 15).
+#
+#     docker compose up --build
+#     open http://localhost:8080
+#     docker compose down -v        (the -v throws the database away too)
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_PASSWORD: trial
+      POSTGRES_USER: postgres
+      POSTGRES_DB: colors_erp
+    # 5433 outside, so this never collides with the PostgreSQL already installed on the
+    # development machine. Inside the network it is still the usual 5432.
+    ports:
+      - '5433:5432'
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # The application starts faster than PostgreSQL does. Without this it would try to
+      # connect to a database that is not listening yet, and fall over on first run.
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d colors_erp']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__ColorsDb: 'Host=db;Port=5432;Database=colors_erp;Username=postgres;Password=trial'
+
+      # Test values only. A real deployment gets its own, set on the host and never
+      # written in a file that goes to GitHub.
+      Jwt__SigningKey: 'trial-only-signing-key-at-least-32-characters-long'
+      Seed__AdminPassword: 'Colors123'
+
+      # Nothing is in front of the application here, so the request arrives exactly as it
+      # was sent and there are no forwarded headers to believe.
+      Hosting__BehindProxy: 'false'
+    ports:
+      - '8080:8080'
+
+volumes:
+  db-data:

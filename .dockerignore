@@ -1,0 +1,34 @@
+# What never goes into the image.
+#
+# Two reasons, and the second one matters more than it looks: build leftovers from a
+# Windows machine would be copied into a Linux image and confuse the build there, giving
+# errors that make no sense because they are about a build that already happened
+# somewhere else.
+
+# Build leftovers
+**/bin/
+**/obj/
+Frontend/node_modules/
+Frontend/dist/
+
+# Version control and editor
+.git/
+.gitignore
+.vs/
+.vscode/
+.idea/
+
+# Logs and local scratch
+**/logs/
+*.log
+
+# Nothing here runs in the image
+deploy/
+docs/
+**/*.md
+**/*.ps1
+
+# Secrets never belong in an image. They are given to it when it runs.
+**/appsettings.Development.json
+**/*.user
+**/.env

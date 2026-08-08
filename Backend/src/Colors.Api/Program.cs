@@ -11,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 // down rather than lost (specification section 15).
 builder.AddFileLogging();
 
+// How a cloud host differs from the factory server: the port it chose, and a database
+// address written its way. Both do nothing unless the host set them, so the factory
+// server is untouched (specification section 15).
+builder.UseHostPort();
+builder.UseDatabaseUrl();
+
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 
@@ -33,6 +39,11 @@ builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddFrontendCors(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+
+// Before the seeders, which write rows and therefore need the tables to exist. Does
+// nothing unless Database:MigrateOnStartup is switched on — the factory server migrates
+// deliberately, after a backup, through Migrate.ps1.
+await app.MigrateIfAskedAsync();
 
 // Roles and the first administrator. Safe to run every start — it only adds what
 // is missing. Database migrations are NOT run here: they are a deliberate step in
@@ -63,6 +74,11 @@ if (app.Environment.IsDevelopment())
 
 // One line per request in the file log: who, what, the status and how long it took.
 // Enough to answer "what was happening at 2am" without turning on anything else.
+// Before everything that looks at the request, so they all see how it really arrived
+// rather than how it looks after the host's router unwrapped it. Without this, behind a
+// cloud host, the redirect below loops until the browser gives up.
+app.UseProxyHeaders();
+
 app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();

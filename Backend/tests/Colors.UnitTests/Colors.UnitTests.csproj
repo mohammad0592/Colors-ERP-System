@@ -19,6 +19,9 @@
     <ProjectReference Include="..\..\src\Colors.Domain\Colors.Domain.csproj" />
     <ProjectReference Include="..\..\src\Colors.Application\Colors.Application.csproj" />
     <ProjectReference Include="..\..\src\Colors.Infrastructure\Colors.Infrastructure.csproj" />
+    <!-- For the hosting helpers: the cloud trial's database address is translated by
+         hand, and a mistake there is a connection that fails at the worst moment. -->
+    <ProjectReference Include="..\..\src\Colors.Api\Colors.Api.csproj" />
   </ItemGroup>
 
 </Project>
