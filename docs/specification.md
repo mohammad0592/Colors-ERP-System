@@ -1496,6 +1496,40 @@ The developer is **two hours away**, so three things are required, not optional:
 
 **Backups** go to the server, an external drive, and optionally cloud. A backup stored only on the machine it protects is not a backup. Restores are tested quarterly — a backup nobody has restored is only a hope.
 
+### The trial, before go-live
+
+Before the system is installed in the factory, the factory **uses it for a few weeks and says what is wrong**. That cannot happen on the server described above: it does not exist yet, and the point of the exercise is that people try the screens from wherever they are, on their own phones, without anybody standing over them.
+
+So the trial runs on a rented server on the internet. **It is a guest house, not the home.** Nothing about it changes the arrangement above, and nothing about it is needed to run the factory.
+
+**Everything entered during the trial is practice and is deleted before go-live.** This is said out loud to the factory, because it changes how they use it. People are careful with a system they think is real, and being careful is exactly what hides the problems worth finding. They should enter real work, in the real order, and try to break it.
+
+### The trial is one image
+
+The whole system is packaged as a single Docker image — the API with the built screens inside it. That is the *same* arrangement as the factory server: one address, one process, no second web server and no cross-origin requests. What the factory tries therefore behaves the way the real thing will, which is the only reason the trial is worth anything.
+
+The image runs on any host that takes one, so choosing a hosting company decides nothing and locks in nothing.
+
+### What a rented server does differently
+
+Three things, and **each does nothing unless the host asks for it** — so the factory server, which asks for none of them, is untouched.
+
+| | Why it is needed |
+|---|---|
+| **The port is chosen by the host** | It tells the application which one in `PORT`. Ignore it and the host reports the site as down. |
+| **The database arrives as a URL** | Hosts supply `postgresql://user:password@host/name`, which the database driver does not read. It is translated. The password inside is percent-encoded, so an `@` arrives as `%40` — pass that through unchanged and sign-in fails against a password that looks correct everywhere it can be seen. |
+| **HTTPS is handled outside the application** | Every host terminates it at their edge and passes plain HTTP inward. The application must be told, or it answers "go to HTTPS", the host unwraps it to HTTP again, and the two loop until the browser gives up — **the site never loads at all**. Only believed when `Hosting:BehindProxy` is set, because trusting those headers from anywhere else would let a caller claim to be someone they are not. |
+
+### The one rule that bends, and why it does not break
+
+Migrations are run **on startup** in the trial, which is the opposite of the rule above.
+
+The rule above exists to protect the factory's records: a bad migration against real production history costs a day. In the trial there is no such history — the database starts empty, everything in it is practice, and there is no console to run a command in. The reason for the rule is absent, so the rule is suspended **there and nowhere else**: it is switched on by `Database:MigrateOnStartup`, the factory server never sets it, and `Migrate.ps1` after a backup remains the only way there. Each migration applied is named in the log.
+
+### No demonstration accounts in the trial
+
+The trial runs as Production, so the demonstration logins do not exist ([section 3](#3-users-and-roles)). The factory signs in as themselves, with accounts an administrator made — which is also the first thing worth testing.
+
 ---
 
 ## 16. Complete table list
