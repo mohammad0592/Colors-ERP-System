@@ -1,4 +1,4 @@
-﻿import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
@@ -22,7 +22,7 @@ import { UsersPage } from './features/users/UsersPage';
 import { TracePage } from './features/trace/TracePage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
 import { ThermoTestsPage } from './features/thermo/ThermoTestsPage';
-import { RoleNames } from './lib/roles';
+import { rolesFor, type ScreenPath } from './routes/access';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { plannedRoutes } from './routes/routes';
 
@@ -39,6 +39,35 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Every screen behind the sign-in, and the component that draws it.
+ *
+ * Only the pairing lives here. **Who may open each one is not written here** — it is
+ * read from `routes/access.ts`, the same list the sidebar reads, so the menu and the
+ * guard cannot drift apart. They used to, in six places, and the result was a role
+ * being let onto a screen it had no link to.
+ */
+const screens: { path: ScreenPath; element: ReactElement }[] = [
+  { path: '/', element: <DashboardPage /> },
+  { path: '/inventory', element: <InventoryPage /> },
+  { path: '/trace', element: <TracePage /> },
+  { path: '/inventory/receive', element: <ReceiveMaterialsPage /> },
+  { path: '/inventory/issue', element: <MaterialIssuePage /> },
+  { path: '/production/rolls', element: <RollProductionPage /> },
+  { path: '/production/roll-tests', element: <RollTestsPage /> },
+  { path: '/production/thermo', element: <ThermoProductionPage /> },
+  { path: '/production/thermo-tests', element: <ThermoTestsPage /> },
+  { path: '/production/pallets', element: <PalletsPage /> },
+  { path: '/production/packaging', element: <PackagingPage /> },
+  { path: '/production/recycler', element: <RecyclerPage /> },
+  { path: '/reports', element: <ReportsPage /> },
+  { path: '/audit', element: <AuditPage /> },
+  { path: '/recipes', element: <RecipesPage /> },
+  { path: '/shifts', element: <ShiftsPage /> },
+  { path: '/master-data', element: <MasterDataPage /> },
+  { path: '/users', element: <UsersPage /> },
+];
+
 export default function App(): ReactElement {
   return (
     <QueryClientProvider client={queryClient}>
@@ -50,169 +79,11 @@ export default function App(): ReactElement {
             {/* Everything below needs a signed-in worker. */}
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
-                <Route path="/" element={<DashboardPage />} />
-
-                {/* Anyone signed in may see the store — an operator about to start a
-                    batch needs to know the material is there. Receiving belongs to
-                    the inventory manager (specification section 3). */}
-                <Route path="/inventory" element={<InventoryPage />} />
-
-                {/* Where did this come from. Open to anyone signed in: it writes
-                    nothing, and whoever is holding a label may need to know what is
-                    behind it (specification section 13). */}
-                <Route path="/trace" element={<TracePage />} />
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[RoleNames.Administrator, RoleNames.InventoryManager]}
-                    />
-                  }
-                >
-                  <Route path="/inventory/receive" element={<ReceiveMaterialsPage />} />
-                </Route>
-
-                {/* Reading tickets is open wider than issuing them: the supervisor
-                    closing a shift needs to see what is still outstanding. */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[
-                        RoleNames.Administrator,
-                        RoleNames.InventoryManager,
-                        RoleNames.Supervisor,
-                      ]}
-                    />
-                  }
-                >
-                  <Route path="/inventory/issue" element={<MaterialIssuePage />} />
-                </Route>
-
-                {/* Line 1. Making rolls and measuring them are different jobs, so
-                    they are different screens — even though one man holds both roles
-                    today (specification section 3). Reading is open wider: the thermo
-                    operator needs to see what is in stock. */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[
-                        RoleNames.Administrator,
-                        RoleNames.Supervisor,
-                        RoleNames.ExtruderOperator,
-                        RoleNames.ExtruderTestPerson,
-                      ]}
-                    />
-                  }
-                >
-                  <Route path="/production/rolls" element={<RollProductionPage />} />
-                  <Route path="/production/roll-tests" element={<RollTestsPage />} />
-                </Route>
-
-                {/* Line 2, split the same way: forming is one job, counting what came
-                    out is another. Today one man holds both roles. */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[
-                        RoleNames.Administrator,
-                        RoleNames.Supervisor,
-                        RoleNames.ThermoOperator,
-                        RoleNames.ThermoTestPerson,
-                      ]}
-                    />
-                  }
-                >
-                  <Route path="/production/thermo" element={<ThermoProductionPage />} />
-                  <Route path="/production/thermo-tests" element={<ThermoTestsPage />} />
-                </Route>
-
-                {/* Packing. Reading is open wider than scanning: the supervisor closing
-                    a shift needs to see what is still part-built, and he is also the one
-                    who takes a wrongly scanned bag back off. */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[
-                        RoleNames.Administrator,
-                        RoleNames.Supervisor,
-                        RoleNames.PackagingOperator,
-                      ]}
-                    />
-                  }
-                >
-                  <Route path="/production/pallets" element={<PalletsPage />} />
-                  <Route path="/production/packaging" element={<PackagingPage />} />
-                </Route>
-
-                {/* Line 3, the recycler (specification section 11). Reading is open to
-                    the supervisor as well, because what it produced is part of the
-                    shift he answers for. */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[
-                        RoleNames.Administrator,
-                        RoleNames.Supervisor,
-                        RoleNames.RecyclerOperator,
-                      ]}
-                    />
-                  }
-                >
-                  <Route path="/production/recycler" element={<RecyclerPage />} />
-                </Route>
-
-                {/* Master data changes affect every screen, so only the
-                    administrator gets in (specification section 3). */}
-                <Route element={<ProtectedRoute roles={[RoleNames.Administrator]} />}>
-                  <Route path="/master-data" element={<MasterDataPage />} />
-                  {/* Who may sign in and what they may do — the administrator's alone
-                      (specification section 3). */}
-                  <Route path="/users" element={<UsersPage />} />
-                </Route>
-
-                {/* Reports account for the shift, so they are for the people who
-                    answer for it (specification section 13). */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[
-                        RoleNames.Administrator,
-                        RoleNames.Supervisor,
-                        RoleNames.InventoryManager,
-                      ]}
-                    />
-                  }
-                >
-                  <Route path="/reports" element={<ReportsPage />} />
-                </Route>
-
-                {/* Who changed what, and what was refused. The administrator answers for
-                    the system and the supervisor for the shift (specification
-                    section 15). */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[RoleNames.Administrator, RoleNames.Supervisor]}
-                    />
-                  }
-                >
-                  <Route path="/audit" element={<AuditPage />} />
-                </Route>
-
-                {/* Recipes are the supervisor's job too — he is the one who
-                    adjusts the percentages (specification section 3). */}
-                <Route
-                  element={
-                    <ProtectedRoute
-                      roles={[RoleNames.Administrator, RoleNames.Supervisor]}
-                    />
-                  }
-                >
-                  <Route path="/recipes" element={<RecipesPage />} />
-                  {/* Opening and closing shifts is the supervisor's job
-                      (specification section 3). Reopening a closed one is the
-                      administrator's, which the screen and the server both enforce. */}
-                  <Route path="/shifts" element={<ShiftsPage />} />
-                </Route>
+                {screens.map(({ path, element }) => (
+                  <Route key={path} element={<ProtectedRoute roles={rolesFor(path)} />}>
+                    <Route path={path} element={element} />
+                  </Route>
+                ))}
 
                 {plannedRoutes.map(({ path, element }) => (
                   <Route key={path} path={path} element={element} />

@@ -1,10 +1,12 @@
-﻿import { RoleNames } from '../../lib/roles';
+﻿import { rolesFor, type ScreenPath, type ScreenRoles } from '../../routes/access';
 
 /**
  * The sidebar, grouped exactly as the Figma design shows.
  *
- * `roles` decides who sees an item. This only tidies the menu — every endpoint is
- * protected on the server as well. Hiding a link is not security.
+ * This file decides the **wording and the order** — the headings, the labels, the
+ * icons, which screen sits under which group. It deliberately does not decide who
+ * sees what: that comes from `routes/access.ts`, the same list the route guard uses,
+ * so a link can never be hidden from someone the guard lets in.
  *
  * A screen that is not built yet still appears in the menu, showing what is coming,
  * so nobody wonders where a page went.
@@ -12,18 +14,19 @@
 
 export interface NavItem {
   label: string;
-  path: string;
+  path: ScreenPath;
   /** Name from the icon set in components/ui/Icon.tsx. */
   icon: string;
-  roles?: string[];
+  /** Filled in from `routes/access.ts` — never written here. */
+  roles: ScreenRoles;
 }
-
 export interface NavGroup {
   heading: string;
   items: NavItem[];
 }
 
-export const navigation: NavGroup[] = [
+/** The menu as it is written: wording, order and icons only. */
+const layout: { heading: string; items: Omit<NavItem, 'roles'>[] }[] = [
   {
     heading: 'Main',
     items: [{ label: 'Dashboard', path: '/', icon: 'dashboard' }],
@@ -32,133 +35,47 @@ export const navigation: NavGroup[] = [
     heading: 'Operations',
     items: [
       { label: 'Inventory', path: '/inventory', icon: 'inventory' },
-      // No roles: it writes nothing, and whoever is holding a label may need to know
-      // what is behind it (specification section 13).
       { label: 'Trace a label', path: '/trace', icon: 'search' },
-      {
-        label: 'Receive Materials',
-        path: '/inventory/receive',
-        icon: 'receive',
-        roles: [RoleNames.Administrator, RoleNames.InventoryManager],
-      },
-      {
-        label: 'Material Issue',
-        path: '/inventory/issue',
-        icon: 'issue',
-        roles: [RoleNames.Administrator, RoleNames.InventoryManager],
-      },
+      { label: 'Receive Materials', path: '/inventory/receive', icon: 'receive' },
+      { label: 'Material Issue', path: '/inventory/issue', icon: 'issue' },
     ],
   },
   {
     heading: 'Production',
     items: [
-      {
-        label: 'Roll Production',
-        path: '/production/rolls',
-        icon: 'roll',
-        roles: [
-          RoleNames.Administrator,
-          RoleNames.Supervisor,
-          RoleNames.ExtruderOperator,
-        ],
-      },
-      {
-        label: 'Roll Tests',
-        path: '/production/roll-tests',
-        icon: 'test',
-        roles: [
-          RoleNames.Administrator,
-          RoleNames.Supervisor,
-          RoleNames.ExtruderTestPerson,
-        ],
-      },
-      {
-        label: 'Thermoforming',
-        path: '/production/thermo',
-        icon: 'thermo',
-        roles: [RoleNames.Administrator, RoleNames.Supervisor, RoleNames.ThermoOperator],
-      },
-      {
-        label: 'Thermo Tests',
-        path: '/production/thermo-tests',
-        icon: 'test',
-        roles: [
-          RoleNames.Administrator,
-          RoleNames.Supervisor,
-          RoleNames.ThermoTestPerson,
-        ],
-      },
-      {
-        label: 'Pallets',
-        path: '/production/pallets',
-        icon: 'pallet',
-        roles: [
-          RoleNames.Administrator,
-          RoleNames.Supervisor,
-          RoleNames.PackagingOperator,
-        ],
-      },
-      {
-        label: 'Packaging',
-        path: '/production/packaging',
-        icon: 'packaging',
-        roles: [
-          RoleNames.Administrator,
-          RoleNames.Supervisor,
-          RoleNames.PackagingOperator,
-        ],
-      },
-      {
-        label: 'Recycler',
-        path: '/production/recycler',
-        icon: 'recycler',
-        roles: [
-          RoleNames.Administrator,
-          RoleNames.Supervisor,
-          RoleNames.RecyclerOperator,
-        ],
-      },
+      { label: 'Roll Production', path: '/production/rolls', icon: 'roll' },
+      { label: 'Roll Tests', path: '/production/roll-tests', icon: 'test' },
+      { label: 'Thermoforming', path: '/production/thermo', icon: 'thermo' },
+      { label: 'Thermo Tests', path: '/production/thermo-tests', icon: 'test' },
+      { label: 'Pallets', path: '/production/pallets', icon: 'pallet' },
+      { label: 'Packaging', path: '/production/packaging', icon: 'packaging' },
+      { label: 'Recycler', path: '/production/recycler', icon: 'recycler' },
     ],
   },
   {
     heading: 'Analytics',
     items: [
-      {
-        label: 'Reports',
-        path: '/reports',
-        icon: 'reports',
-        roles: [RoleNames.Administrator, RoleNames.Supervisor],
-      },
-      {
-        label: 'Audit log',
-        path: '/audit',
-        icon: 'search',
-        roles: [RoleNames.Administrator, RoleNames.Supervisor],
-      },
+      { label: 'Reports', path: '/reports', icon: 'reports' },
+      { label: 'Audit log', path: '/audit', icon: 'search' },
     ],
   },
   {
     heading: 'Management',
     items: [
-      {
-        label: 'Recipes',
-        path: '/recipes',
-        icon: 'recipe',
-        roles: [RoleNames.Administrator, RoleNames.Supervisor],
-      },
-      {
-        label: 'Shifts',
-        path: '/shifts',
-        icon: 'shift',
-        roles: [RoleNames.Administrator, RoleNames.Supervisor],
-      },
-      {
-        label: 'Master Data',
-        path: '/master-data',
-        icon: 'settings',
-        roles: [RoleNames.Administrator],
-      },
-      { label: 'Users', path: '/users', icon: 'users', roles: [RoleNames.Administrator] },
+      { label: 'Recipes', path: '/recipes', icon: 'recipe' },
+      { label: 'Shifts', path: '/shifts', icon: 'shift' },
+      { label: 'Master Data', path: '/master-data', icon: 'settings' },
+      { label: 'Users', path: '/users', icon: 'users' },
     ],
   },
 ];
+
+/**
+ * The menu the app uses, with each item's roles filled in from the one list.
+ *
+ * Done here rather than by hand on every row so the two can never disagree again.
+ */
+export const navigation: NavGroup[] = layout.map((group) => ({
+  heading: group.heading,
+  items: group.items.map((item) => ({ ...item, roles: rolesFor(item.path) })),
+}));

@@ -3,8 +3,15 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 interface ProtectedRouteProps {
-  /** When given, the worker must hold at least one of these roles. */
-  roles?: string[];
+  /**
+   * When given, the worker must hold at least one of these roles.
+   *
+   * `| undefined` is spelled out because the list is passed straight from
+   * `routes/access.ts`, where a screen open to everybody is written as `undefined`.
+   * Under `exactOptionalPropertyTypes` an optional prop will not accept an explicit
+   * `undefined` unless it says so.
+   */
+  roles?: readonly string[] | undefined;
 }
 
 /**
