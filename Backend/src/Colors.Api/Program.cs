@@ -3,8 +3,13 @@ using Colors.Api.Extensions;
 using Colors.Application.Common.Auditing;
 using Colors.Infrastructure;
 using Colors.Infrastructure.Persistence.Seed;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Before anything else, so a failure while the application is still starting is written
+// down rather than lost (specification section 15).
+builder.AddFileLogging();
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
@@ -55,6 +60,10 @@ if (app.Environment.IsDevelopment())
     // Seed:ResetAdminPassword is switched on.
     await IdentitySeeder.ResetAdministratorPasswordAsync(app.Services);
 }
+
+// One line per request in the file log: who, what, the status and how long it took.
+// Enough to answer "what was happening at 2am" without turning on anything else.
+app.UseSerilogRequestLogging();
 
 app.UseHttpsRedirection();
 

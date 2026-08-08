@@ -80,3 +80,6 @@ publish/
 *.pubxml
 *.pubxml.user
 *.azurePubxml
+
+# Log files written by the running application (specification section 15).
+logs/

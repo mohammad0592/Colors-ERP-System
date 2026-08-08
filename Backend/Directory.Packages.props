@@ -1,4 +1,4 @@
-<Project>
+﻿<Project>
   <!--
     Central Package Management.
 
@@ -12,6 +12,10 @@
   </PropertyGroup>
   <ItemGroup Label="ASP.NET Core">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
+
+    <!-- Logging to files from day one (specification section 15). Without it a failure
+         at 2am can only be diagnosed by telephone. -->
+    <PackageVersion Include="Serilog.AspNetCore" Version="10.0.0" />
     <PackageVersion Include="Microsoft.OpenApi" Version="2.11.0" />
   </ItemGroup>
 
