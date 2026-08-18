@@ -552,6 +552,27 @@ export const en = {
   'users.addHim': 'Add him',
   'users.saveChanges': 'Save the changes',
   'common.no': 'No',
+
+  // What the server says when it refuses. The numbers in braces are filled in from the values it sends beside the code.
+  'refusal.pallet.chooseOpenShiftLine': 'Choose a line of an open shift.',
+  'refusal.pallet.lineMakesNoBags': '{0} does not make bags, so nothing is packed there. Choose the thermo line.',
+  'refusal.pallet.sayWhyCancelling': 'Say why the pallet is being cancelled.',
+  'refusal.pallet.alreadyCancelled': 'Pallet {0} has already been cancelled.',
+  'refusal.pallet.finishedTakeBagsOff': 'Pallet {0} is finished. Take its bags off first if it was built by mistake.',
+  'refusal.pallet.hasBagsOn': 'Pallet {0} has bags on it. Take them off before cancelling it.',
+  'refusal.pallet.cancelledStartNew': 'Pallet {0} was cancelled and its wooden pallet went back to the store. Start a new one.',
+  'refusal.pallet.alreadyShipped': 'Pallet {0} has already been shipped.',
+  'refusal.pallet.isFull': 'Pallet {0} is full. Start a new one for the next bag.',
+  'refusal.pallet.bagDoesNotFit': 'Pallet {0} is {1}. This bag is {2}, so it belongs on a different pallet.',
+  'refusal.pallet.sayWhyBagComingOff': 'Say why the bag is coming off. It stays in the history either way.',
+  'refusal.pallet.bagAlreadyTakenOff': 'This bag has already been taken off.',
+  'refusal.pallet.leftTheFactory': 'Pallet {0} has left the factory. A bag cannot be taken off it now.',
+  'refusal.pallet.cancelledNeverHeld': 'Pallet {0} was cancelled. It never held anything.',
+  'refusal.pallet.alreadyGone': 'Pallet {0} has already gone.',
+  'refusal.pallet.notFinished': 'Pallet {0} is not finished yet. Only a full pallet leaves.',
+  'refusal.pallet.sayWhyComingBack': 'Say why the pallet is coming back.',
+  'refusal.pallet.notShipped': 'Pallet {0} has not been shipped.',
+  'refusal.pallet.doesNotExist': 'This pallet does not exist.',
 } as const;
 
 /** Every key the screens may ask for. */

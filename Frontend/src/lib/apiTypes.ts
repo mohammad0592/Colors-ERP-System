@@ -44,4 +44,8 @@ export interface ProblemResponse {
   detail?: string;
   status?: number;
   errorCode?: ErrorCode;
+  /** Which refusal this is, so the screen can say it in the chosen language. */
+  messageCode?: string;
+  /** The values that belong in the wording, in the order it uses them. */
+  messageArgs?: string[];
 }

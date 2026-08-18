@@ -37,6 +37,30 @@ export function initialLanguage(
   return browserLanguage?.toLowerCase().startsWith('ar') === true ? 'ar' : 'en';
 }
 
+/**
+ * The chosen language, mirrored outside React.
+ *
+ * `apiClient` turns a refused request into an ApiError long before any component sees
+ * it, and a plain module cannot read a hook. Rather than have forty screens each
+ * translate their own error, the client does it once on the way in -- and this is how it
+ * knows which language to use. Written only by the provider.
+ */
+let current: Language = 'en';
+
+export function setCurrentLanguage(language: Language): void {
+  current = language;
+}
+
+/** The words for a key right now, whichever language that is. */
+export function translate(key: TranslationKey): string {
+  return dictionaries[current][key];
+}
+
+/** Whether a string is one of our keys, for text arriving from the server. */
+export function isTranslationKey(value: string): value is TranslationKey {
+  return value in dictionaries.en;
+}
+
 export interface LanguageContextValue {
   language: Language;
   direction: 'ltr' | 'rtl';

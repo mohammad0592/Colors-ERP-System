@@ -12,6 +12,7 @@ import {
   directions,
   initialLanguage,
   LanguageContext,
+  setCurrentLanguage,
   STORAGE_KEY,
   type Language,
 } from './language';
@@ -41,6 +42,10 @@ export function LanguageProvider({ children }: { children: ReactNode }): ReactEl
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = direction;
+
+    // Keep the copy the plain modules read in step. Set here rather than in the setter
+    // so it is also right on the very first render, before anybody has switched.
+    setCurrentLanguage(language);
   }, [language, direction]);
 
   const setLanguage = useCallback((next: Language) => {

@@ -1,5 +1,6 @@
 import { resolveApiBaseUrl } from './apiBaseUrl';
 import type { EntryMethod } from './barcodeScanner';
+import { isTranslationKey, translate } from './i18n/language';
 import type { AuthenticationResult, ErrorCode, ProblemResponse } from './apiTypes';
 import {
   clearTokens,
@@ -112,6 +113,36 @@ export interface RequestOptions {
  * Every call to the API goes through here.
  * Screens never see a token, a header, or a status code.
  */
+/**
+ * What to show a worker when the server refuses.
+ *
+ * Done here, once, rather than in every screen that catches an ApiError. A screen shows
+ * `caught.message` and does not need to know a refusal has a name.
+ *
+ * The English detail is the fallback and stays the fallback. A refusal that has not been
+ * given a code yet, or one from a newer server this build has never heard of, still says
+ * something a man can act on rather than showing him `pallet.alreadyGone`.
+ */
+function refusalText(problem: ProblemResponse): string {
+  // The server sends a short name -- `pallet.alreadyGone` -- and knows nothing about
+  // how the screens file their words. The namespace is added here so every refusal sits
+  // together in the dictionary without the backend having to care.
+  const key = problem.messageCode === undefined ? undefined : `refusal.${problem.messageCode}`;
+
+  if (key !== undefined && isTranslationKey(key)) {
+    const wording = translate(key);
+    const args = problem.messageArgs ?? [];
+
+    // {0}, {1} — the values the server put aside, in the order the wording uses them.
+    return wording.replace(/\{(\d+)\}/g, (whole, index: string) => {
+      const value = args[Number(index)];
+      return value ?? whole;
+    });
+  }
+
+  return problem.detail ?? problem.title ?? translate('common.somethingWrong');
+}
+
 export async function apiRequest<TResponse>(
   path: string,
   { method = 'GET', body, auth = true, signal, entry }: RequestOptions = {},
@@ -177,7 +208,7 @@ export async function apiRequest<TResponse>(
   if (!response.ok) {
     const problem = (payload ?? {}) as ProblemResponse;
     throw new ApiError(
-      problem.detail ?? problem.title ?? 'Something went wrong.',
+      refusalText(problem),
       response.status,
       problem.errorCode ?? 'Unknown',
     );

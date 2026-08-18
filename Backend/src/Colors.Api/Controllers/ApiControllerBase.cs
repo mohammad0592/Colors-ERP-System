@@ -67,6 +67,20 @@ public abstract class ApiControllerBase : ControllerBase
 
         problem.Extensions["errorCode"] = result.ErrorCode.ToString();
 
+        // The name of this particular refusal, and the numbers that belong in it, so the
+        // screen can say it in the language the man chose (specification section 12).
+        // Detail above still carries the English, which is what a log reads and what an
+        // older screen shows if it has never heard of this code.
+        if (result.MessageCode is not null)
+        {
+            problem.Extensions["messageCode"] = result.MessageCode;
+
+            if (result.MessageArgs is { Count: > 0 })
+            {
+                problem.Extensions["messageArgs"] = result.MessageArgs;
+            }
+        }
+
         return StatusCode(problem.Status.Value, problem);
     }
 

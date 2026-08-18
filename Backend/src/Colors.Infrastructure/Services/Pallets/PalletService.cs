@@ -113,7 +113,7 @@ public class PalletService(
 
         if (shiftLine is null)
         {
-            return Invalid("Choose a line of an open shift.");
+            return Invalid("Choose a line of an open shift.", "pallet.chooseOpenShiftLine");
         }
 
         // Pallets are built where the bags come off (specification section 4).
@@ -121,7 +121,9 @@ public class PalletService(
         {
             return Invalid(
                 $"{shiftLine.ProductionLine.Name} does not make bags, so nothing is packed "
-                + "there. Choose the thermo line.");
+                + "there. Choose the thermo line.",
+                "pallet.lineMakesNoBags",
+                shiftLine.ProductionLine.Name);
         }
 
         if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
@@ -201,7 +203,7 @@ public class PalletService(
         var reason = Trimmed(request.Reason);
         if (reason is null)
         {
-            return Invalid("Say why the pallet is being cancelled.");
+            return Invalid("Say why the pallet is being cancelled.", "pallet.sayWhyCancelling");
         }
 
         var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
@@ -212,14 +214,19 @@ public class PalletService(
 
         if (pallet.CancelledAt is not null)
         {
-            return Invalid($"Pallet {pallet.PalletNumber} has already been cancelled.");
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} has already been cancelled.",
+                "pallet.alreadyCancelled",
+                pallet.PalletNumber.ToString());
         }
 
         if (pallet.ShippedAt is not null || pallet.CompletedAt is not null)
         {
             return Invalid(
                 $"Pallet {pallet.PalletNumber} is finished. Take its bags off first if it "
-                + "was built by mistake.");
+                + "was built by mistake.",
+                "pallet.finishedTakeBagsOff",
+                pallet.PalletNumber.ToString());
         }
 
         // The wood only comes back if nothing was stacked on it. Once a bag is on the
@@ -228,7 +235,9 @@ public class PalletService(
         {
             return Invalid(
                 $"Pallet {pallet.PalletNumber} has bags on it. Take them off before "
-                + "cancelling it.");
+                + "cancelling it.",
+                "pallet.hasBagsOn",
+                pallet.PalletNumber.ToString());
         }
 
         var shiftLine = await db.ShiftLines
@@ -300,18 +309,25 @@ public class PalletService(
         {
             return Invalid(
                 $"Pallet {pallet.PalletNumber} was cancelled and its wooden pallet went "
-                + "back to the store. Start a new one.");
+                + "back to the store. Start a new one.",
+                "pallet.cancelledStartNew",
+                pallet.PalletNumber.ToString());
         }
 
         if (pallet.ShippedAt is not null)
         {
-            return Invalid($"Pallet {pallet.PalletNumber} has already been shipped.");
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} has already been shipped.",
+                "pallet.alreadyShipped",
+                pallet.PalletNumber.ToString());
         }
 
         if (pallet.CompletedAt is not null)
         {
             return Invalid(
-                $"Pallet {pallet.PalletNumber} is full. Start a new one for the next bag.");
+                $"Pallet {pallet.PalletNumber} is full. Start a new one for the next bag.",
+                "pallet.isFull",
+                pallet.PalletNumber.ToString());
         }
 
         var found = await FindBagAsync(request, cancellationToken);
@@ -340,7 +356,11 @@ public class PalletService(
             return Invalid(
                 $"Pallet {pallet.PalletNumber} is {pallet.Color?.Name} "
                 + $"{pallet.Product?.Name}. This bag is {bag.Color.Name} {bag.Product.Name}, "
-                + "so it belongs on a different pallet.");
+                + "so it belongs on a different pallet.",
+                "pallet.bagDoesNotFit",
+                pallet.PalletNumber.ToString(),
+                $"{pallet.Color?.Name} {pallet.Product?.Name}",
+                $"{bag.Color.Name} {bag.Product.Name}");
         }
 
         var now = timeProvider.GetUtcNow();
@@ -383,7 +403,9 @@ public class PalletService(
         var reason = Trimmed(request.Reason);
         if (reason is null)
         {
-            return Invalid("Say why the bag is coming off. It stays in the history either way.");
+            return Invalid(
+                "Say why the bag is coming off. It stays in the history either way.",
+                "pallet.sayWhyBagComingOff");
         }
 
         var assignment = await db.BagPalletAssignments
@@ -398,14 +420,16 @@ public class PalletService(
 
         if (assignment.ReversedAt is not null)
         {
-            return Invalid("This bag has already been taken off.");
+            return Invalid("This bag has already been taken off.", "pallet.bagAlreadyTakenOff");
         }
 
         if (assignment.WoodenPallet.ShippedAt is not null)
         {
             return Invalid(
                 $"Pallet {assignment.WoodenPallet.PalletNumber} has left the factory. "
-                + "A bag cannot be taken off it now.");
+                + "A bag cannot be taken off it now.",
+                "pallet.leftTheFactory",
+                assignment.WoodenPallet.PalletNumber.ToString());
         }
 
         assignment.ReversedByUserId = userId;
@@ -462,12 +486,18 @@ public class PalletService(
 
         if (pallet.CancelledAt is not null)
         {
-            return Invalid($"Pallet {pallet.PalletNumber} was cancelled. It never held anything.");
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} was cancelled. It never held anything.",
+                "pallet.cancelledNeverHeld",
+                pallet.PalletNumber.ToString());
         }
 
         if (pallet.ShippedAt is not null)
         {
-            return Invalid($"Pallet {pallet.PalletNumber} has already gone.");
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} has already gone.",
+                "pallet.alreadyGone",
+                pallet.PalletNumber.ToString());
         }
 
         if (pallet.CompletedAt is null)
@@ -476,7 +506,9 @@ public class PalletService(
             // take a shipping date without a completion date. Said here in words the man
             // on the floor can act on, rather than as a constraint violation.
             return Invalid(
-                $"Pallet {pallet.PalletNumber} is not finished yet. Only a full pallet leaves.");
+                $"Pallet {pallet.PalletNumber} is not finished yet. Only a full pallet leaves.",
+                "pallet.notFinished",
+                pallet.PalletNumber.ToString());
         }
 
         // No open shift is required, and that is deliberate. Cancelling is shift work -
@@ -506,7 +538,7 @@ public class PalletService(
         var reason = Trimmed(request.Reason);
         if (reason is null)
         {
-            return Invalid("Say why the pallet is coming back.");
+            return Invalid("Say why the pallet is coming back.", "pallet.sayWhyComingBack");
         }
 
         var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
@@ -517,7 +549,10 @@ public class PalletService(
 
         if (pallet.ShippedAt is null)
         {
-            return Invalid($"Pallet {pallet.PalletNumber} has not been shipped.");
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} has not been shipped.",
+                "pallet.notShipped",
+                pallet.PalletNumber.ToString());
         }
 
         pallet.ShippedAt = null;
@@ -861,6 +896,17 @@ public class PalletService(
     private static Result<PalletDto> Invalid(string message) =>
         Result<PalletDto>.Failure(ErrorCode.ValidationFailed, message);
 
+    /// <summary>
+    /// The same refusal, named so the screens can say it in Arabic.
+    ///
+    /// The English is still passed and still what the message is. The name is what a
+    /// screen looks up; without one it falls back to the English, which is why adding
+    /// these one service at a time breaks nothing in between.
+    /// </summary>
+    private static Result<PalletDto> Invalid(string message, string code, params string[] args) =>
+        Result<PalletDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
+
     private static Result<PalletDto> PalletNotFound() =>
-        Result<PalletDto>.Failure(ErrorCode.NotFound, "This pallet does not exist.");
+        Result<PalletDto>.Failure(
+            ErrorCode.NotFound, "This pallet does not exist.", "pallet.doesNotExist");
 }
