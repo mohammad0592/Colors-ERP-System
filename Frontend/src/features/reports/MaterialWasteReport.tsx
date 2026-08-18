@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { formatDate } from '../shifts/shiftFormat';
 import type { MaterialWasteReportDto } from './api';
 
@@ -14,6 +15,7 @@ export function MaterialWasteReport({
 }: {
   report: MaterialWasteReportDto;
 }): ReactElement {
+  const { t } = useTranslation();
   return (
     <>
       <section className="card mb-4 p-5">
@@ -55,13 +57,13 @@ export function MaterialWasteReport({
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Material</th>
-                <th className="px-4 py-3 text-end font-semibold">Issued</th>
-                <th className="px-4 py-3 text-end font-semibold">Returned</th>
-                <th className="px-4 py-3 text-end font-semibold">Used</th>
-                <th className="px-4 py-3 text-end font-semibold">Recipe</th>
+                <th className="px-4 py-3 font-semibold">{t('term.material')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.issued')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.returned')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.used')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('term.recipe')}</th>
                 <th className="px-4 py-3 text-end font-semibold">Should be</th>
-                <th className="px-4 py-3 text-end font-semibold">Difference</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.difference')}</th>
               </tr>
             </thead>
             <tbody>

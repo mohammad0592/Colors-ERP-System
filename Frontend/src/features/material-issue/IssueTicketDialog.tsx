@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
@@ -24,6 +25,7 @@ export function IssueTicketDialog({
   onClose,
   onChanged,
 }: IssueTicketDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [returns, setReturns] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -85,10 +87,10 @@ export function IssueTicketDialog({
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="py-2 pe-3 font-semibold">Material</th>
-              <th className="px-3 py-2 text-end font-semibold">Out</th>
-              <th className="px-3 py-2 text-end font-semibold">Back</th>
-              <th className="px-3 py-2 text-end font-semibold">Used</th>
+              <th className="py-2 pe-3 font-semibold">{t('term.material')}</th>
+              <th className="px-3 py-2 text-end font-semibold">{t('field.out')}</th>
+              <th className="px-3 py-2 text-end font-semibold">{t('action.back')}</th>
+              <th className="px-3 py-2 text-end font-semibold">{t('field.used')}</th>
               {ticket.isOpen && canIssue && (
                 <th className="py-2 ps-3 text-end font-semibold">Weigh back in</th>
               )}

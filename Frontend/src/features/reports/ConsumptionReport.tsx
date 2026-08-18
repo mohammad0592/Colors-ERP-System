@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useState, type ReactElement } from 'react';
 import { reportsApi } from './api';
 import type { DateRange } from './dateRange';
@@ -11,6 +12,7 @@ import type { DateRange } from './dateRange';
  * recipe cannot be attributed to either, and is counted separately instead of guessed at.
  */
 export function ConsumptionReport({ range }: { range: DateRange }): ReactElement {
+  const { t } = useTranslation();
   const { from, to } = range;
   const [groupBy, setGroupBy] = useState<'Shift' | 'Recipe'>('Shift');
   const [open, setOpen] = useState<string | null>(null);
@@ -34,13 +36,13 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
             setGroupBy(event.target.value === 'Recipe' ? 'Recipe' : 'Shift');
           }}
         >
-          <option value="Shift">Shift</option>
-          <option value="Recipe">Recipe</option>
+          <option value="Shift">{t('term.shift')}</option>
+          <option value="Recipe">{t('term.recipe')}</option>
         </select>
       </section>
 
       {report.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-      {report.isError && <p className="p-6 text-bad">Could not load the report.</p>}
+      {report.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
 
       {report.data !== undefined && (
         <>
@@ -104,12 +106,12 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                       <table className="w-full text-start text-sm">
                         <thead>
                           <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                            <th className="px-5 py-2 font-semibold">Material</th>
-                            <th className="px-5 py-2 text-end font-semibold">Issued</th>
+                            <th className="px-5 py-2 font-semibold">{t('term.material')}</th>
+                            <th className="px-5 py-2 text-end font-semibold">{t('field.issued')}</th>
                             <th className="px-5 py-2 text-end font-semibold">
-                              Returned
+                              {t('field.returned')}
                             </th>
-                            <th className="px-5 py-2 text-end font-semibold">Used</th>
+                            <th className="px-5 py-2 text-end font-semibold">{t('field.used')}</th>
                             <th className="px-5 py-2 text-end font-semibold">
                               Per kg of roll
                             </th>

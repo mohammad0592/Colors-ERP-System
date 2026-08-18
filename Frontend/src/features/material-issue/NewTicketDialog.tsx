@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import type { MaterialStockDto } from '../inventory/api';
@@ -36,6 +37,7 @@ export function NewTicketDialog({
   onClose,
   onCreated,
 }: NewTicketDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [shiftLineId, setShiftLineId] = useState(() => openLines[0]?.shiftLineId ?? 0);
   const [notes, setNotes] = useState('');
   const [quantities, setQuantities] = useState<Record<number, string>>({});
@@ -71,7 +73,7 @@ export function NewTicketDialog({
 
   if (openLines.length === 0) {
     return (
-      <Modal title="Issue material" onClose={onClose}>
+      <Modal title={t('action.issueMaterial')} onClose={onClose}>
         <p className="text-sm leading-relaxed text-ink-soft">
           No shift is open, so there is nothing to issue material to.
         </p>
@@ -86,7 +88,7 @@ export function NewTicketDialog({
   }
 
   return (
-    <Modal title="Issue material" onClose={onClose}>
+    <Modal title={t('action.issueMaterial')} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -96,7 +98,7 @@ export function NewTicketDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="ticket-line">
-            Going to
+            {t('field.goingTo')}
           </label>
           <select
             id="ticket-line"
@@ -158,7 +160,7 @@ export function NewTicketDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="ticket-notes">
-            Note <span className="font-normal text-ink-muted">(optional)</span>
+            {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="ticket-notes"

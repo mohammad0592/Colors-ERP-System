@@ -1,4 +1,5 @@
 ﻿import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import QRCode from 'qrcode';
 import { useEffect, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
@@ -133,6 +134,7 @@ export function LabelPrintScreen({
 }
 
 function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
+  const { t } = useTranslation();
   const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -183,9 +185,9 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
       <div className="flex min-h-0 flex-1 gap-3">
         <div className="min-w-0 flex-1 text-[10px] leading-tight">
           {label.productName !== null && (
-            <Field label="Product" value={label.productName} />
+            <Field label={t('term.product')} value={label.productName} />
           )}
-          {label.colorName !== null && <Field label="Colour" value={label.colorName} />}
+          {label.colorName !== null && <Field label={t('term.colour')} value={label.colorName} />}
           {label.rollCode !== null && (
             /* رقم الرول — already on the factory's own bag label today. */
             <Field label="Roll · رقم الرول" value={label.rollCode} mono />
@@ -194,9 +196,9 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
             <Field label="Pieces · العدد" value={String(label.pieceCount)} />
           )}
           {label.weight !== null && (
-            <Field label="Weight" value={`${String(label.weight)} kg`} />
+            <Field label={t('field.weight')} value={`${String(label.weight)} kg`} />
           )}
-          {label.length !== null && <Field label="Length" value={String(label.length)} />}
+          {label.length !== null && <Field label={t('field.length')} value={String(label.length)} />}
           {label.shiftName !== null && (
             <Field label="Shift · الوردية" value={label.shiftName} />
           )}

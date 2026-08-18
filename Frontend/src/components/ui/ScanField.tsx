@@ -13,6 +13,7 @@ import {
   type ScannerHandle,
 } from '../../lib/barcodeScanner';
 import { Modal } from './Modal';
+import { useTranslation } from '../../hooks/useTranslation';
 
 /** One thing the field can be filled from without scanning or typing. */
 export interface ScanOption {
@@ -82,6 +83,7 @@ export function ScanField({
   submitLabel = 'Go',
   busy = false,
 }: ScanFieldProps): ReactElement {
+  const { t } = useTranslation();
   const id = useId();
   const listId = `${id}-list`;
   const box = useRef<HTMLInputElement>(null);
@@ -192,8 +194,8 @@ export function ScanField({
             onClick={() => {
               void openCamera();
             }}
-            aria-label="Read the label with the camera"
-            title="Read the label with the camera"
+            aria-label={t('action.readWithCamera')}
+            title={t('action.readWithCamera')}
           >
             Camera
           </button>

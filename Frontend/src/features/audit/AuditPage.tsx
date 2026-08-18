@@ -54,7 +54,7 @@ export function AuditPage(): ReactElement {
       <section className="card mb-6 flex flex-wrap items-end gap-4 p-4">
         <div>
           <label className="field-label" htmlFor="audit-shift">
-            Shift
+            {t('term.shift')}
           </label>
           <select
             id="audit-shift"
@@ -131,10 +131,10 @@ export function AuditPage(): ReactElement {
               <table className="w-full text-start text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                    <th className="px-4 py-3 font-semibold">When</th>
+                    <th className="px-4 py-3 font-semibold">{t('field.when')}</th>
                     <th className="px-4 py-3 font-semibold">Who</th>
                     <th className="px-4 py-3 font-semibold">What</th>
-                    <th className="px-4 py-3 font-semibold">Shift</th>
+                    <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
                     <th className="px-4 py-3 font-semibold">Details</th>
                   </tr>
                 </thead>

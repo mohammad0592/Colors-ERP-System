@@ -79,6 +79,7 @@ export function TracePage(): ReactElement {
 }
 
 function Chain({ trace }: { trace: TraceDto }): ReactElement {
+  const { t } = useTranslation();
   return (
     <>
       <div className="card mb-6 p-5">
@@ -228,11 +229,11 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
               <table className="w-full text-start text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                    <th className="py-2 pe-4 font-semibold">Ticket</th>
-                    <th className="py-2 pe-4 font-semibold">Material</th>
-                    <th className="py-2 pe-4 text-end font-semibold">Issued</th>
-                    <th className="py-2 pe-4 text-end font-semibold">Returned</th>
-                    <th className="py-2 text-end font-semibold">Used</th>
+                    <th className="py-2 pe-4 font-semibold">{t('term.ticket')}</th>
+                    <th className="py-2 pe-4 font-semibold">{t('term.material')}</th>
+                    <th className="py-2 pe-4 text-end font-semibold">{t('field.issued')}</th>
+                    <th className="py-2 pe-4 text-end font-semibold">{t('field.returned')}</th>
+                    <th className="py-2 text-end font-semibold">{t('field.used')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -285,6 +286,8 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
 }
 
 function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
+  const { t } = useTranslation();
+
   // A pallet built from more than one roll is exactly what the bag barcodes exist for,
   // so the roll is a column and not a footnote.
   const rolls = [...new Set(bags.map((b) => b.rollCode))];
@@ -293,7 +296,7 @@ function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
     <>
       {rolls.length > 1 && (
         <p className="mb-3 text-sm text-ink-soft">
-          From <strong>{rolls.length}</strong> different rolls: {rolls.join(', ')}
+          {t('field.from')} <strong>{rolls.length}</strong> different rolls: {rolls.join(', ')}
         </p>
       )}
 
@@ -301,13 +304,13 @@ function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="py-2 pe-4 font-semibold">Bag</th>
-              <th className="py-2 pe-4 font-semibold">From roll</th>
-              <th className="py-2 pe-4 font-semibold">Product</th>
-              <th className="py-2 pe-4 text-end font-semibold">Pieces</th>
-              <th className="py-2 pe-4 text-end font-semibold">Weight</th>
-              <th className="py-2 pe-4 font-semibold">Status</th>
-              <th className="py-2 font-semibold">Pallet</th>
+              <th className="py-2 pe-4 font-semibold">{t('term.bag')}</th>
+              <th className="py-2 pe-4 font-semibold">{t('term.fromRoll')}</th>
+              <th className="py-2 pe-4 font-semibold">{t('term.product')}</th>
+              <th className="py-2 pe-4 text-end font-semibold">{t('field.pieces')}</th>
+              <th className="py-2 pe-4 text-end font-semibold">{t('field.weight')}</th>
+              <th className="py-2 pe-4 font-semibold">{t('field.status')}</th>
+              <th className="py-2 font-semibold">{t('term.pallet')}</th>
             </tr>
           </thead>
           <tbody>

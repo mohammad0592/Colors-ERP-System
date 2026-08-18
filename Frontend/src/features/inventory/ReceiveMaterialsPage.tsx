@@ -114,7 +114,7 @@ export function ReceiveMaterialsPage(): ReactElement {
         >
           <div className="mb-4">
             <label className="field-label" htmlFor="rec-material">
-              Material
+              {t('term.material')}
             </label>
             <select
               id="rec-material"
@@ -215,7 +215,7 @@ export function ReceiveMaterialsPage(): ReactElement {
 
           <div className="mb-4">
             <label className="field-label" htmlFor="rec-notes">
-              Note <span className="font-normal text-ink-muted">(optional)</span>
+              {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
             </label>
             <input
               id="rec-notes"

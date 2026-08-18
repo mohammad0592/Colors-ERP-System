@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../lib/apiClient';
 import type { LookupDto } from '../master-data/api';
 import type { PersonDto, RoleDto } from '../people/api';
@@ -38,6 +39,7 @@ export function ShiftLineForm({
   locked,
   onSaved,
 }: ShiftLineFormProps): ReactElement {
+  const { t } = useTranslation();
   const [mouldId, setMouldId] = useState<number | null>(line.mouldId);
   const [startTime, setStartTime] = useState(line.productionStartTime ?? '');
   const [endTime, setEndTime] = useState(line.productionEndTime ?? '');
@@ -101,7 +103,7 @@ export function ShiftLineForm({
         <>
           <Section title="Template in the machine" />
 
-          <Field label="Mould" htmlFor={`mould-${String(line.id)}`}>
+          <Field label={t('term.mould')} htmlFor={`mould-${String(line.id)}`}>
             <select
               id={`mould-${String(line.id)}`}
               className="field-input"
@@ -228,7 +230,7 @@ export function ShiftLineForm({
         </>
       )}
 
-      <Section title="Crew" />
+      <Section title={t('term.crew')} />
 
       <div className="mb-4">
         <CrewEditor
@@ -255,7 +257,7 @@ export function ShiftLineForm({
             {isSaving ? 'Saving…' : `Save ${line.productionLineName}`}
           </button>
           {savedAt !== null && error === null && !isSaving && (
-            <span className="text-sm font-medium text-ok">Saved</span>
+            <span className="text-sm font-medium text-ok">{t('state.saved')}</span>
           )}
         </div>
       )}

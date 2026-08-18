@@ -139,7 +139,7 @@ export function PalletsPage(): ReactElement {
 
       {canPack && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No packing line is open.
+          {t('msg.noPackingLineOpen')}
         </p>
       )}
 
@@ -249,21 +249,21 @@ export function PalletsPage(): ReactElement {
               )}
 
               <dl className="rounded-control bg-canvas px-4 py-3 text-sm">
-                <Row label="Bags">
+                <Row label={t('term.bags')}>
                   {open.bagCount}
                   {open.capacity === null ? '' : ` / ${String(open.capacity)}`}
                 </Row>
                 <Row label="Total pieces">{open.pieceCount.toLocaleString('en-GB')}</Row>
-                <Row label="Weight">{open.weight} kg</Row>
-                <Row label="Colour">
+                <Row label={t('field.weight')}>{open.weight} kg</Row>
+                <Row label={t('term.colour')}>
                   {open.colorName ?? <span className="text-ink-muted">not set yet</span>}
                 </Row>
-                <Row label="Product">
+                <Row label={t('term.product')}>
                   {open.productName ?? (
                     <span className="text-ink-muted">not set yet</span>
                   )}
                 </Row>
-                <Row label="Status">
+                <Row label={t('field.status')}>
                   <PalletStatusBadge status={open.status} />
                 </Row>
               </dl>
@@ -280,10 +280,10 @@ export function PalletsPage(): ReactElement {
             <table className="w-full text-start text-sm">
               <thead>
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                  <th className="px-4 py-3 font-semibold">Bag</th>
-                  <th className="px-4 py-3 font-semibold">From roll</th>
-                  <th className="px-4 py-3 text-end font-semibold">Pieces</th>
-                  <th className="px-4 py-3 text-end font-semibold">Weight</th>
+                  <th className="px-4 py-3 font-semibold">{t('term.bag')}</th>
+                  <th className="px-4 py-3 font-semibold">{t('term.fromRoll')}</th>
+                  <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
+                  <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
                   <th className="px-4 py-3 font-semibold">Scanned by</th>
                   <th className="px-4 py-3" />
                 </tr>

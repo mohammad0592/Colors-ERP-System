@@ -106,7 +106,7 @@ export function DashboardPage(): ReactElement {
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <Fact label="Signed in as" value={user?.fullName ?? ''} />
-            <Fact label="Employee number" value={user?.employeeNumber ?? ''} />
+            <Fact label={t('field.employeeNumber')} value={user?.employeeNumber ?? ''} />
             <Fact label="Roles" value={String(user?.roles.length ?? 0)} />
           </div>
         </section>
@@ -126,12 +126,12 @@ export function DashboardPage(): ReactElement {
             <p className="text-ink-soft">Nothing has been recorded on it yet.</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <Fact label="Rolls made" value={String(summary.rollsProduced)} />
-              <Fact label="Rolls formed" value={String(summary.rollsFormed)} />
-              <Fact label="Bags" value={String(summary.bagCount)} />
+              <Fact label={t('field.rollsMade')} value={String(summary.rollsProduced)} />
+              <Fact label={t('field.rollsFormed')} value={String(summary.rollsFormed)} />
+              <Fact label={t('term.bags')} value={String(summary.bagCount)} />
               <Fact label="Pallets finished" value={String(summary.palletsCompleted)} />
               <Fact
-                label="Lost in forming"
+                label={t('field.lostInForming')}
                 value={
                   summary.lossPercentage === null
                     ? '—'

@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Icon } from '../../components/ui/Icon';
 import type { MaterialDto } from '../master-data/api';
 import type { IngredientRow } from './ingredientRow';
@@ -25,6 +26,7 @@ export function IngredientEditor({
   disabled,
   onChange,
 }: IngredientEditorProps): ReactElement {
+  const { t } = useTranslation();
   const baseTotal = rows
     .filter((r) => r.isBaseResin)
     .reduce((sum, r) => sum + (Number(r.target) || 0), 0);
@@ -39,7 +41,7 @@ export function IngredientEditor({
   return (
     <div>
       <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-ink-soft">Materials</h3>
+        <h3 className="text-sm font-semibold text-ink-soft">{t('term.materials')}</h3>
 
         {hasBase && (
           <span
@@ -64,7 +66,7 @@ export function IngredientEditor({
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="text-xs tracking-wider text-ink-muted uppercase">
-              <th className="pb-2 font-semibold">Material</th>
+              <th className="pb-2 font-semibold">{t('term.material')}</th>
               <th className="w-16 pb-2 text-center font-semibold">Base</th>
               <th className="w-24 pb-2 font-semibold">Target %</th>
               <th className="w-24 pb-2 font-semibold">Min %</th>
@@ -82,7 +84,7 @@ export function IngredientEditor({
                 <tr key={`ing-${String(index)}`}>
                   <td className="py-1 pe-2">
                     <select
-                      aria-label="Material"
+                      aria-label={t('term.material')}
                       className="field-input h-touch text-base"
                       value={row.materialId}
                       onChange={(e) => {
@@ -90,7 +92,7 @@ export function IngredientEditor({
                       }}
                       disabled={disabled}
                     >
-                      <option value="">Choose…</option>
+                      <option value="">{t('action.choose')}</option>
                       {materials
                         // A material may appear once per recipe, so hide the ones
                         // already used by another row.

@@ -63,7 +63,7 @@ export function UsersPage(): ReactElement {
               setAdding(true);
             }}
           >
-            Add a worker
+            {t('action.addWorker')}
           </button>
         }
       />
@@ -85,9 +85,9 @@ export function UsersPage(): ReactElement {
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Employee number</th>
-                <th className="px-4 py-3 font-semibold">Name</th>
-                <th className="px-4 py-3 font-semibold">What he may do</th>
+                <th className="px-4 py-3 font-semibold">{t('field.employeeNumber')}</th>
+                <th className="px-4 py-3 font-semibold">{t('field.name')}</th>
+                <th className="px-4 py-3 font-semibold">{t('field.whatHeMayDo')}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -155,7 +155,7 @@ export function UsersPage(): ReactElement {
                           setResetting(user);
                         }}
                       >
-                        New password
+                        {t('field.newPassword')}
                       </button>
                       <button
                         type="button"
@@ -164,7 +164,7 @@ export function UsersPage(): ReactElement {
                           setEditing(user);
                         }}
                       >
-                        Edit
+                        {t('action.edit')}
                       </button>
                     </div>
                   </td>

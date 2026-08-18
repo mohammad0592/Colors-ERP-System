@@ -144,7 +144,7 @@ export function ShiftsPage(): ReactElement {
               setOpening(true);
             }}
           >
-            Open a shift
+            {t('action.openShift')}
           </button>
         }
       />
@@ -195,12 +195,12 @@ export function ShiftsPage(): ReactElement {
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Date</th>
-              <th className="px-4 py-3 font-semibold">Shift</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3 font-semibold">Lines running</th>
-              <th className="px-4 py-3 font-semibold">Supervisor</th>
+              <th className="px-4 py-3 font-semibold">{t('term.supervisor')}</th>
               <th className="px-4 py-3 font-semibold">Electricity</th>
-              <th className="px-4 py-3 font-semibold">Crew</th>
+              <th className="px-4 py-3 font-semibold">{t('term.crew')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -271,7 +271,7 @@ export function ShiftsPage(): ReactElement {
                             wrong day. */}
                         {report.workerCount === 0 && (
                           <Action
-                            label="Discard"
+                            label={t('action.discard')}
                             tone="danger"
                             onClick={() => {
                               setConfirm({

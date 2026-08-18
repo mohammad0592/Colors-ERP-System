@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { thermoApi, type ThermoRunDto, type ThermoRunSummaryDto } from './api';
@@ -30,6 +31,7 @@ export function ThermoTestDialog({
   onClose,
   onSaved,
 }: ThermoTestDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [bagCount, setBagCount] = useState('');
   const [pieceWeight, setPieceWeight] = useState('');
   const [bagWeight, setBagWeight] = useState('');
@@ -120,8 +122,8 @@ export function ThermoTestDialog({
               The roll itself — measured at the extruder
             </p>
             <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-              <Reading label="Weight" value={`${String(readings.weight)} kg`} />
-              <Reading label="Length" value={String(readings.length)} />
+              <Reading label={t('field.weight')} value={`${String(readings.weight)} kg`} />
+              <Reading label={t('field.length')} value={String(readings.length)} />
               <Reading label="Plate weight" value={`${String(readings.plateWeight)} g`} />
               <Reading label="Thickness" value={String(readings.averageThickness)} />
             </div>
@@ -228,7 +230,7 @@ export function ThermoTestDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="thermo-notes">
-            Note <span className="font-normal text-ink-muted">(optional)</span>
+            {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="thermo-notes"

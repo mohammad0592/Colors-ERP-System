@@ -108,7 +108,7 @@ export function MaterialIssuePage(): ReactElement {
                 setCreating(true);
               }}
             >
-              Issue material
+              {t('action.issueMaterial')}
             </button>
           ) : undefined
         }
@@ -144,14 +144,14 @@ export function MaterialIssuePage(): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Ticket</th>
-              <th className="px-4 py-3 font-semibold">Going to</th>
-              <th className="px-4 py-3 font-semibold">Shift</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Materials</th>
-              <th className="px-4 py-3 text-end font-semibold">Out</th>
-              <th className="px-4 py-3 text-end font-semibold">Back</th>
-              <th className="px-4 py-3 text-end font-semibold">Used</th>
+              <th className="px-4 py-3 font-semibold">{t('term.ticket')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.goingTo')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.materials')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('field.out')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('action.back')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('field.used')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>

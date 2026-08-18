@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { productionApi, type RollDto, type RollSummaryDto } from './api';
@@ -29,6 +30,7 @@ export function RollTestDialog({
   onClose,
   onSaved,
 }: RollTestDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [weight, setWeight] = useState('');
   const [length, setLength] = useState('');
   const [plateWeight, setPlateWeight] = useState('');
@@ -103,7 +105,7 @@ export function RollTestDialog({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Weight (kg)" htmlFor="test-weight">
+          <Field label={t('field.weightKg')} htmlFor="test-weight">
             <input
               id="test-weight"
               type="number"
@@ -116,7 +118,7 @@ export function RollTestDialog({
               }}
             />
           </Field>
-          <Field label="Length" htmlFor="test-length">
+          <Field label={t('field.length')} htmlFor="test-length">
             <input
               id="test-length"
               type="number"
@@ -197,7 +199,7 @@ export function RollTestDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="test-notes">
-            Note <span className="font-normal text-ink-muted">(optional)</span>
+            {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="test-notes"

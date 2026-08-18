@@ -1,4 +1,5 @@
 ﻿import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
@@ -34,6 +35,7 @@ export function StartRunDialog({
   onClose,
   onStarted,
 }: StartRunDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [barcode, setBarcode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -113,7 +115,7 @@ export function StartRunDialog({
             {chosen.length !== null && <> · length {chosen.length}</>}
             {chosen.isAbsorbent && (
               <span className="ms-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
-                Absorbent
+                {t('term.absorbent')}
               </span>
             )}
           </p>

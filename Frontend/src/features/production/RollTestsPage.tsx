@@ -71,7 +71,7 @@ export function RollTestsPage(): ReactElement {
 
       {justSaved !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-          Roll <strong className="font-mono">{justSaved.rollCode}</strong> measured —
+          {t('term.roll')} <strong className="font-mono">{justSaved.rollCode}</strong> measured —
           average thickness {justSaved.testReport?.averageThickness}. The thermo can use
           it now.
         </p>
@@ -81,12 +81,12 @@ export function RollTestsPage(): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Roll code</th>
-              <th className="px-4 py-3 font-semibold">Recipe</th>
-              <th className="px-4 py-3 font-semibold">Colour</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 text-end font-semibold">Weight</th>
-              <th className="px-4 py-3 text-end font-semibold">Length</th>
+              <th className="px-4 py-3 font-semibold">{t('term.rollCode')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.recipe')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.colour')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
               <th className="px-4 py-3 text-end font-semibold">Avg thickness</th>
               <th className="px-4 py-3" />
             </tr>

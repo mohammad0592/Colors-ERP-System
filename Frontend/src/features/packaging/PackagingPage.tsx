@@ -141,7 +141,7 @@ export function PackagingPage(): ReactElement {
 
       {canRecord && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No packing line is open.
+          {t('msg.noPackingLineOpen')}
         </p>
       )}
 
@@ -180,7 +180,7 @@ export function PackagingPage(): ReactElement {
 
           {draft.data.alreadyRecorded ? (
             <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-              Already recorded for this line.
+              {t('msg.alreadyRecordedForLine')}
             </p>
           ) : (
             <>
@@ -188,10 +188,10 @@ export function PackagingPage(): ReactElement {
                 <table className="w-full text-start text-sm">
                   <thead>
                     <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                      <th className="px-2 py-2 font-semibold">Material</th>
-                      <th className="px-2 py-2 text-end font-semibold">Used</th>
-                      <th className="px-2 py-2 text-end font-semibold">Weight (kg)</th>
-                      <th className="px-2 py-2 text-end font-semibold">In stock</th>
+                      <th className="px-2 py-2 font-semibold">{t('term.material')}</th>
+                      <th className="px-2 py-2 text-end font-semibold">{t('field.used')}</th>
+                      <th className="px-2 py-2 text-end font-semibold">{t('field.weightKg')}</th>
+                      <th className="px-2 py-2 text-end font-semibold">{t('field.inStock')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -260,7 +260,7 @@ export function PackagingPage(): ReactElement {
 
               <div className="mb-4">
                 <label className="field-label" htmlFor="packaging-notes">
-                  Note <span className="font-normal text-ink-muted">(optional)</span>
+                  {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
                 </label>
                 <input
                   id="packaging-notes"
@@ -284,14 +284,14 @@ export function PackagingPage(): ReactElement {
                 {save.isPending ? 'Saving…' : 'Record it and take it out of the store'}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
-                Written once, at the end of the shift.
+                {t('msg.writtenOnceAtShiftEnd')}
               </p>
             </>
           )}
         </section>
       )}
 
-      <h2 className="mb-3 text-lg font-bold text-ink">Recorded</h2>
+      <h2 className="mb-3 text-lg font-bold text-ink">{t('state.recorded')}</h2>
 
       {records.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
       {records.isError && <p className="p-6 text-bad">Could not load packaging.</p>}
@@ -316,11 +316,11 @@ export function PackagingPage(): ReactElement {
             <table className="w-full text-start text-sm">
               <thead>
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                  <th className="py-2 pe-4 font-semibold">Material</th>
-                  <th className="py-2 pe-4 text-end font-semibold">Used</th>
+                  <th className="py-2 pe-4 font-semibold">{t('term.material')}</th>
+                  <th className="py-2 pe-4 text-end font-semibold">{t('field.used')}</th>
                   <th className="py-2 pe-4 text-end font-semibold">Weighed</th>
                   <th className="py-2 pe-4 text-end font-semibold">Expected</th>
-                  <th className="py-2 text-end font-semibold">Difference</th>
+                  <th className="py-2 text-end font-semibold">{t('field.difference')}</th>
                 </tr>
               </thead>
               <tbody>

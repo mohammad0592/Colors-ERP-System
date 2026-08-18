@@ -145,11 +145,11 @@ export function DispatchPage(): ReactElement {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-start text-ink-muted">
-                  <th className="py-2 pe-4 font-medium">Pallet</th>
+                  <th className="py-2 pe-4 font-medium">{t('term.pallet')}</th>
                   <th className="py-2 pe-4 font-medium">What is on it</th>
-                  <th className="py-2 pe-4 font-medium">Bags</th>
-                  <th className="py-2 pe-4 font-medium">Weight</th>
-                  <th className="py-2 pe-4 font-medium">Finished</th>
+                  <th className="py-2 pe-4 font-medium">{t('term.bags')}</th>
+                  <th className="py-2 pe-4 font-medium">{t('field.weight')}</th>
+                  <th className="py-2 pe-4 font-medium">{t('state.finished')}</th>
                   <th className="py-2 pe-4 font-medium">Waiting</th>
                 </tr>
               </thead>
@@ -178,9 +178,9 @@ export function DispatchPage(): ReactElement {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-line text-start text-ink-muted">
-                  <th className="py-2 pe-4 font-medium">Pallet</th>
+                  <th className="py-2 pe-4 font-medium">{t('term.pallet')}</th>
                   <th className="py-2 pe-4 font-medium">What was on it</th>
-                  <th className="py-2 pe-4 font-medium">Bags</th>
+                  <th className="py-2 pe-4 font-medium">{t('term.bags')}</th>
                   <th className="py-2 pe-4 font-medium">Went</th>
                   <th className="py-2 pe-4 font-medium" />
                 </tr>

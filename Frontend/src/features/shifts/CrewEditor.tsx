@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { PersonDto, RoleDto } from '../people/api';
 import type { SaveShiftWorker } from './api';
 
@@ -24,6 +25,7 @@ export function CrewEditor({
   disabled,
   onChange,
 }: CrewEditorProps): ReactElement {
+  const { t } = useTranslation();
   const [toAdd, setToAdd] = useState<string>('');
 
   const byId = new Map(people.map((person) => [person.id, person]));
@@ -129,7 +131,7 @@ export function CrewEditor({
       {!disabled && (
         <div className="flex flex-wrap gap-2">
           <select
-            aria-label="Add a worker"
+            aria-label={t('action.addWorker')}
             className="field-input h-touch w-auto min-w-56 py-0"
             value={toAdd}
             onChange={(event) => {

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { ReactElement } from 'react';
 import { formatDate } from '../shifts/shiftFormat';
 import { reportsApi } from './api';
@@ -13,6 +14,7 @@ import type { DateRange } from './dateRange';
  * than it grows is a shift that will run out of the cheap half.
  */
 export function RecycledMaterialReport({ range }: { range: DateRange }): ReactElement {
+  const { t } = useTranslation();
   const report = useQuery({
     queryKey: ['report-recycled', range.from, range.to],
     queryFn: () => reportsApi.recycledMaterial(range.from, range.to),
@@ -23,7 +25,7 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
   }
 
   if (report.isError) {
-    return <p className="p-6 text-bad">Could not load the report.</p>;
+    return <p className="p-6 text-bad">{t('msg.reportFailed')}</p>;
   }
 
   const data = report.data;
@@ -40,7 +42,7 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
   return (
     <>
       <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Figure label="Made" value={`${String(data.totalProduced)} kg`}>
+        <Figure label={t('field.made')} value={`${String(data.totalProduced)} kg`}>
           by the recycler in these days
         </Figure>
         <Figure label="Taken back out" value={`${String(data.totalConsumed)} kg`}>
@@ -66,10 +68,10 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Shift</th>
-                <th className="px-4 py-3 font-semibold">Line</th>
-                <th className="px-4 py-3 text-end font-semibold">Made</th>
-                <th className="px-4 py-3 font-semibold">Recorded by</th>
+                <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
+                <th className="px-4 py-3 font-semibold">{t('term.line')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.made')}</th>
+                <th className="px-4 py-3 font-semibold">{t('field.recordedBy')}</th>
               </tr>
             </thead>
             <tbody>

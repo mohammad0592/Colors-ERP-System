@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { formatDate } from '../shifts/shiftFormat';
 import type { ShiftSummaryReportDto } from './api';
 
@@ -17,6 +18,7 @@ export function ShiftSummaryReport({
 }: {
   report: ShiftSummaryReportDto;
 }): ReactElement {
+  const { t } = useTranslation();
   return (
     <>
       <section className="card mb-4 p-5">
@@ -31,17 +33,17 @@ export function ShiftSummaryReport({
       </section>
 
       <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Figure label="Rolls made" value={String(report.rollsProduced)}>
+        <Figure label={t('field.rollsMade')} value={String(report.rollsProduced)}>
           {report.rollWeightProduced} kg off the extruder
         </Figure>
-        <Figure label="Rolls formed" value={String(report.rollsFormed)}>
+        <Figure label={t('field.rollsFormed')} value={String(report.rollsFormed)}>
           {report.rollWeightUsed} kg into the thermo
         </Figure>
-        <Figure label="Bags" value={String(report.bagCount)}>
+        <Figure label={t('term.bags')} value={String(report.bagCount)}>
           {report.pieceCount.toLocaleString('en-GB')} pieces
         </Figure>
         <Figure
-          label="Lost in forming"
+          label={t('field.lostInForming')}
           value={
             report.lossPercentage === null ? '—' : `${String(report.lossPercentage)}%`
           }
@@ -54,11 +56,11 @@ export function ShiftSummaryReport({
         <Figure label="Product made" value={`${String(report.productWeight)} kg`}>
           pieces × each roll’s own plate weight
         </Figure>
-        <Figure label="Pallets" value={String(report.palletsBuilt)}>
+        <Figure label={t('term.pallets')} value={String(report.palletsBuilt)}>
           {report.palletsCompleted} finished
         </Figure>
         <Figure
-          label="Recycled material"
+          label={t('term.recycledMaterial')}
           value={`${String(report.recycledMaterialProduced)} kg`}
         >
           produced and put back in the store
@@ -76,12 +78,12 @@ export function ShiftSummaryReport({
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Product</th>
-                <th className="px-4 py-3 text-end font-semibold">Rolls</th>
+                <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('term.rolls')}</th>
                 <th className="px-4 py-3 text-end font-semibold">Roll weight</th>
-                <th className="px-4 py-3 text-end font-semibold">Bags</th>
-                <th className="px-4 py-3 text-end font-semibold">Pieces</th>
-                <th className="px-4 py-3 text-end font-semibold">Product</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('term.bags')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('term.product')}</th>
                 <th className="px-4 py-3 text-end font-semibold">Loss</th>
               </tr>
             </thead>

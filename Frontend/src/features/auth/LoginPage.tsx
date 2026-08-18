@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
@@ -16,6 +17,7 @@ interface LoginLocationState {
  * people on its paper forms, and many workers have no company email.
  */
 export function LoginPage(): ReactElement {
+  const { t } = useTranslation();
   const [employeeNumber, setEmployeeNumber] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -83,7 +85,7 @@ export function LoginPage(): ReactElement {
 
         <div className="mb-5">
           <label className="field-label" htmlFor="employeeNumber">
-            Employee number
+            {t('field.employeeNumber')}
           </label>
           <input
             id="employeeNumber"

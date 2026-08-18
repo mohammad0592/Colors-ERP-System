@@ -137,7 +137,7 @@ export function RecipesPage(): ReactElement {
             <div className="mt-2 flex flex-wrap gap-1.5">
               {family.usesRecycle && <Tag label="Uses recycle" />}
               {family.blackOnly && <Tag label="Black only" />}
-              {family.isAbsorbent && <Tag label="Absorbent" />}
+              {family.isAbsorbent && <Tag label={t('term.absorbent')} />}
               <Tag
                 label={`${String(family.versionCount)} version${family.versionCount === 1 ? '' : 's'}`}
               />
@@ -177,13 +177,13 @@ export function RecipesPage(): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Recipe</th>
+              <th className="px-4 py-3 font-semibold">{t('term.recipe')}</th>
               <th className="px-4 py-3 font-semibold">Family</th>
               <th className="px-4 py-3 font-semibold">Version</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Materials</th>
+              <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.materials')}</th>
               <th className="px-4 py-3 font-semibold">Written by</th>
-              <th className="px-4 py-3 font-semibold">Notes</th>
+              <th className="px-4 py-3 font-semibold">{t('field.notes')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -210,7 +210,7 @@ export function RecipesPage(): ReactElement {
                       }}
                     />
                     <Action
-                      label="Copy"
+                      label={t('action.copy')}
                       onClick={() => {
                         copy.mutate(version.id);
                       }}
@@ -248,7 +248,7 @@ export function RecipesPage(): ReactElement {
                           }}
                         />
                         <Action
-                          label="Discard"
+                          label={t('action.discard')}
                           tone="danger"
                           onClick={() => {
                             setConfirm({

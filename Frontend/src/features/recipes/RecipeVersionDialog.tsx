@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import type { MaterialDto } from '../master-data/api';
@@ -35,6 +36,7 @@ export function RecipeVersionDialog({
   onClose,
   onSaved,
 }: RecipeVersionDialogProps): ReactElement {
+  const { t } = useTranslation();
   const isNew = version === null;
   const readOnly = version !== null && !version.isEditable;
 
@@ -150,7 +152,7 @@ export function RecipeVersionDialog({
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
           This recipe is <strong>{version.status.toLowerCase()}</strong> and can no longer
           be changed — the rolls made with it must keep their exact formula. Use{' '}
-          <strong>Copy</strong> to try a change under a new recipe number.
+          <strong>{t('action.copy')}</strong> to try a change under a new recipe number.
         </p>
       )}
 
@@ -175,7 +177,7 @@ export function RecipeVersionDialog({
               }}
               disabled={isSaving}
             >
-              <option value="">Choose…</option>
+              <option value="">{t('action.choose')}</option>
               {families.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.name}
@@ -196,7 +198,7 @@ export function RecipeVersionDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="rec-notes">
-            Notes
+            {t('field.notes')}
           </label>
           <input
             id="rec-notes"

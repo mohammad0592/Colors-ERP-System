@@ -101,7 +101,7 @@ export function ReportsPage(): ReactElement {
           }}
         />
         <Chip
-          label="Recycled material"
+          label={t('term.recycledMaterial')}
           active={report === 'recycled'}
           onClick={() => {
             setReport('recycled');
@@ -114,7 +114,7 @@ export function ReportsPage(): ReactElement {
       ) : (
         <section className="card mb-4 p-4">
           <label className="field-label" htmlFor="report-shift">
-            Shift
+            {t('term.shift')}
           </label>
           <select
             id="report-shift"
@@ -148,7 +148,7 @@ export function ReportsPage(): ReactElement {
       {report === 'waste' && chosen !== null && (
         <>
           {waste.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-          {waste.isError && <p className="p-6 text-bad">Could not load the report.</p>}
+          {waste.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
           {waste.data !== undefined && <MaterialWasteReport report={waste.data} />}
         </>
       )}
@@ -156,7 +156,7 @@ export function ReportsPage(): ReactElement {
       {report === 'summary' && chosen !== null && (
         <>
           {summary.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-          {summary.isError && <p className="p-6 text-bad">Could not load the report.</p>}
+          {summary.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
           {summary.data !== undefined && <ShiftSummaryReport report={summary.data} />}
         </>
       )}

@@ -1,4 +1,5 @@
 ﻿import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import type { ColorDto } from '../master-data/api';
@@ -33,6 +34,7 @@ export function NewRollDialog({
   onClose,
   onCreated,
 }: NewRollDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [recipeVersionId, setRecipeVersionId] = useState(() => recipes[0]?.id ?? 0);
   const [colorId, setColorId] = useState(() => colors[0]?.id ?? 0);
   const [notes, setNotes] = useState('');
@@ -76,7 +78,7 @@ export function NewRollDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="roll-recipe">
-            Recipe
+            {t('term.recipe')}
           </label>
           <select
             id="roll-recipe"
@@ -101,7 +103,7 @@ export function NewRollDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="roll-colour">
-            Colour
+            {t('term.colour')}
           </label>
           <select
             id="roll-colour"
@@ -122,7 +124,7 @@ export function NewRollDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="roll-notes">
-            Note <span className="font-normal text-ink-muted">(optional)</span>
+            {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="roll-notes"

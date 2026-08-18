@@ -115,11 +115,11 @@ export function InventoryPage(): ReactElement {
             <table className="w-full text-start text-sm">
               <thead>
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                  <th className="px-4 py-3 font-semibold">Code</th>
-                  <th className="px-4 py-3 font-semibold">Material</th>
-                  <th className="px-4 py-3 font-semibold">Category</th>
-                  <th className="px-4 py-3 text-end font-semibold">In stock</th>
-                  <th className="px-4 py-3 text-end font-semibold">Minimum</th>
+                  <th className="px-4 py-3 font-semibold">{t('field.code')}</th>
+                  <th className="px-4 py-3 font-semibold">{t('term.material')}</th>
+                  <th className="px-4 py-3 font-semibold">{t('field.category')}</th>
+                  <th className="px-4 py-3 text-end font-semibold">{t('field.inStock')}</th>
+                  <th className="px-4 py-3 text-end font-semibold">{t('field.minimum')}</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -202,12 +202,12 @@ export function InventoryPage(): ReactElement {
               <table className="w-full text-start text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                    <th className="px-4 py-3 font-semibold">When</th>
-                    <th className="px-4 py-3 font-semibold">Material</th>
+                    <th className="px-4 py-3 font-semibold">{t('field.when')}</th>
+                    <th className="px-4 py-3 font-semibold">{t('term.material')}</th>
                     <th className="px-4 py-3 font-semibold">Movement</th>
                     <th className="px-4 py-3 text-end font-semibold">Quantity</th>
                     <th className="px-4 py-3 font-semibold">By</th>
-                    <th className="px-4 py-3 font-semibold">Note</th>
+                    <th className="px-4 py-3 font-semibold">{t('field.note')}</th>
                   </tr>
                 </thead>
                 <tbody>

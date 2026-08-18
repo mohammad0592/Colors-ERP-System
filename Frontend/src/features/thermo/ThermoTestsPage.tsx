@@ -95,7 +95,7 @@ export function ThermoTestsPage(): ReactElement {
           }}
         />
         <Chip
-          label="Every run"
+          label={t('state.everyRun')}
           active={!waitingOnly}
           onClick={() => {
             setWaitingOnly(false);
@@ -105,7 +105,7 @@ export function ThermoTestsPage(): ReactElement {
 
       {justSaved !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-          Roll <strong className="font-mono">{justSaved.rollCode}</strong> made{' '}
+          {t('term.roll')} <strong className="font-mono">{justSaved.rollCode}</strong> made{' '}
           {justSaved.bags.length} bag{justSaved.bags.length === 1 ? '' : 's'} of{' '}
           {justSaved.testReport?.productName} —{' '}
           {justSaved.testReport?.pieceCount.toLocaleString('en-GB')} pieces. The labels
@@ -117,13 +117,13 @@ export function ThermoTestsPage(): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Roll</th>
-              <th className="px-4 py-3 font-semibold">Colour · recipe</th>
-              <th className="px-4 py-3 font-semibold">Shift</th>
-              <th className="px-4 py-3 text-end font-semibold">Minutes</th>
-              <th className="px-4 py-3 font-semibold">Product</th>
-              <th className="px-4 py-3 text-end font-semibold">Bags</th>
-              <th className="px-4 py-3 text-end font-semibold">Pieces</th>
+              <th className="px-4 py-3 font-semibold">{t('term.roll')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.colourRecipe')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('field.minutes')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('term.bags')}</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
               <th className="px-4 py-3 text-end font-semibold">Waste</th>
               <th className="px-4 py-3" />
             </tr>

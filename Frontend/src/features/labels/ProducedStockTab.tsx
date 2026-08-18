@@ -1,4 +1,5 @@
 ﻿import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { formatDate } from '../shifts/shiftFormat';
@@ -17,6 +18,7 @@ import { LabelPrintScreen } from './LabelPrintScreen';
  * find something.
  */
 export function ProducedStockTab(): ReactElement {
+  const { t } = useTranslation();
   const [kind, setKind] = useState<ProducedKind | 'All'>('All');
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
@@ -56,7 +58,7 @@ export function ProducedStockTab(): ReactElement {
 
         <div>
           <label className="field-label" htmlFor="produced-status">
-            Status
+            {t('field.status')}
           </label>
           <select
             id="produced-status"
@@ -99,16 +101,16 @@ export function ProducedStockTab(): ReactElement {
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Barcode</th>
+                <th className="px-4 py-3 font-semibold">{t('term.barcode')}</th>
                 <th className="px-4 py-3 font-semibold">Kind</th>
-                <th className="px-4 py-3 font-semibold">Code</th>
+                <th className="px-4 py-3 font-semibold">{t('field.code')}</th>
                 <th className="px-4 py-3 font-semibold">What it is</th>
-                <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
                 <th className="px-4 py-3 font-semibold">Where</th>
-                <th className="px-4 py-3 text-end font-semibold">Weight</th>
-                <th className="px-4 py-3 text-end font-semibold">Length</th>
-                <th className="px-4 py-3 text-end font-semibold">Pieces</th>
-                <th className="px-4 py-3 font-semibold">Made</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
+                <th className="px-4 py-3 font-semibold">{t('field.made')}</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>

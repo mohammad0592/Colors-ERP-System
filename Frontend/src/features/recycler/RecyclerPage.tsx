@@ -154,7 +154,7 @@ export function RecyclerPage(): ReactElement {
 
           {draft.data.alreadyRecorded ? (
             <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-              Already recorded for this line.
+              {t('msg.alreadyRecordedForLine')}
             </p>
           ) : (
             <>
@@ -182,7 +182,7 @@ export function RecyclerPage(): ReactElement {
 
               <div className="mb-4 max-w-sm">
                 <label className="field-label" htmlFor="recycler-notes">
-                  Note <span className="font-normal text-ink-muted">(optional)</span>
+                  {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
                 </label>
                 <input
                   id="recycler-notes"
@@ -206,14 +206,14 @@ export function RecyclerPage(): ReactElement {
                 {save.isPending ? 'Saving…' : 'Record it and add it to the store'}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
-                Written once, at the end of the shift.
+                {t('msg.writtenOnceAtShiftEnd')}
               </p>
             </>
           )}
         </section>
       )}
 
-      <h2 className="mb-3 text-lg font-bold text-ink">Recorded</h2>
+      <h2 className="mb-3 text-lg font-bold text-ink">{t('state.recorded')}</h2>
 
       {records.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
       {records.isError && <p className="p-6 text-bad">Could not load the recycler.</p>}
@@ -229,10 +229,10 @@ export function RecyclerPage(): ReactElement {
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Shift</th>
-                <th className="px-4 py-3 font-semibold">Line</th>
+                <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
+                <th className="px-4 py-3 font-semibold">{t('term.line')}</th>
                 <th className="px-4 py-3 text-end font-semibold">Produced</th>
-                <th className="px-4 py-3 font-semibold">Recorded by</th>
+                <th className="px-4 py-3 font-semibold">{t('field.recordedBy')}</th>
               </tr>
             </thead>
             <tbody>

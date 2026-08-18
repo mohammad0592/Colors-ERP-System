@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { shiftReportsApi, type ShiftReportSummaryDto } from './api';
@@ -22,6 +23,7 @@ export function ReopenShiftDialog({
   onClose,
   onReopened,
 }: ReopenShiftDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -52,7 +54,7 @@ export function ReopenShiftDialog({
         noValidate
       >
         <p className="mb-4 text-sm leading-relaxed text-ink-soft">
-          Shift <strong>{report.shiftName}</strong> on {formatDate(report.productionDate)}{' '}
+          {t('term.shift')} <strong>{report.shiftName}</strong> on {formatDate(report.productionDate)}{' '}
           will accept changes again, with all {report.lineCount} line
           {report.lineCount === 1 ? '' : 's'} on it. The reason is kept on the shift for
           good.

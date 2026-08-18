@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import type { ProductionLineDto, ShiftDto } from '../master-data/api';
@@ -28,6 +29,7 @@ export function OpenShiftDialog({
   onClose,
   onOpened,
 }: OpenShiftDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [shiftId, setShiftId] = useState(() => shifts[0]?.id ?? 0);
   const [productionDate, setProductionDate] = useState(todayIso);
   const [supervisorUserId, setSupervisorUserId] = useState<number | null>(null);
@@ -66,7 +68,7 @@ export function OpenShiftDialog({
   }
 
   return (
-    <Modal title="Open a shift" onClose={onClose}>
+    <Modal title={t('action.openShift')} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -95,7 +97,7 @@ export function OpenShiftDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="open-shift">
-            Shift
+            {t('term.shift')}
           </label>
           <select
             id="open-shift"
@@ -146,7 +148,7 @@ export function OpenShiftDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="open-supervisor">
-            Supervisor
+            {t('term.supervisor')}
           </label>
           <select
             id="open-supervisor"
@@ -159,7 +161,7 @@ export function OpenShiftDialog({
               );
             }}
           >
-            <option value="">Not decided yet</option>
+            <option value="">{t('state.notDecidedYet')}</option>
             {supervisors.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.fullName} ({person.employeeNumber})

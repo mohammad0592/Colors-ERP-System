@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
@@ -20,6 +21,7 @@ import { RowButton, StatusBadge } from './LookupTab';
  * into the code when the factory starts making meal boxes.
  */
 export function ProductsTab(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<ProductDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -99,14 +101,14 @@ export function ProductsTab(): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Product</th>
-              <th className="px-4 py-3 font-semibold">Mould</th>
+              <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
+              <th className="px-4 py-3 font-semibold">{t('term.mould')}</th>
               <th className="px-4 py-3 font-semibold">Type</th>
-              <th className="px-4 py-3 font-semibold">Absorbent</th>
+              <th className="px-4 py-3 font-semibold">{t('term.absorbent')}</th>
               <th className="px-4 py-3 font-semibold">Pieces / bag</th>
               <th className="px-4 py-3 font-semibold">Small bags / bag</th>
               <th className="px-4 py-3 font-semibold">Bags / pallet</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -128,7 +130,7 @@ export function ProductsTab(): ReactElement {
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <RowButton
-                      label="Edit"
+                      label={t('action.edit')}
                       onClick={() => {
                         setEditing(product);
                       }}
@@ -144,7 +146,7 @@ export function ProductsTab(): ReactElement {
                     />
                     {product.canDelete && (
                       <RowButton
-                        label="Delete"
+                        label={t('action.delete')}
                         tone="danger"
                         onClick={() => {
                           setConfirm({
@@ -213,6 +215,7 @@ function ProductDialog({
   onClose: () => void;
   onSaved: () => void;
 }): ReactElement {
+  const { t } = useTranslation();
   const [name, setName] = useState(product?.name ?? '');
   const [mouldId, setMouldId] = useState(product?.mouldId ?? moulds[0]?.id ?? 0);
   const [productTypeId, setProductTypeId] = useState(
@@ -270,7 +273,7 @@ function ProductDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="prod-name">
-            Name
+            {t('field.name')}
           </label>
           <input
             id="prod-name"
@@ -287,7 +290,7 @@ function ProductDialog({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="mb-4">
             <label className="field-label" htmlFor="prod-mould">
-              Mould
+              {t('term.mould')}
             </label>
             <select
               id="prod-mould"
@@ -343,7 +346,7 @@ function ProductDialog({
                 setIsAbsorbent(event.target.checked);
               }}
             />
-            Absorbent
+            {t('term.absorbent')}
           </label>
           <p className="mt-1 ms-8 text-xs text-ink-muted">
             Decided by what is mixed into the roll, not by the mould.

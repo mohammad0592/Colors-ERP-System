@@ -1,4 +1,5 @@
 ﻿import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
@@ -34,6 +35,7 @@ export function ShiftReportDialog({
   onClose,
   onChanged,
 }: ShiftReportDialogProps): ReactElement {
+  const { t } = useTranslation();
   // A shift being corrected is not running, but its record is still open to
   // change — that is the whole point of reopening it.
   const locked = !report.canEdit;
@@ -106,7 +108,7 @@ export function ShiftReportDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="shift-supervisor">
-            Supervisor
+            {t('term.supervisor')}
           </label>
           <select
             id="shift-supervisor"
@@ -119,7 +121,7 @@ export function ShiftReportDialog({
               );
             }}
           >
-            <option value="">Not decided yet</option>
+            <option value="">{t('state.notDecidedYet')}</option>
             {people.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.fullName} ({person.employeeNumber})
@@ -200,7 +202,7 @@ export function ShiftReportDialog({
               {isSaving ? 'Saving…' : 'Save shift details'}
             </button>
             {savedDetails && error === null && !isSaving && (
-              <span className="text-sm font-medium text-ok">Saved</span>
+              <span className="text-sm font-medium text-ok">{t('state.saved')}</span>
             )}
           </div>
         )}

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
@@ -17,6 +18,7 @@ import { RowButton, StatusBadge } from './LookupTab';
  * "1 pallet = 750 kg" lives on the material itself (specification section 4).
  */
 export function MaterialsTab(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<MaterialDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -92,13 +94,13 @@ export function MaterialsTab(): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Code</th>
-              <th className="px-4 py-3 font-semibold">Name</th>
-              <th className="px-4 py-3 font-semibold">Category</th>
-              <th className="px-4 py-3 font-semibold">Base unit</th>
-              <th className="px-4 py-3 font-semibold">Minimum</th>
-              <th className="px-4 py-3 font-semibold">Pack sizes</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">{t('field.code')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.name')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.category')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.baseUnit')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.minimum')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.packSizes')}</th>
+              <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -130,7 +132,7 @@ export function MaterialsTab(): ReactElement {
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <RowButton
-                      label="Edit"
+                      label={t('action.edit')}
                       onClick={() => {
                         setEditing(material);
                       }}
@@ -147,7 +149,7 @@ export function MaterialsTab(): ReactElement {
                     {/* Hidden once a recipe uses the material. */}
                     {material.canDelete && (
                       <RowButton
-                        label="Delete"
+                        label={t('action.delete')}
                         tone="danger"
                         onClick={() => {
                           setConfirm({
@@ -265,6 +267,7 @@ function MaterialDialog({
   onClose,
   onSaved,
 }: MaterialDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [form, setForm] = useState<MaterialForm>(() => formFrom(material));
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -364,7 +367,7 @@ function MaterialDialog({
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <label className="field-label" htmlFor="mat-code">
-              Code
+              {t('field.code')}
             </label>
             <input
               id="mat-code"
@@ -381,7 +384,7 @@ function MaterialDialog({
           </div>
           <div>
             <label className="field-label" htmlFor="mat-name">
-              Name
+              {t('field.name')}
             </label>
             <input
               id="mat-name"
@@ -400,7 +403,7 @@ function MaterialDialog({
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <label className="field-label" htmlFor="mat-category">
-              Category
+              {t('field.category')}
             </label>
             <select
               id="mat-category"
@@ -411,7 +414,7 @@ function MaterialDialog({
               }}
               disabled={isSaving}
             >
-              <option value="">Choose…</option>
+              <option value="">{t('action.choose')}</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -421,7 +424,7 @@ function MaterialDialog({
           </div>
           <div>
             <label className="field-label" htmlFor="mat-unit">
-              Base unit
+              {t('field.baseUnit')}
             </label>
             <select
               id="mat-unit"
@@ -432,7 +435,7 @@ function MaterialDialog({
               }}
               disabled={isSaving}
             >
-              <option value="">Choose…</option>
+              <option value="">{t('action.choose')}</option>
               {units.map((u) => (
                 <option key={u.id} value={u.id}>
                   {u.name} ({u.symbol})
@@ -489,7 +492,7 @@ function MaterialDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="mat-notes">
-            Notes
+            {t('field.notes')}
           </label>
           <input
             id="mat-notes"
@@ -504,7 +507,7 @@ function MaterialDialog({
         </div>
 
         <fieldset className="mb-4 rounded-control border border-line p-4">
-          <legend className="px-1 text-sm font-semibold text-ink-soft">Pack sizes</legend>
+          <legend className="px-1 text-sm font-semibold text-ink-soft">{t('field.packSizes')}</legend>
           <p className="mb-3 text-xs text-ink-muted">
             How this material arrives. The storekeeper receives packs.
           </p>

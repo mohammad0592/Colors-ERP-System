@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
@@ -60,6 +61,7 @@ export function LookupTab<
   itemWord,
   itemWordPlural,
 }: LookupTabProps<TDto, TSave>): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<TDto | 'new' | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -141,7 +143,7 @@ export function LookupTab<
                   {field.label}
                 </th>
               ))}
-              <th className="px-4 py-3 font-semibold">Status</th>
+              <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -159,7 +161,7 @@ export function LookupTab<
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <RowButton
-                      label="Edit"
+                      label={t('action.edit')}
                       onClick={() => {
                         setEditing(row);
                       }}
@@ -174,7 +176,7 @@ export function LookupTab<
                         that always fails is worse than no button. */}
                     {row.canDelete && (
                       <RowButton
-                        label="Delete"
+                        label={t('action.delete')}
                         tone="danger"
                         onClick={() => {
                           setConfirm({

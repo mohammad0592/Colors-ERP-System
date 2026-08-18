@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { ReactElement } from 'react';
 import { reportsApi } from './api';
 import type { DateRange } from './dateRange';
@@ -11,6 +12,7 @@ import type { DateRange } from './dateRange';
  * rather than guessed into a row it might not end up in.
  */
 export function PalletProductionReport({ range }: { range: DateRange }): ReactElement {
+  const { t } = useTranslation();
   const report = useQuery({
     queryKey: ['report-pallets', range.from, range.to],
     queryFn: () => reportsApi.palletProduction(range.from, range.to),
@@ -21,7 +23,7 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
   }
 
   if (report.isError) {
-    return <p className="p-6 text-bad">Could not load the report.</p>;
+    return <p className="p-6 text-bad">{t('msg.reportFailed')}</p>;
   }
 
   const data = report.data;
@@ -29,7 +31,7 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
   return (
     <>
       <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Figure label="Finished" value={String(data.palletsCompleted)}>
+        <Figure label={t('state.finished')} value={String(data.palletsCompleted)}>
           full and ready to ship
         </Figure>
         <Figure label="Still being filled" value={String(data.palletsStillOpen)}>
@@ -52,11 +54,11 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <th className="px-4 py-3 font-semibold">Product</th>
-                <th className="px-4 py-3 text-end font-semibold">Pallets</th>
-                <th className="px-4 py-3 text-end font-semibold">Bags</th>
-                <th className="px-4 py-3 text-end font-semibold">Pieces</th>
-                <th className="px-4 py-3 text-end font-semibold">Weight</th>
+                <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('term.pallets')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('term.bags')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
               </tr>
             </thead>
             <tbody>
