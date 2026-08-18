@@ -9,6 +9,10 @@ Two programs must be running at the same time:
 
 The frontend talks to the backend, so **the backend must be started first**.
 
+Every command below is run **from the project folder** — the one holding `Backend`,
+`Frontend` and `docs`. They are written as relative paths on purpose, so they keep
+working when the project is copied to another computer or another drive.
+
 ---
 
 ## Every day: two terminals
@@ -16,7 +20,7 @@ The frontend talks to the backend, so **the backend must be started first**.
 ### Terminal 1 — backend
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet run --project src/Colors.Api
+cd Backend && dotnet run --project src/Colors.Api
 ```
 
 Wait until it prints:
@@ -28,7 +32,7 @@ Now listening on: http://localhost:5211
 ### Terminal 2 — frontend
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Frontend" && npm run dev
+cd Frontend && npm run dev
 ```
 
 Wait until it prints:
@@ -64,19 +68,19 @@ These are needed once, not every day.
 **2. Tell the backend the database password:**
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet user-secrets set "ConnectionStrings:ColorsDb" "Host=localhost;Port=5432;Database=colors_erp;Username=postgres;Password=YOUR_PASSWORD" --project src/Colors.Api
+cd Backend && dotnet user-secrets set "ConnectionStrings:ColorsDb" "Host=localhost;Port=5432;Database=colors_erp;Username=postgres;Password=YOUR_PASSWORD" --project src/Colors.Api
 ```
 
 **3. Set a key for signing login tokens** (any 32+ characters):
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet user-secrets set "Jwt:SigningKey" "change-this-to-any-long-random-text-32-chars-or-more" --project src/Colors.Api
+cd Backend && dotnet user-secrets set "Jwt:SigningKey" "change-this-to-any-long-random-text-32-chars-or-more" --project src/Colors.Api
 ```
 
 **4. Set the first administrator password:**
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet user-secrets set "Seed:AdminPassword" "YourAdminPassword1" --project src/Colors.Api
+cd Backend && dotnet user-secrets set "Seed:AdminPassword" "YourAdminPassword1" --project src/Colors.Api
 ```
 
 Rules: at least 8 characters, one digit, one small letter.
@@ -84,13 +88,13 @@ Rules: at least 8 characters, one digit, one small letter.
 **5. Create the database tables:**
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet ef database update --project src/Colors.Infrastructure --startup-project src/Colors.Api
+cd Backend && dotnet ef database update --project src/Colors.Infrastructure --startup-project src/Colors.Api
 ```
 
 **6. Install the frontend packages:**
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Frontend" && npm install
+cd Frontend && npm install
 ```
 
 Now start both as above and sign in as `ADMIN001` with the password from step 4.
@@ -198,11 +202,11 @@ Point the host's health check at `/health`.
 When an entity changes, the database must be updated:
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet ef migrations add NameOfChange --project src/Colors.Infrastructure --startup-project src/Colors.Api --output-dir Persistence/Migrations
+cd Backend && dotnet ef migrations add NameOfChange --project src/Colors.Infrastructure --startup-project src/Colors.Api --output-dir Persistence/Migrations
 ```
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet ef database update --project src/Colors.Infrastructure --startup-project src/Colors.Api
+cd Backend && dotnet ef database update --project src/Colors.Infrastructure --startup-project src/Colors.Api
 ```
 
 ---
@@ -210,11 +214,11 @@ cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet ef 
 ## Checking your work
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Backend" && dotnet build && dotnet test
+cd Backend && dotnet build && dotnet test
 ```
 
 ```bash
-cd "C:/Users/UnclePC/Documents/Projects/Colors ERP System/Frontend" && npm run lint && npm run typecheck && npm run build
+cd Frontend && npm run lint && npm run typecheck && npm run build
 ```
 
 All four must pass before anything is committed.
