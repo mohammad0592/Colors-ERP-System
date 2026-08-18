@@ -426,6 +426,158 @@ public class PalletService(
 
     // ---------- helpers ----------
 
+    public async Task<IReadOnlyList<PalletSummaryDto>> GetPalletsInStockAsync(
+        CancellationToken cancellationToken = default)
+    {
+        var pallets = await PalletQuery()
+            .Where(p => p.CompletedAt != null
+                        && p.ShippedAt == null
+                        && p.CancelledAt == null)
+            // Oldest first. A pallet that has stood in the factory since March should go
+            // before one finished this morning, and the man loading the lorry has no
+            // other way of knowing which is which.
+            .OrderBy(p => p.CompletedAt)
+            .ToListAsync(cancellationToken);
+
+        var names = await UserNamesAsync(pallets.Select(p => p.CreatedByUserId), cancellationToken);
+        var codes = await BarcodesForAsync(
+            BarcodeObjectType.Pallet, pallets.Select(p => p.Id), cancellationToken);
+
+        return pallets.Select(p => ToSummary(p, names, codes)).ToList();
+    }
+
+    public async Task<Result<PalletDto>> ShipPalletAsync(
+        ShipPalletRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var found = await FindPalletAsync(request, cancellationToken);
+        if (!found.IsSuccess || found.Value is null)
+        {
+            return Result<PalletDto>.Failure(
+                found.ErrorCode, found.Message ?? "This pallet does not exist.");
+        }
+
+        var pallet = found.Value;
+
+        if (pallet.CancelledAt is not null)
+        {
+            return Invalid($"Pallet {pallet.PalletNumber} was cancelled. It never held anything.");
+        }
+
+        if (pallet.ShippedAt is not null)
+        {
+            return Invalid($"Pallet {pallet.PalletNumber} has already gone.");
+        }
+
+        if (pallet.CompletedAt is null)
+        {
+            // The database would refuse this anyway - ck_pallets_dates_in_order will not
+            // take a shipping date without a completion date. Said here in words the man
+            // on the floor can act on, rather than as a constraint violation.
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} is not finished yet. Only a full pallet leaves.");
+        }
+
+        // No open shift is required, and that is deliberate. Cancelling is shift work -
+        // it happens at the machine, to a pallet being built. A pallet may stand finished
+        // for weeks and leave on a Friday, so tying dispatch to an open shift would stop
+        // the lorry for a reason the factory would not recognise.
+        pallet.ShippedAt = timeProvider.GetUtcNow();
+        pallet.ShippedByUserId = userId;
+
+        // A pallet that ships for real is no longer a pallet that came back, so the
+        // record of the earlier mistake goes. The audit log still has it.
+        pallet.ShippingReversedAt = null;
+        pallet.ShippingReversedByUserId = null;
+        pallet.ShippingReversalReason = null;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadAsync(pallet.Id, cancellationToken);
+    }
+
+    public async Task<Result<PalletDto>> ReverseShipmentAsync(
+        int palletId,
+        ReverseShipmentRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var reason = Trimmed(request.Reason);
+        if (reason is null)
+        {
+            return Invalid("Say why the pallet is coming back.");
+        }
+
+        var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
+        if (pallet is null)
+        {
+            return PalletNotFound();
+        }
+
+        if (pallet.ShippedAt is null)
+        {
+            return Invalid($"Pallet {pallet.PalletNumber} has not been shipped.");
+        }
+
+        pallet.ShippedAt = null;
+        pallet.ShippedByUserId = null;
+        pallet.ShippingReversedAt = timeProvider.GetUtcNow();
+        pallet.ShippingReversedByUserId = userId;
+        pallet.ShippingReversalReason = reason;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadAsync(pallet.Id, cancellationToken);
+    }
+
+    /// <summary>
+    /// A pallet by its label, or by its id for the office. The same shape as finding a
+    /// bag, and for the same reason: the floor scans.
+    /// </summary>
+    private async Task<Result<WoodenPallet>> FindPalletAsync(
+        ShipPalletRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!string.IsNullOrWhiteSpace(request.PalletBarcode))
+        {
+            var scan = await barcodes.LookupAsync(
+                request.PalletBarcode.Trim(), BarcodeObjectType.Pallet, cancellationToken);
+
+            // A bag's label comes back successful, saying it is a bag. Checked here, or a
+            // bag label whose id happened to match a pallet would ship the wrong thing.
+            if (!scan.IsSuccess
+                || scan.Value is null
+                || !scan.Value.Found
+                || scan.Value.ObjectType != BarcodeObjectType.Pallet.ToString())
+            {
+                return Result<WoodenPallet>.Failure(
+                    ErrorCode.ValidationFailed,
+                    scan.Value?.Message ?? scan.Message ?? "That label is not one of ours.");
+            }
+
+            var scanned = await PalletQuery()
+                .FirstOrDefaultAsync(p => p.Id == scan.Value.ObjectId, cancellationToken);
+
+            return scanned is null
+                ? Result<WoodenPallet>.Failure(
+                    ErrorCode.NotFound, "That label names a pallet that is no longer here.")
+                : Result<WoodenPallet>.Success(scanned);
+        }
+
+        if (request.PalletId is null)
+        {
+            return Result<WoodenPallet>.Failure(ErrorCode.ValidationFailed, "Scan the pallet.");
+        }
+
+        var picked = await PalletQuery()
+            .FirstOrDefaultAsync(p => p.Id == request.PalletId, cancellationToken);
+
+        return picked is null
+            ? Result<WoodenPallet>.Failure(ErrorCode.NotFound, "This pallet does not exist.")
+            : Result<WoodenPallet>.Success(picked);
+    }
+
     /// <summary>
     /// The scan comes first, because that is what the floor does. An id is accepted too,
     /// for the office picking off the list.
@@ -567,7 +719,8 @@ public class PalletService(
             pallet.Product?.BagsPerPallet is > 0 ? pallet.Product.BagsPerPallet : null,
             names.GetValueOrDefault(pallet.CreatedByUserId, "—"),
             pallet.CreatedAt,
-            pallet.CompletedAt);
+            pallet.CompletedAt,
+            pallet.ShippedAt);
     }
 
     private async Task<PalletDto> ToDtoAsync(
@@ -578,6 +731,16 @@ public class PalletService(
         if (pallet.CancelledByUserId is not null)
         {
             userIds.Add(pallet.CancelledByUserId.Value);
+        }
+
+        if (pallet.ShippedByUserId is not null)
+        {
+            userIds.Add(pallet.ShippedByUserId.Value);
+        }
+
+        if (pallet.ShippingReversedByUserId is not null)
+        {
+            userIds.Add(pallet.ShippingReversedByUserId.Value);
         }
 
         userIds.AddRange(pallet.Assignments.Select(a => a.AssignedByUserId));
@@ -617,6 +780,14 @@ public class PalletService(
             summary.CreatedAt,
             summary.CompletedAt,
             pallet.ShippedAt,
+            pallet.ShippedByUserId is null
+                ? null
+                : names.GetValueOrDefault(pallet.ShippedByUserId.Value, "—"),
+            pallet.ShippingReversedAt,
+            pallet.ShippingReversedByUserId is null
+                ? null
+                : names.GetValueOrDefault(pallet.ShippingReversedByUserId.Value, "—"),
+            pallet.ShippingReversalReason,
             pallet.CancelledAt,
             pallet.CancelledByUserId is null
                 ? null

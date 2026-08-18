@@ -1,4 +1,4 @@
-using Colors.Domain.Entities.MasterData;
+﻿using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Shifts;
 using Colors.Domain.Enums;
 
@@ -49,8 +49,31 @@ public class WoodenPallet
     /// <summary>Set when the last bag the product allows goes on. An event, so a date.</summary>
     public DateTimeOffset? CompletedAt { get; set; }
 
-    /// <summary>Also an event. Nothing sets it yet — there is no dispatch phase.</summary>
+    /// <summary>
+    /// Also an event: the pallet left the factory. Only a finished pallet can, which the
+    /// database itself enforces — <c>ck_pallets_dates_in_order</c> refuses a shipping
+    /// date without a completion date, or one that comes before it.
+    /// </summary>
     public DateTimeOffset? ShippedAt { get; set; }
+
+    /// <summary>Who released it. Travels with <see cref="ShippedAt"/>, never alone.</summary>
+    public int? ShippedByUserId { get; set; }
+
+    /// <summary>
+    /// Set when a shipping was undone, and cleared again the moment the pallet ships for
+    /// real. So these three describe a pallet that is <i>back in the factory</i> after a
+    /// wrong scan — never one standing shipped.
+    ///
+    /// The longer history is not lost by clearing them: a pallet is one of the types the
+    /// audit interceptor watches, so every one of these changes is already a line in the
+    /// log with its old and new value (specification section 15).
+    /// </summary>
+    public DateTimeOffset? ShippingReversedAt { get; set; }
+
+    public int? ShippingReversedByUserId { get; set; }
+
+    /// <summary>Required to undo a shipping, exactly as a reversal needs one.</summary>
+    public string? ShippingReversalReason { get; set; }
 
     /// <summary>
     /// Set when a pallet started by mistake is cancelled. Only ever on an empty one:

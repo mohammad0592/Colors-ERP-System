@@ -31,6 +31,7 @@ export interface PalletSummaryDto {
   createdByName: string;
   createdAt: string;
   completedAt: string | null;
+  shippedAt: string | null;
 }
 
 export interface PalletBagDto {
@@ -50,7 +51,11 @@ export interface PalletBagDto {
 }
 
 export interface PalletDto extends PalletSummaryDto {
-  shippedAt: string | null;
+  shippedByName: string | null;
+  /** Set only while a pallet is back in the factory after a shipping was undone. */
+  shippingReversedAt: string | null;
+  shippingReversedByName: string | null;
+  shippingReversalReason: string | null;
   /** Set only on a cancelled pallet. Its wooden pallet went back to the store. */
   cancelledAt: string | null;
   cancelledByName: string | null;
@@ -112,6 +117,24 @@ export const palletsApi = {
   /** Takes a bag back off. The scan stays in the history with its reason. */
   reverse: (assignmentId: number, reason: string): Promise<PalletDto> =>
     apiRequest<PalletDto>(`/api/pallets/assignments/${String(assignmentId)}/reverse`, {
+      method: 'POST',
+      body: { reason },
+    }),
+
+  /** Finished pallets still standing in the factory, oldest first. */
+  inStock: (): Promise<PalletSummaryDto[]> =>
+    apiRequest<PalletSummaryDto[]>('/api/pallets/in-stock'),
+
+  /** Sends a finished pallet out. Refused on anything not full. */
+  ship: (body: {
+    palletBarcode: string | null;
+    palletId: number | null;
+  }): Promise<PalletDto> =>
+    apiRequest<PalletDto>('/api/pallets/ship', { method: 'POST', body }),
+
+  /** Puts a pallet shipped by mistake back in the factory. */
+  unship: (palletId: number, reason: string): Promise<PalletDto> =>
+    apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/unship`, {
       method: 'POST',
       body: { reason },
     }),

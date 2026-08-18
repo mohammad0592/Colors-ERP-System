@@ -671,4 +671,256 @@ public class PalletTests(DatabaseFixture fixture)
 
         await Assert.ThrowsAsync<Npgsql.PostgresException>(duplicate);
     }
+
+    // ----------------------------------------------------------------- dispatch
+    //
+    // Sending a finished pallet out of the factory (specification section 10). Until
+    // this existed the Shipped state was defined and unreachable.
+
+    /// <summary>A pallet filled to its product's own figure, ready to go.</summary>
+    private static async Task<PalletDto> CompletedPalletAsync(
+        ColorsDbContext db,
+        FactoryData.Ids ids,
+        string suffix)
+    {
+        var bags = await BagsAsync(db, ids, suffix, 15);
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        PalletDto? latest = null;
+        foreach (var bag in bags)
+        {
+            var scanned = await service.ScanBagAsync(
+                pallet.Id, new ScanBagRequest(bag.Barcode, null), ids.UserId);
+            Assert.True(scanned.IsSuccess, scanned.Message);
+            latest = scanned.Value;
+        }
+
+        Assert.Equal(PalletStatus.Completed.ToString(), latest!.Status);
+        return latest;
+    }
+
+    [Fact]
+    public async Task A_finished_pallet_can_be_shipped()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP1");
+        var pallet = await CompletedPalletAsync(db, ids, "SHIP1");
+
+        var shipped = await NewService(db).ShipPalletAsync(
+            new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+
+        Assert.True(shipped.IsSuccess, shipped.Message);
+        Assert.Equal(PalletStatus.Shipped.ToString(), shipped.Value!.Status);
+        Assert.NotNull(shipped.Value.ShippedAt);
+
+        // Who released it is recorded, exactly as who cancelled one is.
+        Assert.NotNull(shipped.Value.ShippedByName);
+
+        // The bags are still on it. Shipping moves the pallet, it does not empty it.
+        Assert.Equal(15, shipped.Value.BagCount);
+    }
+
+    [Fact]
+    public async Task A_pallet_still_being_filled_cannot_be_shipped()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP2");
+        var bags = await BagsAsync(db, ids, "SHIP2", 2);
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        await service.ScanBagAsync(
+            pallet.Id, new ScanBagRequest(bags[0].Barcode, null), ids.UserId);
+
+        var shipped = await service.ShipPalletAsync(
+            new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+
+        Assert.False(shipped.IsSuccess);
+        Assert.Contains("not finished", shipped.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_pallet_cannot_be_shipped_twice()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP3");
+        var pallet = await CompletedPalletAsync(db, ids, "SHIP3");
+        var service = NewService(db);
+
+        var first = await service.ShipPalletAsync(
+            new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+        Assert.True(first.IsSuccess, first.Message);
+
+        var second = await service.ShipPalletAsync(
+            new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+
+        Assert.False(second.IsSuccess);
+        Assert.Contains("already gone", second.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_cancelled_pallet_cannot_be_shipped()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP4");
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        var cancelled = await service.CancelPalletAsync(
+            pallet.Id, new CancelPalletRequest("Started on the wrong line."), ids.UserId);
+        Assert.True(cancelled.IsSuccess, cancelled.Message);
+
+        var shipped = await service.ShipPalletAsync(
+            new ShipPalletRequest(null, pallet.Id), ids.UserId);
+
+        Assert.False(shipped.IsSuccess);
+        Assert.Contains("cancelled", shipped.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_shipped_pallet_leaves_the_stock_list()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP5");
+        var pallet = await CompletedPalletAsync(db, ids, "SHIP5");
+        var service = NewService(db);
+
+        var before = await service.GetPalletsInStockAsync();
+        Assert.Contains(before, p => p.Id == pallet.Id);
+
+        await service.ShipPalletAsync(new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+
+        var after = await service.GetPalletsInStockAsync();
+        Assert.DoesNotContain(after, p => p.Id == pallet.Id);
+    }
+
+    [Fact]
+    public async Task A_pallet_still_being_filled_is_not_in_the_stock_list()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP6");
+        var bags = await BagsAsync(db, ids, "SHIP6", 2);
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        await service.ScanBagAsync(
+            pallet.Id, new ScanBagRequest(bags[0].Barcode, null), ids.UserId);
+
+        // Stock is what is finished and still here. A pallet being built is neither.
+        var stock = await service.GetPalletsInStockAsync();
+        Assert.DoesNotContain(stock, p => p.Id == pallet.Id);
+    }
+
+    [Fact]
+    public async Task Un_shipping_brings_the_pallet_back_with_a_reason()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP7");
+        var pallet = await CompletedPalletAsync(db, ids, "SHIP7");
+        var service = NewService(db);
+
+        await service.ShipPalletAsync(new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+
+        var back = await service.ReverseShipmentAsync(
+            pallet.Id, new ReverseShipmentRequest("Scanned the wrong pallet at the lorry."),
+            ids.UserId);
+
+        Assert.True(back.IsSuccess, back.Message);
+
+        // It is what it was the moment before: finished, and standing in the factory.
+        Assert.Equal(PalletStatus.Completed.ToString(), back.Value!.Status);
+        Assert.Null(back.Value.ShippedAt);
+        Assert.Null(back.Value.ShippedByName);
+
+        Assert.NotNull(back.Value.ShippingReversedAt);
+        Assert.NotNull(back.Value.ShippingReversedByName);
+        Assert.Contains("wrong pallet", back.Value.ShippingReversalReason!, StringComparison.OrdinalIgnoreCase);
+
+        var stock = await service.GetPalletsInStockAsync();
+        Assert.Contains(stock, p => p.Id == pallet.Id);
+    }
+
+    [Fact]
+    public async Task Un_shipping_needs_a_reason()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP8");
+        var pallet = await CompletedPalletAsync(db, ids, "SHIP8");
+        var service = NewService(db);
+
+        await service.ShipPalletAsync(new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+
+        var back = await service.ReverseShipmentAsync(
+            pallet.Id, new ReverseShipmentRequest("   "), ids.UserId);
+
+        Assert.False(back.IsSuccess);
+        Assert.Contains("why", back.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task A_pallet_that_never_went_cannot_come_back()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP9");
+        var pallet = await CompletedPalletAsync(db, ids, "SHIP9");
+
+        var back = await NewService(db).ReverseShipmentAsync(
+            pallet.Id, new ReverseShipmentRequest("Nothing to undo."), ids.UserId);
+
+        Assert.False(back.IsSuccess);
+        Assert.Contains("not been shipped", back.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Shipping_again_clears_the_record_of_the_mistake()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP10");
+        var pallet = await CompletedPalletAsync(db, ids, "SHIP10");
+        var service = NewService(db);
+
+        await service.ShipPalletAsync(new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+        await service.ReverseShipmentAsync(
+            pallet.Id, new ReverseShipmentRequest("Wrong pallet."), ids.UserId);
+
+        var again = await service.ShipPalletAsync(
+            new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+
+        Assert.True(again.IsSuccess, again.Message);
+        Assert.Equal(PalletStatus.Shipped.ToString(), again.Value!.Status);
+
+        // The pallet is standing shipped, so it is not also a pallet that came back.
+        // The audit log still carries both events.
+        Assert.Null(again.Value.ShippingReversedAt);
+        Assert.Null(again.Value.ShippingReversalReason);
+    }
+
+    [Fact]
+    public async Task A_bag_label_does_not_ship_a_pallet()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP11");
+        var bags = await BagsAsync(db, ids, "SHIP11", 1);
+
+        // A bag's label comes back from the lookup successfully, saying it is a bag. If
+        // the type were not checked, its id could name a pallet and ship the wrong one.
+        var shipped = await NewService(db).ShipPalletAsync(
+            new ShipPalletRequest(bags[0].Barcode, null), ids.UserId);
+
+        Assert.False(shipped.IsSuccess);
+    }
+
+    [Fact]
+    public async Task Shipping_asks_for_something_to_ship()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SHIP12");
+
+        var shipped = await NewService(db).ShipPalletAsync(
+            new ShipPalletRequest(null, null), ids.UserId);
+
+        Assert.False(shipped.IsSuccess);
+        Assert.Contains("scan", shipped.Message!, StringComparison.OrdinalIgnoreCase);
+    }
 }

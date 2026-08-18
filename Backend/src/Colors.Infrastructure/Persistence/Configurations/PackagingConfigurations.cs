@@ -35,6 +35,22 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
                 + "AND (\"CancelledAt\" IS NULL) = (\"CancellationReason\" IS NULL) "
                 + "AND (\"CancelledAt\" IS NULL "
                 + "OR (\"CompletedAt\" IS NULL AND \"ShippedAt\" IS NULL))");
+
+            // Shipping is a date and a person, both or neither — the same shape as
+            // cancelling, and for the same reason: a date with nobody against it is a
+            // pallet that left the factory on its own.
+            t.HasCheckConstraint(
+                "ck_pallets_shipped_together",
+                "(\"ShippedAt\" IS NULL) = (\"ShippedByUserId\" IS NULL)");
+
+            // Undoing a shipping is who, when and why — all three or none. And the three
+            // are cleared when the pallet ships again, so a pallet can never read as
+            // shipped and un-shipped at once.
+            t.HasCheckConstraint(
+                "ck_pallets_shipping_reversal_complete",
+                "(\"ShippingReversedAt\" IS NULL) = (\"ShippingReversedByUserId\" IS NULL) "
+                + "AND (\"ShippingReversedAt\" IS NULL) = (\"ShippingReversalReason\" IS NULL) "
+                + "AND (\"ShippingReversedAt\" IS NULL OR \"ShippedAt\" IS NULL)");
         });
 
         builder.Property(e => e.Notes).HasMaxLength(500);
@@ -74,6 +90,18 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(e => e.CancellationReason).HasMaxLength(500);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.ShippedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.ShippingReversedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Property(e => e.ShippingReversalReason).HasMaxLength(500);
     }
 }
 

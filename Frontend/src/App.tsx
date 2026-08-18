@@ -6,6 +6,7 @@ import { AuditPage } from './features/audit/AuditPage';
 import { AuthProvider } from './features/auth/AuthProvider';
 import { LoginPage } from './features/auth/LoginPage';
 import { DashboardPage } from './features/dashboard/DashboardPage';
+import { DispatchPage } from './features/dispatch/DispatchPage';
 import { InventoryPage } from './features/inventory/InventoryPage';
 import { ReceiveMaterialsPage } from './features/inventory/ReceiveMaterialsPage';
 import { MaterialIssuePage } from './features/material-issue/MaterialIssuePage';
@@ -59,6 +60,7 @@ const screens: { path: ScreenPath; element: ReactElement }[] = [
   { path: '/production/thermo-tests', element: <ThermoTestsPage /> },
   { path: '/production/pallets', element: <PalletsPage /> },
   { path: '/production/packaging', element: <PackagingPage /> },
+  { path: '/production/dispatch', element: <DispatchPage /> },
   { path: '/production/recycler', element: <RecyclerPage /> },
   { path: '/reports', element: <ReportsPage /> },
   { path: '/audit', element: <AuditPage /> },

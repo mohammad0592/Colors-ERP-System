@@ -1066,6 +1066,8 @@ On 2 July: one green roll made 14 bags; four yellow rolls made 12 + 9 + 12 + 14 
 | ShiftLineId (FK) | the line that forms bags — its part of the shift the pallet was built on |
 | **ColorId · ProductId** | **both NULL until the first bag is scanned** |
 | CreatedByUserId · CreatedAt · **CompletedAt · ShippedAt · CancelledAt** · Notes | three dates, no status column — see below |
+| ShippedByUserId | who released it. Travels with `ShippedAt`, never alone |
+| ShippingReversedAt · ShippingReversedByUserId · ShippingReversalReason | set only while a pallet is back after a wrong scan — see [sending a pallet out](#sending-a-pallet-out) |
 
 **Bag count and piece count are NOT stored.** They are `COUNT()` and `SUM()` over the assignments — a pallet holds a couple of dozen rows at most, so counting is instant.
 
@@ -1092,6 +1094,53 @@ Two things fall out of it, and both are the point:
 **The store's own never-negative rule is the whole guard.** A factory with no wooden pallets left cannot start one, because taking the last one out would push the store below nothing and the ledger refuses. There is no separate check to fall out of step with the figure it is checking.
 
 **Nothing about pallets is counted at shift end.** Wooden pallets are *not* one of the materials worked out from production on the packaging record — they never appear on that form at all. The old rule deducted one per pallet **completed**, at shift close, and it left a hole: a pallet started in one shift and still half-built when that shift ended was counted by nobody. Its own shift had passed, and the next shift only counts its own pallets. Under this rule there is no completion to wait for and no shift boundary to fall through.
+
+### Sending a pallet out
+
+A finished pallet leaves the factory when it is scanned onto the lorry. That is the whole
+of it: `ShippedAt` is stamped, and who did it is recorded.
+
+**Only a finished pallet goes.** A pallet still being filled has not left, and the
+database refuses the date anyway — `ck_pallets_dates_in_order` will not take a shipping
+date without a completion date, or one that comes before it. The screen says so in words
+first, so the man reads *"pallet 41 is not finished yet"* rather than a constraint name.
+
+**Nothing moves in the store.** Pallets are not in the inventory table — they are unique
+objects counted by a query, like rolls and bags ([section 6](#6-inventory)) — and the
+wooden pallet under them left the store the moment the pallet was *started*. So shipping
+changes the pallet's own state and nothing else.
+
+**No open shift is needed**, and that is the difference from cancelling. Cancelling is
+shift work: it happens at the machine, to a pallet being built. A finished pallet may
+stand for weeks and leave on a Friday, so tying dispatch to an open shift would stop the
+lorry for a reason the factory would not recognise.
+
+**Where it went is not recorded.** There is no customer and no delivery note in this
+system. The record says the pallet left and who released it, which is what traceability
+needs; who bought it belongs to whatever the office already uses.
+
+```
+Completed  →  scanned onto the lorry  →  Shipped
+Shipped    →  scanned by mistake      →  Completed again, with a reason
+```
+
+**A wrong scan can be undone.** The pallet goes back to `Completed` — what it was the
+moment before — and the reason is required, exactly as taking a bag off needs one. The
+three reversal columns describe a pallet that *came back*, so they are cleared when it
+ships for real; the longer history is not lost, because a pallet is one of the types the
+audit interceptor watches and every one of these changes is already a line in the log
+with its old and new value ([section 15](#15-security-and-deployment)).
+
+**Who may.** The supervisor and the administrator, not the packing operator. Sending a
+pallet out takes it out of the factory's stock for good, which is the same weight of
+decision as taking a wrongly scanned bag off a pallet, and it is fenced the same way.
+
+### What is in the factory
+
+Finished, not shipped, not cancelled. This is the only place the system answers *what
+finished goods are here right now*, and it is the same list the dispatch screen works
+down — **oldest first**, because a pallet that has stood since March should go before one
+finished this morning and nothing else on the floor says which is which.
 
 ### Cancelling a pallet
 
@@ -1634,7 +1683,7 @@ Small items. None block building.
 | 14 | Is raw material ever issued to the **thermo or recycler** line, or only to the mixer? | **Answered with 15** — by `TakesRawMaterial`, seeded true for the extruder only. If the recycler turns out to draw something, that is one tick box in Master Data. |
 | 15 | Which lines can a **batch** be started on? | **Answered.** 14 and 15 asked the same thing — which line does what — and are settled by three flags on `ProductionLines`: `MakesRolls`, `FormsBags`, `TakesRawMaterial` ([section 4](#production-lines)). Seeded as the factory works today: the extruder mixes and takes raw material, the thermo forms bags. |
 | 16 | May a pallet take bags made on an **earlier shift**? | **Open** — allowed today, which is the safe way round: bags do accumulate, and a pallet part-built at the end of a shift is normal ([section 10](#partial-pallets-are-normal)). Refusing it would stop the floor if the factory does work that way. If they say a pallet is always one shift, the check is one line. |
-| 17 | Does anything **ship** a pallet yet? | **Open** — `ShippedAt` exists and nothing sets it. There is no dispatch phase in the build order, so the state is defined and left unreachable rather than invented. |
+| 17 | Does anything **ship** a pallet yet? | **Answered** — yes, from the Dispatch screen ([section 10](#sending-a-pallet-out)). A finished pallet is scanned onto the lorry; a wrong scan is undone with a reason. Deliberately no customer and no delivery note: the system records that the pallet left and who released it, nothing about where it went. |
 
 Questions 8 to 12 arrived with the new moulds. **None of them blocks anything**, because
 every one is a value in `Moulds` or `Products` — a row edited in Master Data, with no

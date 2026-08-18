@@ -24,6 +24,10 @@ public class PalletsController(IPalletService pallets) : ApiControllerBase
     private const string CanPack = $"{RoleNames.Administrator},{RoleNames.PackagingOperator}";
     private const string CanReverse = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
 
+    // Sending a pallet out is not floor work. It takes the pallet out of the factory's
+    // stock for good, so it sits with the supervisor, the same as a reversal does.
+    private const string CanShip = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
+
     [HttpGet]
     public async Task<IActionResult> GetPallets(
         [FromQuery] int? shiftLineId = null,
@@ -101,6 +105,44 @@ public class PalletsController(IPalletService pallets) : ApiControllerBase
         return ToResponse(
             await pallets.ReverseAssignmentAsync(
                 assignmentId, request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>
+    /// Finished pallets still standing in the factory.
+    ///
+    /// Open to any signed-in worker, like the other reads. It is also the only place the
+    /// system answers "what finished goods are here", so a supervisor looking at stock
+    /// should not need the right to ship in order to look.
+    /// </summary>
+    [HttpGet("in-stock")]
+    public async Task<IActionResult> GetPalletsInStock(CancellationToken cancellationToken)
+    {
+        return Ok(await pallets.GetPalletsInStockAsync(cancellationToken));
+    }
+
+    /// <summary>Sends a finished pallet out. Scanned, as the floor does it.</summary>
+    [HttpPost("ship")]
+    [Authorize(Roles = CanShip)]
+    public async Task<IActionResult> ShipPallet(
+        [FromBody] ShipPalletRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await pallets.ShipPalletAsync(request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>
+    /// Puts a pallet shipped by mistake back into the factory. The reason is required,
+    /// and the whole correction is in the audit log either way.
+    /// </summary>
+    [HttpPost("{id:int}/unship")]
+    [Authorize(Roles = CanShip)]
+    public async Task<IActionResult> ReverseShipment(
+        int id,
+        [FromBody] ReverseShipmentRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(
+            await pallets.ReverseShipmentAsync(id, request, CurrentUserId(), cancellationToken));
     }
 
     /// <summary>Who is acting. From the token, never from the body.</summary>

@@ -49,6 +49,7 @@ const layout: { heading: string; items: Omit<NavItem, 'roles'>[] }[] = [
       { label: 'Thermo Tests', path: '/production/thermo-tests', icon: 'test' },
       { label: 'Pallets', path: '/production/pallets', icon: 'pallet' },
       { label: 'Packaging', path: '/production/packaging', icon: 'packaging' },
+      { label: 'Dispatch', path: '/production/dispatch', icon: 'pallet' },
       { label: 'Recycler', path: '/production/recycler', icon: 'recycler' },
     ],
   },

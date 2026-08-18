@@ -28,7 +28,8 @@ public sealed record PalletSummaryDto(
     int? Capacity,
     string CreatedByName,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? CompletedAt);
+    DateTimeOffset? CompletedAt,
+    DateTimeOffset? ShippedAt);
 
 public sealed record PalletBagDto(
     int AssignmentId,
@@ -67,6 +68,11 @@ public sealed record PalletDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? CompletedAt,
     DateTimeOffset? ShippedAt,
+    string? ShippedByName,
+    // Set only while a pallet is back in the factory after a shipping was undone.
+    DateTimeOffset? ShippingReversedAt,
+    string? ShippingReversedByName,
+    string? ShippingReversalReason,
     // Set only on a cancelled pallet. Its wooden pallet went back to the store.
     DateTimeOffset? CancelledAt,
     string? CancelledByName,
@@ -110,6 +116,21 @@ public sealed record ReverseAssignmentRequest(string Reason);
 /// one.
 /// </summary>
 public sealed record CancelPalletRequest(string Reason);
+
+/// <summary>
+/// Sends a finished pallet out of the factory.
+///
+/// The scan comes first, as it does everywhere else on the floor; an id is accepted for
+/// the office picking off the list. Nothing else is asked for — a pallet already knows
+/// what it holds, and where it went is not something this system records.
+/// </summary>
+public sealed record ShipPalletRequest(string? PalletBarcode, int? PalletId);
+
+/// <summary>
+/// Undoes a shipping. The reason is required, exactly as a scan reversal needs one: the
+/// pallet is being put back into the factory's stock and somebody has to say why.
+/// </summary>
+public sealed record ReverseShipmentRequest(string Reason);
 
 /// <summary>
 /// Pallets (specification section 10).
@@ -162,6 +183,33 @@ public interface IPalletService
     Task<Result<PalletDto>> ReverseAssignmentAsync(
         int assignmentId,
         ReverseAssignmentRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Finished pallets still standing in the factory — completed, not shipped, not
+    /// cancelled. This is both the dispatch list and the only answer the system has to
+    /// "what finished goods are here right now".
+    /// </summary>
+    Task<IReadOnlyList<PalletSummaryDto>> GetPalletsInStockAsync(
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Marks a finished pallet as gone. Refused on anything that is not completed — a
+    /// half-built pallet has not left, and the database would refuse the date anyway.
+    /// </summary>
+    Task<Result<PalletDto>> ShipPalletAsync(
+        ShipPalletRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Puts a pallet shipped by mistake back in the factory, with a reason. It becomes
+    /// Completed again, which is what it was the moment before.
+    /// </summary>
+    Task<Result<PalletDto>> ReverseShipmentAsync(
+        int palletId,
+        ReverseShipmentRequest request,
         int userId,
         CancellationToken cancellationToken = default);
 }

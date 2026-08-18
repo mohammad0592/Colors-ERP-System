@@ -79,6 +79,11 @@ export const screenAccess = {
   '/production/pallets': [Administrator, Supervisor, PackagingOperator],
   '/production/packaging': [Administrator, Supervisor, PackagingOperator],
 
+  // Sending a finished pallet out is not floor work. It takes the pallet out of the
+  // factory's stock for good, so it sits with the supervisor — the same fence as taking
+  // a wrongly scanned bag back off (section 10).
+  '/production/dispatch': [Administrator, Supervisor],
+
   // Line 3, the recycler (section 11). The supervisor reads it because what it produced
   // is part of the shift he answers for.
   '/production/recycler': [Administrator, Supervisor, RecyclerOperator],
