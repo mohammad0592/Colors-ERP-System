@@ -1,7 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
+import type { EntryMethod } from '../../lib/barcodeScanner';
 import { palletsApi, type PalletSummaryDto } from '../pallets/api';
 import { PalletStatusBadge } from '../pallets/PalletStatusBadge';
 import { formatDate } from '../shifts/shiftFormat';
@@ -20,8 +22,8 @@ import { UnshipDialog } from './UnshipDialog';
  * carried on screen only so a wrong scan can be undone by the man who made it, while he
  * still remembers.
  *
- * The scan box is the same shape as the packer's: a scanner types the code and presses
- * Enter, so it submits on Enter, clears itself and takes the focus straight back.
+ * The box itself is `ScanField`, shared with every other screen that takes a code, so
+ * the camera, the typing and the list behave here exactly as they do at the pallet.
  */
 export function DispatchPage(): ReactElement {
   const queryClient = useQueryClient();
@@ -33,7 +35,6 @@ export function DispatchPage(): ReactElement {
   const [unshipping, setUnshipping] = useState<{ id: number; number: number } | null>(
     null,
   );
-  const box = useRef<HTMLInputElement>(null);
 
   const inStock = useQuery({
     queryKey: ['pallets', 'in-stock'],
@@ -47,22 +48,11 @@ export function DispatchPage(): ReactElement {
     queryFn: () => palletsApi.list(false),
   });
 
-  // Back to the box after every scan, so the rhythm never breaks. An effect rather than
-  // a line in the handler because the box is disabled while the scan is in flight, and
-  // focusing a disabled input does nothing.
-  useEffect(() => {
-    if (!isSaving) {
-      box.current?.focus();
-      box.current?.select();
-    }
-  }, [isSaving]);
-
   async function refresh(): Promise<void> {
     await queryClient.invalidateQueries({ queryKey: ['pallets'] });
   }
 
-  async function send(): Promise<void> {
-    const code = barcode.trim();
+  async function send(code: string, entry: EntryMethod): Promise<void> {
     if (code === '') {
       return;
     }
@@ -70,7 +60,10 @@ export function DispatchPage(): ReactElement {
     setError(null);
     setIsSaving(true);
     try {
-      const pallet = await palletsApi.ship({ palletBarcode: code, palletId: null });
+      const pallet = await palletsApi.ship(
+        { palletBarcode: code, palletId: null },
+        entry,
+      );
       setLastShipped(`Pallet ${String(pallet.palletNumber)}`);
       setBarcode('');
       await refresh();
@@ -98,36 +91,24 @@ export function DispatchPage(): ReactElement {
       />
 
       <div className="mb-6 max-w-xl">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            void send();
+        <ScanField
+          label="Scan a pallet"
+          placeholder="P000123"
+          value={barcode}
+          onChange={setBarcode}
+          onSubmit={(code, entry) => {
+            void send(code, entry);
           }}
-          noValidate
-        >
-          <label className="field-label" htmlFor="dispatch-scan">
-            Scan a pallet
-          </label>
-          <input
-            id="dispatch-scan"
-            ref={box}
-            className="field-input mb-3 font-mono text-lg"
-            placeholder="P000123"
-            autoComplete="off"
-            value={barcode}
-            disabled={isSaving}
-            onChange={(event) => {
-              setBarcode(event.target.value);
-            }}
-          />
-          <button
-            type="submit"
-            className="btn-primary"
-            disabled={isSaving || barcode.trim() === ''}
-          >
-            {isSaving ? 'Sending…' : 'Send this pallet out'}
-          </button>
-        </form>
+          // The list is every finished pallet still here, which is exactly what may be
+          // sent out — so a torn label costs nothing.
+          options={waiting.map((pallet) => ({
+            value: pallet.barcode,
+            label: `${pallet.barcode} — pallet ${String(pallet.palletNumber)}, ${pallet.colorName ?? ''} ${pallet.productName ?? ''}`,
+          }))}
+          optionsHint="finished pallets still in the factory"
+          submitLabel="Send out"
+          busy={isSaving}
+        />
 
         {error !== null && (
           <p

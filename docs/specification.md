@@ -1402,6 +1402,47 @@ The label also confirms the shift on the bag is the **thermo** shift (A), while 
 
 **Manual entry is allowed but marked.** The audit log distinguishes `Scanned` from `Typed`. Work never stops because of a ruined label, and a report shows typing rates per user — which controls the behaviour better than a ban the workers would have to break.
 
+### Reading a label
+
+Every screen that asks for a code asks for it the same way: **one box**, which the man can
+
+1. **scan into** with the tablet's camera,
+2. **type into** when the label is torn, or
+3. **pick from**, when there is no label in his hand at all.
+
+They are not three choices. They are one way with two fallbacks, and they share a box
+because a man moving between screens should not have to learn a new arrangement of the
+same three things. The list is the browser's own, so the same box both accepts typing and
+offers what the screen already knows about — the bags that fit *this* pallet, the pallets
+finished and still here, the rolls measured and in stock.
+
+**The camera uses the browser's own reader.** Chrome — including the Android Chrome the
+factory holds — decodes QR itself, so nothing is added to what the tablet downloads and
+decoding happens in native code on hardware that is not fast. Where a browser cannot
+(Safari, Firefox), the button is not shown and the box says why; typing is always there,
+which is the same fallback a torn label already needs.
+
+**The camera needs a secure connection.** A browser gives no camera to a page served over
+plain `http`, whatever the permissions say. The factory server and the cloud trial are
+both `https`, so this is invisible in the places that matter. It bites in one place only:
+opening the development server from a phone by its network address, where the box
+explains itself rather than offering a button that does nothing.
+
+### Scanned, typed or picked
+
+How the code arrived travels with the request as a header, and the audit log records it
+beside whatever the request changed.
+
+**A header rather than a field on every request.** The alternative was adding a property
+to each shape that carries a code — scanning a bag, shipping a pallet, starting a run —
+and threading it through every service that handles one. This way one fact rides beside
+the request that carries it, every endpoint taking a code is covered at once, and one
+added next year is covered without anybody remembering to.
+
+**It is not to be trusted, and does not need to be.** A worker could set the header by
+hand and claim a scan he typed. That buys him nothing: the value changes no rule, refuses
+nothing and unlocks nothing. It exists so a supervisor can see who types a lot.
+
 ---
 
 ## 13. Reports

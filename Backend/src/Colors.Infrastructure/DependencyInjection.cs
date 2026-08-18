@@ -63,6 +63,7 @@ public static class DependencyInjection
         // Who is acting. The API layer registers a real one over this; here it is
         // nobody, which is the truth for the seeder, a migration and the tests.
         services.TryAddScoped<ICurrentActor, NoActor>();
+        services.TryAddScoped<ICurrentEntry, NoEntry>();
 
         // Scoped, because it asks who is acting and that is a per-request question.
         services.AddScoped<AuditInterceptor>();

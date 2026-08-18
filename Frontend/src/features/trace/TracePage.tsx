@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useRef, useState, type ReactElement, type ReactNode } from 'react';
+import { useState, type ReactElement, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
 import { formatDate } from '../shifts/shiftFormat';
 import { traceApi, type TraceBagDto, type TraceDto } from './api';
@@ -22,12 +23,6 @@ export function TracePage(): ReactElement {
   const [params, setParams] = useSearchParams();
   const asked = params.get('code') ?? '';
   const [code, setCode] = useState(asked);
-  const box = useRef<HTMLInputElement>(null);
-
-  // A scanner types into whatever has focus, so this box must have it.
-  useEffect(() => {
-    box.current?.focus();
-  }, []);
 
   const trace = useQuery({
     queryKey: ['trace', asked],
@@ -43,38 +38,22 @@ export function TracePage(): ReactElement {
         subtitle="Scan a roll, a bag or a pallet — or type the code printed on the label — and every step behind it comes back."
       />
 
-      <form
-        className="card mb-6 p-4"
-        onSubmit={(event) => {
-          event.preventDefault();
-          setParams(code.trim() === '' ? {} : { code: code.trim() });
-        }}
-        noValidate
-      >
-        <label className="field-label" htmlFor="trace-code">
-          Barcode or roll code
-        </label>
-        <div className="flex flex-wrap gap-3">
-          <input
-            id="trace-code"
-            ref={box}
-            className="field-input flex-1 font-mono text-lg"
-            placeholder="B000081, R000012 or 09GN050826A"
-            autoComplete="off"
-            value={code}
-            onChange={(event) => {
-              setCode(event.target.value);
-            }}
-          />
-          <button
-            type="submit"
-            className="btn-primary w-auto"
-            disabled={code.trim() === ''}
-          >
-            Trace it
-          </button>
-        </div>
-      </form>
+      <div className="card mb-6 p-4">
+        {/* No list here, and there should not be one. Every other screen offers what it
+            already knows about; this one is asked about a label in somebody's hand, and
+            a dropdown of every roll, bag and pallet ever made would answer nothing. */}
+        <ScanField
+          label="Barcode or roll code"
+          placeholder="B000081, R000012 or 09GN050826A"
+          value={code}
+          onChange={setCode}
+          onSubmit={(entered) => {
+            setParams(entered === '' ? {} : { code: entered });
+          }}
+          submitLabel="Trace it"
+          busy={trace.isFetching && asked !== ''}
+        />
+      </div>
 
       {asked === '' && (
         <p className="card p-8 text-center text-ink-muted">

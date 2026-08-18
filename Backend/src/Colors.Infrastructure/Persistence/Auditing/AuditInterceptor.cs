@@ -35,7 +35,7 @@ namespace Colors.Infrastructure.Persistence.Auditing;
 /// only the <i>change</i> is audited.</item>
 /// </list>
 /// </summary>
-public class AuditInterceptor(ICurrentActor actor) : SaveChangesInterceptor
+public class AuditInterceptor(ICurrentActor actor, ICurrentEntry entry) : SaveChangesInterceptor
 {
     /// <summary>
     /// Lines written for rows that had no key yet, paired with the row itself so the key
@@ -115,7 +115,7 @@ public class AuditInterceptor(ICurrentActor actor) : SaveChangesInterceptor
                 ObjectType = entry.Metadata.ClrType.Name,
                 ObjectId = KeyOf(entry),
                 Result = AuditResult.Success,
-                Details = Describe(entry),
+                Details = WithEntryMethod(Describe(entry)),
                 Timestamp = now,
             };
 
@@ -222,6 +222,24 @@ public class AuditInterceptor(ICurrentActor actor) : SaveChangesInterceptor
     /// Only the properties that moved, and only for a change — listing every column of a
     /// new row would be noise, and the row itself is right there to read.
     /// </summary>
+    /// <summary>
+    /// Adds how the code arrived, where the request said (specification section 12).
+    ///
+    /// Appended to the description rather than given a column of its own: it is true of
+    /// the <i>request</i>, not of the row, and most rows are saved by a screen with no
+    /// code on it at all. A column would be null on nearly every line.
+    /// </summary>
+    private string? WithEntryMethod(string? described)
+    {
+        var method = entry.Method;
+        if (method == EntryMethod.Unknown)
+        {
+            return described;
+        }
+
+        return described is null ? $"{method}" : $"{described} [{method}]";
+    }
+
     private static string? Describe(EntityEntry entry)
     {
         if (entry.State != EntityState.Modified)

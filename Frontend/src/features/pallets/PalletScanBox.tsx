@@ -1,5 +1,7 @@
-import { useEffect, useRef, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
+import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
+import type { EntryMethod } from '../../lib/barcodeScanner';
 import { palletsApi, type AvailableBagDto, type PalletDto } from './api';
 
 interface PalletScanBoxProps {
@@ -15,8 +17,10 @@ interface PalletScanBoxProps {
  * most repeated action in the factory — a dialog would mean two extra clicks on every
  * one of a couple of dozen bags per pallet.
  *
- * A scanner types the code then presses Enter, so the box submits on Enter, clears
- * itself, and takes the focus straight back. The packer never touches the tablet.
+ * Scanning, typing and picking off the list are one field now (`ScanField`), which is
+ * also what carries the camera. Before that this screen had a box and a separate
+ * dropdown beneath it, and every other screen taking a code had its own arrangement of
+ * the same two things.
  */
 export function PalletScanBox({
   pallet,
@@ -24,38 +28,26 @@ export function PalletScanBox({
   onScanned,
 }: PalletScanBoxProps): ReactElement {
   const [barcode, setBarcode] = useState('');
-  const [picked, setPicked] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const box = useRef<HTMLInputElement>(null);
-
-  // Back to the box after every scan, and whenever the packer changes pallet.
-  //
-  // It has to be an effect, not a line in the save handler: the box is disabled while
-  // the scan is in flight, and focusing a disabled input does nothing. Waiting for the
-  // render that re-enables it is what keeps the scan-scan-scan rhythm going.
-  useEffect(() => {
-    if (!isSaving) {
-      box.current?.focus();
-      box.current?.select();
-    }
-  }, [pallet.id, isSaving]);
 
   const full = !pallet.isOpen;
 
-  async function send(body: {
-    bagBarcode: string | null;
-    producedBagId: number | null;
-  }): Promise<void> {
+  async function send(code: string, entry: EntryMethod): Promise<void> {
     setError(null);
     setIsSaving(true);
     try {
-      const updated = await palletsApi.scanBag(pallet.id, body);
+      // Always by barcode. The list offers barcodes too, so there is one path through
+      // the server whether the man scanned the label, typed it, or chose it.
+      const updated = await palletsApi.scanBag(
+        pallet.id,
+        { bagBarcode: code, producedBagId: null },
+        entry,
+      );
       const added = updated.bags.find((b) => b.isActive);
       setLastAdded(added?.barcode ?? null);
       setBarcode('');
-      setPicked('');
       onScanned(updated);
     } catch (caught) {
       setError(
@@ -69,70 +61,27 @@ export function PalletScanBox({
 
   return (
     <div className="mb-5">
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (barcode.trim() !== '') {
-            void send({ bagBarcode: barcode.trim(), producedBagId: null });
-          }
+      <ScanField
+        label="Scan a bag"
+        placeholder="B000123"
+        value={barcode}
+        onChange={setBarcode}
+        onSubmit={(code, entry) => {
+          void send(code, entry);
         }}
-        noValidate
-      >
-        <label className="field-label" htmlFor="pallet-scan">
-          Scan a bag
-        </label>
-        <input
-          id="pallet-scan"
-          ref={box}
-          className="field-input mb-3 font-mono text-lg"
-          placeholder="B000123"
-          autoComplete="off"
-          value={barcode}
-          disabled={isSaving || full}
-          onChange={(event) => {
-            setBarcode(event.target.value);
-          }}
-        />
-        <button
-          type="submit"
-          className="btn-primary"
-          disabled={isSaving || full || barcode.trim() === ''}
-        >
-          {isSaving ? 'Adding…' : 'Add bag to pallet'}
-        </button>
-      </form>
-
-      {/* For the office, and for a label too torn to scan. */}
-      <div className="mt-3">
-        <label className="field-label" htmlFor="pallet-pick">
-          Or pick one{' '}
-          <span className="font-normal text-ink-muted">
-            {pallet.colorId === null
-              ? '(the first bag decides what this pallet is)'
-              : `(only ${pallet.colorName ?? ''} ${pallet.productName ?? ''})`}
-          </span>
-        </label>
-        <select
-          id="pallet-pick"
-          className="field-input"
-          value={picked}
-          disabled={isSaving || full}
-          onChange={(event) => {
-            const value = event.target.value;
-            setPicked(value);
-            if (value !== '') {
-              void send({ bagBarcode: null, producedBagId: Number(value) });
-            }
-          }}
-        >
-          <option value="">Choose a bag…</option>
-          {bags.map((bag) => (
-            <option key={bag.id} value={bag.id}>
-              {bag.barcode} — {bag.colorName} {bag.productName}, from roll {bag.rollCode}
-            </option>
-          ))}
-        </select>
-      </div>
+        options={bags.map((bag) => ({
+          value: bag.barcode,
+          label: `${bag.barcode} — ${bag.colorName} ${bag.productName}, from roll ${bag.rollCode}`,
+        }))}
+        optionsHint={
+          pallet.colorId === null
+            ? 'the first bag decides what this pallet is'
+            : `only ${pallet.colorName ?? ''} ${pallet.productName ?? ''} fits`
+        }
+        submitLabel="Add bag"
+        disabled={full}
+        busy={isSaving}
+      />
 
       {full && (
         <p className="mt-3 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">

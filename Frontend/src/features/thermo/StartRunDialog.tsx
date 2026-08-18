@@ -1,6 +1,8 @@
 ﻿import { useState, type ReactElement } from 'react';
 import { Modal } from '../../components/ui/Modal';
+import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
+import { cleanCode, type EntryMethod } from '../../lib/barcodeScanner';
 import { formatDate } from '../shifts/shiftFormat';
 import { thermoApi, type AvailableRollDto, type ThermoRunDto } from './api';
 
@@ -19,9 +21,9 @@ interface StartRunDialogProps {
 /**
  * Putting a roll into the thermo (specification section 9).
  *
- * The scanner comes first, because that is what the floor does — the box is focused the
- * moment the dialog opens, and a scanner types then presses Enter. Picking from the list
- * is there for the office, and for a label too torn to read.
+ * The scanner comes first, because that is what the floor does. Picking from the list is
+ * there for the office, and for a label too torn to read — both in the one box, which is
+ * `ScanField` and behaves the same wherever a code is asked for.
  *
  * Nothing else is asked for. The recipe, the colour and the product all come from the
  * roll and the mould, so there is nothing here to get wrong.
@@ -33,26 +35,31 @@ export function StartRunDialog({
   onStarted,
 }: StartRunDialogProps): ReactElement {
   const [barcode, setBarcode] = useState('');
-  const [picked, setPicked] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  const chosen = rolls.find((r) => r.id === picked) ?? null;
-  const typed = barcode.trim() !== '';
-  const complete = typed || picked !== null;
+  // The list offers barcodes, so scanning and picking end at the same value and there is
+  // no second piece of state that can disagree with the box.
+  const chosen = rolls.find((r) => r.barcode === cleanCode(barcode)) ?? null;
 
-  async function start(): Promise<void> {
+  async function start(code: string, entry: EntryMethod): Promise<void> {
+    if (code === '') {
+      return;
+    }
+
     setError(null);
     setIsSaving(true);
     try {
-      const run = await thermoApi.startRun({
-        // A scanned label wins: it is the roll actually in his hands.
-        rollBarcode: typed ? barcode.trim() : null,
-        rollId: typed ? null : picked,
-        shiftLineId: line.shiftLineId,
-        startedAt: null,
-        notes: null,
-      });
+      const run = await thermoApi.startRun(
+        {
+          rollBarcode: code,
+          rollId: null,
+          shiftLineId: line.shiftLineId,
+          startedAt: null,
+          notes: null,
+        },
+        entry,
+      );
       onStarted(run);
       onClose();
     } catch (caught) {
@@ -66,13 +73,7 @@ export function StartRunDialog({
 
   return (
     <Modal title="Put a roll into the thermo" onClose={onClose}>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          void start();
-        }}
-        noValidate
-      >
+      <div>
         <div className="mb-5 border-b border-line pb-4 text-sm text-ink-muted">
           <p>
             {line.lineName} — {line.shiftLabel}
@@ -86,45 +87,22 @@ export function StartRunDialog({
         </div>
 
         <div className="mb-4">
-          <label className="field-label" htmlFor="run-barcode">
-            Scan the roll
-          </label>
-          <input
-            id="run-barcode"
-            // The scanner types into whatever has focus, so this box must have it.
-            autoFocus
-            className="field-input font-mono"
+          <ScanField
+            label="Scan the roll"
             placeholder="R000123"
             value={barcode}
-            disabled={isSaving}
-            onChange={(event) => {
-              setBarcode(event.target.value);
-              setPicked(null);
+            onChange={setBarcode}
+            onSubmit={(code, entry) => {
+              void start(code, entry);
             }}
+            options={rolls.map((roll) => ({
+              value: roll.barcode,
+              label: `${roll.rollCode} — ${roll.colorName}, ${roll.recipeFamilyName}, ${formatDate(roll.productionDate)}`,
+            }))}
+            optionsHint="measured rolls in stock, oldest first"
+            submitLabel="Start forming"
+            busy={isSaving}
           />
-        </div>
-
-        <div className="mb-4">
-          <label className="field-label" htmlFor="run-roll">
-            Or pick one <span className="font-normal text-ink-muted">(oldest first)</span>
-          </label>
-          <select
-            id="run-roll"
-            className="field-input"
-            value={picked === null ? '' : String(picked)}
-            disabled={isSaving || typed}
-            onChange={(event) => {
-              setPicked(event.target.value === '' ? null : Number(event.target.value));
-            }}
-          >
-            <option value="">Choose a roll…</option>
-            {rolls.map((roll) => (
-              <option key={roll.id} value={roll.id}>
-                {roll.rollCode} — {roll.colorName}, {roll.recipeFamilyName},{' '}
-                {formatDate(roll.productionDate)}
-              </option>
-            ))}
-          </select>
         </div>
 
         {chosen !== null && (
@@ -158,13 +136,10 @@ export function StartRunDialog({
           </p>
         )}
 
-        <button type="submit" className="btn-primary" disabled={isSaving || !complete}>
-          {isSaving ? 'Starting…' : 'Start forming'}
-        </button>
         <p className="mt-2 text-xs text-ink-muted">
           The roll leaves the store the moment it goes in, so nobody else can pick it.
         </p>
-      </form>
+      </div>
     </Modal>
   );
 }

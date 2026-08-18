@@ -1,4 +1,5 @@
 ﻿import { apiRequest } from '../../lib/apiClient';
+import type { EntryMethod } from '../../lib/barcodeScanner';
 
 /**
  * Line 2 — thermoforming, mirroring Colors.Application.Features.Thermo.
@@ -127,14 +128,21 @@ export const thermoApi = {
     apiRequest<AvailableRollDto[]>('/api/thermo/available-rolls'),
 
   /** Scan a roll to start. Everything else is inherited from it. */
-  startRun: (body: {
-    rollBarcode: string | null;
-    rollId: number | null;
-    shiftLineId: number;
-    startedAt: string | null;
-    notes: string | null;
-  }): Promise<ThermoRunDto> =>
-    apiRequest<ThermoRunDto>('/api/thermo/runs', { method: 'POST', body }),
+  startRun: (
+    body: {
+      rollBarcode: string | null;
+      rollId: number | null;
+      shiftLineId: number;
+      startedAt: string | null;
+      notes: string | null;
+    },
+    entry?: EntryMethod,
+  ): Promise<ThermoRunDto> =>
+    apiRequest<ThermoRunDto>('/api/thermo/runs', {
+      method: 'POST',
+      body,
+      ...(entry === undefined ? {} : { entry }),
+    }),
 
   finishRun: (id: number, finishedAt: string | null): Promise<ThermoRunDto> =>
     apiRequest<ThermoRunDto>(`/api/thermo/runs/${String(id)}/finish`, {

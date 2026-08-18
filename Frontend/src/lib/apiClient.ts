@@ -1,4 +1,5 @@
 import { resolveApiBaseUrl } from './apiBaseUrl';
+import type { EntryMethod } from './barcodeScanner';
 import type { AuthenticationResult, ErrorCode, ProblemResponse } from './apiTypes';
 import {
   clearTokens,
@@ -96,6 +97,15 @@ export interface RequestOptions {
   /** Send the access token. Off for login and refresh, which have none yet. */
   auth?: boolean;
   signal?: AbortSignal;
+  /**
+   * How the code in this request reached the screen — scanned, typed or picked
+   * (specification section 12).
+   *
+   * A header rather than part of the body, so it rides along with every request that
+   * carries a code without each one having to make room for it. The server records it
+   * in the audit log and nothing else reads it.
+   */
+  entry?: EntryMethod;
 }
 
 /**
@@ -104,7 +114,7 @@ export interface RequestOptions {
  */
 export async function apiRequest<TResponse>(
   path: string,
-  { method = 'GET', body, auth = true, signal }: RequestOptions = {},
+  { method = 'GET', body, auth = true, signal, entry }: RequestOptions = {},
 ): Promise<TResponse> {
   if (auth && isAccessTokenExpired() && getRefreshToken() !== null) {
     await refreshAccessToken();
@@ -119,6 +129,10 @@ export async function apiRequest<TResponse>(
     const token = getAccessToken();
     if (auth && token !== null) {
       headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (entry !== undefined) {
+      headers['X-Entry-Method'] = entry;
     }
 
     // Properties are added only when they have a value. Passing `body: undefined`

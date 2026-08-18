@@ -1,3 +1,4 @@
+﻿using Colors.Application.Common.Auditing;
 using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Persistence.Auditing;
 using Microsoft.EntityFrameworkCore;
@@ -60,14 +61,21 @@ public sealed class DatabaseFixture : IAsyncLifetime
         }
     }
 
-    public ColorsDbContext CreateContext()
+    /// <summary>
+    /// A context wired exactly as the running application's is.
+    ///
+    /// <paramref name="entry"/> stands in for the header the screens send saying how a
+    /// code arrived (specification section 12). It defaults to <see cref="NoEntry"/>,
+    /// which is what a seeder or a screen with no code on it looks like.
+    /// </summary>
+    public ColorsDbContext CreateContext(ICurrentEntry? entry = null)
     {
         var options = new DbContextOptionsBuilder<ColorsDbContext>()
             .UseNpgsql(_connectionString)
             // The same interceptor the running application uses, so a test sees the
             // audit log the factory will see. Without it the suite would go green on
             // auditing that never happened (specification section 15).
-            .AddInterceptors(new AuditInterceptor(new NoActor()))
+            .AddInterceptors(new AuditInterceptor(new NoActor(), entry ?? new NoEntry()))
             .Options;
 
         return new ColorsDbContext(options);

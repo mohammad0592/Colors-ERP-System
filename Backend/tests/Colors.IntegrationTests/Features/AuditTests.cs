@@ -1,3 +1,4 @@
+﻿using Colors.Application.Common.Auditing;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Production;
 using Colors.Domain.Enums;
@@ -244,5 +245,81 @@ public class AuditTests(DatabaseFixture fixture)
         // The line nothing else in the system records.
         var line = Assert.Single(refused);
         Assert.Equal("Rejected", line.Result);
+    }
+
+    // ------------------------------------------------- how the code arrived
+    //
+    // Section 12 allows a man to type a code when a label is torn, and asks that typing
+    // be marked so a report can show typing rates. Only the web layer can know which
+    // happened, so it arrives as a header and the interceptor puts it on the line.
+
+    /// <summary>Stands in for the header the screens send.</summary>
+    private sealed class Entered(EntryMethod method) : ICurrentEntry
+    {
+        public EntryMethod Method => method;
+    }
+
+    [Theory]
+    [InlineData(EntryMethod.Scanned)]
+    [InlineData(EntryMethod.Typed)]
+    [InlineData(EntryMethod.Picked)]
+    public async Task How_a_code_arrived_is_written_on_the_line(EntryMethod method)
+    {
+        await using var db = fixture.CreateContext(new Entered(method));
+
+        var unit = new Unit { Name = $"Entry {Guid.NewGuid():N}"[..20], Symbol = "ex" };
+        db.Units.Add(unit);
+        await db.SaveChangesAsync();
+
+        var line = await db.AuditEntries
+            .Where(e => e.ObjectType == nameof(Unit) && e.ObjectId == unit.Id)
+            .OrderBy(e => e.Id)
+            .FirstAsync();
+
+        Assert.NotNull(line.Details);
+        Assert.Contains(method.ToString(), line.Details!, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task A_request_that_says_nothing_leaves_the_line_as_it_was()
+    {
+        // Most screens carry no code at all, and a seeder carries no request. Those must
+        // not gain a word about scanning that would mean nothing.
+        await using var db = fixture.CreateContext();
+
+        var unit = new Unit { Name = $"Quiet {Guid.NewGuid():N}"[..20], Symbol = "qx" };
+        db.Units.Add(unit);
+        await db.SaveChangesAsync();
+
+        var line = await db.AuditEntries
+            .Where(e => e.ObjectType == nameof(Unit) && e.ObjectId == unit.Id)
+            .OrderBy(e => e.Id)
+            .FirstAsync();
+
+        Assert.Null(line.Details);
+    }
+
+    [Fact]
+    public async Task It_is_added_to_what_changed_rather_than_replacing_it()
+    {
+        await using var db = fixture.CreateContext(new Entered(EntryMethod.Typed));
+
+        var unit = new Unit { Name = $"Both {Guid.NewGuid():N}"[..20], Symbol = "bx" };
+        db.Units.Add(unit);
+        await db.SaveChangesAsync();
+
+        var renamed = $"Renamed {Guid.NewGuid():N}"[..20];
+        unit.Name = renamed;
+        await db.SaveChangesAsync();
+
+        var line = await db.AuditEntries
+            .Where(e => e.ObjectType == nameof(Unit) && e.ObjectId == unit.Id)
+            .OrderByDescending(e => e.Id)
+            .FirstAsync();
+
+        // A supervisor reading this needs both halves: what moved, and how it was named.
+        Assert.Contains("Name:", line.Details!, StringComparison.Ordinal);
+        Assert.Contains(renamed, line.Details!, StringComparison.Ordinal);
+        Assert.Contains("Typed", line.Details!, StringComparison.Ordinal);
     }
 }

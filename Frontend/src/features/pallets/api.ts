@@ -1,4 +1,5 @@
 import { apiRequest } from '../../lib/apiClient';
+import type { EntryMethod } from '../../lib/barcodeScanner';
 
 /**
  * Pallets, mirroring Colors.Application.Features.Pallets.
@@ -108,10 +109,12 @@ export const palletsApi = {
   scanBag: (
     palletId: number,
     body: { bagBarcode: string | null; producedBagId: number | null },
+    entry?: EntryMethod,
   ): Promise<PalletDto> =>
     apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/bags`, {
       method: 'POST',
       body,
+      ...(entry === undefined ? {} : { entry }),
     }),
 
   /** Takes a bag back off. The scan stays in the history with its reason. */
@@ -126,11 +129,15 @@ export const palletsApi = {
     apiRequest<PalletSummaryDto[]>('/api/pallets/in-stock'),
 
   /** Sends a finished pallet out. Refused on anything not full. */
-  ship: (body: {
-    palletBarcode: string | null;
-    palletId: number | null;
-  }): Promise<PalletDto> =>
-    apiRequest<PalletDto>('/api/pallets/ship', { method: 'POST', body }),
+  ship: (
+    body: { palletBarcode: string | null; palletId: number | null },
+    entry?: EntryMethod,
+  ): Promise<PalletDto> =>
+    apiRequest<PalletDto>('/api/pallets/ship', {
+      method: 'POST',
+      body,
+      ...(entry === undefined ? {} : { entry }),
+    }),
 
   /** Puts a pallet shipped by mistake back in the factory. */
   unship: (palletId: number, reason: string): Promise<PalletDto> =>

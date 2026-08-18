@@ -28,6 +28,11 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentActor, CurrentActor>();
 
+// And how the code got there — scanned, typed or picked. Same reason and same shape:
+// by the time a service sees a barcode the two are the same string, so only the web
+// layer can say (specification section 12).
+builder.Services.AddScoped<ICurrentEntry, CurrentEntry>();
+
 // Refusals are written on their own scope, after the man already has his answer.
 builder.Services.AddSingleton<RefusalLog>();
 
