@@ -118,7 +118,7 @@ export function PackagingPage(): ReactElement {
     <>
       <PageHeader
         title="Packaging"
-        subtitle="Packaging used, recorded once at the end of the shift."
+        subtitle="What each line used for packing."
         actions={
           canRecord ? (
             <StartOnLineButton

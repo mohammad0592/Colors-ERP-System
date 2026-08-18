@@ -87,7 +87,7 @@ export function DispatchPage(): ReactElement {
     <div>
       <PageHeader
         title="Dispatch"
-        subtitle="Scan a pallet as it goes on the lorry."
+        subtitle="Finished pallets leaving the factory."
       />
 
       <div className="mb-6 max-w-xl">

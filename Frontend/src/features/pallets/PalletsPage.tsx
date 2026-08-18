@@ -121,7 +121,7 @@ export function PalletsPage(): ReactElement {
     <>
       <PageHeader
         title="Pallets"
-        subtitle="The first bag decides what the pallet is. Every later bag must match."
+        subtitle="Pallets being built, and the bags on them."
         actions={
           canPack ? (
             <StartOnLineButton
