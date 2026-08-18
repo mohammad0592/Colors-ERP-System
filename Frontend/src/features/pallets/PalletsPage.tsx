@@ -121,7 +121,7 @@ export function PalletsPage(): ReactElement {
     <>
       <PageHeader
         title="Pallets"
-        subtitle="The first bag scanned decides the pallet's colour and product. Every later bag must match, and the product itself says how many fill it."
+        subtitle="The first bag decides what the pallet is. Every later bag must match."
         actions={
           canPack ? (
             <StartOnLineButton
@@ -137,7 +137,7 @@ export function PalletsPage(): ReactElement {
 
       {canPack && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No packing line is open. Pallets are built on the line that makes the bags.
+          No packing line is open.
         </p>
       )}
 

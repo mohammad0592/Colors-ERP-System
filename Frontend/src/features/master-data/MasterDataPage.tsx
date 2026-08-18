@@ -49,7 +49,7 @@ export function MasterDataPage(): ReactElement {
     <>
       <PageHeader
         title="Master Data"
-        subtitle="Materials and their pack sizes, units, colours, products and their moulds, lines and shifts"
+        subtitle="Materials, units, colours, products, moulds, lines and shifts."
       />
 
       <div className="mb-5 flex flex-wrap gap-2">

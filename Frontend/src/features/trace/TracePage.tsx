@@ -35,7 +35,7 @@ export function TracePage(): ReactElement {
     <>
       <PageHeader
         title="Where did this come from?"
-        subtitle="Scan a roll, a bag or a pallet — or type the code printed on the label — and every step behind it comes back."
+        subtitle="Scan a roll, a bag or a pallet to see every step behind it."
       />
 
       <div className="card mb-6 p-4">
@@ -57,8 +57,7 @@ export function TracePage(): ReactElement {
 
       {asked === '' && (
         <p className="card p-8 text-center text-ink-muted">
-          Nothing scanned yet. Any label works — and so does the roll code printed above
-          the barcode, which is on every bag that roll made.
+          Nothing scanned yet. A label or a roll code both work.
         </p>
       )}
 

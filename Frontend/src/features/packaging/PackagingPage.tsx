@@ -118,7 +118,7 @@ export function PackagingPage(): ReactElement {
     <>
       <PageHeader
         title="Packaging"
-        subtitle="Recorded once at the end of the shift. Bags and pallets are counted by the system from what was produced; tape, shrink and the hood are typed and weighed."
+        subtitle="Packaging used, recorded once at the end of the shift."
         actions={
           canRecord ? (
             <StartOnLineButton
@@ -139,7 +139,7 @@ export function PackagingPage(): ReactElement {
 
       {canRecord && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No packing line is open. Packaging belongs to the line that makes the bags.
+          No packing line is open.
         </p>
       )}
 
@@ -178,8 +178,7 @@ export function PackagingPage(): ReactElement {
 
           {draft.data.alreadyRecorded ? (
             <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-              Packaging is already recorded for this line. It is written once, at the end
-              of the shift.
+              Already recorded for this line.
             </p>
           ) : (
             <>
@@ -283,8 +282,7 @@ export function PackagingPage(): ReactElement {
                 {save.isPending ? 'Saving…' : 'Record it and take it out of the store'}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
-                Written once, at the end of the shift. Everything here leaves the store
-                together, or nothing does.
+                Written once, at the end of the shift.
               </p>
             </>
           )}

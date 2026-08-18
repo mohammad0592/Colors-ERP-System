@@ -506,8 +506,7 @@ function MaterialDialog({
         <fieldset className="mb-4 rounded-control border border-line p-4">
           <legend className="px-1 text-sm font-semibold text-ink-soft">Pack sizes</legend>
           <p className="mb-3 text-xs text-ink-muted">
-            How this material arrives — a bag of GPPS holds 25 kg, a pallet 750 kg. The
-            storekeeper receives packs and the system converts.
+            How this material arrives. The storekeeper receives packs.
           </p>
 
           {form.packagings.map((row, index) => (

@@ -97,7 +97,7 @@ export function ThermoProductionPage(): ReactElement {
     <>
       <PageHeader
         title="Thermoforming"
-        subtitle="One roll goes in whole. The mould on the line and the roll's recipe decide what comes out — nobody types it."
+        subtitle="One roll goes in whole. The mould and the recipe decide what comes out."
         actions={
           canForm ? (
             <StartOnLineButton

@@ -137,8 +137,7 @@ export function NewRollDialog({
         </div>
 
         <p className="mb-4 rounded-control bg-canvas px-4 py-3 text-sm text-ink-soft">
-          The roll code and barcode are printed by the system. Nobody types them, so two
-          rolls can never share one.
+          The roll code and barcode are printed by the system.
         </p>
 
         {error !== null && (

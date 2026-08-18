@@ -49,7 +49,7 @@ export function AuditPage(): ReactElement {
     <>
       <PageHeader
         title="Audit log"
-        subtitle="Who changed what, and what the system refused. Production itself is not here — a roll already names the man who made it."
+        subtitle="Who changed what, and what was refused."
       />
 
       <section className="card mb-6 flex flex-wrap items-end gap-4 p-4">
@@ -150,8 +150,7 @@ export function AuditPage(): ReactElement {
 
           {lines.data.length >= 300 && (
             <p className="mt-3 text-sm text-ink-muted">
-              The newest 300 are shown. Narrow it with the filters above to see further
-              back.
+              The newest 300. Use the filters to see further back.
             </p>
           )}
         </>

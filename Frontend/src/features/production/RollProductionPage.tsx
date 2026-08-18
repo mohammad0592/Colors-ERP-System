@@ -94,7 +94,7 @@ export function RollProductionPage(): ReactElement {
     <>
       <PageHeader
         title="Roll Production"
-        subtitle="Every roll carries its own recipe and colour — the colouring agent is fed at the extruder, so both can change while the same mix runs."
+        subtitle="Rolls off the extruder, each with its own recipe and colour."
         actions={
           canProduce ? (
             <StartOnLineButton
@@ -113,8 +113,7 @@ export function RollProductionPage(): ReactElement {
 
       {canProduce && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No shift is open, so a roll cannot be logged. Everything a shift makes belongs
-          to that shift, and all material goes back to the store when it ends.
+          No shift is open, so a roll cannot be logged.
         </p>
       )}
 

@@ -86,8 +86,7 @@ export function UnshipDialog({
           {isSaving ? 'Saving…' : 'Put it back in the factory'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The pallet goes back to Full and returns to the list below. Both the shipping
-          and this correction stay in the audit log.
+          The pallet goes back to the list.
         </p>
       </form>
     </Modal>

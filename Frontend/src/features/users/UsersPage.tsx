@@ -52,7 +52,7 @@ export function UsersPage(): ReactElement {
     <>
       <PageHeader
         title="Users"
-        subtitle="Who may sign in, and what each of them may do. One man often holds several jobs — give him every role he actually does."
+        subtitle="Who may sign in, and what each of them may do."
         actions={
           <button
             type="button"

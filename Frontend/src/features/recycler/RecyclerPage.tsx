@@ -94,7 +94,7 @@ export function RecyclerPage(): ReactElement {
     <>
       <PageHeader
         title="Recycler"
-        subtitle="How much recycled material the shift produced. The weight goes straight back into the store, ready for the black recipes."
+        subtitle="How much recycled material the shift produced."
         actions={
           canRecord ? (
             <StartOnLineButton
@@ -115,7 +115,7 @@ export function RecyclerPage(): ReactElement {
 
       {canRecord && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No recycling line is open. The output is recorded on the line that grinds it.
+          No recycling line is open.
         </p>
       )}
 
@@ -152,8 +152,7 @@ export function RecyclerPage(): ReactElement {
 
           {draft.data.alreadyRecorded ? (
             <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-              The recycler is already recorded for this line. It is written once, at the
-              end of the shift.
+              Already recorded for this line.
             </p>
           ) : (
             <>
@@ -205,8 +204,7 @@ export function RecyclerPage(): ReactElement {
                 {save.isPending ? 'Saving…' : 'Record it and add it to the store'}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
-                Written once, at the end of the shift. The record and the material it puts
-                back are one act — both, or neither.
+                Written once, at the end of the shift.
               </p>
             </>
           )}

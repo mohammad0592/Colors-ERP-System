@@ -47,7 +47,7 @@ export function RollTestsPage(): ReactElement {
     <>
       <PageHeader
         title="Roll Tests"
-        subtitle="Weight, length, plate weight and four thickness readings, taken as the roll leaves the extruder."
+        subtitle="Weight, length, plate weight and four thickness readings."
       />
 
       <section className="mb-6 flex flex-wrap gap-2">

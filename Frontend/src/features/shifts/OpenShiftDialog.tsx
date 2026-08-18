@@ -89,8 +89,7 @@ export function OpenShiftDialog({
             }}
           />
           <p className="mt-1 text-xs text-ink-muted">
-            The day the shift belongs to. A night shift ending after midnight still
-            belongs to the day it started.
+            The day the shift belongs to. A night shift belongs to the day it started.
           </p>
         </div>
 

@@ -96,7 +96,7 @@ export function MaterialIssuePage(): ReactElement {
     <>
       <PageHeader
         title="Material Issue"
-        subtitle="Material out is weighed, leftover back is weighed, and the difference is what was really used. A shift cannot close while a ticket is open."
+        subtitle="Material out, leftover back, and what was really used."
         actions={
           canIssue ? (
             <button

@@ -196,8 +196,7 @@ export function UserDialog({
 
         {!isNew && (
           <p className="mt-2 text-xs text-ink-muted">
-            Nobody is ever deleted — the shifts and rolls he recorded name him for ever.
-            Somebody who leaves is unticked above.
+            Somebody who leaves is unticked above, never deleted.
           </p>
         )}
       </form>

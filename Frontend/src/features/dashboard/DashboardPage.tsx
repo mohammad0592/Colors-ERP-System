@@ -100,8 +100,7 @@ export function DashboardPage(): ReactElement {
         <section className="card mb-6 p-6">
           <h2 className="text-lg font-semibold text-ink">No shift is open</h2>
           <p className="mt-2 max-w-2xl text-ink-soft">
-            The factory is between shifts. A supervisor opens the next one from the Shifts
-            screen, ticking the lines that will run.
+            No shift is open. A supervisor opens the next one from Shifts.
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <Fact label="Signed in as" value={user?.fullName ?? ''} />

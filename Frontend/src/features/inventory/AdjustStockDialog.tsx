@@ -85,8 +85,7 @@ export function AdjustStockDialog({
             }}
           />
           <p className="mt-1 text-xs text-ink-muted">
-            In {material.baseUnitName.toLowerCase()}. Type what is actually there — the
-            system works out the difference.
+            In {material.baseUnitName.toLowerCase()}. Type what is actually there.
           </p>
         </div>
 
@@ -120,8 +119,7 @@ export function AdjustStockDialog({
             }}
           />
           <p className="mt-1 text-xs text-ink-muted">
-            Kept on the record for good. A correction nobody explained is a mystery a
-            month later.
+            Kept on the record for good.
           </p>
         </div>
 

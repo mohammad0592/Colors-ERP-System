@@ -133,7 +133,7 @@ export function ShiftsPage(): ReactElement {
     <>
       <PageHeader
         title="Shifts"
-        subtitle="One record per shift, for the whole factory. Close it when the work is finished — after that its figures are fixed."
+        subtitle="One record per shift. Close it when the work is finished."
         actions={
           <button
             type="button"

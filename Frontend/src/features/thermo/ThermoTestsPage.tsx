@@ -81,7 +81,7 @@ export function ThermoTestsPage(): ReactElement {
     <>
       <PageHeader
         title="Thermo Tests"
-        subtitle="Bags, piece weight and bag weight, counted after the run. Saving the form is what creates the bags."
+        subtitle="Bags, piece weight and bag weight, counted after the run."
       />
 
       <section className="mb-6 flex flex-wrap gap-2">

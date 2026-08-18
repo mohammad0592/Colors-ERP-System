@@ -86,8 +86,7 @@ export function ResetPasswordDialog({
           {isSaving ? 'Saving…' : 'Set it'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          Tell him the password now — nobody can read it back afterwards, not even an
-          administrator. Any session he still has open will end.
+          Tell him the password now — it cannot be read back. His open sessions end.
         </p>
       </form>
     </Modal>

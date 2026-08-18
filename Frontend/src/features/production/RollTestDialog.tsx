@@ -224,9 +224,7 @@ export function RollTestDialog({
           {isSaving ? 'Saving…' : 'Save and release the roll'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The thermo can use the roll once this is saved. Nothing here is compared against
-          a limit — the point is only that the measurement was taken, because after
-          forming there is nothing left to measure.
+          The thermo can use the roll once this is saved.
         </p>
       </form>
     </Modal>

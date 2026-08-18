@@ -122,8 +122,7 @@ export function LabelPrintScreen({
                 : 'Print this label'}
             </button>
             <p className="no-print mt-2 text-xs text-ink-muted">
-              Each label prints at 100 × 70 mm, one to a page. Reprinting is allowed — the
-              barcode never changes, so an old label and a new one name the same thing.
+              100 × 70 mm, one to a page. Reprinting is allowed.
             </p>
           </>
         )}

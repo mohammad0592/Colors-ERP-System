@@ -88,7 +88,7 @@ export function ReceiveMaterialsPage(): ReactElement {
     <>
       <PageHeader
         title="Receive Materials"
-        subtitle="Book a delivery into the store. Pick the unit it arrived in — the system converts it."
+        subtitle="Book a delivery into the store."
         actions={
           <button
             type="button"

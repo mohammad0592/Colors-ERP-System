@@ -86,8 +86,7 @@ export function CancelPalletDialog({
           {isSaving ? 'Saving…' : 'Cancel this pallet'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The wooden pallet goes back to the store and can be used for the next one. The
-          pallet itself stays in the record with your reason — nothing is deleted.
+          The wooden pallet goes back to the store.
         </p>
       </form>
     </Modal>

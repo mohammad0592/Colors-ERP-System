@@ -87,7 +87,7 @@ export function DispatchPage(): ReactElement {
     <div>
       <PageHeader
         title="Dispatch"
-        subtitle="Finished pallets leaving the factory. Scan the pallet as it goes on the lorry."
+        subtitle="Scan a pallet as it goes on the lorry."
       />
 
       <div className="mb-6 max-w-xl">
@@ -129,15 +129,14 @@ export function DispatchPage(): ReactElement {
       <section className="mb-8">
         <h2 className="mb-1 text-lg font-semibold text-ink">In the factory</h2>
         <p className="mb-3 text-sm text-ink-muted">
-          Finished pallets still here, oldest first — load these before the ones finished
-          this morning.
+          Oldest first — load these before the newer ones.
         </p>
 
         {inStock.isPending && <p className="text-sm text-ink-muted">Loading…</p>}
 
         {!inStock.isPending && waiting.length === 0 && (
           <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-            Nothing finished is waiting. A pallet appears here when its last bag goes on.
+            Nothing finished is waiting.
           </p>
         )}
 
@@ -167,7 +166,7 @@ export function DispatchPage(): ReactElement {
       <section>
         <h2 className="mb-1 text-lg font-semibold text-ink">Gone</h2>
         <p className="mb-3 text-sm text-ink-muted">
-          The last ten to leave. If one was scanned by mistake, put it back here.
+          The last ten to leave.
         </p>
 
         {gone.length === 0 && (

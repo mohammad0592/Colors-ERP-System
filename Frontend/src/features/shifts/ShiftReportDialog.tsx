@@ -80,8 +80,7 @@ export function ShiftReportDialog({
 
       {locked && (
         <p className="mb-5 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          This shift is closed, so its figures cannot change. An administrator can reopen
-          it if something was written down wrong.
+          This shift is closed. An administrator can reopen it.
         </p>
       )}
 
@@ -174,8 +173,7 @@ export function ShiftReportDialog({
             </span>
           </div>
           <p className="mt-1 text-xs text-ink-muted">
-            End meter minus start meter, for the whole factory. It cannot be split between
-            the lines — there is only one meter.
+            End meter minus start meter, for the whole factory.
           </p>
         </div>
 

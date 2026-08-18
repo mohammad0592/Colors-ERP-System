@@ -255,8 +255,7 @@ export function ThermoTestDialog({
           {isSaving ? 'Saving…' : 'Save and print the bag labels'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          Saving this is what creates the bags. Until then there is nothing to put on a
-          pallet.
+          Saving this creates the bags.
         </p>
       </form>
     </Modal>

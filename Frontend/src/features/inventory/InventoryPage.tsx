@@ -55,7 +55,7 @@ export function InventoryPage(): ReactElement {
     <>
       <PageHeader
         title="Inventory"
-        subtitle="What the store holds, in each material's own unit. Nobody edits a number here — every change is a movement with a reason."
+        subtitle="What the store holds, in each material's own unit."
         actions={
           canReceive ? (
             <Link

@@ -86,8 +86,7 @@ export function ReverseScanDialog({
           {isSaving ? 'Saving…' : 'Take it off'}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The bag goes back to the store and can be scanned onto the right pallet. This
-          scan stays on the pallet with your reason — nothing is deleted.
+          The bag goes back to the store.
         </p>
       </form>
     </Modal>

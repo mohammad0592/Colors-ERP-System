@@ -92,8 +92,7 @@ export function PalletScanBox({
 
       {bags.length === 0 && !full && (
         <p className="mt-3 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No bag is waiting{pallet.colorId === null ? '' : ' that fits this pallet'}. Bags
-          are created when the thermo test person saves his form.
+          No bag is waiting{pallet.colorId === null ? '' : ' that fits this pallet'}.
         </p>
       )}
 

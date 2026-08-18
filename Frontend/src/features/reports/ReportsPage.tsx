@@ -69,7 +69,7 @@ export function ReportsPage(): ReactElement {
     <>
       <PageHeader
         title="Reports"
-        subtitle="Worked out from what the shift recorded, never typed and never stored — so a report cannot disagree with the data behind it."
+        subtitle="Worked out from what the shifts recorded."
       />
 
       <section className="mb-6 flex flex-wrap gap-2">

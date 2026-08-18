@@ -42,9 +42,7 @@ export function MaterialWasteReport({
 
         {/* The honest limit, printed rather than hidden (specification section 13). */}
         <p className="mt-3 rounded-control border border-line bg-canvas px-3 py-2 text-xs text-ink-soft">
-          Material is issued to a <strong>shift</strong>, not to a mix. The true sentence
-          is “this is what was issued to the shift that made these rolls”, which is the
-          same set of materials while the mixer is filled once a shift.
+          Material is issued to a <strong>shift</strong>, not to a mix.
         </p>
       </section>
 

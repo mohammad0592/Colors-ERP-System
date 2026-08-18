@@ -225,7 +225,7 @@ export function ScanField({
         <p className="mb-2 text-xs text-ink-muted">
           {options.length === 0
             ? 'Nothing is waiting to be chosen from.'
-            : `Or start typing to choose from ${String(options.length)} — ${optionsHint ?? 'what the screen already knows about'}.`}
+            : `Or type to choose from ${String(options.length)} — ${optionsHint ?? 'the list'}.`}
         </p>
       )}
 

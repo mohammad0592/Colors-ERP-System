@@ -96,7 +96,7 @@ export function RecipesPage(): ReactElement {
     <>
       <PageHeader
         title="Recipes"
-        subtitle="The four families and every version. A recipe in production is never edited — copy it instead."
+        subtitle="The four families and every version."
         actions={
           <button
             type="button"

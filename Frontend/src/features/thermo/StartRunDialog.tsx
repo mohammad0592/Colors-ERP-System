@@ -137,7 +137,7 @@ export function StartRunDialog({
         )}
 
         <p className="mt-2 text-xs text-ink-muted">
-          The roll leaves the store the moment it goes in, so nobody else can pick it.
+          The roll leaves the store as it goes in.
         </p>
       </div>
     </Modal>

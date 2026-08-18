@@ -83,9 +83,7 @@ export function ProductsTab(): ReactElement {
       </div>
 
       <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-        A mould plus an absorbency names exactly one product — that pair is what the
-        thermo looks up when a roll is scanned, so nobody types a product on the floor.
-        The packing numbers here are what the system counts with.
+        A mould plus an absorbency names exactly one product.
       </p>
 
       {actionError !== null && (
@@ -348,8 +346,7 @@ function ProductDialog({
             Absorbent
           </label>
           <p className="mt-1 ml-8 text-xs text-ink-muted">
-            Decided by what is mixed into the roll, not by the mould. A mould can have one
-            absorbent product and one normal one — no more.
+            Decided by what is mixed into the roll, not by the mould.
           </p>
         </div>
 
