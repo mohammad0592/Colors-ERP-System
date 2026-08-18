@@ -52,16 +52,16 @@ export function MaterialWasteReport({
         </p>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Material</th>
-                <th className="px-4 py-3 text-right font-semibold">Issued</th>
-                <th className="px-4 py-3 text-right font-semibold">Returned</th>
-                <th className="px-4 py-3 text-right font-semibold">Used</th>
-                <th className="px-4 py-3 text-right font-semibold">Recipe</th>
-                <th className="px-4 py-3 text-right font-semibold">Should be</th>
-                <th className="px-4 py-3 text-right font-semibold">Difference</th>
+                <th className="px-4 py-3 text-end font-semibold">Issued</th>
+                <th className="px-4 py-3 text-end font-semibold">Returned</th>
+                <th className="px-4 py-3 text-end font-semibold">Used</th>
+                <th className="px-4 py-3 text-end font-semibold">Recipe</th>
+                <th className="px-4 py-3 text-end font-semibold">Should be</th>
+                <th className="px-4 py-3 text-end font-semibold">Difference</th>
               </tr>
             </thead>
             <tbody>
@@ -70,35 +70,35 @@ export function MaterialWasteReport({
                   <td className="px-4 py-3">
                     <span className="font-medium text-ink">{line.materialName}</span>
                     {line.isBaseResin && (
-                      <span className="ml-2 rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold text-ink-soft">
+                      <span className="ms-2 rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold text-ink-soft">
                         base
                       </span>
                     )}
                     {line.outsideRange && (
-                      <span className="ml-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
+                      <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
                         outside the range
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {line.issued}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {line.returned === 0 ? '—' : line.returned}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
+                  <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
                     {line.netUsed}{' '}
                     <span className="text-ink-muted">{line.unitSymbol}</span>
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-muted">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-muted">
                     {line.targetPercentage === null
                       ? '—'
                       : `${String(line.targetPercentage)}%`}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {line.required ?? '—'}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-3 text-end">
                     <Difference
                       kg={line.difference}
                       percentage={line.differencePercentage}
@@ -140,7 +140,7 @@ function Difference({
     >
       {agreed ? 'agrees' : `${kg > 0 ? '+' : ''}${String(kg)}`}
       {!agreed && percentage !== null && (
-        <span className="ml-1 font-normal text-ink-muted">
+        <span className="ms-1 font-normal text-ink-muted">
           {percentage > 0 ? '+' : ''}
           {percentage}%
         </span>

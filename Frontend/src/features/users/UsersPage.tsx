@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../lib/apiClient';
 import { labelForRole } from '../../lib/roles';
@@ -18,6 +19,7 @@ import { UserDialog } from './UserDialog';
  * simply cannot sign in.
  */
 export function UsersPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<UserDto | null>(null);
   const [adding, setAdding] = useState(false);
@@ -51,8 +53,8 @@ export function UsersPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Users"
-        subtitle="Who may sign in, and what each of them may do."
+        title={t('page.users.title')}
+        subtitle={t('page.users.subtitle')}
         actions={
           <button
             type="button"
@@ -69,7 +71,7 @@ export function UsersPage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
@@ -80,7 +82,7 @@ export function UsersPage(): ReactElement {
 
       {users.data !== undefined && (
         <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Employee number</th>
@@ -106,12 +108,12 @@ export function UsersPage(): ReactElement {
                       {user.fullName}
                     </span>
                     {!user.isActive && (
-                      <span className="ml-2 rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold text-ink-muted">
+                      <span className="ms-2 rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold text-ink-muted">
                         left
                       </span>
                     )}
                     {user.isLockedOut && (
-                      <span className="ml-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
+                      <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
                         locked out
                       </span>
                     )}

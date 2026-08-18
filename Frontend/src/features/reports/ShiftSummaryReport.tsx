@@ -73,16 +73,16 @@ export function ShiftSummaryReport({
         </p>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Product</th>
-                <th className="px-4 py-3 text-right font-semibold">Rolls</th>
-                <th className="px-4 py-3 text-right font-semibold">Roll weight</th>
-                <th className="px-4 py-3 text-right font-semibold">Bags</th>
-                <th className="px-4 py-3 text-right font-semibold">Pieces</th>
-                <th className="px-4 py-3 text-right font-semibold">Product</th>
-                <th className="px-4 py-3 text-right font-semibold">Loss</th>
+                <th className="px-4 py-3 text-end font-semibold">Rolls</th>
+                <th className="px-4 py-3 text-end font-semibold">Roll weight</th>
+                <th className="px-4 py-3 text-end font-semibold">Bags</th>
+                <th className="px-4 py-3 text-end font-semibold">Pieces</th>
+                <th className="px-4 py-3 text-end font-semibold">Product</th>
+                <th className="px-4 py-3 text-end font-semibold">Loss</th>
               </tr>
             </thead>
             <tbody>
@@ -94,25 +94,25 @@ export function ShiftSummaryReport({
                   <td className="px-4 py-3 font-medium text-ink">
                     {product.productName}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.rollsUsed}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.rollWeightUsed} kg
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.bagCount}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.pieceCount.toLocaleString('en-GB')}
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
+                  <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
                     {product.productWeight} kg
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.lossWeight} kg
                     {product.lossPercentage !== null && (
-                      <span className="ml-1 text-xs text-ink-muted">
+                      <span className="ms-1 text-xs text-ink-muted">
                         {product.lossPercentage}%
                       </span>
                     )}

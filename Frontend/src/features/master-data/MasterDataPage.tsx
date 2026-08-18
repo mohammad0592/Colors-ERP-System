@@ -1,4 +1,5 @@
 ﻿import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   colorsApi,
@@ -43,13 +44,14 @@ const tabs: { id: TabId; label: string }[] = [
  * historical records keep resolving.
  */
 export function MasterDataPage(): ReactElement {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<TabId>('materials');
 
   return (
     <>
       {/* No subtitle: the tabs immediately below name every one of these, and say it
           without going out of date when a tab is added. */}
-      <PageHeader title="Master Data" />
+      <PageHeader title={t('page.masterData.title')} />
 
       <div className="mb-5 flex flex-wrap gap-2">
         {tabs.map((entry) => (

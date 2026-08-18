@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   StartOnLineButton,
@@ -25,6 +26,7 @@ import { recyclerApi } from './api';
  * thermo's screens.
  */
 export function RecyclerPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canRecord = hasRole(RoleNames.Administrator, RoleNames.RecyclerOperator);
@@ -93,8 +95,8 @@ export function RecyclerPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Recycler"
-        subtitle="How much recycled material the shift produced."
+        title={t('page.recycler.title')}
+        subtitle={t('page.recycler.subtitle')}
         actions={
           canRecord ? (
             <StartOnLineButton
@@ -122,7 +124,7 @@ export function RecyclerPage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
@@ -224,12 +226,12 @@ export function RecyclerPage(): ReactElement {
 
       {records.data !== undefined && records.data.length > 0 && (
         <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Shift</th>
                 <th className="px-4 py-3 font-semibold">Line</th>
-                <th className="px-4 py-3 text-right font-semibold">Produced</th>
+                <th className="px-4 py-3 text-end font-semibold">Produced</th>
                 <th className="px-4 py-3 font-semibold">Recorded by</th>
               </tr>
             </thead>
@@ -240,7 +242,7 @@ export function RecyclerPage(): ReactElement {
                     {record.shiftName} · {formatDate(record.productionDate)}
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{record.productionLineName}</td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
+                  <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
                     {record.recycledMaterialWeight} kg
                   </td>
                   <td className="px-4 py-3 text-ink-soft">
@@ -259,7 +261,7 @@ export function RecyclerPage(): ReactElement {
                 <td className="px-4 py-3 text-ink" colSpan={2}>
                   {records.data.length} shift{records.data.length === 1 ? '' : 's'}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                <td className="px-4 py-3 text-end tabular-nums text-ink">
                   {records.data
                     .reduce((sum, r) => sum + r.recycledMaterialWeight, 0)
                     .toFixed(1)}{' '}

@@ -1,5 +1,6 @@
 ﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   StartOnLineButton,
@@ -26,6 +27,7 @@ import { RollStatusBadge } from './RollStatusBadge';
  * because an empty mix could be left behind on a closed shift and never cleared.
  */
 export function RollProductionPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canProduce = hasRole(RoleNames.Administrator, RoleNames.ExtruderOperator);
@@ -93,8 +95,8 @@ export function RollProductionPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Roll Production"
-        subtitle="Rolls off the extruder, each with its own recipe and colour."
+        title={t('page.rolls.title')}
+        subtitle={t('page.rolls.subtitle')}
         actions={
           canProduce ? (
             <StartOnLineButton
@@ -118,7 +120,7 @@ export function RollProductionPage(): ReactElement {
       )}
 
       {justLogged !== null && (
-        <p className="mb-4 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+        <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           Roll <strong className="font-mono">{justLogged.rollCode}</strong> logged —
           barcode <strong className="font-mono">{justLogged.barcode}</strong>.{' '}
           <button
@@ -134,7 +136,7 @@ export function RollProductionPage(): ReactElement {
       )}
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Roll code</th>
@@ -142,8 +144,8 @@ export function RollProductionPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">Recipe</th>
               <th className="px-4 py-3 font-semibold">Colour</th>
               <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 text-right font-semibold">Weight</th>
-              <th className="px-4 py-3 text-right font-semibold">Length</th>
+              <th className="px-4 py-3 text-end font-semibold">Weight</th>
+              <th className="px-4 py-3 text-end font-semibold">Length</th>
               <th className="px-4 py-3 font-semibold">Made by</th>
               <th className="px-4 py-3 font-semibold">Out at</th>
             </tr>
@@ -176,7 +178,7 @@ export function RollProductionPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {roll.recipeNumber}
-                  <span className="ml-2 text-xs text-ink-muted">
+                  <span className="ms-2 text-xs text-ink-muted">
                     {roll.recipeFamilyName}
                   </span>
                 </td>
@@ -184,10 +186,10 @@ export function RollProductionPage(): ReactElement {
                 <td className="px-4 py-3">
                   <RollStatusBadge status={roll.status} />
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {roll.weight ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {roll.length ?? '—'}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{roll.producedByName}</td>

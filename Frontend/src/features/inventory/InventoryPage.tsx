@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
@@ -16,6 +17,7 @@ import { inventoryApi, type MaterialStockDto } from './api';
  * says nothing at all.
  */
 export function InventoryPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canAdjust = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
@@ -54,8 +56,8 @@ export function InventoryPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Inventory"
-        subtitle="What the store holds, in each material's own unit."
+        title={t('page.inventory.title')}
+        subtitle={t('page.inventory.subtitle')}
         actions={
           canReceive ? (
             <Link
@@ -110,14 +112,14 @@ export function InventoryPage(): ReactElement {
           </section>
 
           <div className="card overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-start text-sm">
               <thead>
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                   <th className="px-4 py-3 font-semibold">Code</th>
                   <th className="px-4 py-3 font-semibold">Material</th>
                   <th className="px-4 py-3 font-semibold">Category</th>
-                  <th className="px-4 py-3 text-right font-semibold">In stock</th>
-                  <th className="px-4 py-3 text-right font-semibold">Minimum</th>
+                  <th className="px-4 py-3 text-end font-semibold">In stock</th>
+                  <th className="px-4 py-3 text-end font-semibold">Minimum</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -137,17 +139,17 @@ export function InventoryPage(): ReactElement {
                     <td className="px-4 py-3 font-medium text-ink">
                       {row.name}
                       {row.isBelowMinimum && (
-                        <span className="ml-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
+                        <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
                           Low
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-ink-soft">{row.categoryName}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-ink tabular-nums">
+                    <td className="px-4 py-3 text-end font-semibold text-ink tabular-nums">
                       {row.currentQuantity}{' '}
                       <span className="text-ink-muted">{row.baseUnitSymbol}</span>
                     </td>
-                    <td className="px-4 py-3 text-right text-ink-muted tabular-nums">
+                    <td className="px-4 py-3 text-end text-ink-muted tabular-nums">
                       {row.minQuantity}
                     </td>
                     <td className="px-4 py-3">
@@ -197,13 +199,13 @@ export function InventoryPage(): ReactElement {
             </div>
 
             <div className="card overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-start text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                     <th className="px-4 py-3 font-semibold">When</th>
                     <th className="px-4 py-3 font-semibold">Material</th>
                     <th className="px-4 py-3 font-semibold">Movement</th>
-                    <th className="px-4 py-3 text-right font-semibold">Quantity</th>
+                    <th className="px-4 py-3 text-end font-semibold">Quantity</th>
                     <th className="px-4 py-3 font-semibold">By</th>
                     <th className="px-4 py-3 font-semibold">Note</th>
                   </tr>
@@ -239,7 +241,7 @@ export function InventoryPage(): ReactElement {
                       {/* The sign is shown, never stored — it comes from the movement type. */}
                       <td
                         className={[
-                          'px-4 py-3 text-right font-semibold tabular-nums',
+                          'px-4 py-3 text-end font-semibold tabular-nums',
                           move.direction > 0 ? 'text-ok' : 'text-bad',
                         ].join(' ')}
                       >

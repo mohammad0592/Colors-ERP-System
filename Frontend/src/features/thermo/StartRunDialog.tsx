@@ -112,7 +112,7 @@ export function StartRunDialog({
             {chosen.weight !== null && <> · {chosen.weight} kg</>}
             {chosen.length !== null && <> · length {chosen.length}</>}
             {chosen.isAbsorbent && (
-              <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
+              <span className="ms-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
                 Absorbent
               </span>
             )}
@@ -130,7 +130,7 @@ export function StartRunDialog({
         {error !== null && (
           <p
             role="alert"
-            className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+            className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
           >
             {error}
           </p>

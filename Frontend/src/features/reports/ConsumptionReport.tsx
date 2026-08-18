@@ -66,7 +66,7 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                 <section key={group.label} className="card overflow-hidden">
                   <button
                     type="button"
-                    className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-left transition-colors hover:bg-canvas"
+                    className="flex w-full flex-wrap items-center justify-between gap-3 px-5 py-4 text-start transition-colors hover:bg-canvas"
                     onClick={() => {
                       setOpen((current) =>
                         current === group.label ? null : group.label,
@@ -85,7 +85,7 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                         )}
                       </p>
                     </div>
-                    <p className="text-right">
+                    <p className="text-end">
                       <span className="text-lg font-bold text-ink tabular-nums">
                         {group.totalUsed} kg
                       </span>
@@ -101,16 +101,16 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
 
                   {open === group.label && group.materials.length > 0 && (
                     <div className="overflow-x-auto border-t border-line">
-                      <table className="w-full text-left text-sm">
+                      <table className="w-full text-start text-sm">
                         <thead>
                           <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                             <th className="px-5 py-2 font-semibold">Material</th>
-                            <th className="px-5 py-2 text-right font-semibold">Issued</th>
-                            <th className="px-5 py-2 text-right font-semibold">
+                            <th className="px-5 py-2 text-end font-semibold">Issued</th>
+                            <th className="px-5 py-2 text-end font-semibold">
                               Returned
                             </th>
-                            <th className="px-5 py-2 text-right font-semibold">Used</th>
-                            <th className="px-5 py-2 text-right font-semibold">
+                            <th className="px-5 py-2 text-end font-semibold">Used</th>
+                            <th className="px-5 py-2 text-end font-semibold">
                               Per kg of roll
                             </th>
                           </tr>
@@ -124,19 +124,19 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                               <td className="px-5 py-2 text-ink">
                                 {material.materialName}
                               </td>
-                              <td className="px-5 py-2 text-right tabular-nums text-ink-soft">
+                              <td className="px-5 py-2 text-end tabular-nums text-ink-soft">
                                 {material.issued}
                               </td>
-                              <td className="px-5 py-2 text-right tabular-nums text-ink-soft">
+                              <td className="px-5 py-2 text-end tabular-nums text-ink-soft">
                                 {material.returned === 0 ? '—' : material.returned}
                               </td>
-                              <td className="px-5 py-2 text-right font-semibold tabular-nums text-ink">
+                              <td className="px-5 py-2 text-end font-semibold tabular-nums text-ink">
                                 {material.netUsed}{' '}
                                 <span className="font-normal text-ink-muted">
                                   {material.unitSymbol}
                                 </span>
                               </td>
-                              <td className="px-5 py-2 text-right tabular-nums text-ink-muted">
+                              <td className="px-5 py-2 text-end tabular-nums text-ink-muted">
                                 {material.perKilogramOfRoll ?? '—'}
                               </td>
                             </tr>

@@ -34,7 +34,7 @@ export function PalletCard({
       onClick={onSelect}
       aria-pressed={isSelected}
       className={[
-        'card w-full p-5 text-left transition-colors',
+        'card w-full p-5 text-start transition-colors',
         isSelected
           ? 'border-brand-600 ring-1 ring-brand-600'
           : 'hover:border-brand-200 hover:bg-brand-50/30',

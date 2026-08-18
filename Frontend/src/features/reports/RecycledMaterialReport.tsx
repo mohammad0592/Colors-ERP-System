@@ -63,12 +63,12 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
         </p>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Shift</th>
                 <th className="px-4 py-3 font-semibold">Line</th>
-                <th className="px-4 py-3 text-right font-semibold">Made</th>
+                <th className="px-4 py-3 text-end font-semibold">Made</th>
                 <th className="px-4 py-3 font-semibold">Recorded by</th>
               </tr>
             </thead>
@@ -82,7 +82,7 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
                     {shift.shiftName} · {formatDate(shift.productionDate)}
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{shift.productionLineName}</td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
+                  <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
                     {shift.produced} kg
                   </td>
                   <td className="px-4 py-3 text-ink-soft">

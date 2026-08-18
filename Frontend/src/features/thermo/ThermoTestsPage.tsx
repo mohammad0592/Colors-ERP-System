@@ -1,5 +1,6 @@
 ﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
@@ -15,6 +16,7 @@ import { ThermoTestDialog } from './ThermoTestDialog';
  * no bags nobody can build a pallet.
  */
 export function ThermoTestsPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canTest = hasRole(RoleNames.Administrator, RoleNames.ThermoTestPerson);
@@ -80,8 +82,8 @@ export function ThermoTestsPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Thermo Tests"
-        subtitle="Bags, piece weight and bag weight, counted after the run."
+        title={t('page.thermoTests.title')}
+        subtitle={t('page.thermoTests.subtitle')}
       />
 
       <section className="mb-6 flex flex-wrap gap-2">
@@ -102,7 +104,7 @@ export function ThermoTestsPage(): ReactElement {
       </section>
 
       {justSaved !== null && (
-        <p className="mb-4 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+        <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           Roll <strong className="font-mono">{justSaved.rollCode}</strong> made{' '}
           {justSaved.bags.length} bag{justSaved.bags.length === 1 ? '' : 's'} of{' '}
           {justSaved.testReport?.productName} —{' '}
@@ -112,17 +114,17 @@ export function ThermoTestsPage(): ReactElement {
       )}
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Roll</th>
               <th className="px-4 py-3 font-semibold">Colour · recipe</th>
               <th className="px-4 py-3 font-semibold">Shift</th>
-              <th className="px-4 py-3 text-right font-semibold">Minutes</th>
+              <th className="px-4 py-3 text-end font-semibold">Minutes</th>
               <th className="px-4 py-3 font-semibold">Product</th>
-              <th className="px-4 py-3 text-right font-semibold">Bags</th>
-              <th className="px-4 py-3 text-right font-semibold">Pieces</th>
-              <th className="px-4 py-3 text-right font-semibold">Waste</th>
+              <th className="px-4 py-3 text-end font-semibold">Bags</th>
+              <th className="px-4 py-3 text-end font-semibold">Pieces</th>
+              <th className="px-4 py-3 text-end font-semibold">Waste</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -141,11 +143,11 @@ export function ThermoTestsPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {run.colorName}
-                  <span className="ml-2 text-xs text-ink-muted">
+                  <span className="ms-2 text-xs text-ink-muted">
                     {run.recipeNumber} {run.recipeFamilyName}
                   </span>
                   {run.isAbsorbent && (
-                    <span className="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
+                    <span className="ms-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
                       ABS
                     </span>
                   )}
@@ -153,17 +155,17 @@ export function ThermoTestsPage(): ReactElement {
                 <td className="px-4 py-3 whitespace-nowrap text-ink-soft">
                   {run.shiftName} · {formatDate(run.productionDate)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {run.totalTimeMinutes ?? '—'}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{run.productName ?? '—'}</td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {run.bagCount ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {run.pieceCount?.toLocaleString('en-GB') ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-end">
                   <Waste kg={run.scrapWeight} rollKg={run.rollWeight} />
                 </td>
                 <td className="px-4 py-3">
@@ -213,9 +215,9 @@ export function ThermoTestsPage(): ReactElement {
                   {totals.runs} run{totals.runs === 1 ? '' : 's'} counted ·{' '}
                   {totals.rollKg.toFixed(1)} kg of rolls formed
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                <td className="px-4 py-3 text-end tabular-nums text-ink">
                   {totals.scrapKg.toFixed(1)} kg
-                  <span className="ml-2 text-xs font-normal text-ink-muted">
+                  <span className="ms-2 text-xs font-normal text-ink-muted">
                     {((totals.scrapKg / totals.rollKg) * 100).toFixed(1)}%
                   </span>
                 </td>
@@ -282,7 +284,7 @@ function Waste({
   return (
     <span className="tabular-nums text-ink-soft">
       {kg.toFixed(1)} kg
-      <span className="ml-1 text-xs text-ink-muted">
+      <span className="ms-1 text-xs text-ink-muted">
         {((kg / rollKg) * 100).toFixed(0)}%
       </span>
     </span>

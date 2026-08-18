@@ -1,6 +1,7 @@
-import type { ReactElement } from 'react';
+﻿import type { ReactElement } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Icon } from '../ui/Icon';
 import { navigation, type NavItem } from './navigation';
 
@@ -18,6 +19,7 @@ export function Sidebar({
   isOpenOnMobile,
   onCloseMobile,
 }: SidebarProps): ReactElement {
+  const { t } = useTranslation();
   const { hasRole } = useAuth();
 
   const canSee = (item: NavItem): boolean =>
@@ -29,7 +31,7 @@ export function Sidebar({
       {isOpenOnMobile && (
         <button
           type="button"
-          aria-label="Close menu"
+          aria-label={t('common.close')}
           onClick={onCloseMobile}
           className="fixed inset-0 z-30 bg-ink/50 lg:hidden"
         />
@@ -37,7 +39,7 @@ export function Sidebar({
 
       <aside
         className={[
-          'fixed inset-y-0 left-0 z-40 flex flex-col bg-sidebar transition-all duration-200',
+          'fixed inset-y-0 start-0 z-40 flex flex-col bg-sidebar transition-all duration-200',
           isCollapsed ? 'w-sidebar-narrow' : 'w-sidebar',
           isOpenOnMobile ? 'translate-x-0' : '-translate-x-full',
           'lg:translate-x-0',
@@ -55,8 +57,8 @@ export function Sidebar({
           />
           {!isCollapsed && (
             <div className="min-w-0">
-              <p className="truncate font-bold text-white">Colors ERP</p>
-              <p className="truncate text-xs text-sidebar-heading">Styrofoam Factory</p>
+              <p className="truncate font-bold text-white">{t('app.name')}</p>
+              <p className="truncate text-xs text-sidebar-heading">{t('app.tagline')}</p>
             </div>
           )}
         </div>
@@ -69,10 +71,10 @@ export function Sidebar({
             }
 
             return (
-              <div key={group.heading} className="mb-5">
+              <div key={t(group.heading)} className="mb-5">
                 {!isCollapsed && (
                   <p className="mb-2 px-3 text-[11px] font-semibold tracking-wider text-sidebar-heading uppercase">
-                    {group.heading}
+                    {t(group.heading)}
                   </p>
                 )}
 
@@ -83,7 +85,7 @@ export function Sidebar({
                         to={item.path}
                         end={item.path === '/'}
                         onClick={onCloseMobile}
-                        title={isCollapsed ? item.label : undefined}
+                        title={isCollapsed ? t(item.label) : undefined}
                         className={({ isActive }) =>
                           [
                             'flex min-h-touch items-center gap-3 rounded-control px-3 text-sm font-medium transition-colors',
@@ -95,7 +97,7 @@ export function Sidebar({
                         }
                       >
                         <Icon name={item.icon} className="size-5 shrink-0" />
-                        {!isCollapsed && <span className="truncate">{item.label}</span>}
+                        {!isCollapsed && <span className="truncate">{t(item.label)}</span>}
                       </NavLink>
                     </li>
                   ))}
@@ -111,7 +113,7 @@ export function Sidebar({
           className="hidden min-h-touch items-center gap-3 px-6 text-sm text-sidebar-heading transition-colors hover:text-white lg:flex"
         >
           <Icon name={isCollapsed ? 'chevronRight' : 'chevronLeft'} className="size-4" />
-          {!isCollapsed && <span>Collapse</span>}
+          {!isCollapsed && <span>{t('nav.collapse')}</span>}
         </button>
       </aside>
     </>

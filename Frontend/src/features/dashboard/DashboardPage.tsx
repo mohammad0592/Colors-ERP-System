@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 import { Link } from 'react-router-dom';
 import { navigation, type NavItem } from '../../components/layout/navigation';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Icon } from '../../components/ui/Icon';
 import { useAuth } from '../../hooks/useAuth';
@@ -44,6 +45,7 @@ const alertGoesTo: Record<string, string> = {
  * one people stop reading.
  */
 export function DashboardPage(): ReactElement {
+  const { t } = useTranslation();
   const { user, hasRole } = useAuth();
 
   const dashboard = useQuery({
@@ -73,7 +75,7 @@ export function DashboardPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Operations Dashboard"
+        title={t('page.dashboard.title')}
         subtitle={today}
         badge={
           shift === null ? (
@@ -91,7 +93,7 @@ export function DashboardPage(): ReactElement {
       />
 
       {dashboard.isError && (
-        <p className="mb-6 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad">
+        <p className="mb-6 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad">
           Could not load what is happening. The rest of the system still works.
         </p>
       )}

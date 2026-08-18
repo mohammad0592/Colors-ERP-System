@@ -1,6 +1,7 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
@@ -23,6 +24,7 @@ import { ShiftStatusBadge } from './ShiftStatusBadge';
  * answer, so it is the action the screen leads with.
  */
 export function ShiftsPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const isAdministrator = hasRole(RoleNames.Administrator);
@@ -132,8 +134,8 @@ export function ShiftsPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Shifts"
-        subtitle="One record per shift. Close it when the work is finished."
+        title={t('page.shifts.title')}
+        subtitle={t('page.shifts.subtitle')}
         actions={
           <button
             type="button"
@@ -178,7 +180,7 @@ export function ShiftsPage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
@@ -189,7 +191,7 @@ export function ShiftsPage(): ReactElement {
       </p>
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Date</th>

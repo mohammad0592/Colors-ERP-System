@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
@@ -23,6 +24,7 @@ import { describe, filterableThings } from './auditWords';
  * nothing that removes one.
  */
 export function AuditPage(): ReactElement {
+  const { t } = useTranslation();
   const [shiftReportId, setShiftReportId] = useState<number | ''>('');
   const [objectType, setObjectType] = useState('');
   const [refusalsOnly, setRefusalsOnly] = useState(false);
@@ -47,10 +49,7 @@ export function AuditPage(): ReactElement {
 
   return (
     <>
-      <PageHeader
-        title="Audit log"
-        subtitle="Who changed what, and what was refused."
-      />
+      <PageHeader title={t('page.audit.title')} subtitle={t('page.audit.subtitle')} />
 
       <section className="card mb-6 flex flex-wrap items-end gap-4 p-4">
         <div>
@@ -129,7 +128,7 @@ export function AuditPage(): ReactElement {
             </p>
           ) : (
             <div className="card overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-start text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                     <th className="px-4 py-3 font-semibold">When</th>
@@ -181,7 +180,7 @@ function Line({ line }: { line: AuditEntryDto }): ReactElement {
           {describe(line.action, line.objectType, line.objectId, rejected)}
         </span>
         {rejected && (
-          <span className="ml-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
+          <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
             refused
           </span>
         )}

@@ -1,6 +1,7 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../lib/apiClient';
 import { materialsApi } from '../master-data/api';
@@ -16,6 +17,7 @@ import { RecipeVersionDialog } from './RecipeVersionDialog';
  * describes (section 5).
  */
 export function RecipesPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [familyFilter, setFamilyFilter] = useState<number | 'all'>('all');
   const [dialog, setDialog] = useState<RecipeVersionDto | 'new' | null>(null);
@@ -95,8 +97,8 @@ export function RecipesPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Recipes"
-        subtitle="The four families and every version."
+        title={t('page.recipes.title')}
+        subtitle={t('page.recipes.subtitle')}
         actions={
           <button
             type="button"
@@ -120,7 +122,7 @@ export function RecipesPage(): ReactElement {
               setFamilyFilter((current) => (current === family.id ? 'all' : family.id));
             }}
             className={[
-              'card p-4 text-left transition-colors',
+              'card p-4 text-start transition-colors',
               familyFilter === family.id
                 ? 'border-brand-600 bg-brand-50'
                 : 'hover:border-brand-200',
@@ -147,7 +149,7 @@ export function RecipesPage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
@@ -172,7 +174,7 @@ export function RecipesPage(): ReactElement {
       </div>
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Recipe</th>

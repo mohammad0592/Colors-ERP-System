@@ -1,6 +1,7 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StartOnLineButton } from '../../components/ui/StartOnLineButton';
 import { useAuth } from '../../hooks/useAuth';
@@ -19,6 +20,7 @@ import { StartRunDialog } from './StartRunDialog';
  * the mould on the line and the roll's recipe decide it between them.
  */
 export function ThermoProductionPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canForm = hasRole(RoleNames.Administrator, RoleNames.ThermoOperator);
@@ -96,8 +98,8 @@ export function ThermoProductionPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Thermoforming"
-        subtitle="One roll goes in whole."
+        title={t('page.thermo.title')}
+        subtitle={t('page.thermo.subtitle')}
         actions={
           canForm ? (
             <StartOnLineButton
@@ -141,14 +143,14 @@ export function ThermoProductionPage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
       )}
 
       {justStarted !== null && (
-        <p className="mb-4 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+        <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           Roll <strong className="font-mono">{justStarted.rollCode}</strong> is in the
           machine on the {justStarted.mouldName ?? 'mounted'} mould. Take it out when the
           run is done, then count what it made.
@@ -156,7 +158,7 @@ export function ThermoProductionPage(): ReactElement {
       )}
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Roll</th>
@@ -164,8 +166,8 @@ export function ThermoProductionPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">Shift</th>
               <th className="px-4 py-3 font-semibold">Operator</th>
               <th className="px-4 py-3 font-semibold">Where it is</th>
-              <th className="px-4 py-3 text-right font-semibold">Minutes</th>
-              <th className="px-4 py-3 text-right font-semibold">Bags</th>
+              <th className="px-4 py-3 text-end font-semibold">Minutes</th>
+              <th className="px-4 py-3 text-end font-semibold">Bags</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -186,7 +188,7 @@ export function ThermoProductionPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {run.colorName}
-                  <span className="ml-2 text-xs text-ink-muted">
+                  <span className="ms-2 text-xs text-ink-muted">
                     {run.recipeNumber} {run.recipeFamilyName}
                   </span>
                 </td>
@@ -197,10 +199,10 @@ export function ThermoProductionPage(): ReactElement {
                 <td className="px-4 py-3">
                   <RunStage run={run} />
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {run.totalTimeMinutes ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {run.bagCount ?? '—'}
                 </td>
                 <td className="px-4 py-3">

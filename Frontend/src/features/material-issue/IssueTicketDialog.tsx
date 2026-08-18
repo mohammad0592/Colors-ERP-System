@@ -82,15 +82,15 @@ export function IssueTicketDialog({
       )}
 
       <div className="mb-4 overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="py-2 pr-3 font-semibold">Material</th>
-              <th className="px-3 py-2 text-right font-semibold">Out</th>
-              <th className="px-3 py-2 text-right font-semibold">Back</th>
-              <th className="px-3 py-2 text-right font-semibold">Used</th>
+              <th className="py-2 pe-3 font-semibold">Material</th>
+              <th className="px-3 py-2 text-end font-semibold">Out</th>
+              <th className="px-3 py-2 text-end font-semibold">Back</th>
+              <th className="px-3 py-2 text-end font-semibold">Used</th>
               {ticket.isOpen && canIssue && (
-                <th className="py-2 pl-3 text-right font-semibold">Weigh back in</th>
+                <th className="py-2 ps-3 text-end font-semibold">Weigh back in</th>
               )}
             </tr>
           </thead>
@@ -99,31 +99,31 @@ export function IssueTicketDialog({
               const outstanding = line.issuedQuantity - line.returnedQuantity;
               return (
                 <tr key={line.id} className="border-b border-line last:border-0">
-                  <td className="py-2 pr-3 font-medium text-ink">
+                  <td className="py-2 pe-3 font-medium text-ink">
                     {line.materialName}
-                    <span className="ml-2 font-mono text-xs text-ink-muted">
+                    <span className="ms-2 font-mono text-xs text-ink-muted">
                       {line.materialCode}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                  <td className="px-3 py-2 text-end tabular-nums text-ink-soft">
                     {line.issuedQuantity}
                   </td>
-                  <td className="px-3 py-2 text-right tabular-nums text-ink-soft">
+                  <td className="px-3 py-2 text-end tabular-nums text-ink-soft">
                     {line.returnedQuantity}
                   </td>
-                  <td className="px-3 py-2 text-right font-semibold tabular-nums text-ink">
+                  <td className="px-3 py-2 text-end font-semibold tabular-nums text-ink">
                     {line.netUsed}{' '}
                     <span className="text-ink-muted">{line.baseUnitSymbol}</span>
                   </td>
                   {ticket.isOpen && canIssue && (
-                    <td className="py-2 pl-3">
+                    <td className="py-2 ps-3">
                       <input
                         type="number"
                         step="0.001"
                         min="0"
                         max={outstanding}
                         aria-label={`Leftover of ${line.materialName}`}
-                        className="field-input h-9 w-28 py-0 text-right"
+                        className="field-input h-9 w-28 py-0 text-end"
                         value={returns[line.materialId] ?? ''}
                         disabled={isSaving || outstanding <= 0}
                         onChange={(event) => {
@@ -154,7 +154,7 @@ export function IssueTicketDialog({
       {error !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {error}
         </p>

@@ -23,6 +23,7 @@ import { UsersPage } from './features/users/UsersPage';
 import { TracePage } from './features/trace/TracePage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
 import { ThermoTestsPage } from './features/thermo/ThermoTestsPage';
+import { LanguageProvider } from './lib/i18n/LanguageProvider';
 import { rolesFor, type ScreenPath } from './routes/access';
 import { ProtectedRoute } from './routes/ProtectedRoute';
 import { plannedRoutes } from './routes/routes';
@@ -73,30 +74,32 @@ const screens: { path: ScreenPath; element: ReactElement }[] = [
 export default function App(): ReactElement {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
+      <LanguageProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
 
-            {/* Everything below needs a signed-in worker. */}
-            <Route element={<ProtectedRoute />}>
-              <Route element={<AppLayout />}>
-                {screens.map(({ path, element }) => (
-                  <Route key={path} element={<ProtectedRoute roles={rolesFor(path)} />}>
-                    <Route path={path} element={element} />
-                  </Route>
-                ))}
+              {/* Everything below needs a signed-in worker. */}
+              <Route element={<ProtectedRoute />}>
+                <Route element={<AppLayout />}>
+                  {screens.map(({ path, element }) => (
+                    <Route key={path} element={<ProtectedRoute roles={rolesFor(path)} />}>
+                      <Route path={path} element={element} />
+                    </Route>
+                  ))}
 
-                {plannedRoutes.map(({ path, element }) => (
-                  <Route key={path} path={path} element={element} />
-                ))}
+                  {plannedRoutes.map(({ path, element }) => (
+                    <Route key={path} path={path} element={element} />
+                  ))}
+                </Route>
               </Route>
-            </Route>
 
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </LanguageProvider>
     </QueryClientProvider>
   );
 }

@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
@@ -20,6 +21,7 @@ import { traceApi, type TraceBagDto, type TraceDto } from './api';
  * because the man scanning a roll already knows he has a roll.
  */
 export function TracePage(): ReactElement {
+  const { t } = useTranslation();
   const [params, setParams] = useSearchParams();
   const asked = params.get('code') ?? '';
   const [code, setCode] = useState(asked);
@@ -33,10 +35,7 @@ export function TracePage(): ReactElement {
 
   return (
     <>
-      <PageHeader
-        title="Where did this come from?"
-        subtitle="Scan a roll, a bag or a pallet to see every step behind it."
-      />
+      <PageHeader title={t('page.trace.title')} subtitle={t('page.trace.subtitle')} />
 
       <div className="card mb-6 p-4">
         {/* No list here, and there should not be one. Every other screen offers what it
@@ -66,7 +65,7 @@ export function TracePage(): ReactElement {
       {trace.isError && (
         <p
           role="alert"
-          className="rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {trace.error instanceof ApiError
             ? trace.error.message
@@ -226,14 +225,14 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
+              <table className="w-full text-start text-sm">
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                    <th className="py-2 pr-4 font-semibold">Ticket</th>
-                    <th className="py-2 pr-4 font-semibold">Material</th>
-                    <th className="py-2 pr-4 text-right font-semibold">Issued</th>
-                    <th className="py-2 pr-4 text-right font-semibold">Returned</th>
-                    <th className="py-2 text-right font-semibold">Used</th>
+                    <th className="py-2 pe-4 font-semibold">Ticket</th>
+                    <th className="py-2 pe-4 font-semibold">Material</th>
+                    <th className="py-2 pe-4 text-end font-semibold">Issued</th>
+                    <th className="py-2 pe-4 text-end font-semibold">Returned</th>
+                    <th className="py-2 text-end font-semibold">Used</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -242,15 +241,15 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
                       key={`${String(line.ticketNumber)}-${line.material}-${String(index)}`}
                       className="border-b border-line last:border-0"
                     >
-                      <td className="py-2 pr-4 text-ink-muted">{line.ticketNumber}</td>
-                      <td className="py-2 pr-4 text-ink">{line.material}</td>
-                      <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">
+                      <td className="py-2 pe-4 text-ink-muted">{line.ticketNumber}</td>
+                      <td className="py-2 pe-4 text-ink">{line.material}</td>
+                      <td className="py-2 pe-4 text-end tabular-nums text-ink-soft">
                         {line.issued} {line.unitSymbol}
                       </td>
-                      <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">
+                      <td className="py-2 pe-4 text-end tabular-nums text-ink-soft">
                         {line.returned}
                       </td>
-                      <td className="py-2 text-right font-semibold tabular-nums text-ink">
+                      <td className="py-2 text-end font-semibold tabular-nums text-ink">
                         {line.used}
                       </td>
                     </tr>
@@ -264,7 +263,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
               mix, so this is what the shift took out — not what is provably in this
               roll. With one mix per shift they are the same set. */}
           {trace.mix.issuedToShiftNotMix && (
-            <p className="mt-3 rounded-control border border-l-4 border-warn/30 border-l-warn bg-warn-soft px-4 py-2 text-xs font-medium text-warn">
+            <p className="mt-3 rounded-control border border-s-4 border-warn/30 border-s-warn bg-warn-soft px-4 py-2 text-xs font-medium text-warn">
               These are the materials issued to the shift that made this roll. The ticket
               names the shift, not the mix — with one mix per shift that is the same
               material, but the system cannot prove it roll by roll.
@@ -299,37 +298,37 @@ function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="py-2 pr-4 font-semibold">Bag</th>
-              <th className="py-2 pr-4 font-semibold">From roll</th>
-              <th className="py-2 pr-4 font-semibold">Product</th>
-              <th className="py-2 pr-4 text-right font-semibold">Pieces</th>
-              <th className="py-2 pr-4 text-right font-semibold">Weight</th>
-              <th className="py-2 pr-4 font-semibold">Status</th>
+              <th className="py-2 pe-4 font-semibold">Bag</th>
+              <th className="py-2 pe-4 font-semibold">From roll</th>
+              <th className="py-2 pe-4 font-semibold">Product</th>
+              <th className="py-2 pe-4 text-end font-semibold">Pieces</th>
+              <th className="py-2 pe-4 text-end font-semibold">Weight</th>
+              <th className="py-2 pe-4 font-semibold">Status</th>
               <th className="py-2 font-semibold">Pallet</th>
             </tr>
           </thead>
           <tbody>
             {bags.map((bag) => (
               <tr key={bag.id} className="border-b border-line last:border-0">
-                <td className="py-2 pr-4 font-mono font-semibold text-ink">
+                <td className="py-2 pe-4 font-mono font-semibold text-ink">
                   {bag.barcode}
                 </td>
-                <td className="py-2 pr-4 font-mono text-xs text-ink-soft">
+                <td className="py-2 pe-4 font-mono text-xs text-ink-soft">
                   {bag.rollCode}
                 </td>
-                <td className="py-2 pr-4 text-ink-soft">
+                <td className="py-2 pe-4 text-ink-soft">
                   {bag.productName} · {bag.colorName}
                 </td>
-                <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">
+                <td className="py-2 pe-4 text-end tabular-nums text-ink-soft">
                   {bag.pieceCount}
                 </td>
-                <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">
+                <td className="py-2 pe-4 text-end tabular-nums text-ink-soft">
                   {bag.weight}
                 </td>
-                <td className="py-2 pr-4 text-ink-soft">{bag.status}</td>
+                <td className="py-2 pe-4 text-ink-soft">{bag.status}</td>
                 <td className="py-2 text-ink-soft">{bag.palletNumber ?? '—'}</td>
               </tr>
             ))}
@@ -366,7 +365,7 @@ function Facts({ rows }: { rows: [string, string][] }): ReactElement {
       {rows.map(([label, value]) => (
         <div key={label} className="flex justify-between gap-3 border-b border-line py-1">
           <dt className="text-ink-soft">{label}</dt>
-          <dd className="text-right font-semibold text-ink">{value}</dd>
+          <dd className="text-end font-semibold text-ink">{value}</dd>
         </div>
       ))}
     </dl>

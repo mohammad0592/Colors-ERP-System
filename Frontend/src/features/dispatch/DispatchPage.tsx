@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
@@ -26,6 +27,7 @@ import { UnshipDialog } from './UnshipDialog';
  * the camera, the typing and the list behave here exactly as they do at the pallet.
  */
 export function DispatchPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const [barcode, setBarcode] = useState('');
@@ -79,15 +81,13 @@ export function DispatchPage(): ReactElement {
 
   const now = new Date();
   const waiting = inStock.data ?? [];
-  const gone = (shipped.data ?? [])
-    .filter((p) => p.status === 'Shipped')
-    .slice(0, 10);
+  const gone = (shipped.data ?? []).filter((p) => p.status === 'Shipped').slice(0, 10);
 
   return (
     <div>
       <PageHeader
-        title="Dispatch"
-        subtitle="Finished pallets leaving the factory."
+        title={t('page.dispatch.title')}
+        subtitle={t('page.dispatch.subtitle')}
       />
 
       <div className="mb-6 max-w-xl">
@@ -113,14 +113,14 @@ export function DispatchPage(): ReactElement {
         {error !== null && (
           <p
             role="alert"
-            className="mt-3 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+            className="mt-3 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
           >
             {error}
           </p>
         )}
 
         {error === null && lastShipped !== null && (
-          <p className="mt-3 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+          <p className="mt-3 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
             <strong>{lastShipped}</strong> has gone.
           </p>
         )}
@@ -144,13 +144,13 @@ export function DispatchPage(): ReactElement {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line text-left text-ink-muted">
-                  <th className="py-2 pr-4 font-medium">Pallet</th>
-                  <th className="py-2 pr-4 font-medium">What is on it</th>
-                  <th className="py-2 pr-4 font-medium">Bags</th>
-                  <th className="py-2 pr-4 font-medium">Weight</th>
-                  <th className="py-2 pr-4 font-medium">Finished</th>
-                  <th className="py-2 pr-4 font-medium">Waiting</th>
+                <tr className="border-b border-line text-start text-ink-muted">
+                  <th className="py-2 pe-4 font-medium">Pallet</th>
+                  <th className="py-2 pe-4 font-medium">What is on it</th>
+                  <th className="py-2 pe-4 font-medium">Bags</th>
+                  <th className="py-2 pe-4 font-medium">Weight</th>
+                  <th className="py-2 pe-4 font-medium">Finished</th>
+                  <th className="py-2 pe-4 font-medium">Waiting</th>
                 </tr>
               </thead>
               <tbody>
@@ -165,9 +165,7 @@ export function DispatchPage(): ReactElement {
 
       <section>
         <h2 className="mb-1 text-lg font-semibold text-ink">Gone</h2>
-        <p className="mb-3 text-sm text-ink-muted">
-          The last ten to leave.
-        </p>
+        <p className="mb-3 text-sm text-ink-muted">The last ten to leave.</p>
 
         {gone.length === 0 && (
           <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
@@ -179,26 +177,26 @@ export function DispatchPage(): ReactElement {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-line text-left text-ink-muted">
-                  <th className="py-2 pr-4 font-medium">Pallet</th>
-                  <th className="py-2 pr-4 font-medium">What was on it</th>
-                  <th className="py-2 pr-4 font-medium">Bags</th>
-                  <th className="py-2 pr-4 font-medium">Went</th>
-                  <th className="py-2 pr-4 font-medium" />
+                <tr className="border-b border-line text-start text-ink-muted">
+                  <th className="py-2 pe-4 font-medium">Pallet</th>
+                  <th className="py-2 pe-4 font-medium">What was on it</th>
+                  <th className="py-2 pe-4 font-medium">Bags</th>
+                  <th className="py-2 pe-4 font-medium">Went</th>
+                  <th className="py-2 pe-4 font-medium" />
                 </tr>
               </thead>
               <tbody>
                 {gone.map((pallet) => (
                   <tr key={pallet.id} className="border-b border-line/60">
-                    <td className="py-2 pr-4 font-mono">{pallet.palletNumber}</td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pe-4 font-mono">{pallet.palletNumber}</td>
+                    <td className="py-2 pe-4">
                       {pallet.colorName ?? '—'} {pallet.productName ?? ''}
                     </td>
-                    <td className="py-2 pr-4">{pallet.bagCount}</td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pe-4">{pallet.bagCount}</td>
+                    <td className="py-2 pe-4">
                       {pallet.shippedAt === null ? '—' : formatDate(pallet.shippedAt)}
                     </td>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pe-4">
                       <button
                         type="button"
                         className="text-sm font-medium text-brand-700 underline"
@@ -236,29 +234,23 @@ export function DispatchPage(): ReactElement {
   );
 }
 
-function Row({
-  pallet,
-  now,
-}: {
-  pallet: PalletSummaryDto;
-  now: Date;
-}): ReactElement {
+function Row({ pallet, now }: { pallet: PalletSummaryDto; now: Date }): ReactElement {
   const stale = pallet.completedAt !== null && isStale(pallet.completedAt, now);
 
   return (
     <tr className="border-b border-line/60">
-      <td className="py-2 pr-4 font-mono">
+      <td className="py-2 pe-4 font-mono">
         {pallet.palletNumber} <PalletStatusBadge status={pallet.status} />
       </td>
-      <td className="py-2 pr-4">
+      <td className="py-2 pe-4">
         {pallet.colorName ?? '—'} {pallet.productName ?? ''}
       </td>
-      <td className="py-2 pr-4">{pallet.bagCount}</td>
-      <td className="py-2 pr-4">{pallet.weight.toFixed(1)} kg</td>
-      <td className="py-2 pr-4">
+      <td className="py-2 pe-4">{pallet.bagCount}</td>
+      <td className="py-2 pe-4">{pallet.weight.toFixed(1)} kg</td>
+      <td className="py-2 pe-4">
         {pallet.completedAt === null ? '—' : formatDate(pallet.completedAt)}
       </td>
-      <td className={`py-2 pr-4 ${stale ? 'font-semibold text-bad' : 'text-ink-muted'}`}>
+      <td className={`py-2 pe-4 ${stale ? 'font-semibold text-bad' : 'text-ink-muted'}`}>
         {pallet.completedAt === null ? '—' : waitingLabel(pallet.completedAt, now)}
       </td>
     </tr>

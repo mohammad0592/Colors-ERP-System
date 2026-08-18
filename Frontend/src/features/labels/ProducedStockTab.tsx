@@ -96,7 +96,7 @@ export function ProducedStockTab(): ReactElement {
 
       {items.data !== undefined && (
         <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Barcode</th>
@@ -105,9 +105,9 @@ export function ProducedStockTab(): ReactElement {
                 <th className="px-4 py-3 font-semibold">What it is</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
                 <th className="px-4 py-3 font-semibold">Where</th>
-                <th className="px-4 py-3 text-right font-semibold">Weight</th>
-                <th className="px-4 py-3 text-right font-semibold">Length</th>
-                <th className="px-4 py-3 text-right font-semibold">Pieces</th>
+                <th className="px-4 py-3 text-end font-semibold">Weight</th>
+                <th className="px-4 py-3 text-end font-semibold">Length</th>
+                <th className="px-4 py-3 text-end font-semibold">Pieces</th>
                 <th className="px-4 py-3 font-semibold">Made</th>
                 <th className="px-4 py-3" />
               </tr>
@@ -148,13 +148,13 @@ export function ProducedStockTab(): ReactElement {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-ink-soft">{item.whereabouts}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {item.weight ?? '—'}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {item.length ?? '—'}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {item.pieceCount?.toLocaleString('en-GB') ?? '—'}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap text-ink-muted">

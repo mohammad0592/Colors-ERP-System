@@ -99,14 +99,14 @@ export function PalletScanBox({
       {error !== null && (
         <p
           role="alert"
-          className="mt-3 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mt-3 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {error}
         </p>
       )}
 
       {error === null && lastAdded !== null && (
-        <p className="mt-3 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+        <p className="mt-3 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           <strong className="font-mono">{lastAdded}</strong> is on the pallet —{' '}
           {pallet.capacity === null
             ? `${String(pallet.bagCount)} bag${pallet.bagCount === 1 ? '' : 's'}`

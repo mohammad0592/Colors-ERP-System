@@ -49,14 +49,14 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
         </p>
       ) : (
         <div className="card overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">Product</th>
-                <th className="px-4 py-3 text-right font-semibold">Pallets</th>
-                <th className="px-4 py-3 text-right font-semibold">Bags</th>
-                <th className="px-4 py-3 text-right font-semibold">Pieces</th>
-                <th className="px-4 py-3 text-right font-semibold">Weight</th>
+                <th className="px-4 py-3 text-end font-semibold">Pallets</th>
+                <th className="px-4 py-3 text-end font-semibold">Bags</th>
+                <th className="px-4 py-3 text-end font-semibold">Pieces</th>
+                <th className="px-4 py-3 text-end font-semibold">Weight</th>
               </tr>
             </thead>
             <tbody>
@@ -67,20 +67,20 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
                 >
                   <td className="px-4 py-3">
                     <span className="font-medium text-ink">{product.productName}</span>
-                    <span className="ml-2 text-xs text-ink-muted">
+                    <span className="ms-2 text-xs text-ink-muted">
                       {product.bagsPerPallet} bags to a pallet
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
+                  <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
                     {product.palletsCompleted}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.bags}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.pieces.toLocaleString('en-GB')}
                   </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                  <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                     {product.weight} kg
                   </td>
                 </tr>
@@ -89,18 +89,18 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
             <tfoot>
               <tr className="border-t-2 border-line font-semibold">
                 <td className="px-4 py-3 text-ink">Altogether</td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                <td className="px-4 py-3 text-end tabular-nums text-ink">
                   {data.products.reduce((sum, p) => sum + p.palletsCompleted, 0)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                <td className="px-4 py-3 text-end tabular-nums text-ink">
                   {data.products.reduce((sum, p) => sum + p.bags, 0)}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                <td className="px-4 py-3 text-end tabular-nums text-ink">
                   {data.products
                     .reduce((sum, p) => sum + p.pieces, 0)
                     .toLocaleString('en-GB')}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink">
+                <td className="px-4 py-3 text-end tabular-nums text-ink">
                   {data.products.reduce((sum, p) => sum + p.weight, 0).toFixed(1)} kg
                 </td>
               </tr>

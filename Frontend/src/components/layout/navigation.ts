@@ -1,19 +1,25 @@
-﻿import { rolesFor, type ScreenPath, type ScreenRoles } from '../../routes/access';
+﻿import type { TranslationKey } from '../../lib/i18n/en';
+import { rolesFor, type ScreenPath, type ScreenRoles } from '../../routes/access';
 
 /**
  * The sidebar, grouped exactly as the Figma design shows.
  *
- * This file decides the **wording and the order** — the headings, the labels, the
- * icons, which screen sits under which group. It deliberately does not decide who
- * sees what: that comes from `routes/access.ts`, the same list the route guard uses,
- * so a link can never be hidden from someone the guard lets in.
+ * This file decides the **order and the grouping** — which screen sits under which
+ * heading, and with which icon. The words themselves are keys, looked up in whichever
+ * language the man chose; this is a plain module and cannot ask a React hook, so the
+ * sidebar does the looking up.
+ *
+ * It deliberately does not decide who sees what: that comes from `routes/access.ts`,
+ * the same list the route guard uses, so a link can never be hidden from someone the
+ * guard lets in.
  *
  * A screen that is not built yet still appears in the menu, showing what is coming,
  * so nobody wonders where a page went.
  */
 
 export interface NavItem {
-  label: string;
+  /** A key, not a word. The sidebar translates it.  */
+  label: TranslationKey;
   path: ScreenPath;
   /** Name from the icon set in components/ui/Icon.tsx. */
   icon: string;
@@ -21,52 +27,52 @@ export interface NavItem {
   roles: ScreenRoles;
 }
 export interface NavGroup {
-  heading: string;
+  heading: TranslationKey;
   items: NavItem[];
 }
 
 /** The menu as it is written: wording, order and icons only. */
-const layout: { heading: string; items: Omit<NavItem, 'roles'>[] }[] = [
+const layout: { heading: TranslationKey; items: Omit<NavItem, 'roles'>[] }[] = [
   {
-    heading: 'Main',
-    items: [{ label: 'Dashboard', path: '/', icon: 'dashboard' }],
+    heading: 'nav.main',
+    items: [{ label: 'nav.dashboard', path: '/', icon: 'dashboard' }],
   },
   {
-    heading: 'Operations',
+    heading: 'nav.operations',
     items: [
-      { label: 'Inventory', path: '/inventory', icon: 'inventory' },
-      { label: 'Trace a label', path: '/trace', icon: 'search' },
-      { label: 'Receive Materials', path: '/inventory/receive', icon: 'receive' },
-      { label: 'Material Issue', path: '/inventory/issue', icon: 'issue' },
+      { label: 'nav.inventory', path: '/inventory', icon: 'inventory' },
+      { label: 'nav.trace', path: '/trace', icon: 'search' },
+      { label: 'nav.receive', path: '/inventory/receive', icon: 'receive' },
+      { label: 'nav.issue', path: '/inventory/issue', icon: 'issue' },
     ],
   },
   {
-    heading: 'Production',
+    heading: 'nav.production',
     items: [
-      { label: 'Roll Production', path: '/production/rolls', icon: 'roll' },
-      { label: 'Roll Tests', path: '/production/roll-tests', icon: 'test' },
-      { label: 'Thermoforming', path: '/production/thermo', icon: 'thermo' },
-      { label: 'Thermo Tests', path: '/production/thermo-tests', icon: 'test' },
-      { label: 'Pallets', path: '/production/pallets', icon: 'pallet' },
-      { label: 'Packaging', path: '/production/packaging', icon: 'packaging' },
-      { label: 'Dispatch', path: '/production/dispatch', icon: 'pallet' },
-      { label: 'Recycler', path: '/production/recycler', icon: 'recycler' },
+      { label: 'nav.rolls', path: '/production/rolls', icon: 'roll' },
+      { label: 'nav.rollTests', path: '/production/roll-tests', icon: 'test' },
+      { label: 'nav.thermo', path: '/production/thermo', icon: 'thermo' },
+      { label: 'nav.thermoTests', path: '/production/thermo-tests', icon: 'test' },
+      { label: 'nav.pallets', path: '/production/pallets', icon: 'pallet' },
+      { label: 'nav.packaging', path: '/production/packaging', icon: 'packaging' },
+      { label: 'nav.dispatch', path: '/production/dispatch', icon: 'pallet' },
+      { label: 'nav.recycler', path: '/production/recycler', icon: 'recycler' },
     ],
   },
   {
-    heading: 'Analytics',
+    heading: 'nav.analytics',
     items: [
-      { label: 'Reports', path: '/reports', icon: 'reports' },
-      { label: 'Audit log', path: '/audit', icon: 'search' },
+      { label: 'nav.reports', path: '/reports', icon: 'reports' },
+      { label: 'nav.audit', path: '/audit', icon: 'search' },
     ],
   },
   {
-    heading: 'Management',
+    heading: 'nav.management',
     items: [
-      { label: 'Recipes', path: '/recipes', icon: 'recipe' },
-      { label: 'Shifts', path: '/shifts', icon: 'shift' },
-      { label: 'Master Data', path: '/master-data', icon: 'settings' },
-      { label: 'Users', path: '/users', icon: 'users' },
+      { label: 'nav.recipes', path: '/recipes', icon: 'recipe' },
+      { label: 'nav.shifts', path: '/shifts', icon: 'shift' },
+      { label: 'nav.masterData', path: '/master-data', icon: 'settings' },
+      { label: 'nav.users', path: '/users', icon: 'users' },
     ],
   },
 ];

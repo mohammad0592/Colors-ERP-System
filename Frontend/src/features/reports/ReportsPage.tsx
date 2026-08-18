@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
@@ -34,6 +35,7 @@ const readsARange: Record<ReportName, boolean> = {
 };
 
 export function ReportsPage(): ReactElement {
+  const { t } = useTranslation();
   const [shiftReportId, setShiftReportId] = useState<number | null>(null);
   const [report, setReport] = useState<ReportName>('waste');
 
@@ -67,10 +69,7 @@ export function ReportsPage(): ReactElement {
 
   return (
     <>
-      <PageHeader
-        title="Reports"
-        subtitle="Worked out from what the shifts recorded."
-      />
+      <PageHeader title={t('page.reports.title')} subtitle={t('page.reports.subtitle')} />
 
       <section className="mb-6 flex flex-wrap gap-2">
         <Chip

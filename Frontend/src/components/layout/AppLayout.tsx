@@ -42,7 +42,7 @@ export function AppLayout(): ReactElement {
       <div
         className={[
           'flex min-h-dvh flex-col transition-all duration-200',
-          isCollapsed ? 'lg:pl-sidebar-narrow' : 'lg:pl-sidebar',
+          isCollapsed ? 'lg:ps-sidebar-narrow' : 'lg:ps-sidebar',
         ].join(' ')}
       >
         <TopBar

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
@@ -19,6 +20,7 @@ import { NewTicketDialog } from './NewTicketDialog';
  * shift from closing, so the open ones lead.
  */
 export function MaterialIssuePage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canIssue = hasRole(RoleNames.Administrator, RoleNames.InventoryManager);
@@ -95,8 +97,8 @@ export function MaterialIssuePage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Material Issue"
-        subtitle="Material out, leftover back, and what was really used."
+        title={t('page.issue.title')}
+        subtitle={t('page.issue.subtitle')}
         actions={
           canIssue ? (
             <button
@@ -132,14 +134,14 @@ export function MaterialIssuePage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
       )}
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Ticket</th>
@@ -147,9 +149,9 @@ export function MaterialIssuePage(): ReactElement {
               <th className="px-4 py-3 font-semibold">Shift</th>
               <th className="px-4 py-3 font-semibold">Status</th>
               <th className="px-4 py-3 font-semibold">Materials</th>
-              <th className="px-4 py-3 text-right font-semibold">Out</th>
-              <th className="px-4 py-3 text-right font-semibold">Back</th>
-              <th className="px-4 py-3 text-right font-semibold">Used</th>
+              <th className="px-4 py-3 text-end font-semibold">Out</th>
+              <th className="px-4 py-3 text-end font-semibold">Back</th>
+              <th className="px-4 py-3 text-end font-semibold">Used</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -179,13 +181,13 @@ export function MaterialIssuePage(): ReactElement {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{ticket.lineCount}</td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {ticket.totalIssued}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {ticket.totalReturned}
                 </td>
-                <td className="px-4 py-3 text-right font-semibold tabular-nums text-ink">
+                <td className="px-4 py-3 text-end font-semibold tabular-nums text-ink">
                   {ticket.totalIssued - ticket.totalReturned}
                 </td>
                 <td className="px-4 py-3">

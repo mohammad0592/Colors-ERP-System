@@ -1,5 +1,6 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StartOnLineButton } from '../../components/ui/StartOnLineButton';
 import { useAuth } from '../../hooks/useAuth';
@@ -26,6 +27,7 @@ import { ReverseScanDialog } from './ReverseScanDialog';
  * both, in the factory's own words, so there is nothing here to pick wrongly.
  */
 export function PalletsPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canPack = hasRole(RoleNames.Administrator, RoleNames.PackagingOperator);
@@ -120,8 +122,8 @@ export function PalletsPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Pallets"
-        subtitle="Pallets being built, and the bags on them."
+        title={t('page.pallets.title')}
+        subtitle={t('page.pallets.subtitle')}
         actions={
           canPack ? (
             <StartOnLineButton
@@ -144,7 +146,7 @@ export function PalletsPage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
@@ -275,13 +277,13 @@ export function PalletsPage(): ReactElement {
           <h2 className="mb-3 text-lg font-bold text-ink">What is on {open.barcode}</h2>
 
           <div className="card overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-start text-sm">
               <thead>
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                   <th className="px-4 py-3 font-semibold">Bag</th>
                   <th className="px-4 py-3 font-semibold">From roll</th>
-                  <th className="px-4 py-3 text-right font-semibold">Pieces</th>
-                  <th className="px-4 py-3 text-right font-semibold">Weight</th>
+                  <th className="px-4 py-3 text-end font-semibold">Pieces</th>
+                  <th className="px-4 py-3 text-end font-semibold">Weight</th>
                   <th className="px-4 py-3 font-semibold">Scanned by</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -317,16 +319,14 @@ export function PalletsPage(): ReactElement {
                       </button>
                       {/* Kept for ever, with the reason it was undone. */}
                       {!bag.isActive && (
-                        <span className="ml-2 font-sans text-xs font-normal">
+                        <span className="ms-2 font-sans text-xs font-normal">
                           taken off by {bag.reversedByName} — {bag.reversalReason}
                         </span>
                       )}
                     </td>
                     <td className="px-4 py-3 font-mono text-xs">{bag.rollCode}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
-                      {bag.pieceCount}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">{bag.weight}</td>
+                    <td className="px-4 py-3 text-end tabular-nums">{bag.pieceCount}</td>
+                    <td className="px-4 py-3 text-end tabular-nums">{bag.weight}</td>
                     <td className="px-4 py-3">{bag.assignedByName}</td>
                     <td className="px-4 py-3">
                       <div className="flex justify-end">

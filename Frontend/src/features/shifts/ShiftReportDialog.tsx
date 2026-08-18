@@ -224,7 +224,7 @@ export function ShiftReportDialog({
           >
             {line.productionLineName}
             {line.workers.length > 0 && (
-              <span className="ml-2 text-xs font-normal opacity-80">
+              <span className="ms-2 text-xs font-normal opacity-80">
                 {line.workers.length}
               </span>
             )}
@@ -250,7 +250,7 @@ export function ShiftReportDialog({
       {error !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {error}
         </p>

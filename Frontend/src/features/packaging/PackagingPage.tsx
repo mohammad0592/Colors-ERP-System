@@ -1,5 +1,6 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   StartOnLineButton,
@@ -26,6 +27,7 @@ import { packagingApi } from './api';
  * the check free: counted against weighed, with no extra work for anybody.
  */
 export function PackagingPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canRecord = hasRole(RoleNames.Administrator, RoleNames.PackagingOperator);
@@ -117,8 +119,8 @@ export function PackagingPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Packaging"
-        subtitle="What each line used for packing."
+        title={t('page.packaging.title')}
+        subtitle={t('page.packaging.subtitle')}
         actions={
           canRecord ? (
             <StartOnLineButton
@@ -146,7 +148,7 @@ export function PackagingPage(): ReactElement {
       {actionError !== null && (
         <p
           role="alert"
-          className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+          className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
         >
           {actionError}
         </p>
@@ -183,13 +185,13 @@ export function PackagingPage(): ReactElement {
           ) : (
             <>
               <div className="mb-4 overflow-x-auto">
-                <table className="w-full text-left text-sm">
+                <table className="w-full text-start text-sm">
                   <thead>
                     <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                       <th className="px-2 py-2 font-semibold">Material</th>
-                      <th className="px-2 py-2 text-right font-semibold">Used</th>
-                      <th className="px-2 py-2 text-right font-semibold">Weight (kg)</th>
-                      <th className="px-2 py-2 text-right font-semibold">In stock</th>
+                      <th className="px-2 py-2 text-end font-semibold">Used</th>
+                      <th className="px-2 py-2 text-end font-semibold">Weight (kg)</th>
+                      <th className="px-2 py-2 text-end font-semibold">In stock</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -203,12 +205,12 @@ export function PackagingPage(): ReactElement {
                             {line.materialName}
                           </span>
                           {line.isCounted && (
-                            <span className="ml-2 rounded-full bg-ok-soft px-2 py-0.5 text-xs font-semibold text-ok">
+                            <span className="ms-2 rounded-full bg-ok-soft px-2 py-0.5 text-xs font-semibold text-ok">
                               counted
                             </span>
                           )}
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="px-2 py-2 text-end">
                           {line.isCounted ? (
                             <span className="font-semibold text-ink tabular-nums">
                               {line.quantity}{' '}
@@ -220,7 +222,7 @@ export function PackagingPage(): ReactElement {
                               step="0.01"
                               min="0"
                               aria-label={`${line.materialName} used`}
-                              className="field-input h-10 w-28 text-right text-base"
+                              className="field-input h-10 w-28 text-end text-base"
                               value={typed[line.materialId]?.quantity ?? ''}
                               onChange={(event) => {
                                 set(line.materialId, 'quantity', event.target.value);
@@ -228,13 +230,13 @@ export function PackagingPage(): ReactElement {
                             />
                           )}
                         </td>
-                        <td className="px-2 py-2 text-right">
+                        <td className="px-2 py-2 text-end">
                           <input
                             type="number"
                             step="0.001"
                             min="0"
                             aria-label={`${line.materialName} weight`}
-                            className="field-input h-10 w-28 text-right text-base"
+                            className="field-input h-10 w-28 text-end text-base"
                             value={typed[line.materialId]?.weight ?? ''}
                             onChange={(event) => {
                               set(line.materialId, 'weight', event.target.value);
@@ -247,7 +249,7 @@ export function PackagingPage(): ReactElement {
                             </p>
                           )}
                         </td>
-                        <td className="px-2 py-2 text-right tabular-nums text-ink-muted">
+                        <td className="px-2 py-2 text-end tabular-nums text-ink-muted">
                           {line.inStock}
                         </td>
                       </tr>
@@ -311,14 +313,14 @@ export function PackagingPage(): ReactElement {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full text-start text-sm">
               <thead>
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                  <th className="py-2 pr-4 font-semibold">Material</th>
-                  <th className="py-2 pr-4 text-right font-semibold">Used</th>
-                  <th className="py-2 pr-4 text-right font-semibold">Weighed</th>
-                  <th className="py-2 pr-4 text-right font-semibold">Expected</th>
-                  <th className="py-2 text-right font-semibold">Difference</th>
+                  <th className="py-2 pe-4 font-semibold">Material</th>
+                  <th className="py-2 pe-4 text-end font-semibold">Used</th>
+                  <th className="py-2 pe-4 text-end font-semibold">Weighed</th>
+                  <th className="py-2 pe-4 text-end font-semibold">Expected</th>
+                  <th className="py-2 text-end font-semibold">Difference</th>
                 </tr>
               </thead>
               <tbody>
@@ -327,22 +329,22 @@ export function PackagingPage(): ReactElement {
                     key={line.materialId}
                     className="border-b border-line last:border-0"
                   >
-                    <td className="py-2 pr-4 text-ink">
+                    <td className="py-2 pe-4 text-ink">
                       {line.materialName}
                       {line.isCounted && (
-                        <span className="ml-2 text-xs text-ink-muted">counted</span>
+                        <span className="ms-2 text-xs text-ink-muted">counted</span>
                       )}
                     </td>
-                    <td className="py-2 pr-4 text-right font-semibold tabular-nums text-ink">
+                    <td className="py-2 pe-4 text-end font-semibold tabular-nums text-ink">
                       {line.quantity}
                     </td>
-                    <td className="py-2 pr-4 text-right tabular-nums text-ink-soft">
+                    <td className="py-2 pe-4 text-end tabular-nums text-ink-soft">
                       {line.weight ?? '—'}
                     </td>
-                    <td className="py-2 pr-4 text-right tabular-nums text-ink-muted">
+                    <td className="py-2 pe-4 text-end tabular-nums text-ink-muted">
                       {line.expectedWeight ?? '—'}
                     </td>
-                    <td className="py-2 text-right">
+                    <td className="py-2 text-end">
                       <Difference value={line.weightDifference} />
                     </td>
                   </tr>

@@ -61,7 +61,7 @@ export function IngredientEditor({
       </p>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="text-xs tracking-wider text-ink-muted uppercase">
               <th className="pb-2 font-semibold">Material</th>
@@ -80,7 +80,7 @@ export function IngredientEditor({
 
               return (
                 <tr key={`ing-${String(index)}`}>
-                  <td className="py-1 pr-2">
+                  <td className="py-1 pe-2">
                     <select
                       aria-label="Material"
                       className="field-input h-touch text-base"
@@ -115,7 +115,7 @@ export function IngredientEditor({
                     />
                   </td>
                   {(['target', 'min', 'max'] as const).map((field) => (
-                    <td key={field} className="py-1 pr-2">
+                    <td key={field} className="py-1 pe-2">
                       <input
                         type="number"
                         aria-label={`${field} percentage`}

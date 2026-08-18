@@ -55,7 +55,7 @@ export function CrewEditor({
               <div className="flex flex-wrap items-center gap-2">
                 <span className="min-w-40 flex-1 text-sm font-medium text-ink">
                   {person?.fullName ?? `User ${String(worker.userId)}`}
-                  <span className="ml-2 text-xs font-normal text-ink-muted">
+                  <span className="ms-2 text-xs font-normal text-ink-muted">
                     {person?.employeeNumber}
                   </span>
                 </span>

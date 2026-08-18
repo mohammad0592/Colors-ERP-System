@@ -1,5 +1,6 @@
 ﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
@@ -15,6 +16,7 @@ import { RollTestDialog } from './RollTestDialog';
  * them — and once a roll is formed into plates there is nothing left to measure.
  */
 export function RollTestsPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canTest = hasRole(RoleNames.Administrator, RoleNames.ExtruderTestPerson);
@@ -46,8 +48,8 @@ export function RollTestsPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Roll Tests"
-        subtitle="Weight, length, plate weight and four thickness readings."
+        title={t('page.rollTests.title')}
+        subtitle={t('page.rollTests.subtitle')}
       />
 
       <section className="mb-6 flex flex-wrap gap-2">
@@ -68,7 +70,7 @@ export function RollTestsPage(): ReactElement {
       </section>
 
       {justSaved !== null && (
-        <p className="mb-4 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+        <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           Roll <strong className="font-mono">{justSaved.rollCode}</strong> measured —
           average thickness {justSaved.testReport?.averageThickness}. The thermo can use
           it now.
@@ -76,16 +78,16 @@ export function RollTestsPage(): ReactElement {
       )}
 
       <div className="card overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">Roll code</th>
               <th className="px-4 py-3 font-semibold">Recipe</th>
               <th className="px-4 py-3 font-semibold">Colour</th>
               <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 text-right font-semibold">Weight</th>
-              <th className="px-4 py-3 text-right font-semibold">Length</th>
-              <th className="px-4 py-3 text-right font-semibold">Avg thickness</th>
+              <th className="px-4 py-3 text-end font-semibold">Weight</th>
+              <th className="px-4 py-3 text-end font-semibold">Length</th>
+              <th className="px-4 py-3 text-end font-semibold">Avg thickness</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -103,13 +105,13 @@ export function RollTestsPage(): ReactElement {
               <tr key={roll.id} className="border-b border-line last:border-0">
                 <td className="px-4 py-3 font-mono font-semibold text-ink">
                   {roll.rollCode}
-                  <span className="ml-2 font-sans text-xs font-normal text-ink-muted">
+                  <span className="ms-2 font-sans text-xs font-normal text-ink-muted">
                     {formatDate(roll.productionDate)}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {roll.recipeNumber}
-                  <span className="ml-2 text-xs text-ink-muted">
+                  <span className="ms-2 text-xs text-ink-muted">
                     {roll.recipeFamilyName}
                   </span>
                 </td>
@@ -117,13 +119,13 @@ export function RollTestsPage(): ReactElement {
                 <td className="px-4 py-3">
                   <RollStatusBadge status={roll.status} />
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {roll.weight ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {roll.length ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-right tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {roll.averageThickness ?? '—'}
                 </td>
                 <td className="px-4 py-3">

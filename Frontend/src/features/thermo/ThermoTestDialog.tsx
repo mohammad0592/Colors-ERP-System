@@ -180,7 +180,7 @@ export function ThermoTestDialog({
         </div>
 
         {bagsLookWrong && (
-          <p className="mb-4 rounded-control border border-l-4 border-warn/30 border-l-warn bg-warn-soft px-4 py-3 text-sm font-medium text-warn">
+          <p className="mb-4 rounded-control border border-s-4 border-warn/30 border-s-warn bg-warn-soft px-4 py-3 text-sm font-medium text-warn">
             One roll does not make {bagCount} bags. Check the number.
           </p>
         )}
@@ -245,7 +245,7 @@ export function ThermoTestDialog({
         {error !== null && (
           <p
             role="alert"
-            className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+            className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
           >
             {error}
           </p>

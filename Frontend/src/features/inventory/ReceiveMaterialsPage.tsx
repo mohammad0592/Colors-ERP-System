@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../lib/apiClient';
 import { inventoryApi, type MaterialStockDto } from './api';
@@ -13,6 +14,7 @@ import { inventoryApi, type MaterialStockDto } from './api';
  * the arithmetic, so a pallet is never mistaken for a kilogram.
  */
 export function ReceiveMaterialsPage(): ReactElement {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -87,8 +89,8 @@ export function ReceiveMaterialsPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title="Receive Materials"
-        subtitle="Book a delivery into the store."
+        title={t('page.receive.title')}
+        subtitle={t('page.receive.subtitle')}
         actions={
           <button
             type="button"
@@ -231,14 +233,14 @@ export function ReceiveMaterialsPage(): ReactElement {
           {error !== null && (
             <p
               role="alert"
-              className="mb-4 rounded-control border border-l-4 border-bad/30 border-l-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+              className="mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
             >
               {error}
             </p>
           )}
 
           {received !== null && error === null && (
-            <p className="mb-4 rounded-control border border-l-4 border-ok/30 border-l-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+            <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
               Booked in. {received.name} now stands at {received.currentQuantity}{' '}
               {received.baseUnitSymbol}.
             </p>
