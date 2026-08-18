@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -97,7 +97,7 @@ export function ThermoProductionPage(): ReactElement {
     <>
       <PageHeader
         title="Thermoforming"
-        subtitle="One roll goes in whole. The mould and the recipe decide what comes out."
+        subtitle="One roll goes in whole."
         actions={
           canForm ? (
             <StartOnLineButton

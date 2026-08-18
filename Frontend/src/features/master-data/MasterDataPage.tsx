@@ -47,10 +47,9 @@ export function MasterDataPage(): ReactElement {
 
   return (
     <>
-      <PageHeader
-        title="Master Data"
-        subtitle="Materials, units, colours, products, moulds, lines and shifts."
-      />
+      {/* No subtitle: the tabs immediately below name every one of these, and say it
+          without going out of date when a tab is added. */}
+      <PageHeader title="Master Data" />
 
       <div className="mb-5 flex flex-wrap gap-2">
         {tabs.map((entry) => (
