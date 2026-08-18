@@ -5,18 +5,24 @@
  * section 12 chose QR precisely because "the workers use Android tablets and a camera
  * reads QR at an angle and survives a damaged label better than a linear barcode".
  *
- * ### Why the browser's own detector, and no library
+ * ### The browser's own reader where there is one, a decoder where there is not
  *
- * Chrome — including Android Chrome, which is what the factory holds — has `BarcodeDetector`
- * built in. It decodes in native code, costs nothing in the bundle, and needs no
- * maintenance. A JavaScript decoder would add a quarter of a megabyte to a bundle already
- * over the warning threshold, and decode more slowly on exactly the cheap tablets that
- * need it most.
+ * Chrome has `BarcodeDetector` built in — but only where the operating system gives it
+ * something to wrap: Google Play Services on Android, Vision on macOS, ChromeOS. **On
+ * Windows there is nothing to wrap and Chrome does not ship it**, which is not a version
+ * or a flag but a platform gap. Firefox and Safari have never had it anywhere.
  *
- * The cost is that Safari and Firefox have no such thing. There the camera is simply not
- * offered and the man types the code or picks it from the list, which is the same fallback
- * a torn label already needs. `unavailableReason` says which case applies so a screen can
- * explain itself instead of showing a button that does nothing.
+ * So the factory's Android tablets decode in native code, free and fast, and everything
+ * else loads `qr-scanner` — about fourteen kilobytes, and only on the machines that need
+ * it, because the import is asked for at the moment of use rather than at the top of the
+ * file. A tablet never downloads it.
+ *
+ * `qr-scanner` rather than a polyfill of the browser API: the obvious polyfill carries a
+ * WebAssembly build that fetches itself from a public CDN at run time, which is no use in
+ * a factory whose server is on its own network.
+ *
+ * What is left of `unavailableReason` is the two things no decoder can fix — a page that
+ * is not secure, and a device with no camera.
  */
 
 /** How a code reached a screen. Sent to the API, which records it (section 12). */
@@ -74,10 +80,9 @@ export function unavailableReason(env: ScannerEnvironment): string | null {
     return 'This device has no camera the browser can use. Type the code instead.';
   }
 
-  if (!env.hasDetector) {
-    return 'This browser cannot read labels with the camera. Chrome can. Type the code instead.';
-  }
-
+  // A missing BarcodeDetector is deliberately not a reason any more. It is missing on
+  // every Windows browser, which is most of the office, and `startScanning` loads a
+  // decoder there instead.
   return null;
 }
 
@@ -136,10 +141,71 @@ export async function startScanning(
   onCode: (code: string) => void,
 ): Promise<ScannerHandle> {
   const Detector = window.BarcodeDetector;
-  if (Detector === undefined) {
-    throw new Error('This browser cannot read labels with the camera.');
-  }
 
+  return Detector === undefined
+    ? startWithDecoder(video, onCode)
+    : startWithBrowser(Detector, video, onCode);
+}
+
+/**
+ * The fallback, for every browser without a reader of its own — which on Windows is all
+ * of them.
+ *
+ * The import is inside the function on purpose. Written at the top of the file it would
+ * be in the bundle every tablet downloads, to be used by none of them.
+ *
+ * `qr-scanner` opens the camera itself, so unlike the native path there is no stream to
+ * hold or hand back; stopping it is its own job.
+ */
+async function startWithDecoder(
+  video: HTMLVideoElement,
+  onCode: (code: string) => void,
+): Promise<ScannerHandle> {
+  const { default: QrScanner } = await import('qr-scanner');
+
+  let stopped = false;
+
+  const scanner = new QrScanner(
+    video,
+    (result) => {
+      if (stopped) {
+        return;
+      }
+
+      // Stop before calling back, for the same reason the native path does: one code at
+      // a time, or the same bag is sent twice while the first request is in flight.
+      stopped = true;
+      scanner.stop();
+      onCode(cleanCode(result.data));
+    },
+    {
+      preferredCamera: 'environment',
+      // Five a second is plenty for a man holding a label up, and leaves the processor
+      // to the rest of the screen.
+      maxScansPerSecond: 5,
+      highlightScanRegion: true,
+      returnDetailedScanResult: true,
+    },
+  );
+
+  await scanner.start();
+
+  return {
+    stop: () => {
+      stopped = true;
+      scanner.stop();
+      // Releases the camera and the worker. Without it the light stays on.
+      scanner.destroy();
+    },
+  };
+}
+
+/** The browser's own reader: Android, macOS, ChromeOS. */
+async function startWithBrowser(
+  Detector: BarcodeDetectorConstructor,
+  video: HTMLVideoElement,
+  onCode: (code: string) => void,
+): Promise<ScannerHandle> {
   const stream = await navigator.mediaDevices.getUserMedia({
     video: { facingMode: 'environment' },
     audio: false,

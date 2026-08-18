@@ -35,17 +35,17 @@ describe('unavailableReason', () => {
     ).toContain('no camera');
   });
 
-  it('names the browser when everything else is there', () => {
-    expect(
-      unavailableReason({ ...working, hasDetector: false }),
-    ).toContain('Chrome');
+  it('does not mind a browser with no reader of its own', () => {
+    // Which is every browser on Windows. A decoder is loaded there instead, so the
+    // camera is still offered — and telling somebody in Chrome to use Chrome was
+    // exactly the message this replaced.
+    expect(unavailableReason({ ...working, hasDetector: false })).toBeNull();
   });
 
   it('always tells the man what to do instead', () => {
     const broken: ScannerEnvironment[] = [
       { ...working, isSecureContext: false },
       { ...working, hasCamera: false },
-      { ...working, hasDetector: false },
     ];
 
     for (const env of broken) {
@@ -55,11 +55,14 @@ describe('unavailableReason', () => {
 });
 
 describe('isScanningAvailable', () => {
-  it('is true only when nothing is in the way', () => {
+  it('needs a secure page and a camera, and nothing else', () => {
     expect(isScanningAvailable(working)).toBe(true);
-    expect(isScanningAvailable({ ...working, hasDetector: false })).toBe(false);
     expect(isScanningAvailable({ ...working, hasCamera: false })).toBe(false);
     expect(isScanningAvailable({ ...working, isSecureContext: false })).toBe(false);
+
+    // The one that used to fail here. A Windows laptop has no BarcodeDetector and can
+    // still read a label.
+    expect(isScanningAvailable({ ...working, hasDetector: false })).toBe(true);
   });
 });
 
