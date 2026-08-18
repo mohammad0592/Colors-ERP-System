@@ -83,3 +83,6 @@ publish/
 
 # Log files written by the running application (specification section 15).
 logs/
+
+# Notes for Claude Code. Local to each machine, not part of the project.
+CLAUDE.md
