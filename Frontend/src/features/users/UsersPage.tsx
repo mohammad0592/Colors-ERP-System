@@ -45,7 +45,7 @@ export function UsersPage(): ReactElement {
     },
     onError: (caught: unknown) => {
       setActionError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
       );
     },
   });
@@ -77,8 +77,8 @@ export function UsersPage(): ReactElement {
         </p>
       )}
 
-      {users.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-      {users.isError && <p className="p-6 text-bad">Could not load the people.</p>}
+      {users.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
+      {users.isError && <p className="p-6 text-bad">{t('users.loadFailed')}</p>}
 
       {users.data !== undefined && (
         <div className="card overflow-x-auto">
@@ -145,7 +145,7 @@ export function UsersPage(): ReactElement {
                             unlock.mutate(user.id);
                           }}
                         >
-                          Let him back in
+                          {t('users.letBackIn')}
                         </button>
                       )}
                       <button

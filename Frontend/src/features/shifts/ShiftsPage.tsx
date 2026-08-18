@@ -74,7 +74,7 @@ export function ShiftsPage(): ReactElement {
   }
 
   function onActionError(caught: unknown): void {
-    setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+    setActionError(caught instanceof ApiError ? caught.message : t('common.somethingWrong'));
   }
 
   const open = useMutation({
@@ -112,7 +112,7 @@ export function ShiftsPage(): ReactElement {
     moulds.isPending ||
     reports.isPending
   ) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (
@@ -122,11 +122,11 @@ export function ShiftsPage(): ReactElement {
     roles.isError ||
     moulds.isError
   ) {
-    return <p className="p-6 text-bad">Could not load the shift screen.</p>;
+    return <p className="p-6 text-bad">{t('shifts.loadScreenFailed')}</p>;
   }
 
   if (reports.isError) {
-    return <p className="p-6 text-bad">Could not load the shifts.</p>;
+    return <p className="p-6 text-bad">{t('shifts.loadFailed')}</p>;
   }
 
   const openCount = reports.data.filter((report) => report.status === 'Open').length;
@@ -152,7 +152,7 @@ export function ShiftsPage(): ReactElement {
       {/* Lines, as a filter — "which shifts did the thermo run in?" */}
       <section className="mb-6 flex flex-wrap gap-2">
         <FilterChip
-          label="All lines"
+          label={t('shifts.allLines')}
           active={lineFilter === 'all'}
           onClick={() => {
             setLineFilter('all');
@@ -194,12 +194,12 @@ export function ShiftsPage(): ReactElement {
         <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-              <th className="px-4 py-3 font-semibold">Date</th>
+              <th className="px-4 py-3 font-semibold">{t('shifts.date')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
-              <th className="px-4 py-3 font-semibold">Lines running</th>
+              <th className="px-4 py-3 font-semibold">{t('shifts.linesRunning')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.supervisor')}</th>
-              <th className="px-4 py-3 font-semibold">Electricity</th>
+              <th className="px-4 py-3 font-semibold">{t('shifts.electricity')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.crew')}</th>
               <th className="px-4 py-3" />
             </tr>
@@ -208,7 +208,7 @@ export function ShiftsPage(): ReactElement {
             {reports.data.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
-                  No shifts here yet.
+                  {t('shifts.none')}
                 </td>
               </tr>
             )}
@@ -232,7 +232,7 @@ export function ShiftsPage(): ReactElement {
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <Action
-                      label={report.canEdit ? 'Open report' : 'View'}
+                      label={report.canEdit ? t('shifts.openReport') : t('common.view')}
                       onClick={() => {
                         open.mutate(report.id);
                       }}
@@ -241,11 +241,11 @@ export function ShiftsPage(): ReactElement {
                     {report.canEdit && (
                       <>
                         <Action
-                          label="Close shift"
+                          label={t('shifts.closeShift')}
                           tone="primary"
                           onClick={() => {
                             setConfirm({
-                              title: 'Close this shift?',
+                              title: t('shifts.closeThis'),
                               message: (
                                 <>
                                   Shift {report.shiftName} on{' '}
@@ -258,7 +258,7 @@ export function ShiftsPage(): ReactElement {
                                   are fixed. Only an administrator can reopen it.
                                 </>
                               ),
-                              confirmLabel: 'Close shift',
+                              confirmLabel: t('shifts.closeShift'),
                               tone: 'primary',
                               onConfirm: () => {
                                 close.mutate(report.id);
@@ -275,7 +275,7 @@ export function ShiftsPage(): ReactElement {
                             tone="danger"
                             onClick={() => {
                               setConfirm({
-                                title: 'Discard this shift?',
+                                title: t('shifts.discardThis'),
                                 message: (
                                   <>
                                     Nothing has been recorded on shift {report.shiftName},{' '}
@@ -283,7 +283,7 @@ export function ShiftsPage(): ReactElement {
                                     removed. Use this when a shift was opened by mistake.
                                   </>
                                 ),
-                                confirmLabel: 'Discard',
+                                confirmLabel: t('action.discard'),
                                 onConfirm: () => {
                                   remove.mutate(report.id);
                                 },
@@ -296,7 +296,7 @@ export function ShiftsPage(): ReactElement {
 
                     {!report.canEdit && isAdministrator && (
                       <Action
-                        label="Reopen"
+                        label={t('shifts.reopen')}
                         onClick={() => {
                           setReopening(report);
                         }}

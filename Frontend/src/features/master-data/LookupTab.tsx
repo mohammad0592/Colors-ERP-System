@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type { TranslationKey } from '../../lib/i18n/en';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
@@ -16,11 +17,22 @@ export interface FieldDef {
   hint?: string;
 }
 
-/** Rows carry only strings and numbers in their listed fields; anything else shows blank. */
-function cellText(value: unknown): string {
+/**
+ * Rows carry only strings and numbers in their listed fields; anything else shows blank.
+ *
+ * The translator is optional, and the two callers want different things. A cell in the
+ * table is read by a man and says نعم; the same call seeding a dialog field wants the
+ * value, not a word in whatever language he happens to be in.
+ */
+function cellText(value: unknown, t?: (key: TranslationKey) => string): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number') return String(value);
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'boolean') {
+    if (t === undefined) {
+      return value ? 'Yes' : 'No';
+    }
+    return value ? t('common.yes') : t('common.no');
+  }
   return '';
 }
 
@@ -90,13 +102,13 @@ export function LookupTab<
     onError: (caught) => {
       // The usual refusal: the row is referenced. The server's message names
       // what uses it and points at Deactivate.
-      setActionError(caught instanceof ApiError ? caught.message : 'Could not delete.');
+      setActionError(caught instanceof ApiError ? caught.message : t('common.deleteFailed'));
     },
     onSettled: invalidate,
   });
 
   if (query.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (query.isError) {
@@ -152,7 +164,7 @@ export function LookupTab<
               <tr key={row.id} className="border-b border-line last:border-0">
                 {fields.map((field) => (
                   <td key={field.key} className="px-4 py-3 font-medium text-ink">
-                    {cellText((row as Record<string, unknown>)[field.key])}
+                    {cellText((row as Record<string, unknown>)[field.key], t)}
                   </td>
                 ))}
                 <td className="px-4 py-3">
@@ -167,7 +179,7 @@ export function LookupTab<
                       }}
                     />
                     <RowButton
-                      label={row.isActive ? 'Deactivate' : 'Activate'}
+                      label={row.isActive ? t('common.deactivate') : t('common.activate')}
                       onClick={() => {
                         setActive.mutate({ id: row.id, isActive: !row.isActive });
                       }}
@@ -187,7 +199,7 @@ export function LookupTab<
                                 Nothing uses it, so no records are affected.
                               </>
                             ),
-                            confirmLabel: 'Delete',
+                            confirmLabel: t('action.delete'),
                             onConfirm: () => {
                               remove.mutate(row.id);
                             },
@@ -248,6 +260,7 @@ export function LookupTab<
 }
 
 export function StatusBadge({ isActive }: { isActive: boolean }): ReactElement {
+  const { t } = useTranslation();
   return (
     <span
       className={[
@@ -255,7 +268,7 @@ export function StatusBadge({ isActive }: { isActive: boolean }): ReactElement {
         isActive ? 'bg-ok-soft text-ok' : 'bg-line text-ink-muted',
       ].join(' ')}
     >
-      {isActive ? 'Active' : 'Inactive'}
+      {isActive ? t('common.active') : t('common.inactive')}
     </span>
   );
 }
@@ -300,6 +313,7 @@ function EditDialog({
   onClose,
   onSave,
 }: EditDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       fields.map((f) => [
@@ -321,7 +335,7 @@ function EditDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -401,7 +415,7 @@ function EditDialog({
         )}
 
         <button type="submit" className="btn-primary" disabled={isSaving}>
-          {isSaving ? 'Saving…' : 'Save'}
+          {isSaving ? 'Saving…' : t('common.save')}
         </button>
       </form>
     </Modal>

@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { PalletSummaryDto } from './api';
 import { PalletStatusBadge } from './PalletStatusBadge';
 
@@ -24,6 +25,7 @@ export function PalletCard({
   isSelected,
   onSelect,
 }: PalletCardProps): ReactElement {
+  const { t } = useTranslation();
   const capacity = pallet.capacity;
   const filled = pallet.bagCount;
   const isFull = pallet.status === 'Completed' || pallet.status === 'Shipped';
@@ -49,7 +51,7 @@ export function PalletCard({
           the packer already knows, and the card is read from a step away. */}
       <p className="mb-4 text-sm text-ink-soft">
         {pallet.productName === null ? (
-          <span className="text-ink-muted">Nothing on it yet</span>
+          <span className="text-ink-muted">{t('pallets.nothingOnIt')}</span>
         ) : (
           <>
             {pallet.productName} · {pallet.colorName}
@@ -59,7 +61,7 @@ export function PalletCard({
 
       {capacity === null ? (
         <p className="mb-3 rounded-control border border-dashed border-line px-3 py-4 text-center text-xs text-ink-muted">
-          The first bag scanned decides what this pallet is, and how many fill it.
+          {t('pallets.firstBagDecidesLong')}
         </p>
       ) : (
         <>

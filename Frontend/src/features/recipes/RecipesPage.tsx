@@ -46,7 +46,7 @@ export function RecipesPage(): ReactElement {
   }
 
   function onActionError(caught: unknown): void {
-    setActionError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+    setActionError(caught instanceof ApiError ? caught.message : t('common.somethingWrong'));
   }
 
   const copy = useMutation({
@@ -87,11 +87,11 @@ export function RecipesPage(): ReactElement {
   });
 
   if (families.isPending || versions.isPending || materials.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (families.isError || versions.isError || materials.isError) {
-    return <p className="p-6 text-bad">Could not load recipes.</p>;
+    return <p className="p-6 text-bad">{t('recipes.loadFailed')}</p>;
   }
 
   return (
@@ -107,7 +107,7 @@ export function RecipesPage(): ReactElement {
               setDialog('new');
             }}
           >
-            New recipe
+            {t('recipes.new')}
           </button>
         }
       />
@@ -131,12 +131,12 @@ export function RecipesPage(): ReactElement {
             <p className="font-semibold text-ink">{family.name}</p>
             <p className="mt-1 text-sm text-ink-muted">
               {family.currentRecipeNumber === null
-                ? 'No recipe in production'
+                ? t('recipes.noneInProduction')
                 : `Running recipe ${String(family.currentRecipeNumber)}`}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {family.usesRecycle && <Tag label="Uses recycle" />}
-              {family.blackOnly && <Tag label="Black only" />}
+              {family.usesRecycle && <Tag label={t('recipes.usesRecycle')} />}
+              {family.blackOnly && <Tag label={t('recipes.blackOnly')} />}
               {family.isAbsorbent && <Tag label={t('term.absorbent')} />}
               <Tag
                 label={`${String(family.versionCount)} version${family.versionCount === 1 ? '' : 's'}`}
@@ -168,7 +168,7 @@ export function RecipesPage(): ReactElement {
               setFamilyFilter('all');
             }}
           >
-            Show all families
+            {t('recipes.showAll')}
           </button>
         )}
       </div>
@@ -178,11 +178,11 @@ export function RecipesPage(): ReactElement {
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">{t('term.recipe')}</th>
-              <th className="px-4 py-3 font-semibold">Family</th>
-              <th className="px-4 py-3 font-semibold">Version</th>
+              <th className="px-4 py-3 font-semibold">{t('recipes.familyShort')}</th>
+              <th className="px-4 py-3 font-semibold">{t('recipes.version')}</th>
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.materials')}</th>
-              <th className="px-4 py-3 font-semibold">Written by</th>
+              <th className="px-4 py-3 font-semibold">{t('recipes.writtenBy')}</th>
               <th className="px-4 py-3 font-semibold">{t('field.notes')}</th>
               <th className="px-4 py-3" />
             </tr>
@@ -204,7 +204,7 @@ export function RecipesPage(): ReactElement {
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
                     <Action
-                      label={version.isEditable ? 'Edit' : 'View'}
+                      label={version.isEditable ? t('action.edit') : t('common.view')}
                       onClick={() => {
                         open.mutate(version.id);
                       }}
@@ -218,14 +218,14 @@ export function RecipesPage(): ReactElement {
                     {version.status === 'Draft' && (
                       <>
                         <Action
-                          label="Put in production"
+                          label={t('recipes.putInProduction')}
                           tone="primary"
                           onClick={() => {
                             setConfirm({
                               title: `Put recipe ${String(version.recipeNumber)} into production?`,
                               message: (
                                 <>
-                                  It can <strong>never be changed</strong> afterwards,
+                                  {t('recipes.itCan')} <strong>never be changed</strong> afterwards,
                                   because the rolls made with it must keep their exact
                                   formula.
                                   <br />
@@ -239,7 +239,7 @@ export function RecipesPage(): ReactElement {
                                   , which will be archived.
                                 </>
                               ),
-                              confirmLabel: 'Put in production',
+                              confirmLabel: t('recipes.putInProduction'),
                               tone: 'primary',
                               onConfirm: () => {
                                 promote.mutate(version.id);
@@ -252,7 +252,7 @@ export function RecipesPage(): ReactElement {
                           tone="danger"
                           onClick={() => {
                             setConfirm({
-                              title: 'Discard this draft?',
+                              title: t('recipes.discardDraft'),
                               message: (
                                 <>
                                   Draft recipe{' '}
@@ -263,7 +263,7 @@ export function RecipesPage(): ReactElement {
                                   recipe.
                                 </>
                               ),
-                              confirmLabel: 'Discard',
+                              confirmLabel: t('action.discard'),
                               onConfirm: () => {
                                 discard.mutate(version.id);
                               },

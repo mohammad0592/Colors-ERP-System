@@ -53,7 +53,7 @@ export function ShiftSummaryReport({
       </section>
 
       <section className="mb-6 grid gap-4 sm:grid-cols-3">
-        <Figure label="Product made" value={`${String(report.productWeight)} kg`}>
+        <Figure label={t('reports.productMade')} value={`${String(report.productWeight)} kg`}>
           pieces × each roll’s own plate weight
         </Figure>
         <Figure label={t('term.pallets')} value={String(report.palletsBuilt)}>
@@ -67,11 +67,11 @@ export function ShiftSummaryReport({
         </Figure>
       </section>
 
-      <h3 className="mb-3 text-lg font-bold text-ink">By product</h3>
+      <h3 className="mb-3 text-lg font-bold text-ink">{t('reports.byProduct')}</h3>
 
       {report.products.length === 0 ? (
         <p className="card p-8 text-center text-ink-muted">
-          Nothing was formed on this shift.
+          {t('reports.nothingFormed')}
         </p>
       ) : (
         <div className="card overflow-x-auto">
@@ -80,11 +80,11 @@ export function ShiftSummaryReport({
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('term.rolls')}</th>
-                <th className="px-4 py-3 text-end font-semibold">Roll weight</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('reports.rollWeight')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('term.bags')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('term.product')}</th>
-                <th className="px-4 py-3 text-end font-semibold">Loss</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('reports.loss')}</th>
               </tr>
             </thead>
             <tbody>

@@ -66,7 +66,7 @@ export function AuditPage(): ReactElement {
               );
             }}
           >
-            <option value="">Every shift</option>
+            <option value="">{t('audit.everyShift')}</option>
             {(shifts.data ?? []).map((shift) => (
               <option key={shift.id} value={shift.id}>
                 {formatDate(shift.productionDate)} · shift {shift.shiftName}
@@ -77,7 +77,7 @@ export function AuditPage(): ReactElement {
 
         <div>
           <label className="field-label" htmlFor="audit-thing">
-            About
+            {t('audit.about')}
           </label>
           <select
             id="audit-thing"
@@ -87,7 +87,7 @@ export function AuditPage(): ReactElement {
               setObjectType(event.target.value);
             }}
           >
-            <option value="">Anything</option>
+            <option value="">{t('audit.anything')}</option>
             {filterableThings.map((thing) => (
               <option key={thing.value} value={thing.value}>
                 {thing.label}
@@ -104,12 +104,12 @@ export function AuditPage(): ReactElement {
               setRefusalsOnly(event.target.checked);
             }}
           />
-          <span className="text-ink">Only what was refused</span>
+          <span className="text-ink">{t('audit.refusedOnly')}</span>
         </label>
       </section>
 
-      {lines.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-      {lines.isError && <p className="p-6 text-bad">Could not load the log.</p>}
+      {lines.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
+      {lines.isError && <p className="p-6 text-bad">{t('audit.loadFailed')}</p>}
 
       {lines.data !== undefined && (
         <>
@@ -124,7 +124,7 @@ export function AuditPage(): ReactElement {
 
           {lines.data.length === 0 ? (
             <p className="card p-8 text-center text-ink-muted">
-              Nothing has been recorded for this.
+              {t('audit.none')}
             </p>
           ) : (
             <div className="card overflow-x-auto">
@@ -132,10 +132,10 @@ export function AuditPage(): ReactElement {
                 <thead>
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                     <th className="px-4 py-3 font-semibold">{t('field.when')}</th>
-                    <th className="px-4 py-3 font-semibold">Who</th>
-                    <th className="px-4 py-3 font-semibold">What</th>
+                    <th className="px-4 py-3 font-semibold">{t('audit.who')}</th>
+                    <th className="px-4 py-3 font-semibold">{t('audit.what')}</th>
                     <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
-                    <th className="px-4 py-3 font-semibold">Details</th>
+                    <th className="px-4 py-3 font-semibold">{t('audit.details')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,7 +149,7 @@ export function AuditPage(): ReactElement {
 
           {lines.data.length >= 300 && (
             <p className="mt-3 text-sm text-ink-muted">
-              The newest 300. Use the filters to see further back.
+              {t('audit.newest300')}
             </p>
           )}
         </>

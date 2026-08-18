@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { palletsApi, type PalletDto } from './api';
@@ -23,6 +24,7 @@ export function ReverseScanDialog({
   onClose,
   onReversed,
 }: ReverseScanDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +38,7 @@ export function ReverseScanDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -54,13 +56,13 @@ export function ReverseScanDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="reverse-reason">
-            Why is it coming off?
+            {t('pallets.whyComingOff')}
           </label>
           <input
             id="reverse-reason"
             className="field-input"
             maxLength={300}
-            placeholder="Scanned onto the wrong pallet"
+            placeholder={t('pallets.wrongPallet')}
             value={reason}
             disabled={isSaving}
             onChange={(event) => {
@@ -83,10 +85,10 @@ export function ReverseScanDialog({
           className="btn-primary"
           disabled={isSaving || reason.trim() === ''}
         >
-          {isSaving ? 'Saving…' : 'Take it off'}
+          {isSaving ? 'Saving…' : t('pallets.takeItOff')}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The bag goes back to the store.
+          {t('pallets.bagGoesBack')}
         </p>
       </form>
     </Modal>

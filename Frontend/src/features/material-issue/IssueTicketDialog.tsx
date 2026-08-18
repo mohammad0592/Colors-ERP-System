@@ -50,7 +50,7 @@ export function IssueTicketDialog({
       setReturns({});
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -92,7 +92,7 @@ export function IssueTicketDialog({
               <th className="px-3 py-2 text-end font-semibold">{t('action.back')}</th>
               <th className="px-3 py-2 text-end font-semibold">{t('field.used')}</th>
               {ticket.isOpen && canIssue && (
-                <th className="py-2 ps-3 text-end font-semibold">Weigh back in</th>
+                <th className="py-2 ps-3 text-end font-semibold">{t('issue.weighBackIn')}</th>
               )}
             </tr>
           </thead>
@@ -172,7 +172,7 @@ export function IssueTicketDialog({
               void run(() => materialIssueApi.recordReturns(ticket.id, typed));
             }}
           >
-            {isSaving ? 'Saving…' : 'Record what came back'}
+            {isSaving ? 'Saving…' : t('issue.recordWhatCameBack')}
           </button>
 
           <button
@@ -184,14 +184,14 @@ export function IssueTicketDialog({
                 title: `Close ticket ${String(ticket.ticketNumber)}?`,
                 message: (
                   <>
-                    Whatever has not come back counts as <strong>used</strong> —{' '}
+                    {t('issue.notBackCountsAs')} <strong>used</strong> —{' '}
                     {totalUsed} of {totalIssued} issued.
                     <br />
                     <br />
-                    The figures are then fixed, and the shift can be closed.
+                    {t('issue.figuresFixed')}
                   </>
                 ),
-                confirmLabel: 'Close ticket',
+                confirmLabel: t('issue.closeTicket'),
                 tone: 'primary',
                 onConfirm: () => {
                   void run(() => materialIssueApi.close(ticket.id));
@@ -199,7 +199,7 @@ export function IssueTicketDialog({
               });
             }}
           >
-            Close ticket
+            {t('issue.closeTicket')}
           </button>
         </div>
       )}

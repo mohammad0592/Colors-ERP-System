@@ -42,7 +42,7 @@ export function ProducedStockTab(): ReactElement {
       <div className="mb-5 flex flex-wrap items-end gap-3">
         <div className="min-w-60 flex-1">
           <label className="field-label" htmlFor="produced-search">
-            Find a roll, a bag or a pallet
+            {t('stock.find')}
           </label>
           <input
             id="produced-search"
@@ -68,7 +68,7 @@ export function ProducedStockTab(): ReactElement {
               setStatus(event.target.value);
             }}
           >
-            <option value="">Any status</option>
+            <option value="">{t('stock.anyStatus')}</option>
             {statuses.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -82,7 +82,7 @@ export function ProducedStockTab(): ReactElement {
         {(['All', 'Roll', 'Bag', 'Pallet'] as const).map((option) => (
           <Chip
             key={option}
-            label={option === 'All' ? 'Everything' : `${option}s`}
+            label={option === 'All' ? t('stock.everything') : `${option}s`}
             active={kind === option}
             onClick={() => {
               setKind(option);
@@ -93,8 +93,8 @@ export function ProducedStockTab(): ReactElement {
         ))}
       </section>
 
-      {items.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-      {items.isError && <p className="p-6 text-bad">Could not load produced stock.</p>}
+      {items.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
+      {items.isError && <p className="p-6 text-bad">{t('stock.loadFailed')}</p>}
 
       {items.data !== undefined && (
         <div className="card overflow-x-auto">
@@ -102,11 +102,11 @@ export function ProducedStockTab(): ReactElement {
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">{t('term.barcode')}</th>
-                <th className="px-4 py-3 font-semibold">Kind</th>
+                <th className="px-4 py-3 font-semibold">{t('stock.kind')}</th>
                 <th className="px-4 py-3 font-semibold">{t('field.code')}</th>
-                <th className="px-4 py-3 font-semibold">What it is</th>
+                <th className="px-4 py-3 font-semibold">{t('stock.whatItIs')}</th>
                 <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
-                <th className="px-4 py-3 font-semibold">Where</th>
+                <th className="px-4 py-3 font-semibold">{t('stock.where')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
@@ -119,8 +119,8 @@ export function ProducedStockTab(): ReactElement {
                 <tr>
                   <td colSpan={11} className="px-4 py-8 text-center text-ink-muted">
                     {search === '' && status === ''
-                      ? 'Nothing has been made yet.'
-                      : 'Nothing matches. Try a shorter search, or clear the status.'}
+                      ? t('stock.nothingMade')
+                      : t('stock.noMatch')}
                   </td>
                 </tr>
               )}
@@ -169,7 +169,7 @@ export function ProducedStockTab(): ReactElement {
                           to={`/trace?code=${encodeURIComponent(item.barcode)}`}
                           className="grid min-h-9 place-items-center rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
                         >
-                          Trace
+                          {t('stock.trace')}
                         </Link>
                       )}
                       {item.barcode !== '' && (
@@ -180,7 +180,7 @@ export function ProducedStockTab(): ReactElement {
                             setLabelFor(item.barcode);
                           }}
                         >
-                          Label
+                          {t('stock.label')}
                         </button>
                       )}
                     </div>

@@ -80,7 +80,7 @@ export function ShiftLineForm({
       onSaved(report);
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -101,7 +101,7 @@ export function ShiftLineForm({
           everything made on the line inherits it. */}
       {line.recordsMachineSettings && (
         <>
-          <Section title="Template in the machine" />
+          <Section title={t('shifts.templateInMachine')} />
 
           <Field label={t('term.mould')} htmlFor={`mould-${String(line.id)}`}>
             <select
@@ -113,7 +113,7 @@ export function ShiftLineForm({
                 setMouldId(event.target.value === '' ? null : Number(event.target.value));
               }}
             >
-              <option value="">Not mounted yet</option>
+              <option value="">{t('shifts.notMounted')}</option>
               {moulds.map((mould) => (
                 <option key={mould.id} value={mould.id}>
                   {mould.name}
@@ -130,10 +130,10 @@ export function ShiftLineForm({
         </>
       )}
 
-      <Section title="Times" />
+      <Section title={t('shifts.times')} />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Production started" htmlFor={`start-${String(line.id)}`}>
+        <Field label={t('shifts.productionStarted')} htmlFor={`start-${String(line.id)}`}>
           <input
             id={`start-${String(line.id)}`}
             type="time"
@@ -145,7 +145,7 @@ export function ShiftLineForm({
             }}
           />
         </Field>
-        <Field label="Production ended" htmlFor={`end-${String(line.id)}`}>
+        <Field label={t('shifts.productionEnded')} htmlFor={`end-${String(line.id)}`}>
           <input
             id={`end-${String(line.id)}`}
             type="time"
@@ -157,7 +157,7 @@ export function ShiftLineForm({
             }}
           />
         </Field>
-        <Field label="Downtime (hours)" htmlFor={`down-${String(line.id)}`}>
+        <Field label={t('shifts.downtimeHours')} htmlFor={`down-${String(line.id)}`}>
           <input
             id={`down-${String(line.id)}`}
             type="number"
@@ -174,7 +174,7 @@ export function ShiftLineForm({
       </div>
 
       <Calculated
-        label="Hours actually producing"
+        label={t('shifts.hoursProducing')}
         value={orDash(line.actualProductionHours, ' h')}
         hint="End minus start, less downtime. Worked out by the server, not stored."
       />
@@ -186,10 +186,10 @@ export function ShiftLineForm({
           out altogether rather than shown empty. */}
       {line.recordsMachineSettings && (
         <>
-          <Section title="Machine settings" />
+          <Section title={t('shifts.machineSettings')} />
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Speed (cycles/hour)" htmlFor={`speed-${String(line.id)}`}>
+            <Field label={t('shifts.speed')} htmlFor={`speed-${String(line.id)}`}>
               <input
                 id={`speed-${String(line.id)}`}
                 type="number"
@@ -201,7 +201,7 @@ export function ShiftLineForm({
                 }}
               />
             </Field>
-            <Field label="Feed distance (mm)" htmlFor={`feed-${String(line.id)}`}>
+            <Field label={t('shifts.feedDistance')} htmlFor={`feed-${String(line.id)}`}>
               <input
                 id={`feed-${String(line.id)}`}
                 type="number"
@@ -213,7 +213,7 @@ export function ShiftLineForm({
                 }}
               />
             </Field>
-            <Field label="Cycle time (seconds)" htmlFor={`cycle-${String(line.id)}`}>
+            <Field label={t('shifts.cycleTime')} htmlFor={`cycle-${String(line.id)}`}>
               <input
                 id={`cycle-${String(line.id)}`}
                 type="number"

@@ -36,11 +36,11 @@ export function RollTestsPage(): ReactElement {
   }
 
   if (rolls.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (rolls.isError) {
-    return <p className="p-6 text-bad">Could not load the rolls.</p>;
+    return <p className="p-6 text-bad">{t('rolls.loadFailed')}</p>;
   }
 
   const waiting = rolls.data.filter((r) => r.needsTest).length;
@@ -61,7 +61,7 @@ export function RollTestsPage(): ReactElement {
           }}
         />
         <Chip
-          label="Every roll"
+          label={t('rolls.everyRoll')}
           active={!waitingOnly}
           onClick={() => {
             setWaitingOnly(false);
@@ -87,7 +87,7 @@ export function RollTestsPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
-              <th className="px-4 py-3 text-end font-semibold">Avg thickness</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('rolls.avgThickness')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -96,8 +96,8 @@ export function RollTestsPage(): ReactElement {
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
                   {waitingOnly
-                    ? 'Every roll has been measured.'
-                    : 'No rolls have been made yet.'}
+                    ? t('rolls.allMeasured')
+                    : t('rolls.noneMade')}
                 </td>
               </tr>
             )}
@@ -138,7 +138,7 @@ export function RollTestsPage(): ReactElement {
                           setMeasuring(roll);
                         }}
                       >
-                        Measure
+                        {t('rolls.measure')}
                       </button>
                     )}
                   </div>

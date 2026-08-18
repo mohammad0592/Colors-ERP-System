@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { palletsApi, type PalletDto } from './api';
@@ -23,6 +24,7 @@ export function CancelPalletDialog({
   onClose,
   onCancelled,
 }: CancelPalletDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +38,7 @@ export function CancelPalletDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -54,13 +56,13 @@ export function CancelPalletDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="cancel-reason">
-            Why is it being cancelled?
+            {t('pallets.whyCancel')}
           </label>
           <input
             id="cancel-reason"
             className="field-input"
             maxLength={300}
-            placeholder="Started on the wrong line"
+            placeholder={t('pallets.wrongLine')}
             value={reason}
             disabled={isSaving}
             onChange={(event) => {
@@ -83,10 +85,10 @@ export function CancelPalletDialog({
           className="btn-primary"
           disabled={isSaving || reason.trim() === ''}
         >
-          {isSaving ? 'Saving…' : 'Cancel this pallet'}
+          {isSaving ? 'Saving…' : t('pallets.cancelThis')}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The wooden pallet goes back to the store.
+          {t('pallets.woodGoesBack')}
         </p>
       </form>
     </Modal>

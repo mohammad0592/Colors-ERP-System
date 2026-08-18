@@ -53,17 +53,17 @@ export function MaterialsTab(): ReactElement {
       setActionError(null);
     },
     onError: (caught) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Could not delete.');
+      setActionError(caught instanceof ApiError ? caught.message : t('common.deleteFailed'));
     },
     onSettled: invalidate,
   });
 
   if (materials.isPending || categories.isPending || units.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (materials.isError || categories.isError || units.isError) {
-    return <p className="p-6 text-bad">Could not load materials.</p>;
+    return <p className="p-6 text-bad">{t('md.materialsFailed')}</p>;
   }
 
   return (
@@ -77,7 +77,7 @@ export function MaterialsTab(): ReactElement {
             setEditing('new');
           }}
         >
-          Add material
+          {t('md.addMaterial')}
         </button>
       </div>
 
@@ -138,7 +138,7 @@ export function MaterialsTab(): ReactElement {
                       }}
                     />
                     <RowButton
-                      label={material.isActive ? 'Deactivate' : 'Activate'}
+                      label={material.isActive ? t('common.deactivate') : t('common.activate')}
                       onClick={() => {
                         setActive.mutate({
                           id: material.id,
@@ -153,7 +153,7 @@ export function MaterialsTab(): ReactElement {
                         tone="danger"
                         onClick={() => {
                           setConfirm({
-                            title: 'Delete material?',
+                            title: t('md.deleteMaterial'),
                             message: (
                               <>
                                 <strong>
@@ -163,7 +163,7 @@ export function MaterialsTab(): ReactElement {
                                 are affected.
                               </>
                             ),
-                            confirmLabel: 'Delete',
+                            confirmLabel: t('action.delete'),
                             onConfirm: () => {
                               remove.mutate(material.id);
                             },
@@ -348,7 +348,7 @@ function MaterialDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -356,7 +356,7 @@ function MaterialDialog({
   }
 
   return (
-    <Modal title={material === null ? 'Add material' : 'Edit material'} onClose={onClose}>
+    <Modal title={material === null ? t('md.addMaterial') : t('md.editMaterial')} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -443,7 +443,7 @@ function MaterialDialog({
               ))}
             </select>
             <p className="mt-1 text-xs text-ink-muted">
-              Stock is always counted in this unit.
+              {t('md.countedInUnit')}
             </p>
           </div>
         </div>
@@ -451,7 +451,7 @@ function MaterialDialog({
         <div className="mb-4 grid grid-cols-2 gap-4">
           <div>
             <label className="field-label" htmlFor="mat-min">
-              Minimum quantity
+              {t('md.minimumQuantity')}
             </label>
             <input
               id="mat-min"
@@ -465,7 +465,7 @@ function MaterialDialog({
               }}
               disabled={isSaving}
             />
-            <p className="mt-1 text-xs text-ink-muted">Below this, stock shows as low.</p>
+            <p className="mt-1 text-xs text-ink-muted">{t('md.belowShowsLow')}</p>
           </div>
           <div>
             <label className="field-label" htmlFor="mat-weight">
@@ -477,7 +477,7 @@ function MaterialDialog({
               min="0"
               step="0.0001"
               className="field-input"
-              placeholder="optional"
+              placeholder={t('md.optional')}
               value={form.unitWeight}
               onChange={(e) => {
                 set('unitWeight', e.target.value);
@@ -485,7 +485,7 @@ function MaterialDialog({
               disabled={isSaving}
             />
             <p className="mt-1 text-xs text-ink-muted">
-              Weight of one piece, when pieces are also weighed.
+              {t('md.pieceWeightNote')}
             </p>
           </div>
         </div>
@@ -509,13 +509,13 @@ function MaterialDialog({
         <fieldset className="mb-4 rounded-control border border-line p-4">
           <legend className="px-1 text-sm font-semibold text-ink-soft">{t('field.packSizes')}</legend>
           <p className="mb-3 text-xs text-ink-muted">
-            How this material arrives. The storekeeper receives packs.
+            {t('md.howItArrives')}
           </p>
 
           {form.packagings.map((row, index) => (
             <div key={`pack-${String(index)}`} className="mb-2 flex items-center gap-2">
               <select
-                aria-label="Pack unit"
+                aria-label={t('md.packUnit')}
                 className="field-input h-touch flex-1"
                 value={row.unitId}
                 onChange={(e) => {
@@ -536,7 +536,7 @@ function MaterialDialog({
               </select>
               <span className="text-sm text-ink-muted">=</span>
               <input
-                aria-label="Quantity in base unit"
+                aria-label={t('md.quantityInBase')}
                 type="number"
                 min="0"
                 step="0.0001"
@@ -570,7 +570,7 @@ function MaterialDialog({
               </label>
               <button
                 type="button"
-                aria-label="Remove pack size"
+                aria-label={t('md.removePackSize')}
                 className="grid size-9 shrink-0 place-items-center rounded-control text-ink-muted hover:bg-bad-soft hover:text-bad"
                 onClick={() => {
                   set(
@@ -610,7 +610,7 @@ function MaterialDialog({
         )}
 
         <button type="submit" className="btn-primary" disabled={isSaving}>
-          {isSaving ? 'Saving…' : 'Save'}
+          {isSaving ? 'Saving…' : t('common.save')}
         </button>
       </form>
     </Modal>

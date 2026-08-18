@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import type { DateRange } from './dateRange';
 
 /** The days a range report covers. The value itself lives on the Reports screen. */
@@ -9,11 +10,12 @@ export function DateRangePicker({
   range: DateRange;
   onChange: (range: DateRange) => void;
 }): ReactElement {
+  const { t } = useTranslation();
   return (
     <section className="card mb-4 flex flex-wrap items-end gap-4 p-4">
       <div>
         <label className="field-label" htmlFor="range-from">
-          From
+          {t('field.from')}
         </label>
         <input
           id="range-from"

@@ -73,28 +73,28 @@ export function ReportsPage(): ReactElement {
 
       <section className="mb-6 flex flex-wrap gap-2">
         <Chip
-          label="Material waste control"
+          label={t('reports.wasteControl')}
           active={report === 'waste'}
           onClick={() => {
             setReport('waste');
           }}
         />
         <Chip
-          label="Shift production summary"
+          label={t('reports.shiftSummary')}
           active={report === 'summary'}
           onClick={() => {
             setReport('summary');
           }}
         />
         <Chip
-          label="Consumption"
+          label={t('reports.consumption')}
           active={report === 'consumption'}
           onClick={() => {
             setReport('consumption');
           }}
         />
         <Chip
-          label="Pallet production"
+          label={t('reports.palletProduction')}
           active={report === 'pallets'}
           onClick={() => {
             setReport('pallets');
@@ -135,7 +135,7 @@ export function ReportsPage(): ReactElement {
 
           {shifts.data?.length === 0 && (
             <p className="mt-2 text-sm text-ink-muted">
-              No shift has been opened yet, so there is nothing to report on.
+              {t('reports.noShiftYet')}
             </p>
           )}
         </section>
@@ -147,7 +147,7 @@ export function ReportsPage(): ReactElement {
 
       {report === 'waste' && chosen !== null && (
         <>
-          {waste.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
+          {waste.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
           {waste.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
           {waste.data !== undefined && <MaterialWasteReport report={waste.data} />}
         </>
@@ -155,7 +155,7 @@ export function ReportsPage(): ReactElement {
 
       {report === 'summary' && chosen !== null && (
         <>
-          {summary.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
+          {summary.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
           {summary.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
           {summary.data !== undefined && <ShiftSummaryReport report={summary.data} />}
         </>

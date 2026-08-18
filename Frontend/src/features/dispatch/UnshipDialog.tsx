@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { palletsApi, type PalletDto } from '../pallets/api';
@@ -23,6 +24,7 @@ export function UnshipDialog({
   onClose,
   onReversed,
 }: UnshipDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -36,7 +38,7 @@ export function UnshipDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -54,13 +56,13 @@ export function UnshipDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="unship-reason">
-            Why is it coming back?
+            {t('dispatch.whyComingBack')}
           </label>
           <input
             id="unship-reason"
             className="field-input"
             maxLength={300}
-            placeholder="Scanned the wrong pallet at the lorry"
+            placeholder={t('dispatch.wrongAtLorry')}
             value={reason}
             disabled={isSaving}
             onChange={(event) => {
@@ -83,10 +85,10 @@ export function UnshipDialog({
           className="btn-primary"
           disabled={isSaving || reason.trim() === ''}
         >
-          {isSaving ? 'Saving…' : 'Put it back in the factory'}
+          {isSaving ? 'Saving…' : t('dispatch.backToList')}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The pallet goes back to the list.
+          {t('dispatch.backToList')}
         </p>
       </form>
     </Modal>

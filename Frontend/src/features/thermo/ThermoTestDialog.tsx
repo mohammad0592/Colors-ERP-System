@@ -87,7 +87,7 @@ export function ThermoTestDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -119,19 +119,19 @@ export function ThermoTestDialog({
         {readings !== null && (
           <div className="mb-5 rounded-control bg-canvas px-4 py-3">
             <p className="mb-2 text-xs font-semibold tracking-wider text-ink-muted uppercase">
-              The roll itself — measured at the extruder
+              {t('thermo.rollMeasured')}
             </p>
             <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
               <Reading label={t('field.weight')} value={`${String(readings.weight)} kg`} />
               <Reading label={t('field.length')} value={String(readings.length)} />
-              <Reading label="Plate weight" value={`${String(readings.plateWeight)} g`} />
-              <Reading label="Thickness" value={String(readings.averageThickness)} />
+              <Reading label={t('thermo.plateWeight')} value={`${String(readings.plateWeight)} g`} />
+              <Reading label={t('thermo.thickness')} value={String(readings.averageThickness)} />
             </div>
           </div>
         )}
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label="Bags produced" arabic="عدد الأكياس المنتجة" htmlFor="thermo-bags">
+          <Field label={t('thermo.bagsProduced')} arabic="عدد الأكياس المنتجة" htmlFor="thermo-bags">
             <input
               id="thermo-bags"
               type="number"
@@ -146,7 +146,7 @@ export function ThermoTestDialog({
             />
           </Field>
           <Field
-            label="Piece weight (g)"
+            label={t('thermo.pieceWeightG')}
             arabic="وزن الصحن المنتج"
             htmlFor="thermo-piece-weight"
           >
@@ -163,7 +163,7 @@ export function ThermoTestDialog({
             />
           </Field>
           <Field
-            label="Bag weight (kg)"
+            label={t('thermo.bagWeightKg')}
             arabic="وزن الكيس المنتج الواحد"
             htmlFor="thermo-bag-weight"
           >
@@ -191,7 +191,7 @@ export function ThermoTestDialog({
         {run.isAbsorbent && (
           <div className="mb-4 sm:max-w-xs">
             <Field
-              label="Absorbency (%)"
+              label={t('thermo.absorbencyPct')}
               arabic="نسبة الإمتصاص للصحن المنتج"
               htmlFor="thermo-absorbent"
             >
@@ -215,7 +215,7 @@ export function ThermoTestDialog({
         <div className="mb-4 rounded-control bg-canvas px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-sm font-medium text-ink-soft">
-              Bags this will create
+              {t('thermo.bagsThisCreates')}
             </span>
             <span className="text-lg font-bold text-ink">
               {bagsTyped && !bagsLookWrong ? bagCount : '—'}
@@ -254,10 +254,10 @@ export function ThermoTestDialog({
         )}
 
         <button type="submit" className="btn-primary" disabled={isSaving || !complete}>
-          {isSaving ? 'Saving…' : 'Save and print the bag labels'}
+          {isSaving ? 'Saving…' : t('thermo.saveAndPrint')}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          Saving this creates the bags.
+          {t('thermo.savingCreatesBags')}
         </p>
       </form>
     </Modal>

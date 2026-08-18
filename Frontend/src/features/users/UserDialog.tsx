@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames, labelForRole, type RoleName } from '../../lib/roles';
@@ -24,6 +25,7 @@ export function UserDialog({
   onClose: () => void;
   onSaved: () => void;
 }): ReactElement {
+  const { t } = useTranslation();
   const [employeeNumber, setEmployeeNumber] = useState(user?.employeeNumber ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [password, setPassword] = useState('');
@@ -58,7 +60,7 @@ export function UserDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -75,7 +77,7 @@ export function UserDialog({
     employeeNumber.trim() !== '' && fullName.trim() !== '' && (!isNew || password !== '');
 
   return (
-    <Modal title={isNew ? 'Add a worker' : `Edit ${user.fullName}`} onClose={onClose}>
+    <Modal title={isNew ? t('action.addWorker') : `Edit ${user.fullName}`} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -86,7 +88,7 @@ export function UserDialog({
         <div className="mb-4 grid gap-4 sm:grid-cols-2">
           <div>
             <label className="field-label" htmlFor="user-number">
-              Employee number
+              {t('field.employeeNumber')}
             </label>
             <input
               id="user-number"
@@ -99,13 +101,13 @@ export function UserDialog({
               }}
             />
             <p className="mt-1 text-xs text-ink-muted">
-              This is also how he signs in. Letters and digits only.
+              {t('users.numberIsLogin')}
             </p>
           </div>
 
           <div>
             <label className="field-label" htmlFor="user-name">
-              Full name
+              {t('users.fullName')}
             </label>
             <input
               id="user-name"
@@ -123,7 +125,7 @@ export function UserDialog({
         {isNew && (
           <div className="mb-4">
             <label className="field-label" htmlFor="user-password">
-              First password
+              {t('users.firstPassword')}
             </label>
             <input
               id="user-password"
@@ -143,7 +145,7 @@ export function UserDialog({
         )}
 
         <fieldset className="mb-4">
-          <legend className="field-label">What he may do</legend>
+          <legend className="field-label">{t('field.whatHeMayDo')}</legend>
           <div className="grid gap-2 sm:grid-cols-2">
             {Object.values(RoleNames).map((role: RoleName) => (
               <label
@@ -163,7 +165,7 @@ export function UserDialog({
             ))}
           </div>
           <p className="mt-1 text-xs text-ink-muted">
-            One man may hold several. Give him every job he actually does.
+            {t('users.severalRoles')}
           </p>
         </fieldset>
 
@@ -177,7 +179,7 @@ export function UserDialog({
                 setIsActive(event.target.checked);
               }}
             />
-            <span className="text-ink">Still works here</span>
+            <span className="text-ink">{t('users.stillWorksHere')}</span>
           </label>
         )}
 
@@ -191,12 +193,12 @@ export function UserDialog({
         )}
 
         <button type="submit" className="btn-primary" disabled={isSaving || !ready}>
-          {isSaving ? 'Saving…' : isNew ? 'Add him' : 'Save the changes'}
+          {isSaving ? 'Saving…' : isNew ? t('users.addHim') : t('users.saveChanges')}
         </button>
 
         {!isNew && (
           <p className="mt-2 text-xs text-ink-muted">
-            Somebody who leaves is unticked above, never deleted.
+            {t('users.leaverNote')}
           </p>
         )}
       </form>

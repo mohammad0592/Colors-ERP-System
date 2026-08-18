@@ -1,4 +1,5 @@
 import { useEffect, type ReactElement, type ReactNode } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Icon } from './Icon';
 
 interface ModalProps {
@@ -9,6 +10,7 @@ interface ModalProps {
 
 /** A centred dialog over a dimmed page. Closes on Escape or the backdrop. */
 export function Modal({ title, onClose, children }: ModalProps): ReactElement {
+  const { t } = useTranslation();
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
       if (event.key === 'Escape') {
@@ -26,7 +28,7 @@ export function Modal({ title, onClose, children }: ModalProps): ReactElement {
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={onClose}
         className="absolute inset-0 cursor-default bg-ink/50"
       />
@@ -40,7 +42,7 @@ export function Modal({ title, onClose, children }: ModalProps): ReactElement {
           <h2 className="text-lg font-bold text-ink">{title}</h2>
           <button
             type="button"
-            aria-label="Close"
+            aria-label={t('common.close')}
             onClick={onClose}
             className="grid size-touch place-items-center rounded-control text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
           >

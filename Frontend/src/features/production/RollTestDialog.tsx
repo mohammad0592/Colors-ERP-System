@@ -81,7 +81,7 @@ export function RollTestDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -131,7 +131,7 @@ export function RollTestDialog({
               }}
             />
           </Field>
-          <Field label="Plate weight (g)" htmlFor="test-plate">
+          <Field label={t('rolls.plateWeightG')} htmlFor="test-plate">
             <input
               id="test-plate"
               type="number"
@@ -155,7 +155,7 @@ export function RollTestDialog({
           </p>
         )}
 
-        <p className="field-label">Thickness, four readings across the roll</p>
+        <p className="field-label">{t('rolls.fourReadings')}</p>
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Reading
             id="test-rs"
@@ -189,11 +189,11 @@ export function RollTestDialog({
 
         <div className="mb-4 rounded-control bg-canvas px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-medium text-ink-soft">Average thickness</span>
+            <span className="text-sm font-medium text-ink-soft">{t('rolls.averageThickness')}</span>
             <span className="text-lg font-bold text-ink">{average ?? '—'}</span>
           </div>
           <p className="mt-1 text-xs text-ink-muted">
-            The mean of the four. Worked out, never typed.
+            {t('rolls.meanOfFour')}
           </p>
         </div>
 
@@ -223,10 +223,10 @@ export function RollTestDialog({
         )}
 
         <button type="submit" className="btn-primary" disabled={isSaving || !complete}>
-          {isSaving ? 'Saving…' : 'Save and release the roll'}
+          {isSaving ? 'Saving…' : t('rolls.saveAndRelease')}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
-          The thermo can use the roll once this is saved.
+          {t('rolls.thermoCanUse')}
         </p>
       </form>
     </Modal>

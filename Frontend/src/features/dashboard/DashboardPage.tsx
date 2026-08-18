@@ -81,7 +81,7 @@ export function DashboardPage(): ReactElement {
           shift === null ? (
             <span className="inline-flex items-center gap-2 rounded-full bg-canvas px-3 py-1.5 text-sm font-semibold text-ink-soft">
               <span className="size-2 rounded-full bg-ink-muted" />
-              No shift open
+              {t('dashboard.noShiftOpen')}
             </span>
           ) : (
             <span className="inline-flex items-center gap-2 rounded-full bg-ok-soft px-3 py-1.5 text-sm font-semibold text-ok">
@@ -94,20 +94,20 @@ export function DashboardPage(): ReactElement {
 
       {dashboard.isError && (
         <p className="mb-6 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad">
-          Could not load what is happening. The rest of the system still works.
+          {t('dashboard.loadFailed')}
         </p>
       )}
 
       {shift === null ? (
         <section className="card mb-6 p-6">
-          <h2 className="text-lg font-semibold text-ink">No shift is open</h2>
+          <h2 className="text-lg font-semibold text-ink">{t('dashboard.noShiftIsOpen')}</h2>
           <p className="mt-2 max-w-2xl text-ink-soft">
-            No shift is open. A supervisor opens the next one from Shifts.
+            {t('dashboard.noShiftLong')}
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <Fact label="Signed in as" value={user?.fullName ?? ''} />
+            <Fact label={t('dashboard.signedInAs')} value={user?.fullName ?? ''} />
             <Fact label={t('field.employeeNumber')} value={user?.employeeNumber ?? ''} />
-            <Fact label="Roles" value={String(user?.roles.length ?? 0)} />
+            <Fact label={t('dashboard.roles')} value={String(user?.roles.length ?? 0)} />
           </div>
         </section>
       ) : (
@@ -123,13 +123,13 @@ export function DashboardPage(): ReactElement {
           </div>
 
           {summary === null ? (
-            <p className="text-ink-soft">Nothing has been recorded on it yet.</p>
+            <p className="text-ink-soft">{t('dashboard.nothingRecorded')}</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               <Fact label={t('field.rollsMade')} value={String(summary.rollsProduced)} />
               <Fact label={t('field.rollsFormed')} value={String(summary.rollsFormed)} />
               <Fact label={t('term.bags')} value={String(summary.bagCount)} />
-              <Fact label="Pallets finished" value={String(summary.palletsCompleted)} />
+              <Fact label={t('dashboard.palletsFinished')} value={String(summary.palletsCompleted)} />
               <Fact
                 label={t('field.lostInForming')}
                 value={
@@ -146,7 +146,7 @@ export function DashboardPage(): ReactElement {
       {alerts.length > 0 && (
         <section className="mb-6">
           <h2 className="mb-3 text-sm font-semibold tracking-wider text-ink-muted uppercase">
-            Waiting for someone
+            {t('dashboard.waitingForSomeone')}
           </h2>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -160,7 +160,7 @@ export function DashboardPage(): ReactElement {
       {shortcuts.length > 0 && (
         <section>
           <h2 className="mb-3 text-sm font-semibold tracking-wider text-ink-muted uppercase">
-            Quick actions
+            {t('dashboard.quickActions')}
           </h2>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">

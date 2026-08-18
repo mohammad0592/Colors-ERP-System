@@ -1,4 +1,5 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from '../hooks/useTranslation';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
@@ -23,6 +24,7 @@ interface ProtectedRouteProps {
  * stops a worker reaching a screen he cannot use.
  */
 export function ProtectedRoute({ roles }: ProtectedRouteProps): ReactElement {
+  const { t } = useTranslation();
   const { isSignedIn, isRestoring, hasRole } = useAuth();
   const location = useLocation();
 
@@ -31,7 +33,7 @@ export function ProtectedRoute({ roles }: ProtectedRouteProps): ReactElement {
   if (isRestoring) {
     return (
       <div className="grid min-h-dvh place-items-center bg-canvas text-ink-muted">
-        Loading…
+        {t('common.loading')}
       </div>
     );
   }

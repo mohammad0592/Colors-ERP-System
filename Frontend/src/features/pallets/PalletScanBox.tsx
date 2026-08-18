@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
 import type { EntryMethod } from '../../lib/barcodeScanner';
@@ -27,6 +28,7 @@ export function PalletScanBox({
   bags,
   onScanned,
 }: PalletScanBoxProps): ReactElement {
+  const { t } = useTranslation();
   const [barcode, setBarcode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [lastAdded, setLastAdded] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export function PalletScanBox({
       onScanned(updated);
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
       // A refused scan keeps the code on screen so the packer can see what he scanned.
     } finally {
@@ -62,7 +64,7 @@ export function PalletScanBox({
   return (
     <div className="mb-5">
       <ScanField
-        label="Scan a bag"
+        label={t('pallets.scanABag')}
         placeholder="B000123"
         value={barcode}
         onChange={setBarcode}

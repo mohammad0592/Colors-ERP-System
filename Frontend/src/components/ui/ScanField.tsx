@@ -197,7 +197,7 @@ export function ScanField({
             aria-label={t('action.readWithCamera')}
             title={t('action.readWithCamera')}
           >
-            Camera
+            {t('ui.camera')}
           </button>
         )}
 
@@ -226,7 +226,7 @@ export function ScanField({
       {options !== undefined && (
         <p className="mb-2 text-xs text-ink-muted">
           {options.length === 0
-            ? 'Nothing is waiting to be chosen from.'
+            ? t('scan.nothingToChoose')
             : `Or type to choose from ${String(options.length)} — ${optionsHint ?? 'the list'}.`}
         </p>
       )}
@@ -243,7 +243,7 @@ export function ScanField({
       )}
 
       {isCameraOpen && (
-        <Modal title="Hold the label up to the camera" onClose={closeCamera}>
+        <Modal title={t('ui.holdLabelUp')} onClose={closeCamera}>
           <video ref={video} className="w-full rounded-control bg-canvas" playsInline muted />
           <p className="mt-3 text-sm text-ink-muted">
             It reads the code by itself and closes. If the label is torn, close this and

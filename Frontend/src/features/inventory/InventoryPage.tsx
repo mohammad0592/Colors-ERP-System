@@ -44,11 +44,11 @@ export function InventoryPage(): ReactElement {
   }
 
   if (stock.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (stock.isError) {
-    return <p className="p-6 text-bad">Could not load the store.</p>;
+    return <p className="p-6 text-bad">{t('inventory.loadFailed')}</p>;
   }
 
   const lowCount = stock.data.filter((row) => row.isBelowMinimum).length;
@@ -64,7 +64,7 @@ export function InventoryPage(): ReactElement {
               to="/inventory/receive"
               className="btn-primary h-touch w-auto px-5 text-base"
             >
-              Receive materials
+              {t('inventory.receiveMaterials')}
             </Link>
           ) : undefined
         }
@@ -74,14 +74,14 @@ export function InventoryPage(): ReactElement {
           unit; rolls, bags and pallets are individual things, each with its own label. */}
       <nav className="mb-6 flex gap-1 border-b border-line">
         <Tab
-          label="Raw materials"
+          label={t('inventory.rawMaterials')}
           active={section === 'materials'}
           onClick={() => {
             setSection('materials');
           }}
         />
         <Tab
-          label="Rolls, bags & pallets"
+          label={t('inventory.rollsBagsPallets')}
           active={section === 'produced'}
           onClick={() => {
             setSection('produced');
@@ -95,7 +95,7 @@ export function InventoryPage(): ReactElement {
         <>
           <section className="mb-6 flex flex-wrap gap-2">
             <Chip
-              label="All materials"
+              label={t('inventory.allMaterials')}
               active={!lowOnly}
               onClick={() => {
                 setLowOnly(false);
@@ -127,7 +127,7 @@ export function InventoryPage(): ReactElement {
                 {stock.data.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                      {lowOnly ? 'Nothing is below its minimum.' : 'No materials yet.'}
+                      {lowOnly ? t('inventory.noneBelowMinimum') : t('inventory.noMaterials')}
                     </td>
                   </tr>
                 )}
@@ -140,7 +140,7 @@ export function InventoryPage(): ReactElement {
                       {row.name}
                       {row.isBelowMinimum && (
                         <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
-                          Low
+                          {t('inventory.low')}
                         </span>
                       )}
                     </td>
@@ -155,7 +155,7 @@ export function InventoryPage(): ReactElement {
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-2">
                         <Action
-                          label="History"
+                          label={t('inventory.history')}
                           onClick={() => {
                             setHistoryFor((current) =>
                               current?.materialId === row.materialId ? null : row,
@@ -164,7 +164,7 @@ export function InventoryPage(): ReactElement {
                         />
                         {canAdjust && (
                           <Action
-                            label="Stock count"
+                            label={t('inventory.stockCount')}
                             onClick={() => {
                               setAdjusting(row);
                             }}
@@ -182,7 +182,7 @@ export function InventoryPage(): ReactElement {
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <h2 className="text-lg font-bold text-ink">
                 {historyFor === null
-                  ? 'Recent movements'
+                  ? t('inventory.recentMovements')
                   : `Movements — ${historyFor.name}`}
               </h2>
               {historyFor !== null && (
@@ -193,7 +193,7 @@ export function InventoryPage(): ReactElement {
                     setHistoryFor(null);
                   }}
                 >
-                  Show every material
+                  {t('inventory.showEvery')}
                 </button>
               )}
             </div>
@@ -204,8 +204,8 @@ export function InventoryPage(): ReactElement {
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                     <th className="px-4 py-3 font-semibold">{t('field.when')}</th>
                     <th className="px-4 py-3 font-semibold">{t('term.material')}</th>
-                    <th className="px-4 py-3 font-semibold">Movement</th>
-                    <th className="px-4 py-3 text-end font-semibold">Quantity</th>
+                    <th className="px-4 py-3 font-semibold">{t('inventory.movement')}</th>
+                    <th className="px-4 py-3 text-end font-semibold">{t('inventory.quantity')}</th>
                     <th className="px-4 py-3 font-semibold">By</th>
                     <th className="px-4 py-3 font-semibold">{t('field.note')}</th>
                   </tr>
@@ -214,14 +214,14 @@ export function InventoryPage(): ReactElement {
                   {movements.isPending && (
                     <tr>
                       <td colSpan={6} className="px-4 py-6 text-center text-ink-muted">
-                        Loading…
+                        {t('common.loading')}
                       </td>
                     </tr>
                   )}
                   {movements.data?.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                        Nothing has moved yet.
+                        {t('inventory.nothingMoved')}
                       </td>
                     </tr>
                   )}

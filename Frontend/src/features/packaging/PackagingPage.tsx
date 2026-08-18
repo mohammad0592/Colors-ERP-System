@@ -98,7 +98,7 @@ export function PackagingPage(): ReactElement {
     },
     onError: (caught: unknown) => {
       setActionError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
       );
     },
   });
@@ -174,7 +174,7 @@ export function PackagingPage(): ReactElement {
                 setRecording(null);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
 
@@ -281,7 +281,7 @@ export function PackagingPage(): ReactElement {
                   save.mutate();
                 }}
               >
-                {save.isPending ? 'Saving…' : 'Record it and take it out of the store'}
+                {save.isPending ? 'Saving…' : t('packaging.recordAndTakeOut')}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
                 {t('msg.writtenOnceAtShiftEnd')}
@@ -293,12 +293,12 @@ export function PackagingPage(): ReactElement {
 
       <h2 className="mb-3 text-lg font-bold text-ink">{t('state.recorded')}</h2>
 
-      {records.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-      {records.isError && <p className="p-6 text-bad">Could not load packaging.</p>}
+      {records.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
+      {records.isError && <p className="p-6 text-bad">{t('packaging.loadFailed')}</p>}
 
       {records.data?.length === 0 && (
         <p className="card p-8 text-center text-ink-muted">
-          No packaging has been recorded yet.
+          {t('packaging.none')}
         </p>
       )}
 
@@ -318,8 +318,8 @@ export function PackagingPage(): ReactElement {
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                   <th className="py-2 pe-4 font-semibold">{t('term.material')}</th>
                   <th className="py-2 pe-4 text-end font-semibold">{t('field.used')}</th>
-                  <th className="py-2 pe-4 text-end font-semibold">Weighed</th>
-                  <th className="py-2 pe-4 text-end font-semibold">Expected</th>
+                  <th className="py-2 pe-4 text-end font-semibold">{t('packaging.weighed')}</th>
+                  <th className="py-2 pe-4 text-end font-semibold">{t('packaging.expected')}</th>
                   <th className="py-2 text-end font-semibold">{t('field.difference')}</th>
                 </tr>
               </thead>

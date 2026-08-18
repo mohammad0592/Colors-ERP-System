@@ -60,7 +60,7 @@ export function OpenShiftDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -78,7 +78,7 @@ export function OpenShiftDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="open-date">
-            Production date
+            {t('shifts.productionDate')}
           </label>
           <input
             id="open-date"
@@ -91,7 +91,7 @@ export function OpenShiftDialog({
             }}
           />
           <p className="mt-1 text-xs text-ink-muted">
-            The day the shift belongs to. A night shift belongs to the day it started.
+            {t('shifts.dateNote')}
           </p>
         </div>
 
@@ -117,7 +117,7 @@ export function OpenShiftDialog({
         </div>
 
         <fieldset className="mb-4">
-          <legend className="field-label">Which lines are running?</legend>
+          <legend className="field-label">{t('shifts.whichLines')}</legend>
           <div className="space-y-2">
             {lines.map((line) => (
               <label
@@ -142,7 +142,7 @@ export function OpenShiftDialog({
             ))}
           </div>
           <p className="mt-1 text-xs text-ink-muted">
-            A line that starts later can be added to the shift afterwards.
+            {t('shifts.lineLater')}
           </p>
         </fieldset>
 
@@ -184,7 +184,7 @@ export function OpenShiftDialog({
           className="btn-primary"
           disabled={isSaving || lineIds.length === 0}
         >
-          {isSaving ? 'Opening…' : 'Open shift'}
+          {isSaving ? 'Opening…' : t('shifts.openShiftBtn')}
         </button>
       </form>
     </Modal>

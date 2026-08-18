@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { usersApi, type UserDto } from './api';
@@ -21,6 +22,7 @@ export function ResetPasswordDialog({
   onClose: () => void;
   onSaved: () => void;
 }): ReactElement {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
@@ -34,7 +36,7 @@ export function ResetPasswordDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -52,7 +54,7 @@ export function ResetPasswordDialog({
       >
         <div className="mb-4">
           <label className="field-label" htmlFor="new-password">
-            New password
+            {t('field.newPassword')}
           </label>
           <input
             id="new-password"
@@ -65,7 +67,7 @@ export function ResetPasswordDialog({
             }}
           />
           <p className="mt-1 text-xs text-ink-muted">
-            At least eight characters, with a digit and a small letter.
+            {t('users.passwordRule')}
           </p>
         </div>
 
@@ -83,7 +85,7 @@ export function ResetPasswordDialog({
           className="btn-primary"
           disabled={isSaving || password === ''}
         >
-          {isSaving ? 'Saving…' : 'Set it'}
+          {isSaving ? 'Saving…' : t('users.setIt')}
         </button>
         <p className="mt-2 text-xs text-ink-muted">
           Tell him the password now — it cannot be read back. His open sessions end.

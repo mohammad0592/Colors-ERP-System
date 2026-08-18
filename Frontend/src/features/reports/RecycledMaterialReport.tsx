@@ -21,7 +21,7 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
   });
 
   if (report.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (report.isError) {
@@ -45,23 +45,23 @@ export function RecycledMaterialReport({ range }: { range: DateRange }): ReactEl
         <Figure label={t('field.made')} value={`${String(data.totalProduced)} kg`}>
           by the recycler in these days
         </Figure>
-        <Figure label="Taken back out" value={`${String(data.totalConsumed)} kg`}>
+        <Figure label={t('reports.takenBackOut')} value={`${String(data.totalConsumed)} kg`}>
           into the black recipes
         </Figure>
         <Figure
-          label={data.difference < 0 ? 'Pile shrank by' : 'Pile grew by'}
+          label={data.difference < 0 ? t('reports.pileShrank') : t('reports.pileGrew')}
           value={`${String(Math.abs(data.difference))} kg`}
         >
           {data.difference < 0 ? 'more was used than made' : 'more was made than used'}
         </Figure>
-        <Figure label="In the store now" value={`${String(data.inStock)} kg`}>
+        <Figure label={t('reports.inStoreNow')} value={`${String(data.inStock)} kg`}>
           {data.materialName}
         </Figure>
       </section>
 
       {data.shifts.length === 0 ? (
         <p className="card p-8 text-center text-ink-muted">
-          The recycler did not run in these days.
+          {t('reports.recyclerIdle')}
         </p>
       ) : (
         <div className="card overflow-x-auto">

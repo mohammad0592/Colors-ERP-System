@@ -38,6 +38,7 @@ export function LabelPrintScreen({
   headline,
   onClose,
 }: LabelPrintScreenProps): ReactElement {
+  const { t } = useTranslation();
   const labels = useQuery({
     queryKey: ['labels', barcodes],
     queryFn: () => producedStockApi.labels(barcodes),
@@ -64,7 +65,7 @@ export function LabelPrintScreen({
           reach the printer, and it must not take up space there either. */}
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t('common.close')}
         onClick={onClose}
         className="no-print absolute inset-0 cursor-default bg-ink/50"
       />
@@ -72,13 +73,13 @@ export function LabelPrintScreen({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={many ? `Print ${String(barcodes.length)} labels` : 'Print label'}
+        aria-label={many ? `Print ${String(barcodes.length)} labels` : t('labels.printLabel')}
         className="label-card relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-card bg-surface p-5 shadow-raised"
       >
         <div className="no-print mb-4 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-ink">
-              {many ? `${String(barcodes.length)} labels` : 'Label'}
+              {many ? `${String(barcodes.length)} labels` : t('stock.label')}
             </h2>
             {headline !== undefined && (
               <p className="mt-1 text-sm font-medium text-ok">{headline}</p>
@@ -86,7 +87,7 @@ export function LabelPrintScreen({
           </div>
           <button
             type="button"
-            aria-label="Close"
+            aria-label={t('common.close')}
             onClick={onClose}
             className="grid size-touch shrink-0 place-items-center rounded-control text-ink-muted transition-colors hover:bg-canvas hover:text-ink"
           >
@@ -94,13 +95,13 @@ export function LabelPrintScreen({
           </button>
         </div>
 
-        {labels.isPending && <p className="no-print text-ink-muted">Loading…</p>}
+        {labels.isPending && <p className="no-print text-ink-muted">{t('common.loading')}</p>}
         {labels.isError && (
-          <p className="no-print text-bad">Could not load these labels.</p>
+          <p className="no-print text-bad">{t('labels.loadFailed')}</p>
         )}
 
         {labels.data?.length === 0 && (
-          <p className="no-print text-ink-muted">No label was found for this.</p>
+          <p className="no-print text-ink-muted">{t('labels.none')}</p>
         )}
 
         {labels.data !== undefined && labels.data.length > 0 && (
@@ -120,7 +121,7 @@ export function LabelPrintScreen({
             >
               {many
                 ? `Print all ${String(labels.data.length)} labels`
-                : 'Print this label'}
+                : t('labels.printThis')}
             </button>
             <p className="no-print mt-2 text-xs text-ink-muted">
               100 × 70 mm, one to a page. Reprinting is allowed.

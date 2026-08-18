@@ -81,17 +81,17 @@ export function MaterialIssuePage(): ReactElement {
     },
     onError: (caught) => {
       setActionError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
       );
     },
   });
 
   if (tickets.isPending || shifts.isPending || stock.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (tickets.isError || shifts.isError || stock.isError) {
-    return <p className="p-6 text-bad">Could not load the tickets.</p>;
+    return <p className="p-6 text-bad">{t('issue.loadFailed')}</p>;
   }
 
   return (
@@ -116,14 +116,14 @@ export function MaterialIssuePage(): ReactElement {
 
       <section className="mb-6 flex flex-wrap gap-2">
         <Chip
-          label="Open tickets"
+          label={t('issue.openTickets')}
           active={openOnly}
           onClick={() => {
             setOpenOnly(true);
           }}
         />
         <Chip
-          label="All tickets"
+          label={t('issue.allTickets')}
           active={!openOnly}
           onClick={() => {
             setOpenOnly(false);
@@ -159,7 +159,7 @@ export function MaterialIssuePage(): ReactElement {
             {tickets.data.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-ink-muted">
-                  {openOnly ? 'Nothing is outstanding.' : 'No tickets yet.'}
+                  {openOnly ? t('issue.nothingOutstanding') : t('issue.noTickets')}
                 </td>
               </tr>
             )}
@@ -199,7 +199,7 @@ export function MaterialIssuePage(): ReactElement {
                         open.mutate(ticket.id);
                       }}
                     >
-                      {ticket.isOpen && canIssue ? 'Weigh back in' : 'View'}
+                      {ticket.isOpen && canIssue ? t('issue.weighBackIn') : t('common.view')}
                     </button>
                   </div>
                 </td>

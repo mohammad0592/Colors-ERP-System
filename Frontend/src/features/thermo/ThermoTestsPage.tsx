@@ -44,11 +44,11 @@ export function ThermoTestsPage(): ReactElement {
   }
 
   if (runs.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (runs.isError) {
-    return <p className="p-6 text-bad">Could not load the runs.</p>;
+    return <p className="p-6 text-bad">{t('thermo.loadFailedRuns')}</p>;
   }
 
   // A run still in the machine stays on this list, marked as such. Only a finished one
@@ -76,8 +76,8 @@ export function ThermoTestsPage(): ReactElement {
   // Now that a running roll stays on the list, the table is only empty when there is
   // genuinely nothing — so two sentences cover it.
   const emptyMessage = waitingOnly
-    ? 'Nothing is waiting. Every run has been counted.'
-    : 'No roll has been formed yet.';
+    ? t('thermo.allCounted')
+    : t('thermo.noneFormed');
 
   return (
     <>
@@ -124,7 +124,7 @@ export function ThermoTestsPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('term.bags')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
-              <th className="px-4 py-3 text-end font-semibold">Waste</th>
+              <th className="px-4 py-3 text-end font-semibold">{t('thermo.waste')}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -148,7 +148,7 @@ export function ThermoTestsPage(): ReactElement {
                   </span>
                   {run.isAbsorbent && (
                     <span className="ms-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
-                      ABS
+                      {t('thermo.abs')}
                     </span>
                   )}
                 </td>
@@ -178,11 +178,11 @@ export function ThermoTestsPage(): ReactElement {
                           setCounting(run);
                         }}
                       >
-                        Count
+                        {t('thermo.count')}
                       </button>
                     )}
                     {run.needsTest && !run.isFinished && (
-                      <span className="text-xs text-ink-muted">Still in the machine</span>
+                      <span className="text-xs text-ink-muted">{t('thermo.stillInMachine')}</span>
                     )}
                     {/* Already counted, so the bags exist. A torn label must not mean
                         counting the run again. */}
@@ -196,7 +196,7 @@ export function ThermoTestsPage(): ReactElement {
                           });
                         }}
                       >
-                        Labels
+                        {t('thermo.labels')}
                       </button>
                     )}
                   </div>

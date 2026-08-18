@@ -17,7 +17,7 @@ interface LoginLocationState {
  * people on its paper forms, and many workers have no company email.
  */
 export function LoginPage(): ReactElement {
-  const { t } = useTranslation();
+  const { t, language, setLanguage } = useTranslation();
   const [employeeNumber, setEmployeeNumber] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +48,19 @@ export function LoginPage(): ReactElement {
 
   return (
     <div className="relative grid min-h-dvh place-items-center overflow-hidden bg-sidebar p-6">
+      {/* The switch belongs here as much as in the top bar: a man who cannot read the
+          sign-in page cannot get far enough to reach the other one. */}
+      <button
+        type="button"
+        onClick={() => {
+          setLanguage(language === 'ar' ? 'en' : 'ar');
+        }}
+        aria-label={t('top.languageLabel')}
+        className="absolute top-5 end-5 z-10 min-h-touch rounded-control border border-white/20 px-4 text-sm font-semibold text-white/80 transition-colors hover:border-white/50 hover:text-white"
+      >
+        {t('top.language')}
+      </button>
+
       {/* Faint grid, as in the design. Purely decorative. */}
       <div
         aria-hidden="true"
@@ -78,9 +91,9 @@ export function LoginPage(): ReactElement {
           {/* The logo already carries the company name, so the heading says what
               the system is rather than repeating "Colors". */}
           <h1 className="text-xl font-bold text-ink">
-            Production &amp; Inventory System
+            {t('login.system')}
           </h1>
-          <p className="mt-1 text-sm text-ink-muted">Styrofoam Factory</p>
+          <p className="mt-1 text-sm text-ink-muted">{t('app.tagline')}</p>
         </div>
 
         <div className="mb-5">
@@ -108,7 +121,7 @@ export function LoginPage(): ReactElement {
 
         <div className="mb-5">
           <label className="field-label" htmlFor="password">
-            Password
+            {t('login.password')}
           </label>
           <input
             id="password"
@@ -136,11 +149,11 @@ export function LoginPage(): ReactElement {
         )}
 
         <button type="submit" className="btn-primary" disabled={!canSubmit}>
-          {isSubmitting ? 'Signing in…' : 'Sign in'}
+          {isSubmitting ? 'Signing in…' : t('common.signIn')}
         </button>
 
         <p className="mt-6 text-center text-xs text-ink-muted">
-          Ask an administrator if you cannot sign in.
+          {t('login.askAdmin')}
         </p>
       </form>
     </div>

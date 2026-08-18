@@ -81,11 +81,11 @@ export function RollProductionPage(): ReactElement {
   }
 
   if (rolls.isPending || recipes.isPending || colors.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (rolls.isError || recipes.isError || colors.isError) {
-    return <p className="p-6 text-bad">Could not load line 1.</p>;
+    return <p className="p-6 text-bad">{t('rolls.loadFailed1')}</p>;
   }
 
   // A draft may still change, so a roll could never be reproduced from it.
@@ -115,7 +115,7 @@ export function RollProductionPage(): ReactElement {
 
       {canProduce && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No shift is open, so a roll cannot be logged.
+          {t('rolls.noShift')}
         </p>
       )}
 
@@ -130,7 +130,7 @@ export function RollProductionPage(): ReactElement {
               setPrinting({ barcodes: [justLogged.barcode] });
             }}
           >
-            Print the label again
+            {t('rolls.printAgain')}
           </button>
         </p>
       )}
@@ -146,15 +146,15 @@ export function RollProductionPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
-              <th className="px-4 py-3 font-semibold">Made by</th>
-              <th className="px-4 py-3 font-semibold">Out at</th>
+              <th className="px-4 py-3 font-semibold">{t('rolls.madeBy')}</th>
+              <th className="px-4 py-3 font-semibold">{t('rolls.outAt')}</th>
             </tr>
           </thead>
           <tbody>
             {rolls.data.length === 0 && (
               <tr>
                 <td colSpan={9} className="px-4 py-8 text-center text-ink-muted">
-                  No rolls yet.
+                  {t('rolls.none')}
                 </td>
               </tr>
             )}

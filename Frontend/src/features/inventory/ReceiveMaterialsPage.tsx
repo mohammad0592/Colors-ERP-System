@@ -74,16 +74,16 @@ export function ReceiveMaterialsPage(): ReactElement {
       void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
     },
     onError: (caught) => {
-      setError(caught instanceof ApiError ? caught.message : 'Something went wrong.');
+      setError(caught instanceof ApiError ? caught.message : t('common.somethingWrong'));
     },
   });
 
   if (stock.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (stock.isError) {
-    return <p className="p-6 text-bad">Could not load the materials.</p>;
+    return <p className="p-6 text-bad">{t('inventory.loadMaterialsFailed')}</p>;
   }
 
   return (
@@ -99,7 +99,7 @@ export function ReceiveMaterialsPage(): ReactElement {
               void navigate('/inventory');
             }}
           >
-            Back to the store
+            {t('inventory.backToStore')}
           </button>
         }
       />
@@ -130,7 +130,7 @@ export function ReceiveMaterialsPage(): ReactElement {
                 setError(null);
               }}
             >
-              <option value="">Choose a material…</option>
+              <option value="">{t('inventory.chooseMaterial')}</option>
               {stock.data.map((row) => (
                 <option key={row.materialId} value={row.materialId}>
                   {row.code} — {row.name}
@@ -158,7 +158,7 @@ export function ReceiveMaterialsPage(): ReactElement {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="mb-4">
               <label className="field-label" htmlFor="rec-unit">
-                Arrived as
+                {t('inventory.arrivedAs')}
               </label>
               <select
                 id="rec-unit"
@@ -183,7 +183,7 @@ export function ReceiveMaterialsPage(): ReactElement {
 
             <div className="mb-4">
               <label className="field-label" htmlFor="rec-quantity">
-                How many?
+                {t('inventory.howMany')}
               </label>
               <input
                 id="rec-quantity"
@@ -223,7 +223,7 @@ export function ReceiveMaterialsPage(): ReactElement {
               maxLength={300}
               value={notes}
               disabled={receive.isPending}
-              placeholder="Supplier, delivery note number…"
+              placeholder={t('inventory.supplierNote')}
               onChange={(event) => {
                 setNotes(event.target.value);
               }}
@@ -253,7 +253,7 @@ export function ReceiveMaterialsPage(): ReactElement {
               receive.isPending || materialId === null || unitId === null || !isQuantity
             }
           >
-            {receive.isPending ? 'Booking in…' : 'Receive'}
+            {receive.isPending ? 'Booking in…' : t('inventory.receive')}
           </button>
         </form>
       </div>

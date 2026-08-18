@@ -62,7 +62,7 @@ export function ShiftReportDialog({
       onChanged(await action());
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -82,7 +82,7 @@ export function ShiftReportDialog({
 
       {locked && (
         <p className="mb-5 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          This shift is closed. An administrator can reopen it.
+          {t('shifts.closedNote')}
         </p>
       )}
 
@@ -135,7 +135,7 @@ export function ShiftReportDialog({
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="mb-4">
             <label className="field-label" htmlFor="shift-meter-start">
-              Electricity meter at start
+              {t('shifts.meterStart')}
             </label>
             <input
               id="shift-meter-start"
@@ -151,7 +151,7 @@ export function ShiftReportDialog({
           </div>
           <div className="mb-4">
             <label className="field-label" htmlFor="shift-meter-end">
-              Electricity meter at end
+              {t('shifts.meterEnd')}
             </label>
             <input
               id="shift-meter-end"
@@ -169,19 +169,19 @@ export function ShiftReportDialog({
 
         <div className="mb-4 rounded-control bg-canvas px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-medium text-ink-soft">Electricity used</span>
+            <span className="text-sm font-medium text-ink-soft">{t('shifts.electricityUsed')}</span>
             <span className="text-lg font-bold text-ink">
               {orDash(report.electricityUsed)}
             </span>
           </div>
           <p className="mt-1 text-xs text-ink-muted">
-            End meter minus start meter, for the whole factory.
+            {t('shifts.meterNote')}
           </p>
         </div>
 
         <div className="mb-4">
           <label className="field-label" htmlFor="shift-notes">
-            Notes for the shift
+            {t('shifts.notesForShift')}
           </label>
           <textarea
             id="shift-notes"
@@ -199,7 +199,7 @@ export function ShiftReportDialog({
         {!locked && (
           <div className="flex items-center gap-3">
             <button type="submit" className="btn-primary w-auto px-6" disabled={isSaving}>
-              {isSaving ? 'Saving…' : 'Save shift details'}
+              {isSaving ? 'Saving…' : t('shifts.saveDetails')}
             </button>
             {savedDetails && error === null && !isSaving && (
               <span className="text-sm font-medium text-ok">{t('state.saved')}</span>
@@ -275,7 +275,7 @@ export function ShiftReportDialog({
                         removed. Use this when the line turned out not to run.
                       </>
                     ),
-                    confirmLabel: 'Remove line',
+                    confirmLabel: t('shifts.removeLine'),
                     onConfirm: () => {
                       setActiveLineId(0);
                       void run(() => shiftReportsApi.removeLine(report.id, active.id));
@@ -309,7 +309,7 @@ export function ShiftReportDialog({
           className="mt-6 min-h-touch w-full rounded-control border border-line text-sm font-semibold text-ink-soft transition-colors hover:bg-canvas"
           onClick={onClose}
         >
-          Close
+          {t('common.close')}
         </button>
       )}
 

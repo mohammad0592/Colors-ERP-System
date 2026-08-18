@@ -1,4 +1,5 @@
 import { useState, type ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { inventoryApi, type MaterialStockDto } from './api';
@@ -21,6 +22,7 @@ export function AdjustStockDialog({
   onClose,
   onAdjusted,
 }: AdjustStockDialogProps): ReactElement {
+  const { t } = useTranslation();
   const [counted, setCounted] = useState('');
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +45,7 @@ export function AdjustStockDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -61,7 +63,7 @@ export function AdjustStockDialog({
       >
         <div className="mb-4 rounded-control bg-canvas px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-medium text-ink-soft">The system says</span>
+            <span className="text-sm font-medium text-ink-soft">{t('inventory.systemSays')}</span>
             <span className="text-lg font-bold text-ink">
               {material.currentQuantity} {material.baseUnitSymbol}
             </span>
@@ -70,7 +72,7 @@ export function AdjustStockDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="adjust-counted">
-            What did you count?
+            {t('inventory.whatCounted')}
           </label>
           <input
             id="adjust-counted"
@@ -104,7 +106,7 @@ export function AdjustStockDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="adjust-reason">
-            Why is it different?
+            {t('inventory.whyDifferent')}
           </label>
           <textarea
             id="adjust-reason"
@@ -113,13 +115,13 @@ export function AdjustStockDialog({
             className="field-input"
             value={reason}
             disabled={isSaving}
-            placeholder="Spillage, a bag found behind the door, a delivery booked in twice…"
+            placeholder={t('inventory.adjustExample')}
             onChange={(event) => {
               setReason(event.target.value);
             }}
           />
           <p className="mt-1 text-xs text-ink-muted">
-            Kept on the record for good.
+            {t('inventory.keptForGood')}
           </p>
         </div>
 
@@ -137,7 +139,7 @@ export function AdjustStockDialog({
           className="btn-primary"
           disabled={isSaving || !isNumber || difference === 0 || reason.trim() === ''}
         >
-          {isSaving ? 'Saving…' : 'Correct the balance'}
+          {isSaving ? 'Saving…' : t('inventory.correctBalance')}
         </button>
       </form>
     </Modal>

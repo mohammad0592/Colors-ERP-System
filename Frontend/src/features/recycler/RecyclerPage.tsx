@@ -84,7 +84,7 @@ export function RecyclerPage(): ReactElement {
     },
     onError: (caught: unknown) => {
       setActionError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
       );
     },
   });
@@ -117,7 +117,7 @@ export function RecyclerPage(): ReactElement {
 
       {canRecord && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No recycling line is open.
+          {t('recycler.noLineOpen')}
         </p>
       )}
 
@@ -148,7 +148,7 @@ export function RecyclerPage(): ReactElement {
                 setRecording(null);
               }}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
 
@@ -160,7 +160,7 @@ export function RecyclerPage(): ReactElement {
             <>
               <div className="mb-4 max-w-sm">
                 <label className="field-label" htmlFor="recycled-weight">
-                  Recycled material produced (kg)
+                  {t('recycler.producedKg')}
                 </label>
                 <input
                   id="recycled-weight"
@@ -203,7 +203,7 @@ export function RecyclerPage(): ReactElement {
                   save.mutate();
                 }}
               >
-                {save.isPending ? 'Saving…' : 'Record it and add it to the store'}
+                {save.isPending ? 'Saving…' : t('recycler.recordAndAdd')}
               </button>
               <p className="mt-2 text-xs text-ink-muted">
                 {t('msg.writtenOnceAtShiftEnd')}
@@ -215,12 +215,12 @@ export function RecyclerPage(): ReactElement {
 
       <h2 className="mb-3 text-lg font-bold text-ink">{t('state.recorded')}</h2>
 
-      {records.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
-      {records.isError && <p className="p-6 text-bad">Could not load the recycler.</p>}
+      {records.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
+      {records.isError && <p className="p-6 text-bad">{t('recycler.loadFailed')}</p>}
 
       {records.data?.length === 0 && (
         <p className="card p-8 text-center text-ink-muted">
-          Nothing has been recycled yet.
+          {t('recycler.none')}
         </p>
       )}
 
@@ -231,7 +231,7 @@ export function RecyclerPage(): ReactElement {
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
                 <th className="px-4 py-3 font-semibold">{t('term.line')}</th>
-                <th className="px-4 py-3 text-end font-semibold">Produced</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('recycler.produced')}</th>
                 <th className="px-4 py-3 font-semibold">{t('field.recordedBy')}</th>
               </tr>
             </thead>

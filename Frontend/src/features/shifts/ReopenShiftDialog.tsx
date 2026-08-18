@@ -37,7 +37,7 @@ export function ReopenShiftDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -45,7 +45,7 @@ export function ReopenShiftDialog({
   }
 
   return (
-    <Modal title="Reopen this shift?" onClose={onClose}>
+    <Modal title={t('shifts.reopenTitle')} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -62,7 +62,7 @@ export function ReopenShiftDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="reopen-reason">
-            Why is it being reopened?
+            {t('shifts.whyReopen')}
           </label>
           <textarea
             id="reopen-reason"
@@ -71,7 +71,7 @@ export function ReopenShiftDialog({
             className="field-input"
             value={reason}
             disabled={isSaving}
-            placeholder="The end meter reading was written down wrong."
+            placeholder={t('shifts.reopenExample')}
             onChange={(event) => {
               setReason(event.target.value);
             }}
@@ -92,7 +92,7 @@ export function ReopenShiftDialog({
           className="btn-primary"
           disabled={isSaving || reason.trim() === ''}
         >
-          {isSaving ? 'Reopening…' : 'Reopen shift'}
+          {isSaving ? 'Reopening…' : t('shifts.reopenShiftBtn')}
         </button>
       </form>
     </Modal>

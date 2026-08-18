@@ -71,7 +71,7 @@ export function DispatchPage(): ReactElement {
       await refresh();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
       // A refused scan keeps the code on screen so the man can see what he scanned.
     } finally {
@@ -92,7 +92,7 @@ export function DispatchPage(): ReactElement {
 
       <div className="mb-6 max-w-xl">
         <ScanField
-          label="Scan a pallet"
+          label={t('dispatch.scanAPallet')}
           placeholder="P000123"
           value={barcode}
           onChange={setBarcode}
@@ -127,16 +127,16 @@ export function DispatchPage(): ReactElement {
       </div>
 
       <section className="mb-8">
-        <h2 className="mb-1 text-lg font-semibold text-ink">In the factory</h2>
+        <h2 className="mb-1 text-lg font-semibold text-ink">{t('dispatch.inTheFactory')}</h2>
         <p className="mb-3 text-sm text-ink-muted">
-          Oldest first — load these before the newer ones.
+          {t('dispatch.oldestFirst')}
         </p>
 
-        {inStock.isPending && <p className="text-sm text-ink-muted">Loading…</p>}
+        {inStock.isPending && <p className="text-sm text-ink-muted">{t('common.loading')}</p>}
 
         {!inStock.isPending && waiting.length === 0 && (
           <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-            Nothing finished is waiting.
+            {t('dispatch.nothingWaiting')}
           </p>
         )}
 
@@ -146,11 +146,11 @@ export function DispatchPage(): ReactElement {
               <thead>
                 <tr className="border-b border-line text-start text-ink-muted">
                   <th className="py-2 pe-4 font-medium">{t('term.pallet')}</th>
-                  <th className="py-2 pe-4 font-medium">What is on it</th>
+                  <th className="py-2 pe-4 font-medium">{t('dispatch.whatIsOnIt')}</th>
                   <th className="py-2 pe-4 font-medium">{t('term.bags')}</th>
                   <th className="py-2 pe-4 font-medium">{t('field.weight')}</th>
                   <th className="py-2 pe-4 font-medium">{t('state.finished')}</th>
-                  <th className="py-2 pe-4 font-medium">Waiting</th>
+                  <th className="py-2 pe-4 font-medium">{t('dispatch.waiting')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,12 +164,12 @@ export function DispatchPage(): ReactElement {
       </section>
 
       <section>
-        <h2 className="mb-1 text-lg font-semibold text-ink">Gone</h2>
-        <p className="mb-3 text-sm text-ink-muted">The last ten to leave.</p>
+        <h2 className="mb-1 text-lg font-semibold text-ink">{t('dispatch.gone')}</h2>
+        <p className="mb-3 text-sm text-ink-muted">{t('dispatch.lastTen')}</p>
 
         {gone.length === 0 && (
           <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-            Nothing has been sent out yet.
+            {t('dispatch.nothingSentYet')}
           </p>
         )}
 
@@ -179,9 +179,9 @@ export function DispatchPage(): ReactElement {
               <thead>
                 <tr className="border-b border-line text-start text-ink-muted">
                   <th className="py-2 pe-4 font-medium">{t('term.pallet')}</th>
-                  <th className="py-2 pe-4 font-medium">What was on it</th>
+                  <th className="py-2 pe-4 font-medium">{t('dispatch.whatWasOnIt')}</th>
                   <th className="py-2 pe-4 font-medium">{t('term.bags')}</th>
-                  <th className="py-2 pe-4 font-medium">Went</th>
+                  <th className="py-2 pe-4 font-medium">{t('dispatch.went')}</th>
                   <th className="py-2 pe-4 font-medium" />
                 </tr>
               </thead>
@@ -207,7 +207,7 @@ export function DispatchPage(): ReactElement {
                           });
                         }}
                       >
-                        It did not go
+                        {t('dispatch.itDidNotGo')}
                       </button>
                     </td>
                   </tr>

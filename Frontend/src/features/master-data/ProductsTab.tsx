@@ -54,17 +54,17 @@ export function ProductsTab(): ReactElement {
       setActionError(null);
     },
     onError: (caught) => {
-      setActionError(caught instanceof ApiError ? caught.message : 'Could not delete.');
+      setActionError(caught instanceof ApiError ? caught.message : t('common.deleteFailed'));
     },
     onSettled: invalidate,
   });
 
   if (products.isPending || moulds.isPending || types.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (products.isError || moulds.isError || types.isError) {
-    return <p className="p-6 text-bad">Could not load products.</p>;
+    return <p className="p-6 text-bad">{t('md.productsFailed')}</p>;
   }
 
   return (
@@ -80,12 +80,12 @@ export function ProductsTab(): ReactElement {
             setEditing('new');
           }}
         >
-          Add product
+          {t('md.addProduct')}
         </button>
       </div>
 
       <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-        A mould plus an absorbency names exactly one product.
+        {t('md.mouldPlusAbsorbency')}
       </p>
 
       {actionError !== null && (
@@ -103,11 +103,11 @@ export function ProductsTab(): ReactElement {
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.mould')}</th>
-              <th className="px-4 py-3 font-semibold">Type</th>
+              <th className="px-4 py-3 font-semibold">{t('md.type')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.absorbent')}</th>
-              <th className="px-4 py-3 font-semibold">Pieces / bag</th>
-              <th className="px-4 py-3 font-semibold">Small bags / bag</th>
-              <th className="px-4 py-3 font-semibold">Bags / pallet</th>
+              <th className="px-4 py-3 font-semibold">{t('md.piecesPerBagShort')}</th>
+              <th className="px-4 py-3 font-semibold">{t('md.smallBagsShort')}</th>
+              <th className="px-4 py-3 font-semibold">{t('md.bagsPerPalletShort')}</th>
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3" />
             </tr>
@@ -119,7 +119,7 @@ export function ProductsTab(): ReactElement {
                 <td className="px-4 py-3 text-ink-soft">{product.mouldName}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.productTypeName}</td>
                 <td className="px-4 py-3 text-ink-soft">
-                  {product.isAbsorbent ? 'Yes' : 'No'}
+                  {product.isAbsorbent ? t('common.yes') : 'No'}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{product.piecesPerBag}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.smallBagsPerBag}</td>
@@ -136,7 +136,7 @@ export function ProductsTab(): ReactElement {
                       }}
                     />
                     <RowButton
-                      label={product.isActive ? 'Deactivate' : 'Activate'}
+                      label={product.isActive ? t('common.deactivate') : t('common.activate')}
                       onClick={() => {
                         setActive.mutate({
                           id: product.id,
@@ -150,14 +150,14 @@ export function ProductsTab(): ReactElement {
                         tone="danger"
                         onClick={() => {
                           setConfirm({
-                            title: 'Delete product?',
+                            title: t('md.deleteProduct'),
                             message: (
                               <>
                                 <strong>{product.name}</strong> will be removed for good.
                                 Nothing uses it, so no records are affected.
                               </>
                             ),
-                            confirmLabel: 'Delete',
+                            confirmLabel: t('action.delete'),
                             onConfirm: () => {
                               remove.mutate(product.id);
                             },
@@ -255,7 +255,7 @@ function ProductDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -263,7 +263,7 @@ function ProductDialog({
   }
 
   return (
-    <Modal title={product === null ? 'Add product' : 'Edit product'} onClose={onClose}>
+    <Modal title={product === null ? t('md.addProduct') : t('md.editProduct')} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -311,7 +311,7 @@ function ProductDialog({
 
           <div className="mb-4">
             <label className="field-label" htmlFor="prod-type">
-              Product type
+              {t('md.productType')}
             </label>
             <select
               id="prod-type"
@@ -349,28 +349,28 @@ function ProductDialog({
             {t('term.absorbent')}
           </label>
           <p className="mt-1 ms-8 text-xs text-ink-muted">
-            Decided by what is mixed into the roll, not by the mould.
+            {t('md.decidedByMix')}
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <NumberField
             id="prod-pieces"
-            label="Pieces per bag"
+            label={t('md.piecesPerBag')}
             value={piecesPerBag}
             onChange={setPiecesPerBag}
             disabled={isSaving}
           />
           <NumberField
             id="prod-small"
-            label="Small bags per bag"
+            label={t('md.smallBagsPerBag')}
             value={smallBagsPerBag}
             onChange={setSmallBagsPerBag}
             disabled={isSaving}
           />
           <NumberField
             id="prod-pallet"
-            label="Bags per pallet"
+            label={t('md.bagsPerPallet')}
             value={bagsPerPallet}
             onChange={setBagsPerPallet}
             disabled={isSaving}
@@ -387,7 +387,7 @@ function ProductDialog({
         )}
 
         <button type="submit" className="btn-primary" disabled={isSaving}>
-          {isSaving ? 'Saving…' : 'Save'}
+          {isSaving ? 'Saving…' : t('common.save')}
         </button>
       </form>
     </Modal>

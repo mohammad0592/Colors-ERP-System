@@ -40,10 +40,10 @@ export function CrewEditor({
 
   return (
     <div>
-      <p className="field-label">Workers on this shift</p>
+      <p className="field-label">{t('shifts.crewTitle')}</p>
 
       {workers.length === 0 && (
-        <p className="mb-3 text-sm text-ink-muted">Nobody added yet.</p>
+        <p className="mb-3 text-sm text-ink-muted">{t('shifts.nobodyYet')}</p>
       )}
 
       <div className="mb-3 space-y-2">
@@ -72,7 +72,7 @@ export function CrewEditor({
                       replace(index, { isTrainee: event.target.checked });
                     }}
                   />
-                  Trainee
+                  {t('shifts.trainee')}
                 </label>
 
                 {!disabled && (
@@ -83,7 +83,7 @@ export function CrewEditor({
                       onChange(workers.filter((_, i) => i !== index));
                     }}
                   >
-                    Remove
+                    {t('shifts.remove')}
                   </button>
                 )}
               </div>
@@ -121,7 +121,7 @@ export function CrewEditor({
               </div>
 
               {worker.roleInShiftIds.length === 0 && (
-                <p className="mt-1.5 text-xs text-ink-muted">No job recorded.</p>
+                <p className="mt-1.5 text-xs text-ink-muted">{t('shifts.noJob')}</p>
               )}
             </div>
           );
@@ -138,7 +138,7 @@ export function CrewEditor({
               setToAdd(event.target.value);
             }}
           >
-            <option value="">Add a worker…</option>
+            <option value="">{t('shifts.addWorkerEllipsis')}</option>
             {available.map((person) => (
               <option key={person.id} value={person.id}>
                 {person.fullName} ({person.employeeNumber})
@@ -157,7 +157,7 @@ export function CrewEditor({
               setToAdd('');
             }}
           >
-            Add
+            {t('shifts.add')}
           </button>
         </div>
       )}

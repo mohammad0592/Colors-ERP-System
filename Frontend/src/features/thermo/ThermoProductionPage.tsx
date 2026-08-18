@@ -79,18 +79,18 @@ export function ThermoProductionPage(): ReactElement {
     },
     onError: (caught: unknown) => {
       setActionError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
       );
     },
     onSettled: invalidate,
   });
 
   if (runs.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (runs.isError) {
-    return <p className="p-6 text-bad">Could not load line 2.</p>;
+    return <p className="p-6 text-bad">{t('thermo.loadFailed2')}</p>;
   }
 
   const lines = formingLines.data ?? [];
@@ -125,7 +125,7 @@ export function ThermoProductionPage(): ReactElement {
 
       <section className="mb-6 flex flex-wrap gap-2">
         <Chip
-          label="Still to be counted"
+          label={t('thermo.stillToCount')}
           active={openOnly}
           onClick={() => {
             setOpenOnly(true);
@@ -164,8 +164,8 @@ export function ThermoProductionPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('term.roll')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.colourRecipe')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
-              <th className="px-4 py-3 font-semibold">Operator</th>
-              <th className="px-4 py-3 font-semibold">Where it is</th>
+              <th className="px-4 py-3 font-semibold">{t('thermo.operator')}</th>
+              <th className="px-4 py-3 font-semibold">{t('thermo.whereItIs')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.minutes')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('term.bags')}</th>
               <th className="px-4 py-3" />
@@ -176,8 +176,8 @@ export function ThermoProductionPage(): ReactElement {
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
                   {openOnly
-                    ? 'Nothing is waiting to be counted.'
-                    : 'No roll has been formed yet.'}
+                    ? t('thermo.nothingToCount')
+                    : t('thermo.noneFormed')}
                 </td>
               </tr>
             )}
@@ -220,7 +220,7 @@ export function ThermoProductionPage(): ReactElement {
                                 Thermo Tests screen — and that is what creates the bags.
                               </>
                             ),
-                            confirmLabel: 'Take it out',
+                            confirmLabel: t('thermo.takeItOut'),
                             tone: 'primary',
                             onConfirm: () => {
                               finishRun.mutate(run.id);
@@ -228,7 +228,7 @@ export function ThermoProductionPage(): ReactElement {
                           });
                         }}
                       >
-                        Take it out
+                        {t('thermo.takeItOut')}
                       </button>
                     )}
                   </div>

@@ -102,18 +102,18 @@ export function PalletsPage(): ReactElement {
     },
     onError: (caught: unknown) => {
       setActionError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
       );
     },
     onSettled: invalidate,
   });
 
   if (pallets.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (pallets.isError) {
-    return <p className="p-6 text-bad">Could not load the pallets.</p>;
+    return <p className="p-6 text-bad">{t('pallets.loadFailed')}</p>;
   }
 
   const lines = packingLines.data ?? [];
@@ -154,14 +154,14 @@ export function PalletsPage(): ReactElement {
 
       <section className="mb-6 flex flex-wrap gap-2">
         <Chip
-          label="Being built"
+          label={t('pallets.beingBuilt')}
           active={openOnly}
           onClick={() => {
             setOpenOnly(true);
           }}
         />
         <Chip
-          label="Every pallet"
+          label={t('pallets.everyPallet')}
           active={!openOnly}
           onClick={() => {
             setOpenOnly(false);
@@ -173,7 +173,7 @@ export function PalletsPage(): ReactElement {
         <div className="lg:col-span-2">
           {pallets.data.length === 0 ? (
             <p className="card p-8 text-center text-ink-muted">
-              {openOnly ? 'No pallet is being built.' : 'No pallet has been started yet.'}
+              {openOnly ? t('pallets.noneBeingBuilt') : t('pallets.noneStarted')}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -196,7 +196,7 @@ export function PalletsPage(): ReactElement {
         <aside className="lg:sticky lg:top-6 lg:self-start">
           {open === null ? (
             <div className="card p-6 text-sm text-ink-muted">
-              Choose a pallet to scan bags onto it.
+              {t('pallets.choosePallet')}
             </div>
           ) : (
             <div className="card p-5">
@@ -215,7 +215,7 @@ export function PalletsPage(): ReactElement {
                     setLabelFor(open.barcode);
                   }}
                 >
-                  Print the pallet label
+                  {t('pallets.printLabel')}
                 </button>
 
                 {/* Only while it is empty. After the first bag the wood is under the
@@ -228,7 +228,7 @@ export function PalletsPage(): ReactElement {
                       setCancelling({ id: open.id, number: open.palletNumber });
                     }}
                   >
-                    Cancel this pallet
+                    {t('pallets.cancelThis')}
                   </button>
                 )}
               </div>
@@ -253,7 +253,7 @@ export function PalletsPage(): ReactElement {
                   {open.bagCount}
                   {open.capacity === null ? '' : ` / ${String(open.capacity)}`}
                 </Row>
-                <Row label="Total pieces">{open.pieceCount.toLocaleString('en-GB')}</Row>
+                <Row label={t('pallets.totalPieces')}>{open.pieceCount.toLocaleString('en-GB')}</Row>
                 <Row label={t('field.weight')}>{open.weight} kg</Row>
                 <Row label={t('term.colour')}>
                   {open.colorName ?? <span className="text-ink-muted">not set yet</span>}
@@ -284,7 +284,7 @@ export function PalletsPage(): ReactElement {
                   <th className="px-4 py-3 font-semibold">{t('term.fromRoll')}</th>
                   <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
                   <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
-                  <th className="px-4 py-3 font-semibold">Scanned by</th>
+                  <th className="px-4 py-3 font-semibold">{t('pallets.scannedBy')}</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -292,7 +292,7 @@ export function PalletsPage(): ReactElement {
                 {open.bags.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                      Nothing on it yet. The first bag decides what this pallet is.
+                      {t('pallets.nothingOnItLong')}
                     </td>
                   </tr>
                 )}
@@ -341,7 +341,7 @@ export function PalletsPage(): ReactElement {
                               });
                             }}
                           >
-                            Take it off
+                            {t('pallets.takeItOff')}
                           </button>
                         )}
                       </div>

@@ -57,7 +57,7 @@ export function IngredientEditor({
       </div>
 
       <p className="mb-3 text-xs text-ink-muted">
-        Tick <strong>base</strong> for GPPS and recycled material — together they must
+        {t('recipes.tick')} <strong>base</strong> for GPPS and recycled material — together they must
         make 100%. Everything else is measured against that base, so the whole list does
         not add up to 100.
       </p>
@@ -67,10 +67,10 @@ export function IngredientEditor({
           <thead>
             <tr className="text-xs tracking-wider text-ink-muted uppercase">
               <th className="pb-2 font-semibold">{t('term.material')}</th>
-              <th className="w-16 pb-2 text-center font-semibold">Base</th>
-              <th className="w-24 pb-2 font-semibold">Target %</th>
-              <th className="w-24 pb-2 font-semibold">Min %</th>
-              <th className="w-24 pb-2 font-semibold">Max %</th>
+              <th className="w-16 pb-2 text-center font-semibold">{t('recipes.base')}</th>
+              <th className="w-24 pb-2 font-semibold">{t('recipes.targetPct')}</th>
+              <th className="w-24 pb-2 font-semibold">{t('recipes.minPct')}</th>
+              <th className="w-24 pb-2 font-semibold">{t('recipes.maxPct')}</th>
               <th className="w-10 pb-2" />
             </tr>
           </thead>
@@ -107,7 +107,7 @@ export function IngredientEditor({
                   <td className="py-1 text-center">
                     <input
                       type="checkbox"
-                      aria-label="Base resin"
+                      aria-label={t('recipes.baseResin')}
                       className="size-5"
                       checked={row.isBaseResin}
                       onChange={(e) => {
@@ -135,7 +135,7 @@ export function IngredientEditor({
                   <td className="py-1">
                     <button
                       type="button"
-                      aria-label="Remove material"
+                      aria-label={t('recipes.removeMaterial')}
                       className="grid size-9 place-items-center rounded-control text-ink-muted hover:bg-bad-soft hover:text-bad"
                       onClick={() => {
                         onChange(rows.filter((_, i) => i !== index));

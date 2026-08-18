@@ -1,4 +1,6 @@
 import type { ReactElement } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
+import type { TranslationKey } from '../../lib/i18n/en';
 import type { RollStatus } from './api';
 
 const styles: Record<RollStatus, string> = {
@@ -11,20 +13,22 @@ const styles: Record<RollStatus, string> = {
   Scrapped: 'bg-bad-soft text-bad',
 };
 
-const labels: Record<RollStatus, string> = {
-  NeedsTest: 'Needs test',
-  Available: 'Available',
-  InThermo: 'In thermo',
-  Processed: 'Processed',
-  Scrapped: 'Scrapped',
+const labels: Record<RollStatus, TranslationKey> = {
+  NeedsTest: 'status.roll.needsTest',
+  Available: 'status.roll.available',
+  InThermo: 'status.roll.inThermo',
+  Processed: 'status.roll.processed',
+  Scrapped: 'status.roll.scrapped',
 };
 
 export function RollStatusBadge({ status }: { status: RollStatus }): ReactElement {
+  const { t } = useTranslation();
+
   return (
     <span
       className={`rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${styles[status]}`}
     >
-      {labels[status]}
+      {t(labels[status])}
     </span>
   );
 }

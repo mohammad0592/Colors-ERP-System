@@ -1,12 +1,13 @@
 import { useState, type ReactElement } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
+import type { TranslationKey } from '../../lib/i18n/en';
 import { labelForRole } from '../../lib/roles';
 import { Icon } from '../ui/Icon';
 
 interface TopBarProps {
-  /** Where the worker is, shown as "Colors ERP / Inventory". */
-  breadcrumb: string;
+  /** Where the worker is, as a key: the layout knows the screen, not its wording. */
+  breadcrumb: TranslationKey;
   onOpenMobileMenu: () => void;
 }
 
@@ -35,10 +36,10 @@ export function TopBar({ breadcrumb, onOpenMobileMenu }: TopBarProps): ReactElem
         <Icon name="menu" />
       </button>
 
-      <nav aria-label="Breadcrumb" className="min-w-0 flex-1">
+      <nav aria-label={t('ui.breadcrumb')} className="min-w-0 flex-1">
         <p className="truncate text-sm text-ink-muted">
           {t('app.name')} <span className="mx-1.5">/</span>
-          <span className="font-semibold text-ink">{breadcrumb}</span>
+          <span className="font-semibold text-ink">{t(breadcrumb)}</span>
         </p>
       </nav>
 
@@ -79,7 +80,7 @@ export function TopBar({ breadcrumb, onOpenMobileMenu }: TopBarProps): ReactElem
           <>
             <button
               type="button"
-              aria-label="Close menu"
+              aria-label={t('ui.closeMenu')}
               className="fixed inset-0 z-10 cursor-default"
               onClick={() => {
                 setIsMenuOpen(false);

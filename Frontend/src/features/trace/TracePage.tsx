@@ -42,7 +42,7 @@ export function TracePage(): ReactElement {
             already knows about; this one is asked about a label in somebody's hand, and
             a dropdown of every roll, bag and pallet ever made would answer nothing. */}
         <ScanField
-          label="Barcode or roll code"
+          label={t('trace.codeLabel')}
           placeholder="B000081, R000012 or 09GN050826A"
           value={code}
           onChange={setCode}
@@ -56,7 +56,7 @@ export function TracePage(): ReactElement {
 
       {asked === '' && (
         <p className="card p-8 text-center text-ink-muted">
-          Nothing scanned yet. A label or a roll code both work.
+          {t('trace.nothingScanned')}
         </p>
       )}
 
@@ -69,7 +69,7 @@ export function TracePage(): ReactElement {
         >
           {trace.error instanceof ApiError
             ? trace.error.message
-            : 'Could not look that up.'}
+            : t('trace.lookupFailed')}
         </p>
       )}
 
@@ -92,7 +92,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
 
       {trace.pallet !== null && (
         <Step
-          title="On the pallet"
+          title={t('trace.onThePallet')}
           subtitle={`Pallet ${String(trace.pallet.palletNumber)}`}
         >
           <Facts
@@ -119,7 +119,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
       )}
 
       {trace.bag !== null && (
-        <Step title="The bag" subtitle={trace.bag.productName}>
+        <Step title={t('trace.theBag')} subtitle={trace.bag.productName}>
           <Facts
             rows={[
               ['Colour', trace.bag.colorName],
@@ -134,7 +134,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
 
       {trace.thermo !== null && (
         <Step
-          title="Formed at the thermo"
+          title={t('trace.formedAtThermo')}
           subtitle={`${trace.thermo.shiftName} · ${formatDate(trace.thermo.productionDate)}`}
         >
           <Facts
@@ -176,7 +176,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
       )}
 
       {trace.roll !== null && (
-        <Step title="The roll" subtitle={trace.roll.rollCode}>
+        <Step title={t('trace.theRoll')} subtitle={trace.roll.rollCode}>
           <Facts
             rows={[
               ['Barcode', trace.roll.barcode],
@@ -217,12 +217,12 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
 
       {trace.mix !== null && (
         <Step
-          title="The mix, and what went into the shift"
+          title={t('trace.theMix')}
           subtitle={`${trace.mix.productionLineName} · ${trace.mix.shiftName} · ${formatDate(trace.mix.productionDate)}`}
         >
           {trace.mix.materials.length === 0 ? (
             <p className="text-sm text-ink-muted">
-              No material was issued to this shift on a ticket.
+              {t('trace.noMaterialIssued')}
             </p>
           ) : (
             <div className="overflow-x-auto">
@@ -275,7 +275,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
 
       {trace.bags.length > 0 && (
         <Step
-          title={trace.kind === 'Pallet' ? 'The bags on it' : 'What it became'}
+          title={trace.kind === 'Pallet' ? t('trace.bagsOnIt') : t('trace.whatItBecame')}
           subtitle={`${String(trace.bags.length)} bag${trace.bags.length === 1 ? '' : 's'}`}
         >
           <BagTable bags={trace.bags} />

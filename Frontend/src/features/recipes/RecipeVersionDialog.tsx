@@ -126,7 +126,7 @@ export function RecipeVersionDialog({
       // The server owns the real rules — the base resin total, frozen versions,
       // duplicate materials — so its message is shown as it is.
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -134,7 +134,7 @@ export function RecipeVersionDialog({
   }
 
   const title = isNew
-    ? 'New recipe'
+    ? t('recipes.new')
     : `Recipe ${String(version.recipeNumber)} — ${version.familyName}`;
 
   return (
@@ -150,7 +150,7 @@ export function RecipeVersionDialog({
 
       {readOnly && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          This recipe is <strong>{version.status.toLowerCase()}</strong> and can no longer
+          {t('recipes.thisRecipeIs')} <strong>{version.status.toLowerCase()}</strong> and can no longer
           be changed — the rolls made with it must keep their exact formula. Use{' '}
           <strong>{t('action.copy')}</strong> to try a change under a new recipe number.
         </p>
@@ -166,7 +166,7 @@ export function RecipeVersionDialog({
         {isNew && (
           <div className="mb-4">
             <label className="field-label" htmlFor="rec-family">
-              Recipe family
+              {t('recipes.family')}
             </label>
             <select
               id="rec-family"
@@ -204,7 +204,7 @@ export function RecipeVersionDialog({
             id="rec-notes"
             type="text"
             className="field-input"
-            placeholder="What changed, and why"
+            placeholder={t('recipes.whatChanged')}
             value={notes}
             onChange={(e) => {
               setNotes(e.target.value);
@@ -224,7 +224,7 @@ export function RecipeVersionDialog({
 
         {!readOnly && (
           <button type="submit" className="btn-primary" disabled={isSaving}>
-            {isSaving ? 'Saving…' : isNew ? 'Create draft' : 'Save draft'}
+            {isSaving ? 'Saving…' : isNew ? t('recipes.createDraft') : t('recipes.saveDraft')}
           </button>
         )}
       </form>

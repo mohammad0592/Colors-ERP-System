@@ -64,7 +64,7 @@ export function NewTicketDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -75,7 +75,7 @@ export function NewTicketDialog({
     return (
       <Modal title={t('action.issueMaterial')} onClose={onClose}>
         <p className="text-sm leading-relaxed text-ink-soft">
-          No shift is open, so there is nothing to issue material to.
+          {t('issue.noShift')}
         </p>
         {shifts.length > 0 && (
           <p className="mt-3 text-sm text-ink-muted">
@@ -117,9 +117,9 @@ export function NewTicketDialog({
           </select>
         </div>
 
-        <p className="field-label">What is going out, weighed</p>
+        <p className="field-label">{t('issue.goingOutWeighed')}</p>
         <p className="mb-2 text-xs text-ink-muted">
-          Raw material only.
+          {t('issue.rawOnly')}
         </p>
         <div className="mb-4 max-h-72 overflow-y-auto rounded-control border border-line">
           <table className="w-full text-start text-sm">
@@ -168,7 +168,7 @@ export function NewTicketDialog({
             maxLength={300}
             value={notes}
             disabled={isSaving}
-            placeholder="Which mix it is for…"
+            placeholder={t('issue.whichMix')}
             onChange={(event) => {
               setNotes(event.target.value);
             }}

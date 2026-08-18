@@ -66,7 +66,7 @@ export function StartRunDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -74,14 +74,14 @@ export function StartRunDialog({
   }
 
   return (
-    <Modal title="Put a roll into the thermo" onClose={onClose}>
+    <Modal title={t('thermo.putRollIn')} onClose={onClose}>
       <div>
         <div className="mb-5 border-b border-line pb-4 text-sm text-ink-muted">
           <p>
             {line.lineName} — {line.shiftLabel}
           </p>
           <p className="mt-1">
-            Mould: <strong className="text-ink">{line.mouldName ?? 'none set'}</strong>
+            {t('thermo.mouldLabel')} <strong className="text-ink">{line.mouldName ?? 'none set'}</strong>
             {line.mouldName !== null && (
               <span> — this and the roll&apos;s recipe decide what is made.</span>
             )}
@@ -90,7 +90,7 @@ export function StartRunDialog({
 
         <div className="mb-4">
           <ScanField
-            label="Scan the roll"
+            label={t('thermo.scanTheRoll')}
             placeholder="R000123"
             value={barcode}
             onChange={setBarcode}
@@ -139,7 +139,7 @@ export function StartRunDialog({
         )}
 
         <p className="mt-2 text-xs text-ink-muted">
-          The roll leaves the store as it goes in.
+          {t('thermo.rollLeavesStore')}
         </p>
       </div>
     </Modal>

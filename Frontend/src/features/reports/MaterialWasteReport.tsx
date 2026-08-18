@@ -44,13 +44,13 @@ export function MaterialWasteReport({
 
         {/* The honest limit, printed rather than hidden (specification section 13). */}
         <p className="mt-3 rounded-control border border-line bg-canvas px-3 py-2 text-xs text-ink-soft">
-          Material is issued to a <strong>shift</strong>, not to a mix.
+          {t('reports.issuedToA')} <strong>shift</strong>, not to a mix.
         </p>
       </section>
 
       {report.lines.length === 0 ? (
         <p className="card p-8 text-center text-ink-muted">
-          Nothing was issued to this shift.
+          {t('reports.nothingIssued')}
         </p>
       ) : (
         <div className="card overflow-x-auto">
@@ -62,7 +62,7 @@ export function MaterialWasteReport({
                 <th className="px-4 py-3 text-end font-semibold">{t('field.returned')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.used')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('term.recipe')}</th>
-                <th className="px-4 py-3 text-end font-semibold">Should be</th>
+                <th className="px-4 py-3 text-end font-semibold">{t('reports.shouldBe')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.difference')}</th>
               </tr>
             </thead>

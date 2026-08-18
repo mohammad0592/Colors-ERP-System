@@ -57,7 +57,7 @@ export function NewRollDialog({
       onClose();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : 'Something went wrong. Try again.',
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
       );
     } finally {
       setIsSaving(false);
@@ -139,7 +139,7 @@ export function NewRollDialog({
         </div>
 
         <p className="mb-4 rounded-control bg-canvas px-4 py-3 text-sm text-ink-soft">
-          The roll code and barcode are printed by the system.
+          {t('rolls.codePrinted')}
         </p>
 
         {error !== null && (
@@ -156,7 +156,7 @@ export function NewRollDialog({
           className="btn-primary"
           disabled={isSaving || recipeVersionId === 0 || colorId === 0}
         >
-          {isSaving ? 'Logging…' : 'Log the roll'}
+          {isSaving ? 'Logging…' : t('rolls.logTheRoll')}
         </button>
       </form>
     </Modal>

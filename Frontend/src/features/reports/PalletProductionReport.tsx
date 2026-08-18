@@ -19,7 +19,7 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
   });
 
   if (report.isPending) {
-    return <p className="p-6 text-ink-muted">Loading…</p>;
+    return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
   if (report.isError) {
@@ -34,20 +34,20 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
         <Figure label={t('state.finished')} value={String(data.palletsCompleted)}>
           full and ready to ship
         </Figure>
-        <Figure label="Still being filled" value={String(data.palletsStillOpen)}>
+        <Figure label={t('reports.stillFilling')} value={String(data.palletsStillOpen)}>
           no product until the first bag
         </Figure>
-        <Figure label="Cancelled" value={String(data.palletsCancelled)}>
+        <Figure label={t('reports.cancelled')} value={String(data.palletsCancelled)}>
           their wood went back to the store
         </Figure>
-        <Figure label="Started altogether" value={String(data.palletsStarted)}>
+        <Figure label={t('reports.startedAltogether')} value={String(data.palletsStarted)}>
           one wooden pallet each
         </Figure>
       </section>
 
       {data.products.length === 0 ? (
         <p className="card p-8 text-center text-ink-muted">
-          No pallet was finished in these days.
+          {t('reports.noPalletFinished')}
         </p>
       ) : (
         <div className="card overflow-x-auto">
@@ -90,7 +90,7 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
             </tbody>
             <tfoot>
               <tr className="border-t-2 border-line font-semibold">
-                <td className="px-4 py-3 text-ink">Altogether</td>
+                <td className="px-4 py-3 text-ink">{t('reports.altogether')}</td>
                 <td className="px-4 py-3 text-end tabular-nums text-ink">
                   {data.products.reduce((sum, p) => sum + p.palletsCompleted, 0)}
                 </td>

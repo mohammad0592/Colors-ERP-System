@@ -26,7 +26,7 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
     <>
       <section className="card mb-4 p-4">
         <label className="field-label" htmlFor="consumption-group">
-          Grouped by
+          {t('reports.groupedBy')}
         </label>
         <select
           id="consumption-group"
@@ -41,7 +41,7 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
         </select>
       </section>
 
-      {report.isPending && <p className="p-6 text-ink-muted">Loading…</p>}
+      {report.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
       {report.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
 
       {report.data !== undefined && (
@@ -60,7 +60,7 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
 
           {report.data.groups.length === 0 ? (
             <p className="card p-8 text-center text-ink-muted">
-              Nothing was consumed in these days.
+              {t('reports.nothingConsumed')}
             </p>
           ) : (
             <div className="space-y-3">
@@ -113,7 +113,7 @@ export function ConsumptionReport({ range }: { range: DateRange }): ReactElement
                             </th>
                             <th className="px-5 py-2 text-end font-semibold">{t('field.used')}</th>
                             <th className="px-5 py-2 text-end font-semibold">
-                              Per kg of roll
+                              {t('reports.perKgRoll')}
                             </th>
                           </tr>
                         </thead>

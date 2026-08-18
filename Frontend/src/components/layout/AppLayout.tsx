@@ -24,7 +24,7 @@ export function AppLayout(): ReactElement {
   const breadcrumb =
     navigation
       .flatMap((group) => group.items)
-      .find((item) => item.path === location.pathname)?.label ?? 'Dashboard';
+      .find((item) => item.path === location.pathname)?.label ?? 'nav.dashboard';
 
   return (
     <div className="min-h-dvh">

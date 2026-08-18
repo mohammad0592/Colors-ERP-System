@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactElement, type ReactNode } from 'react';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export interface ConfirmRequest {
   title: string;
@@ -26,6 +27,7 @@ interface ConfirmDialogProps {
  * Focus starts on Cancel, so a stray Enter never deletes anything.
  */
 export function ConfirmDialog({ request, onCancel }: ConfirmDialogProps): ReactElement {
+  const { t } = useTranslation();
   const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -51,7 +53,7 @@ export function ConfirmDialog({ request, onCancel }: ConfirmDialogProps): ReactE
     <div className="fixed inset-0 z-50 grid place-items-center p-4">
       <button
         type="button"
-        aria-label="Cancel"
+        aria-label={t('common.cancel')}
         onClick={onCancel}
         className="absolute inset-0 cursor-default bg-ink/50"
       />
@@ -78,7 +80,7 @@ export function ConfirmDialog({ request, onCancel }: ConfirmDialogProps): ReactE
             onClick={onCancel}
             className="min-h-touch rounded-control border border-line px-5 text-sm font-semibold text-ink-soft transition-colors hover:bg-canvas"
           >
-            Cancel
+            {t('common.cancel')}
           </button>
           <button
             type="button"
