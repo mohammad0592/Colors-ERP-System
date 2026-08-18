@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Domain.Entities.Inventory;
 using Colors.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -38,7 +38,7 @@ public class StockLedger(ColorsDbContext db, TimeProvider timeProvider)
     {
         if (quantity <= 0)
         {
-            return Result<decimal>.Failure(ErrorCode.ValidationFailed, "A movement must be more than nothing.");
+            return Result<decimal>.Failure(ErrorCode.ValidationFailed, "A movement must be more than nothing.", "ledger.movementBelowZero");
         }
 
         var movementType = await db.MovementTypes
@@ -48,7 +48,7 @@ public class StockLedger(ColorsDbContext db, TimeProvider timeProvider)
         {
             return Result<decimal>.Failure(
                 ErrorCode.ValidationFailed,
-                $"The movement type '{movementTypeName}' is missing from master data.");
+                $"The movement type '{movementTypeName}' is missing from master data.", "ledger.movementTypeMissing", movementTypeName);
         }
 
         var owned = db.Database.CurrentTransaction is null;

@@ -142,7 +142,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
             .FirstOrDefaultAsync(f => f.Id == request.RecipeFamilyId, cancellationToken);
         if (family is null)
         {
-            return Result<RecipeVersionDto>.Failure(ErrorCode.ValidationFailed, "Choose a recipe family.");
+            return Result<RecipeVersionDto>.Failure(ErrorCode.ValidationFailed, "Choose a recipe family.", "recipe.chooseFamily");
         }
 
         var error = await ValidateIngredientsAsync(request.Ingredients, cancellationToken);
@@ -260,21 +260,21 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
         {
             return Result<RecipeVersionDto>.Failure(
                 ErrorCode.ValidationFailed,
-                $"Recipe {version.RecipeNumber} is already the one in production.");
+                $"Recipe {version.RecipeNumber} is already the one in production.", "recipe.alreadyInProduction", version.RecipeNumber.ToString());
         }
 
         if (version.Status == RecipeVersionStatus.Archived)
         {
             return Result<RecipeVersionDto>.Failure(
                 ErrorCode.ValidationFailed,
-                $"Recipe {version.RecipeNumber} has been replaced. Copy it to a new recipe instead.");
+                $"Recipe {version.RecipeNumber} has been replaced. Copy it to a new recipe instead.", "recipe.replaced", version.RecipeNumber.ToString());
         }
 
         if (version.Ingredients.Count == 0)
         {
             return Result<RecipeVersionDto>.Failure(
                 ErrorCode.ValidationFailed,
-                "A recipe with no materials cannot go into production.");
+                "A recipe with no materials cannot go into production.", "recipe.noMaterials");
         }
 
         // Retiring the old and promoting the new happen together, so there is never a
@@ -302,14 +302,14 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
         var version = await db.RecipeVersions.FirstOrDefaultAsync(v => v.Id == id, cancellationToken);
         if (version is null)
         {
-            return Result<bool>.Failure(ErrorCode.NotFound, "This recipe does not exist.");
+            return Result<bool>.Failure(ErrorCode.NotFound, "This recipe does not exist.", "recipe.notFound");
         }
 
         if (version.Status != RecipeVersionStatus.Draft)
         {
             return Result<bool>.Failure(
                 ErrorCode.ValidationFailed,
-                $"Recipe {version.RecipeNumber} has been used in production and is kept for ever.");
+                $"Recipe {version.RecipeNumber} has been used in production and is kept for ever.", "recipe.usedInProduction", version.RecipeNumber.ToString());
         }
 
         db.RecipeVersions.Remove(version);
@@ -544,10 +544,10 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
     }
 
     private static Result<RecipeFamilyDto> FamilyNotFound() =>
-        Result<RecipeFamilyDto>.Failure(ErrorCode.NotFound, "This recipe family does not exist.");
+        Result<RecipeFamilyDto>.Failure(ErrorCode.NotFound, "This recipe family does not exist.", "recipe.familyNotFound");
 
     private static Result<RecipeVersionDto> VersionNotFound() =>
-        Result<RecipeVersionDto>.Failure(ErrorCode.NotFound, "This recipe does not exist.");
+        Result<RecipeVersionDto>.Failure(ErrorCode.NotFound, "This recipe does not exist.", "recipe.notFound");
 
     private static Result<RecipeVersionDto> Frozen(RecipeVersion version) =>
         Result<RecipeVersionDto>.Failure(

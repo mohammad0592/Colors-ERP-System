@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Users;
 using Colors.Domain.Constants;
 using Colors.Infrastructure.Identity;
@@ -55,12 +55,12 @@ public class UserService(
 
         if (number is null)
         {
-            return Invalid("An employee number is needed — it is how the floor knows him.");
+            return Invalid("An employee number is needed — it is how the floor knows him.", "user.numberNeeded");
         }
 
         if (name is null)
         {
-            return Invalid("A full name is needed.");
+            return Invalid("A full name is needed.", "user.nameNeeded");
         }
 
         var wanted = await CheckRolesAsync(request.Roles, cancellationToken);
@@ -73,7 +73,7 @@ public class UserService(
         // UserName is the one that matters — but this reads better than its message.
         if (await db.Users.AnyAsync(u => u.EmployeeNumber == number, cancellationToken))
         {
-            return Invalid($"Employee number {number} already belongs to somebody.");
+            return Invalid($"Employee number {number} already belongs to somebody.", "user.numberTaken", number);
         }
 
         var user = new ApplicationUser
@@ -120,12 +120,12 @@ public class UserService(
 
         if (number is null)
         {
-            return Invalid("An employee number is needed — it is how the floor knows him.");
+            return Invalid("An employee number is needed — it is how the floor knows him.", "user.numberNeeded");
         }
 
         if (name is null)
         {
-            return Invalid("A full name is needed.");
+            return Invalid("A full name is needed.", "user.nameNeeded");
         }
 
         var wanted = await CheckRolesAsync(request.Roles, cancellationToken);
@@ -137,7 +137,7 @@ public class UserService(
         if (await db.Users.AnyAsync(
                 u => u.EmployeeNumber == number && u.Id != id, cancellationToken))
         {
-            return Invalid($"Employee number {number} already belongs to somebody.");
+            return Invalid($"Employee number {number} already belongs to somebody.", "user.numberTaken", number);
         }
 
         // The factory must never be left without a way in. Losing the last active
@@ -150,7 +150,7 @@ public class UserService(
         {
             return Invalid(
                 $"{user.FullName} is the only administrator left. Give somebody else the "
-                + "administrator role first, or nobody can get back in.");
+                + "administrator role first, or nobody can get back in.", "user.lastAdministrator", user.FullName);
         }
 
         var had = await users.GetRolesAsync(user);
@@ -359,6 +359,10 @@ public class UserService(
     private static Result<UserDto> Invalid(string message) =>
         Result<UserDto>.Failure(ErrorCode.ValidationFailed, message);
 
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<UserDto> Invalid(string message, string code, params string[] args) =>
+        Result<UserDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
+
     private static Result<UserDto> NotFound() =>
-        Result<UserDto>.Failure(ErrorCode.NotFound, "This person does not exist.");
+        Result<UserDto>.Failure(ErrorCode.NotFound, "This person does not exist.", "user.notFound");
 }

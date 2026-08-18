@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Trace;
 using Colors.Domain.Entities.Packaging;
 using Colors.Domain.Entities.Production;
@@ -25,7 +25,7 @@ public class TraceService(ColorsDbContext db) : ITraceService
         var value = barcode?.Trim().ToUpperInvariant();
         if (string.IsNullOrEmpty(value))
         {
-            return Invalid("Scan a label, or type the code printed under it.");
+            return Invalid("Scan a label, or type the code printed under it.", "trace.scanOrType");
         }
 
         var found = await db.Barcodes
@@ -46,7 +46,7 @@ public class TraceService(ColorsDbContext db) : ITraceService
             {
                 return Result<TraceDto>.Failure(
                     ErrorCode.NotFound,
-                    $"Nothing in the system matches {value} — not a label, and not a roll code.");
+                    $"Nothing in the system matches {value} — not a label, and not a roll code.", "trace.noMatch", value);
             }
 
             var rollBarcode = await db.Barcodes
@@ -64,7 +64,7 @@ public class TraceService(ColorsDbContext db) : ITraceService
             BarcodeObjectType.Roll => await FromRollAsync(found.Value, found.ObjectId, cancellationToken),
             BarcodeObjectType.Bag => await FromBagAsync(found.Value, found.ObjectId, cancellationToken),
             BarcodeObjectType.Pallet => await FromPalletAsync(found.Value, found.ObjectId, cancellationToken),
-            _ => Result<TraceDto>.Failure(ErrorCode.NotFound, "Nothing is known about that label."),
+            _ => Result<TraceDto>.Failure(ErrorCode.NotFound, "Nothing is known about that label.", "stock.unknownLabel"),
         };
     }
 
@@ -426,8 +426,12 @@ public class TraceService(ColorsDbContext db) : ITraceService
 
     private static Result<TraceDto> Gone(string barcode) =>
         Result<TraceDto>.Failure(
-            ErrorCode.NotFound, $"{barcode} names something that is no longer here.");
+            ErrorCode.NotFound, $"{barcode} names something that is no longer here.", "stock.gone", barcode);
 
     private static Result<TraceDto> Invalid(string message) =>
         Result<TraceDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<TraceDto> Invalid(string message, string code, params string[] args) =>
+        Result<TraceDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 }

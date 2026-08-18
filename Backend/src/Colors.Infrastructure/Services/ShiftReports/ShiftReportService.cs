@@ -76,13 +76,13 @@ public class ShiftReportService(
     {
         if (!await db.Shifts.AnyAsync(s => s.Id == request.ShiftId && s.IsActive, cancellationToken))
         {
-            return Invalid("Choose an active shift.");
+            return Invalid("Choose an active shift.", "shift.chooseActiveShift");
         }
 
         var lineIds = request.ProductionLineIds.Distinct().ToList();
         if (lineIds.Count == 0)
         {
-            return Invalid("Choose at least one line that is running this shift.");
+            return Invalid("Choose at least one line that is running this shift.", "shift.chooseALine");
         }
 
         var activeLines = await db.ProductionLines
@@ -90,13 +90,13 @@ public class ShiftReportService(
 
         if (activeLines != lineIds.Count)
         {
-            return Invalid("Every line must be an active production line.");
+            return Invalid("Every line must be an active production line.", "shift.activeLine");
         }
 
         var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         if (request.ProductionDate > today.AddDays(1))
         {
-            return Invalid("A shift cannot be opened more than a day ahead.");
+            return Invalid("A shift cannot be opened more than a day ahead.", "shift.tooFarAhead");
         }
 
         // Opening the same shift twice would split one day's production across two
@@ -164,7 +164,7 @@ public class ShiftReportService(
             // human decision, not a negative number quietly entering the reports.
             return Invalid(
                 "The end meter is below the start meter. Check the readings — if the meter "
-                + "rolled over or was replaced, record it in the shift's notes.");
+                + "rolled over or was replaced, record it in the shift's notes.", "shift.meterWentBackwards");
         }
 
         report.SupervisorUserId = request.SupervisorUserId;
@@ -195,14 +195,14 @@ public class ShiftReportService(
 
         if (report.Lines.Any(l => l.ProductionLineId == request.ProductionLineId))
         {
-            return Invalid("That line is already on this shift.");
+            return Invalid("That line is already on this shift.", "shift.lineAlreadyOn");
         }
 
         if (!await db.ProductionLines.AnyAsync(
                 l => l.Id == request.ProductionLineId && l.IsActive,
                 cancellationToken))
         {
-            return Invalid("Choose an active production line.");
+            return Invalid("Choose an active production line.", "shift.chooseActiveLine");
         }
 
         report.Lines.Add(new ShiftLine { ProductionLineId = request.ProductionLineId });
@@ -233,7 +233,7 @@ public class ShiftReportService(
         {
             return Result<ShiftReportDto>.Failure(
                 ErrorCode.NotFound,
-                "That line is not part of this shift.");
+                "That line is not part of this shift.", "shift.lineNotOnShift");
         }
 
         var start = ParseTime(request.ProductionStartTime);
@@ -241,17 +241,17 @@ public class ShiftReportService(
 
         if (request.ProductionStartTime is not null && start is null)
         {
-            return Invalid("The start time must be written as HH:mm, for example 08:00.");
+            return Invalid("The start time must be written as HH:mm, for example 08:00.", "shift.badStartTime");
         }
 
         if (request.ProductionEndTime is not null && end is null)
         {
-            return Invalid("The end time must be written as HH:mm, for example 16:00.");
+            return Invalid("The end time must be written as HH:mm, for example 16:00.", "shift.badEndTime");
         }
 
         if (request.DowntimeHours is < 0)
         {
-            return Invalid("Downtime cannot be negative.");
+            return Invalid("Downtime cannot be negative.", "shift.downtimeNegative");
         }
 
         // The screen hides these boxes on a line that has no such settings; the server
@@ -264,19 +264,19 @@ public class ShiftReportService(
         {
             return Invalid(
                 $"{line.ProductionLine.Name} does not record machine settings. "
-                + "Speed, feed distance and cycle time belong to the thermo line.");
+                + "Speed, feed distance and cycle time belong to the thermo line.", "shift.lineHasNoSettings", line.ProductionLine.Name);
         }
 
         // Same flag marks the forming machine, which is the only one a mould goes into.
         if (!line.ProductionLine.RecordsMachineSettings && request.MouldId is not null)
         {
-            return Invalid($"{line.ProductionLine.Name} does not take a mould.");
+            return Invalid($"{line.ProductionLine.Name} does not take a mould.", "shift.lineTakesNoMould", line.ProductionLine.Name);
         }
 
         if (request.MouldId is not null
             && !await db.Moulds.AnyAsync(m => m.Id == request.MouldId && m.IsActive, cancellationToken))
         {
-            return Invalid("Choose an active mould.");
+            return Invalid("Choose an active mould.", "shift.chooseActiveMould");
         }
 
         // Downtime longer than the shift itself is a typo worth catching before it
@@ -291,7 +291,7 @@ public class ShiftReportService(
 
         if (candidate.ActualProductionHours is < 0)
         {
-            return Invalid("Downtime is longer than the shift itself. Check the hours.");
+            return Invalid("Downtime is longer than the shift itself. Check the hours.", "shift.downtimeTooLong");
         }
 
         var workerError = await ValidateWorkersAsync(request.Workers, cancellationToken);
@@ -349,13 +349,13 @@ public class ShiftReportService(
         {
             return Result<ShiftReportDto>.Failure(
                 ErrorCode.NotFound,
-                "That line is not part of this shift.");
+                "That line is not part of this shift.", "shift.lineNotOnShift");
         }
 
         if (report.Lines.Count == 1)
         {
             return Invalid(
-                "A shift must have at least one line. Discard the whole shift instead.");
+                "A shift must have at least one line. Discard the whole shift instead.", "shift.needsALine");
         }
 
         // Only a line nothing has been recorded against can go — one ticked by
@@ -365,7 +365,7 @@ public class ShiftReportService(
         {
             return Invalid(
                 $"{line.ProductionLine.Name} already has workers recorded on it. "
-                + "Remove them first if the line did not run.");
+                + "Remove them first if the line did not run.", "shift.lineHasWorkers", line.ProductionLine.Name);
         }
 
         db.Set<ShiftLine>().Remove(line);
@@ -378,7 +378,7 @@ public class ShiftReportService(
         {
             db.ChangeTracker.Clear();
             return Invalid(
-                "Work has been recorded against this line, so it cannot be removed from the shift.");
+                "Work has been recorded against this line, so it cannot be removed from the shift.", "shift.lineHasWork");
         }
 
         return await LoadAsync(id, cancellationToken);
@@ -397,7 +397,7 @@ public class ShiftReportService(
 
         if (report.Status == ShiftReportStatus.Closed)
         {
-            return Invalid("This shift is already closed.");
+            return Invalid("This shift is already closed.", "shift.alreadyClosed");
         }
 
         // The factory's own rule (specification sections 2 and 7): a shift cannot
@@ -495,12 +495,12 @@ public class ShiftReportService(
 
         if (report.Status != ShiftReportStatus.Closed)
         {
-            return Invalid("This shift is already reopened.");
+            return Invalid("This shift is already reopened.", "shift.alreadyReopened");
         }
 
         if (string.IsNullOrWhiteSpace(request.Reason))
         {
-            return Invalid("Say why the shift is being reopened — it stays on the record.");
+            return Invalid("Say why the shift is being reopened — it stays on the record.", "shift.sayWhyReopening");
         }
 
         // Reopening is never blocked. A supervisor who closed A, watched B start, and
@@ -552,14 +552,14 @@ public class ShiftReportService(
         var report = await Query().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
         if (report is null)
         {
-            return Result<bool>.Failure(ErrorCode.NotFound, "This shift does not exist.");
+            return Result<bool>.Failure(ErrorCode.NotFound, "This shift does not exist.", "shift.notFound");
         }
 
         if (report.Status == ShiftReportStatus.Closed)
         {
             return Result<bool>.Failure(
                 ErrorCode.ValidationFailed,
-                "A closed shift is part of the record and is kept for ever.");
+                "A closed shift is part of the record and is kept for ever.", "shift.closedIsKept");
         }
 
         // Only an empty shift can go — one opened on the wrong day.
@@ -567,7 +567,7 @@ public class ShiftReportService(
         {
             return Result<bool>.Failure(
                 ErrorCode.ValidationFailed,
-                "This shift already has workers recorded on it. Close it instead.");
+                "This shift already has workers recorded on it. Close it instead.", "shift.hasWorkers");
         }
 
         db.Set<ShiftReport>().Remove(report);
@@ -583,7 +583,7 @@ public class ShiftReportService(
             db.ChangeTracker.Clear();
             return Result<bool>.Failure(
                 ErrorCode.ValidationFailed,
-                "Work has been recorded against this shift, so it cannot be removed. Close it instead.");
+                "Work has been recorded against this shift, so it cannot be removed. Close it instead.", "shift.hasWork");
         }
 
         return Result<bool>.Success(true);
@@ -776,11 +776,15 @@ public class ShiftReportService(
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static Result<ShiftReportDto> NotFound() =>
-        Result<ShiftReportDto>.Failure(ErrorCode.NotFound, "This shift does not exist.");
+        Result<ShiftReportDto>.Failure(ErrorCode.NotFound, "This shift does not exist.", "shift.notFound");
 
     private static Result<ShiftReportDto> Invalid(string message) =>
         Result<ShiftReportDto>.Failure(ErrorCode.ValidationFailed, message);
 
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<ShiftReportDto> Invalid(string message, string code, params string[] args) =>
+        Result<ShiftReportDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
+
     private static Result<ShiftReportDto> ClosedShift() =>
-        Invalid("This shift is closed. An administrator must reopen it before anything can change.");
+        Invalid("This shift is closed. An administrator must reopen it before anything can change.", "shift.closedReopenFirst");
 }

@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Barcodes;
 using Colors.Domain.Entities.Barcodes;
 using Colors.Domain.Enums;
@@ -27,7 +27,7 @@ public class BarcodeService(ColorsDbContext db, TimeProvider timeProvider) : IBa
     {
         if (objectId <= 0)
         {
-            return Invalid("A barcode needs an object to belong to.");
+            return Invalid("A barcode needs an object to belong to.", "barcode.needsAnObject");
         }
 
         // One object, one active barcode. Called twice — a retry, a double tap — this
@@ -151,12 +151,12 @@ public class BarcodeService(ColorsDbContext db, TimeProvider timeProvider) : IBa
         {
             return Result<BarcodeDto>.Failure(
                 ErrorCode.NotFound,
-                $"No label in the system matches {cleaned}.");
+                $"No label in the system matches {cleaned}.", "barcode.noMatch", cleaned);
         }
 
         if (!old.IsActive)
         {
-            return Invalid("That label has already been replaced.");
+            return Invalid("That label has already been replaced.", "barcode.alreadyReplaced");
         }
 
         // The old row stays. A bag found weeks later still carrying it is then
@@ -230,4 +230,8 @@ public class BarcodeService(ColorsDbContext db, TimeProvider timeProvider) : IBa
 
     private static Result<BarcodeDto> Invalid(string message) =>
         Result<BarcodeDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<BarcodeDto> Invalid(string message, string code, params string[] args) =>
+        Result<BarcodeDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 }

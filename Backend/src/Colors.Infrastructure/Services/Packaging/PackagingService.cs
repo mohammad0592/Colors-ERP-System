@@ -56,7 +56,7 @@ public class PackagingService(
         if (shiftLine is null)
         {
             return Result<PackagingDraftDto>.Failure(
-                ErrorCode.NotFound, "This line of the shift does not exist.");
+                ErrorCode.NotFound, "This line of the shift does not exist.", "shift.lineNotFound");
         }
 
         var existing = await Query()
@@ -109,14 +109,14 @@ public class PackagingService(
 
         if (shiftLine is null)
         {
-            return Invalid("Choose a line of an open shift.");
+            return Invalid("Choose a line of an open shift.", "shift.chooseOpenLine");
         }
 
         // Packaging is used where the bags come off (specification section 4).
         if (!shiftLine.ProductionLine.FormsBags)
         {
             return Invalid(
-                $"{shiftLine.ProductionLine.Name} does not pack anything. Choose the thermo line.");
+                $"{shiftLine.ProductionLine.Name} does not pack anything. Choose the thermo line.", "packaging.linePacksNothing", shiftLine.ProductionLine.Name);
         }
 
         if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
@@ -129,7 +129,7 @@ public class PackagingService(
         {
             return Invalid(
                 "Packaging has already been recorded for this line. It is written once, "
-                + "at the end of the shift.");
+                + "at the end of the shift.", "packaging.alreadyRecorded");
         }
 
         var materials = await PackagingMaterialsAsync(cancellationToken);
@@ -143,17 +143,17 @@ public class PackagingService(
         var unknown = request.Lines.Where(l => !byId.ContainsKey(l.MaterialId)).ToList();
         if (unknown.Count > 0)
         {
-            return Invalid("Every line must name an active packaging material.");
+            return Invalid("Every line must name an active packaging material.", "packaging.activeMaterial");
         }
 
         if (request.Lines.Any(l => l.Quantity < 0))
         {
-            return Invalid("A quantity cannot be less than nothing.");
+            return Invalid("A quantity cannot be less than nothing.", "packaging.quantityBelowZero");
         }
 
         if (request.Lines.Any(l => l.Weight is <= 0))
         {
-            return Invalid("A weight of zero is not a weighing. Leave it empty instead.");
+            return Invalid("A weight of zero is not a weighing. Leave it empty instead.", "packaging.zeroWeight");
         }
 
         // The counted three are worked out here, not believed from the screen. A tablet
@@ -181,7 +181,7 @@ public class PackagingService(
         if (lines.Count == 0)
         {
             return Invalid(
-                "Nothing to record. The shift produced no bags and no packaging was typed in.");
+                "Nothing to record. The shift produced no bags and no packaging was typed in.", "packaging.nothingToRecord");
         }
 
         // The record and the stock it moves are one act. Half a record posted — three
@@ -398,4 +398,8 @@ public class PackagingService(
 
     private static Result<PackagingConsumptionDto> Invalid(string message) =>
         Result<PackagingConsumptionDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<PackagingConsumptionDto> Invalid(string message, string code, params string[] args) =>
+        Result<PackagingConsumptionDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 }

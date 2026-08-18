@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Authentication;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
@@ -41,7 +41,7 @@ public class AuthenticationService(
             logger.LogWarning("Login refused for {EmployeeNumber}: account locked.", request.EmployeeNumber);
             return Result<AuthenticationResult>.Failure(
                 ErrorCode.AccountLocked,
-                "Too many failed attempts. Try again in a few minutes.");
+                "Too many failed attempts. Try again in a few minutes.", "auth.tooManyAttempts");
         }
 
         if (!await userManager.CheckPasswordAsync(user, request.Password))
@@ -59,7 +59,7 @@ public class AuthenticationService(
             logger.LogWarning("Login refused for {EmployeeNumber}: account inactive.", request.EmployeeNumber);
             return Result<AuthenticationResult>.Failure(
                 ErrorCode.AccountInactive,
-                "This account is no longer active. Ask an administrator.");
+                "This account is no longer active. Ask an administrator.", "auth.inactive");
         }
 
         await userManager.ResetAccessFailedCountAsync(user);
@@ -109,7 +109,7 @@ public class AuthenticationService(
             await dbContext.SaveChangesAsync(cancellationToken);
             return Result<AuthenticationResult>.Failure(
                 ErrorCode.AccountInactive,
-                "This account is no longer active. Ask an administrator.");
+                "This account is no longer active. Ask an administrator.", "auth.inactive");
         }
 
         var issued = await IssueTokensAsync(user, cancellationToken, replacing: stored);
@@ -184,10 +184,10 @@ public class AuthenticationService(
     private static Result<AuthenticationResult> InvalidCredentials() =>
         Result<AuthenticationResult>.Failure(
             ErrorCode.InvalidCredentials,
-            "Employee number or password is wrong.");
+            "Employee number or password is wrong.", "auth.wrongCredentials");
 
     private static Result<AuthenticationResult> InvalidRefreshToken() =>
         Result<AuthenticationResult>.Failure(
             ErrorCode.InvalidRefreshToken,
-            "Your session has ended. Please sign in again.");
+            "Your session has ended. Please sign in again.", "auth.sessionEnded");
 }

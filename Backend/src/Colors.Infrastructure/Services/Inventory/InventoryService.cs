@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Inventory;
 using Colors.Domain.Constants;
 using Colors.Infrastructure.Identity;
@@ -141,7 +141,7 @@ public class InventoryService(
     {
         if (request.Quantity <= 0)
         {
-            return Invalid("Type how much arrived.");
+            return Invalid("Type how much arrived.", "inventory.typeHowMuch");
         }
 
         var material = await db.Materials
@@ -150,7 +150,7 @@ public class InventoryService(
 
         if (material is null)
         {
-            return Invalid("Choose an active material.");
+            return Invalid("Choose an active material.", "inventory.chooseActiveMaterial");
         }
 
         // How much of the base unit one delivered unit is worth. Receiving in the base
@@ -176,7 +176,7 @@ public class InventoryService(
             {
                 return Invalid(
                     $"{material.Name} has no pack size for that unit. "
-                    + "Add one in Master Data, or receive it in its base unit.");
+                    + "Add one in Master Data, or receive it in its base unit.", "inventory.noPackSize", material.Name);
             }
 
             perUnit = pack.QuantityInBaseUnit;
@@ -205,12 +205,12 @@ public class InventoryService(
     {
         if (string.IsNullOrWhiteSpace(request.Reason))
         {
-            return Invalid("Say why the count differs — it stays on the record.");
+            return Invalid("Say why the count differs — it stays on the record.", "inventory.sayWhyCountDiffers");
         }
 
         if (request.CountedQuantity < 0)
         {
-            return Invalid("A stock count cannot be less than nothing.");
+            return Invalid("A stock count cannot be less than nothing.", "inventory.countBelowZero");
         }
 
         var material = await db.Materials
@@ -218,7 +218,7 @@ public class InventoryService(
 
         if (material is null)
         {
-            return Invalid("Choose an active material.");
+            return Invalid("Choose an active material.", "inventory.chooseActiveMaterial");
         }
 
         var current = await db.MaterialInventory
@@ -230,7 +230,7 @@ public class InventoryService(
 
         if (difference == 0)
         {
-            return Invalid("The count already matches what the system says. Nothing to correct.");
+            return Invalid("The count already matches what the system says. Nothing to correct.", "inventory.countAlreadyMatches");
         }
 
         // Two movement types rather than a signed quantity, because finding less is a
@@ -296,4 +296,8 @@ public class InventoryService(
 
     private static Result<MaterialStockDto> Invalid(string message) =>
         Result<MaterialStockDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<MaterialStockDto> Invalid(string message, string code, params string[] args) =>
+        Result<MaterialStockDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 }

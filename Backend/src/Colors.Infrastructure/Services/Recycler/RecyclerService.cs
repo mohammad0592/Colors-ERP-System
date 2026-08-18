@@ -52,7 +52,7 @@ public class RecyclerService(
         if (shiftLine is null)
         {
             return Result<RecyclerDraftDto>.Failure(
-                ErrorCode.NotFound, "This line of the shift does not exist.");
+                ErrorCode.NotFound, "This line of the shift does not exist.", "shift.lineNotFound");
         }
 
         var existing = await Query().FirstOrDefaultAsync(
@@ -86,7 +86,7 @@ public class RecyclerService(
 
         if (shiftLine is null)
         {
-            return Invalid("Choose a line of an open shift.");
+            return Invalid("Choose a line of an open shift.", "shift.chooseOpenLine");
         }
 
         // The output is recorded where it is made (specification section 4).
@@ -94,7 +94,7 @@ public class RecyclerService(
         {
             return Invalid(
                 $"{shiftLine.ProductionLine.Name} does not recycle. Choose the recycler "
-                + "line.");
+                + "line.", "recycler.lineDoesNotRecycle", shiftLine.ProductionLine.Name);
         }
 
         if (!ShiftWork.AcceptsWork(shiftLine.ShiftReport.Status))
@@ -106,7 +106,7 @@ public class RecyclerService(
         // it did not run, nothing is written (specification section 11).
         if (request.RecycledMaterialWeight <= 0)
         {
-            return Invalid("Weigh what the recycler produced.");
+            return Invalid("Weigh what the recycler produced.", "recycler.weighOutput");
         }
 
         if (await db.RecyclerProductions
@@ -114,7 +114,7 @@ public class RecyclerService(
         {
             return Invalid(
                 "The recycler has already been recorded for this line. It is written "
-                + "once, at the end of the shift.");
+                + "once, at the end of the shift.", "recycler.alreadyRecorded");
         }
 
         var material = await RecycledMaterialAsync(cancellationToken);
@@ -222,4 +222,8 @@ public class RecyclerService(
 
     private static Result<RecyclerProductionDto> Invalid(string message) =>
         Result<RecyclerProductionDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<RecyclerProductionDto> Invalid(string message, string code, params string[] args) =>
+        Result<RecyclerProductionDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 }

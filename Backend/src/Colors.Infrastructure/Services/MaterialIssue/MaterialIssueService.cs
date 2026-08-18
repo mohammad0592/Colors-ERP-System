@@ -77,17 +77,17 @@ public class MaterialIssueService(
     {
         if (request.Lines.Count == 0)
         {
-            return Invalid("A ticket needs at least one material on it.");
+            return Invalid("A ticket needs at least one material on it.", "issue.needsAMaterial");
         }
 
         if (request.Lines.Select(l => l.MaterialId).Distinct().Count() != request.Lines.Count)
         {
-            return Invalid("Each material may appear once on a ticket. Add the quantities together.");
+            return Invalid("Each material may appear once on a ticket. Add the quantities together.", "issue.materialTwiceOnTicket");
         }
 
         if (request.Lines.Any(l => l.Quantity <= 0))
         {
-            return Invalid("Every line needs a weight.");
+            return Invalid("Every line needs a weight.", "issue.lineNeedsWeight");
         }
 
         var shiftLine = await db.ShiftLines
@@ -97,7 +97,7 @@ public class MaterialIssueService(
 
         if (shiftLine is null)
         {
-            return Invalid("Choose a line of an open shift.");
+            return Invalid("Choose a line of an open shift.", "shift.chooseOpenLine");
         }
 
         // Raw material goes to the line that mixes it. Which lines those are is a tick
@@ -106,7 +106,7 @@ public class MaterialIssueService(
         {
             return Invalid(
                 $"{shiftLine.ProductionLine.Name} does not take raw material. "
-                + "Choose the extruder line.");
+                + "Choose the extruder line.", "issue.lineTakesNoRaw", shiftLine.ProductionLine.Name);
         }
 
         // Material issued to a shift that is already finished could never be returned
@@ -124,7 +124,7 @@ public class MaterialIssueService(
 
         if (materials.Count != materialIds.Count)
         {
-            return Invalid("Every line must name an active material.");
+            return Invalid("Every line must name an active material.", "issue.activeMaterial");
         }
 
         // Raw material only. Packaging goes straight to the bench, nothing comes back
@@ -137,7 +137,7 @@ public class MaterialIssueService(
             var names = string.Join(", ", notIssuable.Select(m => m.Name));
             return Invalid(
                 $"{names} cannot go out on a ticket — only raw material does. "
-                + "Packaging is counted at the end of the shift, from what was produced.");
+                + "Packaging is counted at the end of the shift, from what was produced.", "issue.notRawMaterial", names);
         }
 
         // One transaction around the whole ticket. Half a ticket issued — three
@@ -208,17 +208,17 @@ public class MaterialIssueService(
 
         if (ticket.Status == IssueTicketStatus.Closed)
         {
-            return Invalid("This ticket is closed. Its figures cannot change.");
+            return Invalid("This ticket is closed. Its figures cannot change.", "issue.ticketClosed");
         }
 
         if (request.Lines.Count == 0)
         {
-            return Invalid("Say what came back.");
+            return Invalid("Say what came back.", "issue.sayWhatCameBack");
         }
 
         if (request.Lines.Select(l => l.MaterialId).Distinct().Count() != request.Lines.Count)
         {
-            return Invalid("Each material may appear once. Add the quantities together.");
+            return Invalid("Each material may appear once. Add the quantities together.", "issue.materialTwice");
         }
 
         foreach (var back in request.Lines)
@@ -227,12 +227,12 @@ public class MaterialIssueService(
 
             if (line is null)
             {
-                return Invalid("Something came back that was never issued on this ticket.");
+                return Invalid("Something came back that was never issued on this ticket.", "issue.neverIssued");
             }
 
             if (back.Quantity <= 0)
             {
-                return Invalid("A return must be more than nothing. Leave a material out if none came back.");
+                return Invalid("A return must be more than nothing. Leave a material out if none came back.", "issue.returnBelowZero");
             }
 
             // Returns are cumulative — leftover comes back in more than one trip — so
@@ -289,7 +289,7 @@ public class MaterialIssueService(
 
         if (ticket.Status == IssueTicketStatus.Closed)
         {
-            return Invalid("This ticket is already closed.");
+            return Invalid("This ticket is already closed.", "issue.alreadyClosed");
         }
 
         // Nothing is required to come back. A ticket that used every kilogram is
@@ -391,8 +391,12 @@ public class MaterialIssueService(
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
     private static Result<IssueTicketDto> NotFound() =>
-        Result<IssueTicketDto>.Failure(ErrorCode.NotFound, "This ticket does not exist.");
+        Result<IssueTicketDto>.Failure(ErrorCode.NotFound, "This ticket does not exist.", "issue.notFound");
 
     private static Result<IssueTicketDto> Invalid(string message) =>
         Result<IssueTicketDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<IssueTicketDto> Invalid(string message, string code, params string[] args) =>
+        Result<IssueTicketDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 }

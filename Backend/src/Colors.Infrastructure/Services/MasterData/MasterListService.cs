@@ -1,4 +1,4 @@
-using Colors.Application.Common.Models;
+﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.MasterData;
 using Colors.Domain.Common;
 using Colors.Infrastructure.Persistence;
@@ -142,7 +142,7 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
         var entity = await db.Set<TEntity>().FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
         if (entity is null)
         {
-            return Result<bool>.Failure(ErrorCode.NotFound, "This item does not exist.");
+            return Result<bool>.Failure(ErrorCode.NotFound, "This item does not exist.", "masterData.notFound");
         }
 
         // Specification section 4: delete is for typos and tests — rows nothing
@@ -168,7 +168,7 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
             db.ChangeTracker.Clear();
             return Result<bool>.Failure(
                 ErrorCode.ValidationFailed,
-                "This row is used by other records, so it cannot be deleted. Deactivate it instead.");
+                "This row is used by other records, so it cannot be deleted. Deactivate it instead.", "masterData.inUse");
         }
 
         return Result<bool>.Success(true);
@@ -187,5 +187,5 @@ public abstract class MasterListService<TEntity, TDto, TUpsert>(ColorsDbContext 
     }
 
     private static Result<TDto> NotFound() =>
-        Result<TDto>.Failure(ErrorCode.NotFound, "This item does not exist.");
+        Result<TDto>.Failure(ErrorCode.NotFound, "This item does not exist.", "masterData.notFound");
 }

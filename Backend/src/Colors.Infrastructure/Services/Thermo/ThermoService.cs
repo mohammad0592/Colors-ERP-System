@@ -401,19 +401,19 @@ public class ThermoService(
             return scanned is null
                 ? Result<Roll>.Failure(
                     ErrorCode.NotFound,
-                    "That label names a roll that is no longer here.")
+                    "That label names a roll that is no longer here.", "thermo.rollGone")
                 : Result<Roll>.Success(scanned);
         }
 
         if (request.RollId is null)
         {
-            return Result<Roll>.Failure(ErrorCode.ValidationFailed, "Scan the roll.");
+            return Result<Roll>.Failure(ErrorCode.ValidationFailed, "Scan the roll.", "thermo.scanTheRoll");
         }
 
         var picked = await rolls.FirstOrDefaultAsync(r => r.Id == request.RollId, cancellationToken);
 
         return picked is null
-            ? Result<Roll>.Failure(ErrorCode.NotFound, "This roll does not exist.")
+            ? Result<Roll>.Failure(ErrorCode.NotFound, "This roll does not exist.", "roll.notFound")
             : Result<Roll>.Success(picked);
     }
 
@@ -570,5 +570,5 @@ public class ThermoService(
         Result<ThermoRunDto>.Failure(ErrorCode.ValidationFailed, message);
 
     private static Result<ThermoRunDto> RunNotFound() =>
-        Result<ThermoRunDto>.Failure(ErrorCode.NotFound, "This run does not exist.");
+        Result<ThermoRunDto>.Failure(ErrorCode.NotFound, "This run does not exist.", "thermo.runNotFound");
 }

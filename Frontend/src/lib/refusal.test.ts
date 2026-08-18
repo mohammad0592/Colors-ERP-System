@@ -27,7 +27,7 @@ describe('refusal wording', () => {
     // in the wrong hole, or in no hole at all.
     for (const key of refusalKeys) {
       const slots = (text: string): string[] =>
-        [...text.matchAll(/\{(\d+)\}/g)].map((m) => m[1]).sort();
+        [...text.matchAll(/\{(\d+)\}/g)].map((m) => m[1] ?? '').sort();
 
       expect(
         slots(ar[key as keyof typeof ar]),

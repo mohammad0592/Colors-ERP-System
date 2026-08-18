@@ -90,7 +90,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
         if (value is null)
         {
             return Result<BarcodeLabelDto>.Failure(
-                ErrorCode.ValidationFailed, "Which label?");
+                ErrorCode.ValidationFailed, "Which label?", "stock.whichLabel");
         }
 
         var found = await db.Barcodes
@@ -99,7 +99,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
         if (found is null)
         {
             return Result<BarcodeLabelDto>.Failure(
-                ErrorCode.NotFound, $"No label in the system matches {value}.");
+                ErrorCode.NotFound, $"No label in the system matches {value}.", "stock.noMatch", value);
         }
 
         return found.ObjectType switch
@@ -108,7 +108,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             BarcodeObjectType.Bag => await BagLabelAsync(found.Value, found.ObjectId, cancellationToken),
             BarcodeObjectType.Pallet => await PalletLabelAsync(found.Value, found.ObjectId, cancellationToken),
             _ => Result<BarcodeLabelDto>.Failure(
-                ErrorCode.NotFound, "Nothing is known about that label."),
+                ErrorCode.NotFound, "Nothing is known about that label.", "stock.unknownLabel"),
         };
     }
 
@@ -397,7 +397,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
 
     private static Result<BarcodeLabelDto> Gone(string barcode) =>
         Result<BarcodeLabelDto>.Failure(
-            ErrorCode.NotFound, $"{barcode} names something that is no longer here.");
+            ErrorCode.NotFound, $"{barcode} names something that is no longer here.", "stock.gone", barcode);
 
     private static string? Trimmed(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();

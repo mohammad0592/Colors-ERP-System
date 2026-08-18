@@ -28,7 +28,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         if (report is null)
         {
             return Result<MaterialWasteReportDto>.Failure(
-                ErrorCode.NotFound, "This shift does not exist.");
+                ErrorCode.NotFound, "This shift does not exist.", "shift.notFound");
         }
 
         var lineIds = report.Lines.Select(l => l.Id).ToList();
@@ -171,7 +171,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         if (to < from)
         {
             return Result<ConsumptionReportDto>.Failure(
-                ErrorCode.ValidationFailed, "The last day cannot be before the first.");
+                ErrorCode.ValidationFailed, "The last day cannot be before the first.", "reports.badDateRange");
         }
 
         // One row per shift first, whichever grouping was asked for: a recipe's usage is
@@ -330,7 +330,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         if (to < from)
         {
             return Result<PalletProductionReportDto>.Failure(
-                ErrorCode.ValidationFailed, "The last day cannot be before the first.");
+                ErrorCode.ValidationFailed, "The last day cannot be before the first.", "reports.badDateRange");
         }
 
         // A pallet belongs to the shift it was started on, which is where its wood came
@@ -391,7 +391,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         if (to < from)
         {
             return Result<RecycledMaterialReportDto>.Failure(
-                ErrorCode.ValidationFailed, "The last day cannot be before the first.");
+                ErrorCode.ValidationFailed, "The last day cannot be before the first.", "reports.badDateRange");
         }
 
         // Which material the recycler makes is a flag on the row, never its name
@@ -470,7 +470,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         if (report is null)
         {
             return Result<ShiftSummaryReportDto>.Failure(
-                ErrorCode.NotFound, "This shift does not exist.");
+                ErrorCode.NotFound, "This shift does not exist.", "shift.notFound");
         }
 
         var lineIds = report.Lines.Select(l => l.Id).ToList();

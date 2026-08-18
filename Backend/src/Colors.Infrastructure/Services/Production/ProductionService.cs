@@ -484,5 +484,5 @@ public class ProductionService(
         Result<RollDto>.Failure(ErrorCode.ValidationFailed, message);
 
     private static Result<RollDto> RollNotFound() =>
-        Result<RollDto>.Failure(ErrorCode.NotFound, "This roll does not exist.");
+        Result<RollDto>.Failure(ErrorCode.NotFound, "This roll does not exist.", "roll.notFound");
 }
