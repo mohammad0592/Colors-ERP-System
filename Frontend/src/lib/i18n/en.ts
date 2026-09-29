@@ -162,7 +162,6 @@ export const en = {
   'state.recorded': 'Recorded',
   'state.finished': 'Finished',
   'state.notDecidedYet': 'Not decided yet',
-  'state.everyRun': 'Every run',
   'msg.reportFailed': 'Could not load the report.',
   'msg.writtenOnceAtShiftEnd': 'Written once, at the end of the shift.',
   'msg.alreadyRecordedForLine': 'Already recorded for this line.',
@@ -218,7 +217,6 @@ export const en = {
   'rolls.loadFailed': 'Could not load the rolls.',
   'rolls.avgThickness': 'Avg thickness',
   'rolls.measure': 'Measure',
-  'rolls.everyRoll': 'Every roll',
   'thermo.mouldLabel': 'Mould:',
   'thermo.rollLeavesStore': 'The roll leaves the store as it goes in.',
   'thermo.putRollIn': 'Put a roll into the thermo',
@@ -663,6 +661,7 @@ export const en = {
   'refusal.user.notFound': 'This person does not exist.',
   'refusal.user.numberNeeded': 'An employee number is needed — it is how the floor knows him.',
   'refusal.user.numberTaken': 'Employee number {0} already belongs to somebody.',
+  'common.thisShift': 'This shift',
 } as const;
 
 /** Every key the screens may ask for. */

@@ -1897,8 +1897,18 @@ The extruder and thermo screens list the newest three hundred rolls, whenever th
 made. The man at the machine is working this shift and everything older is noise; the
 inventory screen is where the past belongs.
 
-Decided: the two line screens show **only the current shift**. The full history stays
-one click away in inventory.
+Decided: the line screens show **only the current shift**. The full history stays one
+click away in inventory.
+
+**Except for the lists of work still to do.** Each screen has two: a queue — rolls
+waiting to be measured, runs waiting to be counted — and the list of everything. Only
+the second is scoped to the shift.
+
+The queue has to cross shifts, because the work does. A roll made at the end of shift A
+is measured on shift B, and a run started before the shift ended is counted after it
+(19.2). Scope the queue and that roll disappears from the only screen that can measure
+it, sits at *needs test* for ever, and is refused by the thermo with nobody able to see
+why. So the everything-list became *this shift*, and the queue was left alone.
 
 ### 19.7 Columns that are recorded but not shown
 

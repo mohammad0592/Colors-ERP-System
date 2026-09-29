@@ -127,9 +127,21 @@ public interface IProductionService
 
 
 
+    /// <summary>
+    /// Rolls off the extruder.
+    ///
+    /// <paramref name="currentShiftOnly"/> is what the line screen asks for: the man at
+    /// the machine is working this shift and everything older is noise, and the
+    /// inventory screen is where the past belongs (specification section 19.6).
+    ///
+    /// It is deliberately not applied to <paramref name="needsTestOnly"/>. A roll made
+    /// at the end of one shift and measured on the next is normal, and hiding it would
+    /// leave it at NeedsTest for ever -- invisible, and refused by the thermo.
+    /// </summary>
     Task<IReadOnlyList<RollSummaryDto>> GetRollsAsync(
         int? batchId = null,
         bool needsTestOnly = false,
+        bool currentShiftOnly = false,
         CancellationToken cancellationToken = default);
 
     Task<Result<RollDto>> GetRollAsync(int rollId, CancellationToken cancellationToken = default);

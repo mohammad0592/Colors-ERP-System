@@ -118,8 +118,12 @@ export interface AvailableRollDto {
 }
 
 export const thermoApi = {
-  runs: (openOnly = false): Promise<ThermoRunSummaryDto[]> =>
-    apiRequest<ThermoRunSummaryDto[]>(`/api/thermo/runs?openOnly=${String(openOnly)}`),
+  /** `currentShiftOnly` is the line screen's view (specification section 19.6). */
+  runs: (openOnly = false, currentShiftOnly = false): Promise<ThermoRunSummaryDto[]> =>
+    apiRequest<ThermoRunSummaryDto[]>(
+      `/api/thermo/runs?openOnly=${String(openOnly)}` +
+        `&currentShiftOnly=${String(currentShiftOnly)}`,
+    ),
 
   run: (id: number): Promise<ThermoRunDto> =>
     apiRequest<ThermoRunDto>(`/api/thermo/runs/${String(id)}`),

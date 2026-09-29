@@ -26,6 +26,7 @@ public class ThermoService(
     public async Task<IReadOnlyList<ThermoRunSummaryDto>> GetRunsAsync(
         int? shiftLineId = null,
         bool openOnly = false,
+        bool currentShiftOnly = false,
         CancellationToken cancellationToken = default)
     {
         // The list never shows individual bags, only counts — and a shift can produce
@@ -34,6 +35,9 @@ public class ThermoService(
         var runs = await ListQuery()
             .Where(p => shiftLineId == null || p.ShiftLineId == shiftLineId)
             .Where(p => !openOnly || p.TestReport == null)
+            // One shift is open at a time, which the database enforces.
+            .Where(p => !currentShiftOnly
+                        || p.ShiftLine.ShiftReport.Status == ShiftReportStatus.Open)
             .OrderByDescending(p => p.StartedAt)
             .Take(300)
             .ToListAsync(cancellationToken);

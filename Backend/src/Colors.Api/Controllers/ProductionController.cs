@@ -41,13 +41,19 @@ public class ProductionController(IProductionService production) : ApiController
 
     // ---------- rolls ----------
 
+    /// <summary>
+    /// Rolls. <c>currentShiftOnly</c> is what the line screen asks for — this shift and
+    /// nothing older, with the history left to inventory (specification section 19.6).
+    /// </summary>
     [HttpGet("rolls")]
     public async Task<IActionResult> GetRolls(
         [FromQuery] int? batchId = null,
         [FromQuery] bool needsTestOnly = false,
+        [FromQuery] bool currentShiftOnly = false,
         CancellationToken cancellationToken = default)
     {
-        return Ok(await production.GetRollsAsync(batchId, needsTestOnly, cancellationToken));
+        return Ok(await production.GetRollsAsync(
+            batchId, needsTestOnly, currentShiftOnly, cancellationToken));
     }
 
     [HttpGet("rolls/{id:int}")]

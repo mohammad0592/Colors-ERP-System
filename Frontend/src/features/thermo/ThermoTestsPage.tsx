@@ -35,7 +35,8 @@ export function ThermoTestsPage(): ReactElement {
 
   const runs = useQuery({
     queryKey: ['thermo-runs', 'tests', waitingOnly],
-    queryFn: () => thermoApi.runs(waitingOnly),
+    // Same shape as the roll tests: the queue crosses shifts, the list does not.
+    queryFn: () => thermoApi.runs(waitingOnly, !waitingOnly),
   });
 
   function invalidate(): void {
@@ -95,7 +96,7 @@ export function ThermoTestsPage(): ReactElement {
           }}
         />
         <Chip
-          label={t('state.everyRun')}
+          label={t('common.thisShift')}
           active={!waitingOnly}
           onClick={() => {
             setWaitingOnly(false);

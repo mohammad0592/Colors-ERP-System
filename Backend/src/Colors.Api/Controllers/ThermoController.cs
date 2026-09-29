@@ -1,4 +1,4 @@
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Colors.Application.Features.Thermo;
 using Colors.Domain.Constants;
 using Microsoft.AspNetCore.Authorization;
@@ -26,13 +26,18 @@ public class ThermoController(IThermoService thermo) : ApiControllerBase
 
     // ---------- runs ----------
 
+    /// <summary>
+    /// Runs. <c>currentShiftOnly</c> is the line screen's view (specification section 19.6).
+    /// </summary>
     [HttpGet("runs")]
     public async Task<IActionResult> GetRuns(
         [FromQuery] int? shiftLineId = null,
         [FromQuery] bool openOnly = false,
+        [FromQuery] bool currentShiftOnly = false,
         CancellationToken cancellationToken = default)
     {
-        return Ok(await thermo.GetRunsAsync(shiftLineId, openOnly, cancellationToken));
+        return Ok(await thermo.GetRunsAsync(
+            shiftLineId, openOnly, currentShiftOnly, cancellationToken));
     }
 
     [HttpGet("runs/{id:int}")]

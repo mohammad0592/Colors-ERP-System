@@ -27,7 +27,8 @@ export function RollTestsPage(): ReactElement {
 
   const rolls = useQuery({
     queryKey: ['rolls', 'tests', waitingOnly],
-    queryFn: () => productionApi.rolls(undefined, waitingOnly),
+    // Waiting is a queue and spans shifts; the other side is this shift only (19.6).
+    queryFn: () => productionApi.rolls(undefined, waitingOnly, !waitingOnly),
   });
 
   function invalidate(): void {
@@ -61,7 +62,7 @@ export function RollTestsPage(): ReactElement {
           }}
         />
         <Chip
-          label={t('rolls.everyRoll')}
+          label={t('common.thisShift')}
           active={!waitingOnly}
           onClick={() => {
             setWaitingOnly(false);

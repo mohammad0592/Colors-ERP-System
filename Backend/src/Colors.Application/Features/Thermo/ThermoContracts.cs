@@ -150,9 +150,21 @@ public sealed record SaveThermoTestRequest(
 /// </summary>
 public interface IThermoService
 {
+    /// <summary>
+    /// Runs through the thermo.
+    ///
+    /// <paramref name="currentShiftOnly"/> is the line screen's view: this shift only,
+    /// with the history left to inventory (specification section 19.6).
+    ///
+    /// Never applied together with <paramref name="openOnly"/>. A run that is still to
+    /// be counted is a job waiting for somebody, and a run started before midnight is
+    /// counted after it -- scoping the queue to the current shift would strand exactly
+    /// the runs section 19.2 is about.
+    /// </summary>
     Task<IReadOnlyList<ThermoRunSummaryDto>> GetRunsAsync(
         int? shiftLineId = null,
         bool openOnly = false,
+        bool currentShiftOnly = false,
         CancellationToken cancellationToken = default);
 
     Task<Result<ThermoRunDto>> GetRunAsync(int runId, CancellationToken cancellationToken = default);

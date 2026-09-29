@@ -42,9 +42,11 @@ export function RollProductionPage(): ReactElement {
     headline?: string;
   } | null>(null);
 
+  // The extruder's own screen: this shift only. Everything older is in inventory
+  // (specification section 19.6).
   const rolls = useQuery({
-    queryKey: ['rolls', 'all'],
-    queryFn: () => productionApi.rolls(),
+    queryKey: ['rolls', 'current-shift'],
+    queryFn: () => productionApi.rolls(undefined, false, true),
   });
 
   const recipes = useQuery({

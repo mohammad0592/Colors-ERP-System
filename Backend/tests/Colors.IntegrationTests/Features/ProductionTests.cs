@@ -356,4 +356,63 @@ public class ProductionTests(DatabaseFixture fixture)
 
         Assert.False(roll.IsSuccess);
     }
+
+    // ------------------------------------------- only this shift (19.6)
+    //
+    // The man at the machine is working now, and every roll from last month is noise.
+    // The inventory screen is where the past belongs.
+
+    [Fact]
+    public async Task The_line_screen_shows_only_the_open_shift()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SCOPE1");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "SCOPE1", ids.UserId);
+        var service = NewService(db);
+
+        var made = await service.CreateRollAsync(
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+        Assert.True(made.IsSuccess, made.Message);
+
+        // While the shift is open the roll is on the line screen.
+        var thisShift = await service.GetRollsAsync(currentShiftOnly: true);
+        Assert.Contains(thisShift, r => r.Id == made.Value!.Id);
+
+        // The shift ends. The roll is history now, and history is inventory's job.
+        var report = await db.ShiftReports.FirstAsync(r => r.Id == ids.ShiftReportId);
+        report.Status = ShiftReportStatus.Closed;
+        await db.SaveChangesAsync();
+
+        var afterClose = await service.GetRollsAsync(currentShiftOnly: true);
+        Assert.DoesNotContain(afterClose, r => r.Id == made.Value!.Id);
+
+        // But it is still there when nobody asked for the line screen's view.
+        var everything = await service.GetRollsAsync();
+        Assert.Contains(everything, r => r.Id == made.Value!.Id);
+    }
+
+    [Fact]
+    public async Task A_roll_waiting_to_be_measured_is_never_hidden_by_the_shift()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "SCOPE2");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "SCOPE2", ids.UserId);
+        var service = NewService(db);
+
+        var made = await service.CreateRollAsync(
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+        Assert.True(made.IsSuccess, made.Message);
+
+        var report = await db.ShiftReports.FirstAsync(r => r.Id == ids.ShiftReportId);
+        report.Status = ShiftReportStatus.Closed;
+        await db.SaveChangesAsync();
+
+        // This is the one that matters. A roll made at the end of a shift is measured on
+        // the next one -- that is ordinary. If the waiting list were scoped to the open
+        // shift the roll would vanish from the only screen that can measure it, sit at
+        // NeedsTest for ever, and be refused by the thermo with nobody able to see why.
+        var waiting = await service.GetRollsAsync(needsTestOnly: true);
+
+        Assert.Contains(waiting, r => r.Id == made.Value!.Id);
+    }
 }

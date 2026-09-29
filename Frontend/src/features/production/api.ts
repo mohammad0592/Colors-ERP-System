@@ -74,8 +74,19 @@ export const productionApi = {
   batches: (openOnly = false): Promise<BatchSummaryDto[]> =>
     apiRequest<BatchSummaryDto[]>(`/api/production/batches?openOnly=${String(openOnly)}`),
 
-  rolls: (batchId?: number, needsTestOnly = false): Promise<RollSummaryDto[]> => {
-    const query = new URLSearchParams({ needsTestOnly: String(needsTestOnly) });
+  /**
+   * Rolls. `currentShiftOnly` is the line screen's view — this shift and nothing older,
+   * because the past belongs to inventory (specification section 19.6).
+   */
+  rolls: (
+    batchId?: number,
+    needsTestOnly = false,
+    currentShiftOnly = false,
+  ): Promise<RollSummaryDto[]> => {
+    const query = new URLSearchParams({
+      needsTestOnly: String(needsTestOnly),
+      currentShiftOnly: String(currentShiftOnly),
+    });
     if (batchId !== undefined) {
       query.set('batchId', String(batchId));
     }

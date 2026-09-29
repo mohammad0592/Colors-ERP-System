@@ -183,7 +183,6 @@ export const ar: Record<TranslationKey, string> = {
   'state.recorded': 'مسجّل',
   'state.finished': 'مكتمل',
   'state.notDecidedYet': 'لم يُحدَّد بعد',
-  'state.everyRun': 'كل تشغيلة',
   'msg.reportFailed': 'تعذّر تحميل التقرير.',
   'msg.writtenOnceAtShiftEnd': 'يُكتب مرة واحدة، في نهاية الوردية.',
   'msg.alreadyRecordedForLine': 'مسجّل مسبقاً لهذا الخط.',
@@ -239,7 +238,6 @@ export const ar: Record<TranslationKey, string> = {
   'rolls.loadFailed': 'تعذّر تحميل الرولات.',
   'rolls.avgThickness': 'متوسط السماكة',
   'rolls.measure': 'قياس',
-  'rolls.everyRoll': 'كل الرولات',
   'thermo.mouldLabel': 'القالب:',
   'thermo.rollLeavesStore': 'يخرج الرول من المخزن عند إدخاله.',
   'thermo.putRollIn': 'إدخال رول إلى التشكيل',
@@ -684,4 +682,5 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.user.notFound': 'هذا الشخص غير موجود.',
   'refusal.user.numberNeeded': 'الرقم الوظيفي مطلوب — به يعرفه المصنع.',
   'refusal.user.numberTaken': 'الرقم الوظيفي {0} يخص شخصاً آخر بالفعل.',
+  'common.thisShift': 'هذه الوردية',
 };

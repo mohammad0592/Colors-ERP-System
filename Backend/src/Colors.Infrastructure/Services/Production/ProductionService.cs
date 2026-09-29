@@ -89,11 +89,17 @@ public class ProductionService(
     public async Task<IReadOnlyList<RollSummaryDto>> GetRollsAsync(
         int? batchId = null,
         bool needsTestOnly = false,
+        bool currentShiftOnly = false,
         CancellationToken cancellationToken = default)
     {
         var rolls = await RollQuery()
             .Where(r => batchId == null || r.BatchId == batchId)
             .Where(r => !needsTestOnly || r.Status == RollStatus.NeedsTest)
+            // The open shift, of which there is exactly one -- a partial unique index
+            // in the database says so (specification section 2), so this needs no
+            // second thought about which shift is meant.
+            .Where(r => !currentShiftOnly
+                        || r.Batch.ShiftLine.ShiftReport.Status == ShiftReportStatus.Open)
             .OrderByDescending(r => r.ProductionDate)
             .ThenByDescending(r => r.DailySerial)
             .Take(300)

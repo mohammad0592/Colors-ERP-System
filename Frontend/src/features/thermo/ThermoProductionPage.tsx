@@ -37,8 +37,9 @@ export function ThermoProductionPage(): ReactElement {
   const [justStarted, setJustStarted] = useState<ThermoRunDto | null>(null);
 
   const runs = useQuery({
-    queryKey: ['thermo-runs', openOnly],
-    queryFn: () => thermoApi.runs(openOnly),
+    queryKey: ['thermo-runs', openOnly, 'current-shift'],
+    // Still-to-count is a queue and crosses shifts; the full list is this shift (19.6).
+    queryFn: () => thermoApi.runs(openOnly, !openOnly),
   });
 
   const availableRolls = useQuery({
@@ -132,7 +133,7 @@ export function ThermoProductionPage(): ReactElement {
           }}
         />
         <Chip
-          label={t('state.everyRun')}
+          label={t('common.thisShift')}
           active={!openOnly}
           onClick={() => {
             setOpenOnly(false);
