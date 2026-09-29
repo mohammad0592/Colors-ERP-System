@@ -41,6 +41,7 @@ The old documents remain in `docs/spec/` as history. They are **not** to be used
 16. [Complete table list](#16-complete-table-list)
 17. [Build order](#17-build-order)
 18. [Still open](#18-still-open)
+19. [The next round](#19-the-next-round)
 
 ---
 
@@ -1751,4 +1752,164 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ---
 
-*Document version 2.0. Supersedes Parts 1–12 and ERD v2.*
+## 19. The next round
+
+Seven changes, from watching the factory use the system. They are written here rather
+than kept in a message so none of them is lost, and so the decisions behind them are
+recorded next to the rules they change.
+
+Each says what it changes, what is already decided, and what is still to be answered.
+Nothing here is built yet.
+
+### 19.1 A roll is made for a product
+
+Today a roll has a recipe and a colour, and **the product is worked out rather than
+chosen**: the mould comes from the shift, the absorbency from the recipe, and those two
+together name the product ([section 4](#4-master-data)). Nobody picks a product on a
+screen.
+
+The factory needs more than that. A roll is extruded to a thickness, and the thickness
+belongs to the product: plates want roughly 2.8–3.0 mm, lunch boxes more than 3. A roll
+is made *for* something, and the label should say so.
+
+**The product is declared on the batch.** One mix makes fifteen to seventeen rolls and
+they are all for the same thing, so the operator says it once. Every roll already
+belongs to a batch, so every roll inherits it with no special case.
+
+**The thickness range does not decide the product.** This is the important part, and it
+is the factory's own reasoning: at the start of a run the machine is still being set,
+so the first rolls come out at the wrong thickness — and they are still plate rolls.
+Deriving the product from the measurement would refuse exactly the rolls a man is
+standing over, trying to fix.
+
+So the range becomes a verdict rather than a gate:
+
+```
+Product carries a thickness range        →  may be empty
+Test person enters the four readings     →  the average is compared
+Average inside the range                 →  in spec
+Average outside it                       →  out of spec, and nothing is blocked
+No range set on the product              →  no verdict at all
+```
+
+**Nothing is refused for being out of spec.** The roll is used, and the record says what
+it was. That gives the factory a figure it does not have today: how much material a
+setup costs, in kilograms, instead of in somebody's memory.
+
+**A wrong mould is refused.** Once a roll names its product, putting it into a mould
+that makes something else is a mistake the system can see, and the factory asked for it
+to be stopped rather than warned about.
+
+**The label prints the product and the range**, which is what makes the intent visible
+to the man holding the roll.
+
+#### What this changes about section 0.1
+
+The product stops being derived and starts being declared, which is a deliberate
+departure from the rule above. After this there are two answers to "what is this":
+
+| | Where it comes from | What it means |
+|---|---|---|
+| The batch's product | the operator, at the mixer | what it was **made for** |
+| Mould and absorbency | the shift and the recipe | what was **actually made** |
+
+They should agree, and the value is in noticing when they do not. That is the whole
+reason for the change, and it is why the thermo refuses a mismatch rather than
+recording one.
+
+#### The absorbency has to agree too
+
+A product is absorbent or it is not, and so is the recipe. The batch names a product,
+but **the batch deliberately has no recipe** — it lives on the roll, because it is not
+yet certain that one batch uses one recipe ([section 18](#18-still-open), question 5).
+
+So the check is made per roll: a roll whose recipe disagrees with its batch's product on
+absorbency is refused. That keeps the two honest without having to answer question 5
+first.
+
+**Still to answer:** the real thickness range for each product. The field may be left
+empty until the factory measures them, and a product with no range simply has no
+verdict.
+
+### 19.2 A run that crosses a shift
+
+A roll goes into the thermo on shift A and is still in the machine when the shift ends.
+It finishes on shift B.
+
+Today a thermo run belongs to **one** shift line, and it is the one it started on. Every
+bag it makes is counted against that shift, including the ones formed after the men
+went home.
+
+**Still to answer:** which shift owns the output — the one that started the run, the one
+that finished it, or split between them by time? The answer decides whether this is a
+column or a second record, so it comes before any schema.
+
+### 19.3 Two products in one shift
+
+The men reach the target quantity for one product, change the mould, and start another.
+One shift, two products.
+
+Half of this is already possible. A batch never crosses a shift and now names a product,
+so a second product at the mixer is simply a second batch.
+
+The other half is not. **A shift line holds one mould** ([section 2](#2-shifts-and-shift-reports)),
+so the thermo's part of a shift cannot say that the mould changed at eleven o'clock, and
+the machine settings recorded against it belong to whichever product was running when
+somebody typed them.
+
+This shares a cause with 19.2: both assume a shift line is one continuous run of one
+thing. They should be answered together and migrated once.
+
+**Still to answer:** is a mould change a second *run* on the same shift line, or does the
+shift line itself split in two?
+
+### 19.4 Roles the administrator can change
+
+The nine roles in [section 3](#3-users-and-roles) are fixed in the code. The factory
+wants to add one — somebody who only scans — and will want others.
+
+Adding a role to a list is easy. The difficulty is that **a role's powers are not data**:
+they are forty-two `[Authorize(Roles = ...)]` attributes across the controllers, and the
+role names are written into every token. A new role added by an administrator would
+arrive with no powers at all and no way to give it any.
+
+To be genuinely flexible, the permission has to become the thing the endpoint checks,
+and a role becomes a named set of permissions that an administrator composes.
+
+**Still to answer:** does the administrator compose roles from a **fixed list of
+permissions** the developers maintain, or should permissions themselves be editable? The
+first is far smaller and is almost always enough.
+
+### 19.5 The Arabic
+
+Words to correct, and places still showing English. The wording all lives in one file, so
+a correction is one edit and reaches every screen ([section 12](#12-barcodes)).
+
+The plant vocabulary is still a draft that nobody at the factory has read. Correcting it
+is worth more than any other item on this list, because every screen and every refusal
+draws on it.
+
+**Still to answer:** the corrected words, and where the English is still showing.
+
+### 19.6 The line screens show only this shift
+
+The extruder and thermo screens list the newest three hundred rolls, whenever they were
+made. The man at the machine is working this shift and everything older is noise; the
+inventory screen is where the past belongs.
+
+Decided: the two line screens show **only the current shift**. The full history stays
+one click away in inventory.
+
+### 19.7 Columns that are recorded but not shown
+
+Some figures are recorded and then never displayed — the hours on a roll do not appear in
+the roll inventory, and there are others.
+
+**Still to answer:** which columns, on which screens. Each is small on its own.
+
+---
+
+2.1 adds section 19: seven changes the factory asked for after using the
+system, with the reasoning behind each.
+
+*Document version 2.1. Supersedes Parts 1–12 and ERD v2.*
