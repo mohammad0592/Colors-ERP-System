@@ -200,6 +200,12 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
             <Field label={t('field.weight')} value={`${String(label.weight)} kg`} />
           )}
           {label.length !== null && <Field label={t('field.length')} value={String(label.length)} />}
+          {(label.minThickness !== null || label.maxThickness !== null) && (
+            <Field
+              label={t('md.thickness')}
+              value={labelRange(label.minThickness, label.maxThickness)}
+            />
+          )}
           {label.shiftName !== null && (
             <Field label="Shift · الوردية" value={label.shiftName} />
           )}
@@ -237,6 +243,14 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
       </div>
     </div>
   );
+}
+
+/** The range as it goes on paper: "2.8–3.0 mm" or "≥ 3.0 mm". */
+function labelRange(min: number | null, max: number | null): string {
+  if (min !== null && max !== null) {
+    return `${String(min)}–${String(max)} mm`;
+  }
+  return min !== null ? `≥ ${String(min)} mm` : `≤ ${String(max)} mm`;
 }
 
 function Field({

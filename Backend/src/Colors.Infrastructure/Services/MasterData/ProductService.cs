@@ -30,6 +30,8 @@ public class ProductService(ColorsDbContext db)
             entity.PiecesPerBag,
             entity.SmallBagsPerBag,
             entity.BagsPerPallet,
+            entity.MinThickness,
+            entity.MaxThickness,
             entity.IsActive,
             canDelete);
 
@@ -42,6 +44,8 @@ public class ProductService(ColorsDbContext db)
         entity.PiecesPerBag = request.PiecesPerBag;
         entity.SmallBagsPerBag = request.SmallBagsPerBag;
         entity.BagsPerPallet = request.BagsPerPallet;
+        entity.MinThickness = request.MinThickness;
+        entity.MaxThickness = request.MaxThickness;
     }
 
     protected override async Task<string?> ValidateAsync(
@@ -99,8 +103,20 @@ public class ProductService(ColorsDbContext db)
             return "A bag uses at least one small bag — two for a plate, one for a box.";
         }
 
-        return request.BagsPerPallet < 1
-            ? "Say how many bags complete a pallet."
+        if (request.BagsPerPallet < 1)
+        {
+            return "Say how many bags complete a pallet.";
+        }
+
+        // Either end may be empty -- "more than 3 mm" has no top, and nobody has measured
+        // most of these yet -- but a thickness that is given must mean something.
+        if (request.MinThickness is <= 0 || request.MaxThickness is <= 0)
+        {
+            return "A thickness must be more than nothing.";
+        }
+
+        return request.MinThickness > request.MaxThickness
+            ? "The thinnest cannot be thicker than the thickest."
             : null;
     }
 

@@ -35,6 +35,12 @@ export interface RollTestReportDto {
   thicknessLs: number;
   /** The mean of the four. Worked out on the server, never stored. */
   averageThickness: number;
+  /**
+   * Whether that average fell inside the product's range when it was measured, and kept
+   * (specification section 19.1). Null where the product had no range — which is not a
+   * failure and must never be shown as one.
+   */
+  thicknessInSpec: boolean | null;
   testedByName: string;
   testedAt: string;
   notes: string | null;
@@ -60,11 +66,19 @@ export interface RollSummaryDto {
   weight: number | null;
   length: number | null;
   averageThickness: number | null;
+  /** What it was made for. Null only on rolls made before products were declared. */
+  productId: number | null;
+  productName: string | null;
+  /** The range that product asks for. Either end may be missing, and both usually are. */
+  minThickness: number | null;
+  maxThickness: number | null;
+  /** Null until measured, and null for a product with no range. */
+  thicknessInSpec: boolean | null;
 }
 
 export interface RollDto extends Omit<
   RollSummaryDto,
-  'weight' | 'length' | 'averageThickness'
+  'weight' | 'length' | 'averageThickness' | 'thicknessInSpec'
 > {
   notes: string | null;
   testReport: RollTestReportDto | null;
@@ -100,6 +114,8 @@ export const productionApi = {
     shiftLineId: number;
     recipeVersionId: number;
     colorId: number;
+    /** What the roll is being made for (section 19.1). Required by the server. */
+    productId: number | null;
     producedAt: string | null;
     notes: string | null;
   }): Promise<RollDto> =>

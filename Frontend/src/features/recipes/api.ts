@@ -67,6 +67,8 @@ export interface RecipeVersionSummaryDto {
   createdAt: string;
   notes: string | null;
   ingredientCount: number;
+  /** So the roll screen only offers products this recipe can make (section 19.1). */
+  isAbsorbent: boolean;
 }
 
 export interface RecipeVersionDto extends Omit<

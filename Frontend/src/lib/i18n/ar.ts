@@ -683,4 +683,19 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.user.numberNeeded': 'الرقم الوظيفي مطلوب — به يعرفه المصنع.',
   'refusal.user.numberTaken': 'الرقم الوظيفي {0} يخص شخصاً آخر بالفعل.',
   'common.thisShift': 'هذه الوردية',
+
+  // A roll made for a product (specification section 19.1).
+  'rolls.madeFor': 'صُنع لـ',
+  'rolls.sameAsLast': 'نفس آخر رول في هذه الوردية.',
+  'rolls.inSpec': 'ضمن المواصفة',
+  'rolls.outOfSpec': 'خارج المواصفة',
+  'md.thickness': 'السماكة',
+  'md.minThickness': 'أقل سماكة (ملم)',
+  'md.maxThickness': 'أكبر سماكة (ملم)',
+  'md.thicknessNote': 'ما يجب أن يقيسه رول هذا المنتج. اتركه فارغاً حتى يُعرف.',
+  'refusal.roll.chooseProduct': 'اذكر المنتج الذي صُنع له هذا الرول.',
+  'refusal.roll.chooseActiveProduct': 'اختر منتجاً مفعّلاً.',
+  'refusal.roll.productAbsorbentRecipeNot': '{0} ماص، لكن الوصفة {1} ليست ماصة.',
+  'refusal.roll.productNotAbsorbentRecipeIs': '{0} غير ماص، لكن الوصفة {1} ماصة.',
+  'refusal.thermo.wrongMould': 'الرول {0} صُنع لـ {1}، لكن القالب المركّب هو {2}. ضعه على الخط الصحيح، أو غيّر القالب في الوردية.',
 };

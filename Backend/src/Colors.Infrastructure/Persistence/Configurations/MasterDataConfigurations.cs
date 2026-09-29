@@ -80,8 +80,20 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
 {
     public void Configure(EntityTypeBuilder<Product> builder)
     {
-        builder.ToTable("Products");
+        builder.ToTable("Products", t =>
+            // A thickness is more than nothing, and a range cannot end before it starts.
+            // Either end may be missing on its own: "more than 3 mm" has no top.
+            t.HasCheckConstraint(
+                "ck_products_thickness_range",
+                "(\"MinThickness\" IS NULL OR \"MinThickness\" > 0) "
+                + "AND (\"MaxThickness\" IS NULL OR \"MaxThickness\" > 0) "
+                + "AND (\"MinThickness\" IS NULL OR \"MaxThickness\" IS NULL "
+                + "OR \"MinThickness\" <= \"MaxThickness\")"));
         builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
+
+        // The same precision as the readings it is compared with.
+        builder.Property(e => e.MinThickness).HasPrecision(9, 3);
+        builder.Property(e => e.MaxThickness).HasPrecision(9, 3);
         builder.HasIndex(e => e.Name).IsUnique().HasDatabaseName("ux_products_name");
 
         // The lookup the thermo does on every run: mould from the shift, absorbency

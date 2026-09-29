@@ -165,6 +165,25 @@ public class ThermoService(
             return InvalidRun(StatusRefusal(found));
         }
 
+        // The roll says what it was made for; the mould says what it makes. When they
+        // disagree the roll is refused, which is what the factory asked for rather than a
+        // warning (specification section 19.1). A lunch-box roll is thicker than a plate
+        // roll, and forming it on the plate mould wastes the roll and the time.
+        //
+        // A roll made before products were declared has none, and is let through: it
+        // cannot be judged against something it never said.
+        if (found.Product is not null && found.Product.MouldId != shiftLine.MouldId)
+        {
+            return InvalidRun(
+                $"Roll {found.RollCode} was made for {found.Product.Name}, "
+                + $"but {shiftLine.Mould!.Name} is mounted. Put it on the right line, "
+                + "or change the mould on the shift.",
+                "thermo.wrongMould",
+                found.RollCode,
+                found.Product.Name,
+                shiftLine.Mould!.Name);
+        }
+
         var startedAt = request.StartedAt ?? timeProvider.GetUtcNow();
 
         var run = new ThermoProduction
@@ -379,7 +398,8 @@ public class ThermoService(
     {
         var rolls = db.Rolls
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
-            .Include(r => r.Color);
+            .Include(r => r.Color)
+            .Include(r => r.Product);
 
         if (!string.IsNullOrWhiteSpace(request.RollBarcode))
         {
@@ -572,6 +592,10 @@ public class ThermoService(
 
     private static Result<ThermoRunDto> InvalidRun(string message) =>
         Result<ThermoRunDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<ThermoRunDto> InvalidRun(string message, string code, params string[] args) =>
+        Result<ThermoRunDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 
     private static Result<ThermoRunDto> RunNotFound() =>
         Result<ThermoRunDto>.Failure(ErrorCode.NotFound, "This run does not exist.", "thermo.runNotFound");

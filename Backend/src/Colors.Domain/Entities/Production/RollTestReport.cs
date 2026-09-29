@@ -44,6 +44,19 @@ public class RollTestReport
     public decimal AverageThickness =>
         Math.Round((ThicknessRs + ThicknessRm + ThicknessLm + ThicknessLs) / 4m, 3);
 
+    /// <summary>
+    /// Whether the average came out inside the product's range, decided when the readings
+    /// were saved (specification section 19.1). Null where the product had no range.
+    ///
+    /// <b>Stored, not worked out.</b> The readings are frozen on this row, but the range is
+    /// master data and will be edited — the factory has not even measured it yet. Worked
+    /// out afresh, every roll made last year would change its verdict the day somebody
+    /// corrected a range, and a report read in March would say something different in May.
+    /// This is the calculated-or-stored test in section 0.1, failing in the same way
+    /// PieceCount does.
+    /// </summary>
+    public bool? ThicknessInSpec { get; set; }
+
     public int TestedByUserId { get; set; }
 
     public DateTimeOffset TestedAt { get; set; }

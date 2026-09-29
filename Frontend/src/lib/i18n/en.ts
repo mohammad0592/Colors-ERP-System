@@ -662,6 +662,21 @@ export const en = {
   'refusal.user.numberNeeded': 'An employee number is needed — it is how the floor knows him.',
   'refusal.user.numberTaken': 'Employee number {0} already belongs to somebody.',
   'common.thisShift': 'This shift',
+
+  // A roll made for a product (specification section 19.1).
+  'rolls.madeFor': 'Made for',
+  'rolls.sameAsLast': 'The same as the last roll on this shift.',
+  'rolls.inSpec': 'In spec',
+  'rolls.outOfSpec': 'Out of spec',
+  'md.thickness': 'Thickness',
+  'md.minThickness': 'Thinnest (mm)',
+  'md.maxThickness': 'Thickest (mm)',
+  'md.thicknessNote': 'What a roll for this product should measure. Leave it empty until it is known.',
+  'refusal.roll.chooseProduct': 'Say which product this roll is for.',
+  'refusal.roll.chooseActiveProduct': 'Choose an active product.',
+  'refusal.roll.productAbsorbentRecipeNot': '{0} is absorbent, but recipe {1} is not.',
+  'refusal.roll.productNotAbsorbentRecipeIs': '{0} is not absorbent, but recipe {1} is.',
+  'refusal.thermo.wrongMould': 'Roll {0} was made for {1}, but {2} is mounted. Put it on the right line, or change the mould on the shift.',
 } as const;
 
 /** Every key the screens may ask for. */

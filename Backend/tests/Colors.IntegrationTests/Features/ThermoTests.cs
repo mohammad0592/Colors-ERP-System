@@ -1,5 +1,6 @@
 ﻿using Colors.Application.Features.Production;
 using Colors.Application.Features.Thermo;
+using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Persistence;
@@ -60,7 +61,13 @@ public class ThermoTests(DatabaseFixture fixture)
         var production = NewProduction(db);
 
         var roll = await production.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, family.Versions[0].Id, colour.Id, null, null),
+            new CreateRollRequest(
+                ids.ShiftLineId,
+                family.Versions[0].Id,
+                colour.Id,
+                family.IsAbsorbent ? ids.AbsorbentProductId : ids.NormalProductId,
+                null,
+                null),
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 
@@ -526,4 +533,89 @@ public class ThermoTests(DatabaseFixture fixture)
         await Assert.ThrowsAsync<Npgsql.PostgresException>(duplicate);
     }
 
+    // ------------------------------------------------ the wrong mould (19.1)
+
+    [Fact]
+    public async Task A_roll_made_for_another_mould_is_refused()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "THRM1");
+        var colour = await TestSequences.ColourAsync(db);
+
+        // A second product, on a mould the thermo line does not have mounted.
+        var boxMould = new Mould { Name = "Lunch Box Mould THRM1" };
+        db.Moulds.Add(boxMould);
+        await db.SaveChangesAsync();
+
+        var productType = await db.ProductTypes.FirstAsync();
+        var lunchBox = new Product
+        {
+            Name = "Lunch Box THRM1",
+            MouldId = boxMould.Id,
+            ProductTypeId = productType.Id,
+            IsAbsorbent = false,
+            PiecesPerBag = 250,
+            SmallBagsPerBag = 1,
+            LargeBagsPerBag = 1,
+            BagsPerPallet = 21,
+        };
+        db.Products.Add(lunchBox);
+
+        var family = new RecipeFamily
+        {
+            Name = "Family THRM1",
+            Code = "N",
+            ProductTypeId = productType.Id,
+            Versions =
+            [
+                new RecipeVersion
+                {
+                    RecipeNumber = TestSequences.NextRecipeNumber(),
+                    VersionNumber = 1,
+                    Status = RecipeVersionStatus.Current,
+                    CreatedByUserId = ids.UserId,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                },
+            ],
+        };
+        db.RecipeFamilies.Add(family);
+        await db.SaveChangesAsync();
+
+        var production = NewProduction(db);
+        var roll = await production.CreateRollAsync(
+            new CreateRollRequest(
+                ids.ShiftLineId, family.Versions[0].Id, colour.Id, lunchBox.Id, null, null),
+            ids.UserId);
+        Assert.True(roll.IsSuccess, roll.Message);
+
+        var measured = await production.SaveTestReportAsync(
+            roll.Value!.Id,
+            new SaveRollTestRequest(95m, 1200m, 9m, 3.2m, 3.2m, 3.2m, 3.2m, null),
+            ids.UserId);
+        Assert.True(measured.IsSuccess, measured.Message);
+
+        // The thermo has the plate mould on. A lunch-box roll does not go in.
+        var started = await NewService(db).StartRunAsync(
+            new StartThermoRunRequest(measured.Value!.Barcode, null, ids.ThermoShiftLineId, null, null),
+            ids.UserId);
+
+        Assert.False(started.IsSuccess);
+        Assert.Equal("thermo.wrongMould", started.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_roll_made_for_the_mounted_mould_goes_in()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "THRM2");
+
+        // Made for Big Plate, and Big Plate's mould is the one on the line.
+        var roll = await AvailableRollAsync(db, ids, "THRM2");
+
+        var started = await NewService(db).StartRunAsync(
+            new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null),
+            ids.UserId);
+
+        Assert.True(started.IsSuccess, started.Message);
+    }
 }

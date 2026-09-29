@@ -128,7 +128,12 @@ public class ProductionService(
                 r.ProducedAt,
                 r.TestReport?.Weight,
                 r.TestReport?.Length,
-                r.TestReport?.AverageThickness))
+                r.TestReport?.AverageThickness,
+                r.ProductId,
+                r.Product?.Name,
+                r.Product?.MinThickness,
+                r.Product?.MaxThickness,
+                r.TestReport?.ThicknessInSpec))
             .ToList();
     }
 
@@ -211,6 +216,35 @@ public class ProductionService(
                 $"{recipe.Family.Name} has no code for the roll code. Set one in Master Data.");
         }
 
+        // What the roll is being made for (specification section 19.1). Declared, because
+        // the thickness cannot be trusted to say it: the first rolls of a run are the
+        // wrong thickness while the machine is being set, and are still for this product.
+        if (request.ProductId is null)
+        {
+            return InvalidRoll("Say which product this roll is for.", "roll.chooseProduct");
+        }
+
+        var product = await db.Products
+            .FirstOrDefaultAsync(p => p.Id == request.ProductId && p.IsActive, cancellationToken);
+
+        if (product is null)
+        {
+            return InvalidRoll("Choose an active product.", "roll.chooseActiveProduct");
+        }
+
+        // Absorbency is the one thing both the product and the recipe say, and they must
+        // say the same. Caught here, at the mixer, rather than as a puzzle at the thermo.
+        if (product.IsAbsorbent != recipe.Family.IsAbsorbent)
+        {
+            return InvalidRoll(
+                product.IsAbsorbent
+                    ? $"{product.Name} is absorbent, but recipe {recipe.RecipeNumber} is not."
+                    : $"{product.Name} is not absorbent, but recipe {recipe.RecipeNumber} is.",
+                product.IsAbsorbent ? "roll.productAbsorbentRecipeNot" : "roll.productNotAbsorbentRecipeIs",
+                product.Name,
+                recipe.RecipeNumber.ToString());
+        }
+
         var productionDate = shiftLine.ShiftReport.ProductionDate;
 
         // The roll and its barcode are one act: a roll with no label cannot be found on
@@ -235,6 +269,7 @@ public class ProductionService(
             Batch = batch,
             RecipeVersionId = recipe.Id,
             ColorId = colour.Id,
+            ProductId = product.Id,
             ProducedByUserId = userId,
             ProducedAt = request.ProducedAt ?? timeProvider.GetUtcNow(),
             Status = RollStatus.NeedsTest,
@@ -287,7 +322,7 @@ public class ProductionService(
             return InvalidRoll(error);
         }
 
-        db.RollTestReports.Add(new RollTestReport
+        var report = new RollTestReport
         {
             RollId = roll.Id,
             Weight = request.Weight,
@@ -300,10 +335,19 @@ public class ProductionService(
             TestedByUserId = userId,
             TestedAt = timeProvider.GetUtcNow(),
             Notes = Trimmed(request.Notes),
-        });
+        };
 
-        // Measured, so it may now go to the thermo. This is not approval — nothing was
-        // compared against a limit.
+        // Judged now against the range as it stands today, and kept: the range is master
+        // data and will be edited, and last year's rolls must not change their verdict
+        // when it is (specification section 19.1). The average is the report's own, so
+        // the figure judged is the figure shown.
+        report.ThicknessInSpec = roll.Product?.ThicknessInSpec(report.AverageThickness);
+
+        db.RollTestReports.Add(report);
+
+        // Measured, so it may now go to the thermo -- whatever the verdict. An out-of-spec
+        // roll is still a roll for its product and is still used; the verdict records
+        // what it was, it does not decide what happens to it.
         roll.Status = RollStatus.Available;
 
         await db.SaveChangesAsync(cancellationToken);
@@ -376,6 +420,7 @@ public class ProductionService(
             .Include(r => r.Batch)
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(r => r.Color)
+            .Include(r => r.Product)
             .Include(r => r.TestReport);
 
     private static BatchSummaryDto ToSummary(Batch batch, Dictionary<int, string> names) =>
@@ -460,6 +505,10 @@ public class ProductionService(
             roll.RecipeVersion.Family.Name,
             roll.ColorId,
             roll.Color.Name,
+            roll.ProductId,
+            roll.Product?.Name,
+            roll.Product?.MinThickness,
+            roll.Product?.MaxThickness,
             roll.Status.ToString(),
             roll.Status == RollStatus.NeedsTest,
             names.GetValueOrDefault(roll.ProducedByUserId, "—"),
@@ -477,6 +526,7 @@ public class ProductionService(
                     roll.TestReport.ThicknessLm,
                     roll.TestReport.ThicknessLs,
                     roll.TestReport.AverageThickness,
+                    roll.TestReport.ThicknessInSpec,
                     names.GetValueOrDefault(roll.TestReport.TestedByUserId, "—"),
                     roll.TestReport.TestedAt,
                     roll.TestReport.Notes));
@@ -488,6 +538,10 @@ public class ProductionService(
 
     private static Result<RollDto> InvalidRoll(string message) =>
         Result<RollDto>.Failure(ErrorCode.ValidationFailed, message);
+
+    /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
+    private static Result<RollDto> InvalidRoll(string message, string code, params string[] args) =>
+        Result<RollDto>.Failure(ErrorCode.ValidationFailed, message, code, args);
 
     private static Result<RollDto> RollNotFound() =>
         Result<RollDto>.Failure(ErrorCode.NotFound, "This roll does not exist.", "roll.notFound");

@@ -77,7 +77,7 @@ public class DashboardTests(DatabaseFixture fixture)
         var recipe = await RecipeVersionAsync(db, ids, "DSH3");
 
         var roll = await production.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipe, colour.Id, null, null),
+            new CreateRollRequest(ids.ShiftLineId, recipe, colour.Id, ids.NormalProductId, null, null),
             ids.UserId);
 
         Assert.True(roll.IsSuccess, roll.Message);

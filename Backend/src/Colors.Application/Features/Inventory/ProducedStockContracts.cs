@@ -46,7 +46,12 @@ public sealed record BarcodeLabelDto(
     decimal? Length,
     string? ShiftName,
     DateOnly ProductionDate,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    // A roll only: the thickness its product asks for, printed so the man holding it can
+    // see what it was meant to be (specification section 19.1). Null on bags and pallets,
+    // and wherever the range has not been set.
+    decimal? MinThickness,
+    decimal? MaxThickness);
 
 /// <summary>
 /// Produced stock and the labels that go on it.

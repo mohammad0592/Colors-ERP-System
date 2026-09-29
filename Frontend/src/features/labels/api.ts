@@ -42,6 +42,13 @@ export interface BarcodeLabelDto {
   shiftName: string | null;
   productionDate: string;
   createdAt: string;
+  /**
+   * A roll only: the thickness its product asks for, printed so the man holding it can
+   * see what it was meant to be (section 19.1). Null on bags, pallets, and wherever the
+   * range has not been set.
+   */
+  minThickness: number | null;
+  maxThickness: number | null;
 }
 
 export const producedStockApi = {

@@ -111,7 +111,8 @@ public class ProductionTests(DatabaseFixture fixture)
         // A third of the polymer is recycled material, which is dark. No amount of
         // white colouring hides it, so this roll cannot exist.
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, blackRecipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, blackRecipeId, colourId, ids.NormalProductId, null, null),
+            ids.UserId);
 
         Assert.False(roll.IsSuccess);
         Assert.Contains("only be made in black", roll.Message!, StringComparison.OrdinalIgnoreCase);
@@ -128,7 +129,8 @@ public class ProductionTests(DatabaseFixture fixture)
         // The other direction, and the factory's own policy: black is made on the
         // recipe that uses recycle, which is the whole reason that recipe exists.
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, plainRecipeId, blackColourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, plainRecipeId, blackColourId, ids.NormalProductId, null, null),
+            ids.UserId);
 
         Assert.False(roll.IsSuccess);
         Assert.Contains("cannot be made in", roll.Message!, StringComparison.OrdinalIgnoreCase);
@@ -142,7 +144,8 @@ public class ProductionTests(DatabaseFixture fixture)
         var (blackColourId, blackRecipeId) = await BlackRecipeAsync(db, "BLK3", ids.UserId);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, blackRecipeId, blackColourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, blackRecipeId, blackColourId, ids.NormalProductId, null, null),
+            ids.UserId);
 
         Assert.True(roll.IsSuccess, roll.Message);
     }
@@ -156,7 +159,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD1", ids.UserId);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         Assert.True(roll.IsSuccess, roll.Message);
         Assert.Equal(1, roll.Value!.DailySerial);
@@ -176,9 +179,9 @@ public class ProductionTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         var first = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
         var second = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         Assert.Equal(1, first.Value!.DailySerial);
         Assert.Equal(2, second.Value!.DailySerial);
@@ -193,7 +196,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD3", ids.UserId);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         Assert.Equal(RollStatus.NeedsTest.ToString(), roll.Value!.Status);
         Assert.True(roll.Value.NeedsTest);
@@ -208,7 +211,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         var roll = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         var tested = await service.SaveTestReportAsync(
             roll.Value!.Id,
@@ -231,7 +234,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         var roll = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         // The real Roll Log export has one: the operator typed the length into the
         // weight box. On paper it was wrong for ever; here he is still at the machine.
@@ -253,7 +256,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         var roll = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
         var request = new SaveRollTestRequest(95m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null);
 
         await service.SaveTestReportAsync(roll.Value!.Id, request, ids.UserId);
@@ -277,7 +280,7 @@ public class ProductionTests(DatabaseFixture fixture)
 
         // A draft may still change, so a roll made to it could never be reproduced.
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         Assert.False(roll.IsSuccess);
         Assert.Contains("draft", roll.Message!, StringComparison.OrdinalIgnoreCase);
@@ -292,7 +295,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD11", ids.UserId);
 
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         var saved = await db.Rolls.FirstAsync(r => r.Id == roll.Value!.Id);
 
@@ -321,9 +324,9 @@ public class ProductionTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         var first = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
         await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         await service.SaveTestReportAsync(
             first.Value!.Id,
@@ -352,7 +355,7 @@ public class ProductionTests(DatabaseFixture fixture)
         // All material goes back to the store at shift end, so a roll made against a
         // finished shift could never be true — and the mix it would open with it.
         var roll = await NewService(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         Assert.False(roll.IsSuccess);
     }
@@ -371,7 +374,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         var made = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
         Assert.True(made.IsSuccess, made.Message);
 
         // While the shift is open the roll is on the line screen.
@@ -400,7 +403,7 @@ public class ProductionTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         var made = await service.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
         Assert.True(made.IsSuccess, made.Message);
 
         var report = await db.ShiftReports.FirstAsync(r => r.Id == ids.ShiftReportId);
@@ -414,5 +417,174 @@ public class ProductionTests(DatabaseFixture fixture)
         var waiting = await service.GetRollsAsync(needsTestOnly: true);
 
         Assert.Contains(waiting, r => r.Id == made.Value!.Id);
+    }
+
+    // ------------------------------------------ made for a product (19.1)
+    //
+    // A roll says what it was made for. The thickness range judges it and never stops it,
+    // because the first rolls of a run come out wrong while the machine is set, and they
+    // are still rolls for this product.
+
+    /// <summary>Four readings with the same value, so the average is exactly that.</summary>
+    private static SaveRollTestRequest Measured(decimal thickness) =>
+        new(95m, 1200m, 9m, thickness, thickness, thickness, thickness, null);
+
+    [Fact]
+    public async Task A_roll_must_say_what_it_was_made_for()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PROD1");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PROD1", ids.UserId);
+
+        var roll = await NewService(db).CreateRollAsync(
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null, null),
+            ids.UserId);
+
+        Assert.False(roll.IsSuccess);
+        Assert.Equal("roll.chooseProduct", roll.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_product_and_a_recipe_must_agree_on_absorbency()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PROD2");
+
+        // A normal recipe, and an absorbent product. Caught at the mixer, rather than as a
+        // puzzle at the thermo about why the bags came out wrong.
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PROD2", ids.UserId);
+
+        var roll = await NewService(db).CreateRollAsync(
+            new CreateRollRequest(
+                ids.ShiftLineId, recipeId, colourId, ids.AbsorbentProductId, null, null),
+            ids.UserId);
+
+        Assert.False(roll.IsSuccess);
+        Assert.Equal("roll.productAbsorbentRecipeNot", roll.MessageCode);
+    }
+
+    [Fact]
+    public async Task The_roll_carries_the_product_it_was_made_for()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PROD3");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PROD3", ids.UserId);
+
+        var roll = await NewService(db).CreateRollAsync(
+            new CreateRollRequest(
+                ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
+            ids.UserId);
+
+        Assert.True(roll.IsSuccess, roll.Message);
+        Assert.Equal(ids.NormalProductId, roll.Value!.ProductId);
+        Assert.Equal("Big Plate PROD3", roll.Value.ProductName);
+    }
+
+    [Theory]
+    [InlineData(2.9, true)]
+    [InlineData(3.5, false)]
+    public async Task Measuring_a_roll_judges_it_against_its_product(
+        decimal thickness,
+        bool expected)
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, expected ? "PROD4a" : "PROD4b");
+        var (colourId, recipeId) = await RecipeAndColourAsync(
+            db, expected ? "PROD4a" : "PROD4b", ids.UserId);
+
+        var product = await db.Products.FirstAsync(p => p.Id == ids.NormalProductId);
+        product.MinThickness = 2.8m;
+        product.MaxThickness = 3.0m;
+        await db.SaveChangesAsync();
+
+        var service = NewService(db);
+        var roll = await service.CreateRollAsync(
+            new CreateRollRequest(
+                ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
+            ids.UserId);
+
+        var measured = await service.SaveTestReportAsync(
+            roll.Value!.Id, Measured(thickness), ids.UserId);
+
+        Assert.True(measured.IsSuccess, measured.Message);
+        Assert.Equal(expected, measured.Value!.TestReport!.ThicknessInSpec);
+    }
+
+    [Fact]
+    public async Task An_out_of_spec_roll_is_still_released_to_the_thermo()
+    {
+        // The whole point of a verdict rather than a gate. A setup roll that came out at
+        // 4 mm is still a plate roll, still used, and the record simply says what it was.
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PROD5");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PROD5", ids.UserId);
+
+        var product = await db.Products.FirstAsync(p => p.Id == ids.NormalProductId);
+        product.MinThickness = 2.8m;
+        product.MaxThickness = 3.0m;
+        await db.SaveChangesAsync();
+
+        var service = NewService(db);
+        var roll = await service.CreateRollAsync(
+            new CreateRollRequest(
+                ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
+            ids.UserId);
+
+        var measured = await service.SaveTestReportAsync(roll.Value!.Id, Measured(4.0m), ids.UserId);
+
+        Assert.True(measured.IsSuccess, measured.Message);
+        Assert.False(measured.Value!.TestReport!.ThicknessInSpec);
+        Assert.Equal(RollStatus.Available.ToString(), measured.Value.Status);
+    }
+
+    [Fact]
+    public async Task A_product_with_no_range_gives_no_verdict()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PROD6");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PROD6", ids.UserId);
+        var service = NewService(db);
+
+        var roll = await service.CreateRollAsync(
+            new CreateRollRequest(
+                ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
+            ids.UserId);
+
+        var measured = await service.SaveTestReportAsync(roll.Value!.Id, Measured(9.0m), ids.UserId);
+
+        // Not "failed". Nobody has said what this product should be yet.
+        Assert.Null(measured.Value!.TestReport!.ThicknessInSpec);
+    }
+
+    [Fact]
+    public async Task Changing_a_range_later_does_not_rewrite_old_verdicts()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PROD7");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PROD7", ids.UserId);
+
+        var product = await db.Products.FirstAsync(p => p.Id == ids.NormalProductId);
+        product.MinThickness = 2.8m;
+        product.MaxThickness = 3.0m;
+        await db.SaveChangesAsync();
+
+        var service = NewService(db);
+        var roll = await service.CreateRollAsync(
+            new CreateRollRequest(
+                ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
+            ids.UserId);
+        await service.SaveTestReportAsync(roll.Value!.Id, Measured(2.9m), ids.UserId);
+
+        // A year later the factory decides plates should be 3.0 to 3.2. The roll measured
+        // at 2.9 was in spec by the rule that held when it was made, and a report read in
+        // March must not say something different in May.
+        product.MinThickness = 3.0m;
+        product.MaxThickness = 3.2m;
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var reread = await NewService(db).GetRollAsync(roll.Value.Id);
+
+        Assert.True(reread.Value!.TestReport!.ThicknessInSpec);
     }
 }

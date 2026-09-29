@@ -58,4 +58,36 @@ public class Product : MasterEntity
 
     /// <summary>Bags that complete a pallet — 15 for plates, about 21 for the rest.</summary>
     public int BagsPerPallet { get; set; }
+
+    /// <summary>
+    /// The thickness a roll made for this product should come out at, in millimetres
+    /// (specification section 19.1). Either end may be missing — "more than 3 mm" has no
+    /// top — and both may be, which means nobody has measured the range yet.
+    ///
+    /// <b>A verdict, never a gate.</b> The first rolls of a run come out at the wrong
+    /// thickness while the machine is still being set, and they are still rolls for this
+    /// product. Refusing them would refuse exactly the rolls a man is standing over trying
+    /// to fix. So the range is compared, the answer is written down, and nothing stops.
+    /// </summary>
+    public decimal? MinThickness { get; set; }
+
+    public decimal? MaxThickness { get; set; }
+
+    /// <summary>
+    /// Whether a roll measured at this average thickness is what this product asks for.
+    /// Null when there is no range to judge it against — which is not the same as
+    /// failing, and must not be shown as if it were.
+    ///
+    /// Inclusive at both ends: a roll at exactly 3.0 mm for a product of 2.8–3.0 is in.
+    /// </summary>
+    public bool? ThicknessInSpec(decimal averageThickness)
+    {
+        if (MinThickness is null && MaxThickness is null)
+        {
+            return null;
+        }
+
+        return (MinThickness is null || averageThickness >= MinThickness)
+            && (MaxThickness is null || averageThickness <= MaxThickness);
+    }
 }

@@ -68,7 +68,13 @@ public class PalletTests(DatabaseFixture fixture)
             db, new BarcodeService(db, TimeProvider.System), TimeProvider.System);
 
         var roll = await production.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, family.Versions[0].Id, colour.Id, null, null),
+            new CreateRollRequest(
+                ids.ShiftLineId,
+                family.Versions[0].Id,
+                colour.Id,
+                family.IsAbsorbent ? ids.AbsorbentProductId : ids.NormalProductId,
+                null,
+                null),
             ids.UserId);
 
         await production.SaveTestReportAsync(

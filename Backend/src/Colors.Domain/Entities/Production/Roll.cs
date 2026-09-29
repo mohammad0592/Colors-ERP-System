@@ -46,6 +46,24 @@ public class Roll
 
     public Color Color { get; set; } = null!;
 
+    /// <summary>
+    /// What the operator made this roll for (specification section 19.1).
+    ///
+    /// Declared rather than worked out, which is a deliberate departure from section 4:
+    /// the mould and the recipe say what was <i>actually</i> made, and this says what was
+    /// <i>meant</i>. The value is in the two agreeing — the thermo refuses a roll whose
+    /// product its mould does not make.
+    ///
+    /// On the roll and not the batch, because the batch is the whole shift and the
+    /// factory changes product mid-shift. The screen remembers the last one used so the
+    /// operator picks it once, not on every roll.
+    ///
+    /// Null only on rolls made before this existed.
+    /// </summary>
+    public int? ProductId { get; set; }
+
+    public Product? Product { get; set; }
+
     public int ProducedByUserId { get; set; }
 
     /// <summary>

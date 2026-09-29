@@ -48,6 +48,12 @@ export interface ProductDto extends LookupDto {
   /** Two for a plate — its big bag holds two small ones inside. One for a box. */
   smallBagsPerBag: number;
   bagsPerPallet: number;
+  /**
+   * The thickness a roll for this product should come out at, in mm (section 19.1).
+   * Either end may be missing — "more than 3 mm" has no top — and both usually are.
+   */
+  minThickness: number | null;
+  maxThickness: number | null;
 }
 
 export interface SaveProduct {
@@ -58,6 +64,8 @@ export interface SaveProduct {
   piecesPerBag: number;
   smallBagsPerBag: number;
   bagsPerPallet: number;
+  minThickness: number | null;
+  maxThickness: number | null;
 }
 
 export interface MaterialCategoryDto extends LookupDto {

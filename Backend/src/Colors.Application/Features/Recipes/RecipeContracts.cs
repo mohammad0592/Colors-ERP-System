@@ -60,7 +60,10 @@ public sealed record RecipeVersionSummaryDto(
     string CreatedByName,
     DateTimeOffset CreatedAt,
     string? Notes,
-    int IngredientCount);
+    int IngredientCount,
+    // So the roll screen can offer only the products this recipe can make. A roll whose
+    // product disagrees on absorbency is refused (section 19.1); better never offered.
+    bool IsAbsorbent);
 
 /// <summary>A version with its full formula.</summary>
 public sealed record RecipeVersionDto(

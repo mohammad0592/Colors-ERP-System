@@ -57,6 +57,10 @@ public sealed record ProductDto(
     int PiecesPerBag,
     int SmallBagsPerBag,
     int BagsPerPallet,
+    // The thickness a roll for this product should come out at (section 19.1). Either end
+    // may be missing, and both are until the factory measures them.
+    decimal? MinThickness,
+    decimal? MaxThickness,
     bool IsActive,
     bool CanDelete);
 
@@ -67,7 +71,9 @@ public sealed record SaveProductRequest(
     bool IsAbsorbent,
     int PiecesPerBag,
     int SmallBagsPerBag,
-    int BagsPerPallet);
+    int BagsPerPallet,
+    decimal? MinThickness,
+    decimal? MaxThickness);
 
 /// <summary>
 /// A material category. <c>IssuedOnTickets</c> is what decides whether its materials

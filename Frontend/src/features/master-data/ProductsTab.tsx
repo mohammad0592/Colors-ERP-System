@@ -108,6 +108,7 @@ export function ProductsTab(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('md.piecesPerBagShort')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.smallBagsShort')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.bagsPerPalletShort')}</th>
+              <th className="px-4 py-3 font-semibold">{t('md.thickness')}</th>
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3" />
             </tr>
@@ -119,11 +120,14 @@ export function ProductsTab(): ReactElement {
                 <td className="px-4 py-3 text-ink-soft">{product.mouldName}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.productTypeName}</td>
                 <td className="px-4 py-3 text-ink-soft">
-                  {product.isAbsorbent ? t('common.yes') : 'No'}
+                  {product.isAbsorbent ? t('common.yes') : t('common.no')}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{product.piecesPerBag}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.smallBagsPerBag}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.bagsPerPallet}</td>
+                <td className="px-4 py-3 whitespace-nowrap text-ink-soft">
+                  {rangeText(product.minThickness, product.maxThickness)}
+                </td>
                 <td className="px-4 py-3">
                   <StatusBadge isActive={product.isActive} />
                 </td>
@@ -229,6 +233,18 @@ function ProductDialog({
   const [bagsPerPallet, setBagsPerPallet] = useState(
     String(product?.bagsPerPallet ?? 21),
   );
+  // Text, so an empty box means "not set" rather than zero. Most products will stay
+  // empty until the factory measures them, and that is fine (section 19.1).
+  const [minThickness, setMinThickness] = useState(
+    product?.minThickness === null || product?.minThickness === undefined
+      ? ''
+      : String(product.minThickness),
+  );
+  const [maxThickness, setMaxThickness] = useState(
+    product?.maxThickness === null || product?.maxThickness === undefined
+      ? ''
+      : String(product.maxThickness),
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -244,6 +260,8 @@ function ProductDialog({
         piecesPerBag: Number(piecesPerBag),
         smallBagsPerBag: Number(smallBagsPerBag),
         bagsPerPallet: Number(bagsPerPallet),
+        minThickness: minThickness.trim() === '' ? null : Number(minThickness),
+        maxThickness: maxThickness.trim() === '' ? null : Number(maxThickness),
       };
 
       if (product === null) {
@@ -377,6 +395,28 @@ function ProductDialog({
           />
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <NumberField
+            id="prod-min-thickness"
+            label={t('md.minThickness')}
+            value={minThickness}
+            onChange={setMinThickness}
+            disabled={isSaving}
+            step="0.01"
+            min="0"
+          />
+          <NumberField
+            id="prod-max-thickness"
+            label={t('md.maxThickness')}
+            value={maxThickness}
+            onChange={setMaxThickness}
+            disabled={isSaving}
+            step="0.01"
+            min="0"
+          />
+        </div>
+        <p className="-mt-2 mb-4 text-xs text-ink-muted">{t('md.thicknessNote')}</p>
+
         {error !== null && (
           <p
             role="alert"
@@ -394,18 +434,37 @@ function ProductDialog({
   );
 }
 
+/** "2.8–3.0 mm", "≥ 3.0 mm", or a dash when nobody has set one yet. */
+function rangeText(min: number | null, max: number | null): string {
+  if (min !== null && max !== null) {
+    return `${String(min)}–${String(max)} mm`;
+  }
+  if (min !== null) {
+    return `≥ ${String(min)} mm`;
+  }
+  if (max !== null) {
+    return `≤ ${String(max)} mm`;
+  }
+  return '—';
+}
+
 function NumberField({
   id,
   label,
   value,
   onChange,
   disabled,
+  step = '1',
+  min = '1',
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
+  /** Whole numbers for the packing counts; hundredths of a millimetre for thickness. */
+  step?: string;
+  min?: string;
 }): ReactElement {
   return (
     <div className="mb-4">
@@ -415,7 +474,8 @@ function NumberField({
       <input
         id={id}
         type="number"
-        min="1"
+        min={min}
+        step={step}
         className="field-input"
         value={value}
         disabled={disabled}

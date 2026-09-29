@@ -7,6 +7,7 @@ import { RoleNames } from '../../lib/roles';
 import { formatDate } from '../shifts/shiftFormat';
 import { productionApi, type RollDto, type RollSummaryDto } from './api';
 import { RollStatusBadge } from './RollStatusBadge';
+import { ThicknessVerdict } from './ThicknessVerdict';
 import { RollTestDialog } from './RollTestDialog';
 
 /**
@@ -72,9 +73,9 @@ export function RollTestsPage(): ReactElement {
 
       {justSaved !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-          {t('term.roll')} <strong className="font-mono">{justSaved.rollCode}</strong> measured —
-          average thickness {justSaved.testReport?.averageThickness}. The thermo can use
-          it now.
+          {t('term.roll')} <strong className="font-mono">{justSaved.rollCode}</strong> —{' '}
+          {justSaved.testReport?.averageThickness} mm
+          <ThicknessVerdict inSpec={justSaved.testReport?.thicknessInSpec ?? null} />
         </p>
       )}
 
@@ -126,8 +127,9 @@ export function RollTestsPage(): ReactElement {
                 <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {roll.length ?? '—'}
                 </td>
-                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
+                <td className="px-4 py-3 text-end tabular-nums whitespace-nowrap text-ink-soft">
                   {roll.averageThickness ?? '—'}
+                  <ThicknessVerdict inSpec={roll.thicknessInSpec} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end">

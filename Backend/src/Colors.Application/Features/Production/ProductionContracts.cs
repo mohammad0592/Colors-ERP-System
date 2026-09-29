@@ -40,7 +40,16 @@ public sealed record RollSummaryDto(
     // been measured.
     decimal? Weight,
     decimal? Length,
-    decimal? AverageThickness);
+    decimal? AverageThickness,
+    // What it was made for, and the range that product asks for. Null on rolls made
+    // before products were declared, and the range is null wherever nobody has set one.
+    int? ProductId,
+    string? ProductName,
+    decimal? MinThickness,
+    decimal? MaxThickness,
+    // Decided when it was measured and kept (specification section 19.1). Null until
+    // measured, and null for a product with no range.
+    bool? ThicknessInSpec);
 
 public sealed record RollTestReportDto(
     int Id,
@@ -53,6 +62,9 @@ public sealed record RollTestReportDto(
     decimal ThicknessLs,
     // The mean of the four. Calculated on the server, never stored.
     decimal AverageThickness,
+    // Whether that mean fell inside the product's range when it was measured. Null where
+    // the product had no range to be inside.
+    bool? ThicknessInSpec,
     string TestedByName,
     DateTimeOffset TestedAt,
     string? Notes);
@@ -70,6 +82,10 @@ public sealed record RollDto(
     string RecipeFamilyName,
     int ColorId,
     string ColorName,
+    int? ProductId,
+    string? ProductName,
+    decimal? MinThickness,
+    decimal? MaxThickness,
     string Status,
     bool NeedsTest,
     string ProducedByName,
@@ -92,6 +108,9 @@ public sealed record CreateRollRequest(
     int ShiftLineId,
     int RecipeVersionId,
     int ColorId,
+    // What the roll is being made for (specification section 19.1). Required: nullable
+    // here only so a missing one is answered in words rather than as a malformed request.
+    int? ProductId,
     // The "out time" the operator knows. Null means now — he is usually standing at
     // the machine, but may be logging a roll a few minutes late.
     DateTimeOffset? ProducedAt,

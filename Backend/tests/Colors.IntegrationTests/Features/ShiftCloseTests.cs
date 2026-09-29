@@ -73,7 +73,7 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAsync(db, "CLOSE5", ids.UserId);
 
         var roll = await Production(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         await Production(db).SaveTestReportAsync(
             roll.Value!.Id,
@@ -101,7 +101,7 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAsync(db, "CLOSE6", ids.UserId);
 
         var roll = await Production(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         await Production(db).SaveTestReportAsync(
             roll.Value!.Id,
@@ -131,11 +131,11 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         Assert.Empty(await Production(db).GetBatchesAsync(ids.ShiftReportId));
 
         var first = await Production(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
         Assert.True(first.IsSuccess, first.Message);
 
         var second = await Production(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         // One mix per shift is now a fact the data enforces, not one the factory
         // reports: the second roll joins the first roll's batch because there is no
@@ -154,7 +154,7 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAsync(db, "CLOSE8", ids.UserId);
 
         await Production(db).CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null), ids.UserId);
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         Assert.Single(await Production(db).GetBatchesAsync(ids.ShiftReportId, openOnly: true));
 
@@ -173,7 +173,7 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAsync(db, "CLOSE9", ids.UserId);
 
         var roll = await Production(db).CreateRollAsync(
-            new CreateRollRequest(ids.ThermoShiftLineId, recipeId, colourId, null, null),
+            new CreateRollRequest(ids.ThermoShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
             ids.UserId);
 
         Assert.False(roll.IsSuccess);

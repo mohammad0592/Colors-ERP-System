@@ -147,7 +147,7 @@ public class ReportsTests(DatabaseFixture fixture)
             db, new BarcodeService(db, TimeProvider.System), TimeProvider.System);
 
         var roll = await production.CreateRollAsync(
-            new CreateRollRequest(ids.ShiftLineId, recipe.Id, colour.Id, null, null),
+            new CreateRollRequest(ids.ShiftLineId, recipe.Id, colour.Id, ids.NormalProductId, null, null),
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 

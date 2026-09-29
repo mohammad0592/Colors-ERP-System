@@ -265,6 +265,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             .Include(r => r.Color)
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(r => r.TestReport)
+            .Include(r => r.Product)
             .Include(r => r.Batch).ThenInclude(b => b.ShiftLine).ThenInclude(l => l.ShiftReport)
                 .ThenInclude(s => s.Shift)
             .FirstOrDefaultAsync(r => r.Id == rollId, cancellationToken);
@@ -277,14 +278,18 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 roll.RollCode,
                 null,
                 null,
-                roll.RecipeVersion.Family.Name,
+                // What it was made for. A roll from before products were declared falls
+                // back to its recipe family, which is what its label always said.
+                roll.Product?.Name ?? roll.RecipeVersion.Family.Name,
                 roll.Color.Name,
                 null,
                 roll.TestReport?.Weight,
                 roll.TestReport?.Length,
                 roll.Batch.ShiftLine.ShiftReport.Shift.Name,
                 roll.ProductionDate,
-                roll.ProducedAt));
+                roll.ProducedAt,
+                roll.Product?.MinThickness,
+                roll.Product?.MaxThickness));
     }
 
     private async Task<Result<BarcodeLabelDto>> BagLabelAsync(
@@ -324,7 +329,9 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             // are genuinely different, which is why the run is its own record.
             bag.ThermoProduction.ShiftLine.ShiftReport.Shift.Name,
             bag.ThermoProduction.ShiftLine.ShiftReport.ProductionDate,
-            bag.CreatedAt));
+            bag.CreatedAt,
+            null,
+            null));
     }
 
     private async Task<Result<BarcodeLabelDto>> PalletLabelAsync(
@@ -360,7 +367,9 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             null,
             pallet.ShiftLine.ShiftReport.Shift.Name,
             pallet.ShiftLine.ShiftReport.ProductionDate,
-            pallet.CreatedAt));
+            pallet.CreatedAt,
+            null,
+            null));
     }
 
     // ---------- helpers ----------

@@ -160,7 +160,7 @@ public class SingleOpenShiftTests(DatabaseFixture fixture)
 
         var roll = await production.CreateRollAsync(
             new Colors.Application.Features.Production.CreateRollRequest(
-                ids.ShiftLineId, 0, 0, null, null),
+                ids.ShiftLineId, 0, 0, ids.NormalProductId, null, null),
             ids.UserId);
 
         Assert.False(roll.IsSuccess);

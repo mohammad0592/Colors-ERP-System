@@ -118,7 +118,8 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
                 names.GetValueOrDefault(v.CreatedByUserId, "—"),
                 v.CreatedAt,
                 v.Notes,
-                v.Ingredients.Count))
+                v.Ingredients.Count,
+                v.Family.IsAbsorbent))
             .ToList();
     }
 

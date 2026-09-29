@@ -66,6 +66,11 @@ public class RollConfiguration : IEntityTypeConfiguration<Roll>
             .HasForeignKey(e => e.RecipeVersionId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(e => e.Product)
+            .WithMany()
+            .HasForeignKey(e => e.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.HasOne(e => e.Color)
             .WithMany()
             .HasForeignKey(e => e.ColorId)

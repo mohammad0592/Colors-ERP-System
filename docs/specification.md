@@ -1772,9 +1772,26 @@ The factory needs more than that. A roll is extruded to a thickness, and the thi
 belongs to the product: plates want roughly 2.8–3.0 mm, lunch boxes more than 3. A roll
 is made *for* something, and the label should say so.
 
-**The product is declared on the batch.** One mix makes fifteen to seventeen rolls and
-they are all for the same thing, so the operator says it once. Every roll already
-belongs to a batch, so every roll inherits it with no special case.
+**The product is declared on the roll, and remembered.** The operator picks it on the
+first roll of the shift; every roll after that is already filled in with the last
+product used, and he picks again only when the mould changes. Once a shift, in practice,
+not once a roll.
+
+It was going to be declared on the batch, and it is worth recording why it is not. In
+this system **the batch is the whole shift** ([section 8](#8-line-1--mixer-and-extruder),
+*Nobody starts a batch*): the mixer is filled once, the first roll creates the batch
+silently, and no screen ever shows one. A product fixed on the batch would therefore be
+one product per extruder shift — which is exactly what 19.3 says does not happen, since
+the men finish one product and start another in the same shift. The thickness is set
+at the extruder, not in the mix, so the same mix can be run thin for plates and then
+thick for lunch boxes.
+
+On the roll it sits beside the recipe, which is there for the same reason: both can
+change while one mix is still running.
+
+**The first roll of a shift has no default.** Quietly offering the first product in the
+list would turn a forgotten choice into a wrong declaration, and a wrong declaration is
+refused at the thermo an hour later, far from where it was made.
 
 **The thickness range does not decide the product.** This is the important part, and it
 is the factory's own reasoning: at the start of a run the machine is still being set,
@@ -1810,7 +1827,7 @@ departure from the rule above. After this there are two answers to "what is this
 
 | | Where it comes from | What it means |
 |---|---|---|
-| The batch's product | the operator, at the mixer | what it was **made for** |
+| The roll's product | the operator, at the extruder | what it was **made for** |
 | Mould and absorbency | the shift and the recipe | what was **actually made** |
 
 They should agree, and the value is in noticing when they do not. That is the whole
@@ -1819,16 +1836,34 @@ recording one.
 
 #### The absorbency has to agree too
 
-A product is absorbent or it is not, and so is the recipe. The batch names a product,
-but **the batch deliberately has no recipe** — it lives on the roll, because it is not
-yet certain that one batch uses one recipe ([section 18](#18-still-open), question 5).
+A product is absorbent or it is not, and so is the recipe. With both on the roll, a
+roll whose product and recipe disagree is refused when it is logged — at the extruder,
+where the mistake is made, rather than as a puzzle at the thermo about why the bags came
+out wrong.
 
-So the check is made per roll: a roll whose recipe disagrees with its batch's product on
-absorbency is refused. That keeps the two honest without having to answer question 5
-first.
+The roll screen only offers the products the chosen recipe can make, so in practice the
+refusal is a backstop and the operator never sees it.
 
-**Still to answer:** the real thickness range for each product. The field may be left
-empty until the factory measures them, and a product with no range simply has no
+#### What is stored, and why the verdict is kept
+
+| On | Column | |
+|---|---|---|
+| `Products` | MinThickness · MaxThickness | either may be empty; a check refuses a range that ends before it starts |
+| `Rolls` | ProductId (FK) | null only on rolls made before this existed |
+| `RollTestReports` | ThicknessInSpec | decided when measured, then kept |
+
+The verdict is **stored**, where the average it is judged from is worked out. That is
+the calculated-or-stored test in section 0.1, failing the same way PieceCount does: the
+readings are frozen on the row, but the range is master data and will be edited — the
+factory has not measured most of them yet. Worked out afresh, every roll made last year
+would change its verdict the day somebody corrected a range.
+
+Rolls made before this have no product. They are let through at the thermo, since they
+cannot be judged against something they never said, and their labels keep printing the
+recipe family as they always did.
+
+**Built.** Still to answer: the real thickness range for each product. The fields may
+be left empty until the factory measures them, and a product with no range simply has no
 verdict.
 
 ### 19.2 A run that crosses a shift
@@ -1849,10 +1884,12 @@ column or a second record, so it comes before any schema.
 The men reach the target quantity for one product, change the mould, and start another.
 One shift, two products.
 
-Half of this is already possible. A batch never crosses a shift and now names a product,
-so a second product at the mixer is simply a second batch.
+The extruder half is now handled: the product is declared per roll (19.1), so a change
+of product mid-shift is just a different product on the next roll. *An earlier version
+of this section said a second product would be a second batch. That was wrong — the
+batch is the whole shift and there is only ever one per shift.*
 
-The other half is not. **A shift line holds one mould** ([section 2](#2-shifts-and-shift-reports)),
+The thermo half is not. **A shift line holds one mould** ([section 2](#2-shifts-and-shift-reports)),
 so the thermo's part of a shift cannot say that the mould changed at eleven o'clock, and
 the machine settings recorded against it belong to whichever product was running when
 somebody typed them.
@@ -1888,6 +1925,12 @@ a correction is one edit and reaches every screen ([section 12](#12-barcodes)).
 The plant vocabulary is still a draft that nobody at the factory has read. Correcting it
 is worth more than any other item on this list, because every screen and every refusal
 draws on it.
+
+Also English still: **47 refusals from the server** that were never given a name the
+screens can translate. The check that found the first hundred only looked for calls
+written `Invalid(`, and several services refuse through helpers called `InvalidRoll`,
+`InvalidRun` and the like. Most of the 47 are in production, the thermo and pallets —
+the screens the floor uses most.
 
 **Still to answer:** the corrected words, and where the English is still showing.
 
