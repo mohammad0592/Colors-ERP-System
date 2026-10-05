@@ -16,10 +16,18 @@ import { LabelPrintScreen } from './LabelPrintScreen';
  * Every status is shown, not only the usable ones. A roll that was scrapped and a bag
  * that is already on a pallet are exactly what somebody is looking for when they cannot
  * find something.
+ *
+ * Given a kind, it shows only that one — the inventory has a tab each for rolls, bags
+ * and pallets — and leaves off the choice of kind and the kind column.
  */
-export function ProducedStockTab(): ReactElement {
+export function ProducedStockTab({
+  kind: fixedKind,
+}: {
+  kind?: ProducedKind;
+}): ReactElement {
   const { t } = useTranslation();
-  const [kind, setKind] = useState<ProducedKind | 'All'>('All');
+  const [chosenKind, setKind] = useState<ProducedKind | 'All'>('All');
+  const kind = fixedKind ?? chosenKind;
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [labelFor, setLabelFor] = useState<string | null>(null);
@@ -78,20 +86,22 @@ export function ProducedStockTab(): ReactElement {
         </div>
       </div>
 
-      <section className="mb-5 flex flex-wrap gap-2">
-        {(['All', 'Roll', 'Bag', 'Pallet'] as const).map((option) => (
-          <Chip
-            key={option}
-            label={option === 'All' ? t('stock.everything') : `${option}s`}
-            active={kind === option}
-            onClick={() => {
-              setKind(option);
-              // A status that belongs to rolls means nothing once bags are showing.
-              setStatus('');
-            }}
-          />
-        ))}
-      </section>
+      {fixedKind === undefined && (
+        <section className="mb-5 flex flex-wrap gap-2">
+          {(['All', 'Roll', 'Bag', 'Pallet'] as const).map((option) => (
+            <Chip
+              key={option}
+              label={option === 'All' ? t('stock.everything') : `${option}s`}
+              active={kind === option}
+              onClick={() => {
+                setKind(option);
+                // A status that belongs to rolls means nothing once bags are showing.
+                setStatus('');
+              }}
+            />
+          ))}
+        </section>
+      )}
 
       {items.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
       {items.isError && <p className="p-6 text-bad">{t('stock.loadFailed')}</p>}
@@ -102,7 +112,9 @@ export function ProducedStockTab(): ReactElement {
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">{t('term.barcode')}</th>
-                <th className="px-4 py-3 font-semibold">{t('stock.kind')}</th>
+                {fixedKind === undefined && (
+                  <th className="px-4 py-3 font-semibold">{t('stock.kind')}</th>
+                )}
                 <th className="px-4 py-3 font-semibold">{t('field.code')}</th>
                 <th className="px-4 py-3 font-semibold">{t('stock.whatItIs')}</th>
                 <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
@@ -117,7 +129,10 @@ export function ProducedStockTab(): ReactElement {
             <tbody>
               {items.data.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-4 py-8 text-center text-ink-muted">
+                  <td
+                    colSpan={fixedKind === undefined ? 11 : 10}
+                    className="px-4 py-8 text-center text-ink-muted"
+                  >
                     {search === '' && status === ''
                       ? t('stock.nothingMade')
                       : t('stock.noMatch')}
@@ -132,7 +147,9 @@ export function ProducedStockTab(): ReactElement {
                   <td className="px-4 py-3 font-mono font-semibold text-ink">
                     {item.barcode}
                   </td>
-                  <td className="px-4 py-3 text-ink-soft">{item.kind}</td>
+                  {fixedKind === undefined && (
+                    <td className="px-4 py-3 text-ink-soft">{item.kind}</td>
+                  )}
                   <td className="px-4 py-3 font-mono text-xs text-ink-soft">
                     {item.code}
                   </td>

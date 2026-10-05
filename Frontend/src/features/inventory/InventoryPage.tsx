@@ -9,12 +9,18 @@ import { ProducedStockTab } from '../labels/ProducedStockTab';
 import { AdjustStockDialog } from './AdjustStockDialog';
 import { inventoryApi, type MaterialStockDto } from './api';
 
+type Section = 'raw' | 'packing' | 'Roll' | 'Bag' | 'Pallet';
+
 /**
  * What is in the store (specification section 6).
  *
  * Every active material is listed, including those never received — a material at
  * zero is exactly what the storekeeper needs to see, and a row missing from the list
  * says nothing at all.
+ *
+ * Materials are split by their category's "issued on tickets" flag, not by the
+ * category's name. A material added in master data lands in the right tab by itself,
+ * and renaming a category cannot quietly move everything in it to the wrong one.
  */
 export function InventoryPage(): ReactElement {
   const { t } = useTranslation();
@@ -23,19 +29,21 @@ export function InventoryPage(): ReactElement {
   const canAdjust = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
   const canReceive = hasRole(RoleNames.Administrator, RoleNames.InventoryManager);
 
-  const [section, setSection] = useState<'materials' | 'produced'>('materials');
+  const [section, setSection] = useState<Section>('raw');
   const [lowOnly, setLowOnly] = useState(false);
   const [adjusting, setAdjusting] = useState<MaterialStockDto | null>(null);
   const [historyFor, setHistoryFor] = useState<MaterialStockDto | null>(null);
 
+  // Everything, once. Each tab is a slice of it, so the "below minimum" count on a
+  // tab is right before it is pressed, not only after.
   const stock = useQuery({
-    queryKey: ['inventory', lowOnly],
-    queryFn: () => inventoryApi.stock(lowOnly),
+    queryKey: ['inventory'],
+    queryFn: () => inventoryApi.stock(),
   });
 
   const movements = useQuery({
     queryKey: ['inventory-movements', historyFor?.materialId ?? null],
-    queryFn: () => inventoryApi.movements(historyFor?.materialId, 50),
+    queryFn: () => inventoryApi.movements(historyFor?.materialId, 100),
   });
 
   function invalidate(): void {
@@ -51,7 +59,28 @@ export function InventoryPage(): ReactElement {
     return <p className="p-6 text-bad">{t('inventory.loadFailed')}</p>;
   }
 
-  const lowCount = stock.data.filter((row) => row.isBelowMinimum).length;
+  const isMaterials = section === 'raw' || section === 'packing';
+  const inSection = stock.data.filter(
+    (row) => row.issuedOnTickets === (section === 'raw'),
+  );
+  const lowCount = inSection.filter((row) => row.isBelowMinimum).length;
+  const rows = lowOnly ? inSection.filter((row) => row.isBelowMinimum) : inSection;
+  const sectionIds = new Set(inSection.map((row) => row.materialId));
+  const sectionMoves = movements.data?.filter((move) => sectionIds.has(move.materialId));
+
+  function show(next: Section): void {
+    setSection(next);
+    setLowOnly(false);
+    setHistoryFor(null);
+  }
+
+  const tabs: { key: Section; label: string }[] = [
+    { key: 'raw', label: t('inventory.rawMaterials') },
+    { key: 'packing', label: t('inventory.packingMaterials') },
+    { key: 'Roll', label: t('term.rolls') },
+    { key: 'Bag', label: t('term.bags') },
+    { key: 'Pallet', label: t('term.pallets') },
+  ];
 
   return (
     <>
@@ -72,26 +101,23 @@ export function InventoryPage(): ReactElement {
 
       {/* Two different kinds of stock. Materials are weighed and counted in their own
           unit; rolls, bags and pallets are individual things, each with its own label. */}
-      <nav className="mb-6 flex gap-1 border-b border-line">
-        <Tab
-          label={t('inventory.rawMaterials')}
-          active={section === 'materials'}
-          onClick={() => {
-            setSection('materials');
-          }}
-        />
-        <Tab
-          label={t('inventory.rollsBagsPallets')}
-          active={section === 'produced'}
-          onClick={() => {
-            setSection('produced');
-          }}
-        />
+      <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
+        {tabs.map((tab) => (
+          <Tab
+            key={tab.key}
+            label={tab.label}
+            active={section === tab.key}
+            onClick={() => {
+              show(tab.key);
+            }}
+          />
+        ))}
       </nav>
 
-      {section === 'produced' && <ProducedStockTab />}
+      {/* Keyed by kind so a status picked for rolls does not carry over to bags. */}
+      {!isMaterials && <ProducedStockTab key={section} kind={section} />}
 
-      {section === 'materials' && (
+      {isMaterials && (
         <>
           <section className="mb-6 flex flex-wrap gap-2">
             <Chip
@@ -102,7 +128,7 @@ export function InventoryPage(): ReactElement {
               }}
             />
             <Chip
-              label={`Below minimum (${String(lowCount)})`}
+              label={`${t('inventory.belowMinimum')} (${String(lowCount)})`}
               active={lowOnly}
               tone={lowCount > 0 ? 'warn' : 'normal'}
               onClick={() => {
@@ -118,20 +144,26 @@ export function InventoryPage(): ReactElement {
                   <th className="px-4 py-3 font-semibold">{t('field.code')}</th>
                   <th className="px-4 py-3 font-semibold">{t('term.material')}</th>
                   <th className="px-4 py-3 font-semibold">{t('field.category')}</th>
-                  <th className="px-4 py-3 text-end font-semibold">{t('field.inStock')}</th>
-                  <th className="px-4 py-3 text-end font-semibold">{t('field.minimum')}</th>
+                  <th className="px-4 py-3 text-end font-semibold">
+                    {t('field.inStock')}
+                  </th>
+                  <th className="px-4 py-3 text-end font-semibold">
+                    {t('field.minimum')}
+                  </th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody>
-                {stock.data.length === 0 && (
+                {rows.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
-                      {lowOnly ? t('inventory.noneBelowMinimum') : t('inventory.noMaterials')}
+                      {lowOnly
+                        ? t('inventory.noneBelowMinimum')
+                        : t('inventory.noMaterials')}
                     </td>
                   </tr>
                 )}
-                {stock.data.map((row) => (
+                {rows.map((row) => (
                   <tr key={row.materialId} className="border-b border-line last:border-0">
                     <td className="px-4 py-3 font-mono text-xs text-ink-muted">
                       {row.code}
@@ -205,7 +237,9 @@ export function InventoryPage(): ReactElement {
                     <th className="px-4 py-3 font-semibold">{t('field.when')}</th>
                     <th className="px-4 py-3 font-semibold">{t('term.material')}</th>
                     <th className="px-4 py-3 font-semibold">{t('inventory.movement')}</th>
-                    <th className="px-4 py-3 text-end font-semibold">{t('inventory.quantity')}</th>
+                    <th className="px-4 py-3 text-end font-semibold">
+                      {t('inventory.quantity')}
+                    </th>
                     <th className="px-4 py-3 font-semibold">By</th>
                     <th className="px-4 py-3 font-semibold">{t('field.note')}</th>
                   </tr>
@@ -218,14 +252,14 @@ export function InventoryPage(): ReactElement {
                       </td>
                     </tr>
                   )}
-                  {movements.data?.length === 0 && (
+                  {sectionMoves?.length === 0 && (
                     <tr>
                       <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
                         {t('inventory.nothingMoved')}
                       </td>
                     </tr>
                   )}
-                  {movements.data?.map((move) => (
+                  {sectionMoves?.map((move) => (
                     <tr key={move.id} className="border-b border-line last:border-0">
                       <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
                         {new Date(move.movementDate).toLocaleString('en-GB', {
@@ -289,7 +323,7 @@ function Tab({
       type="button"
       onClick={onClick}
       className={[
-        '-mb-px border-b-2 px-4 py-3 text-sm font-semibold transition-colors',
+        '-mb-px border-b-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors',
         active
           ? 'border-brand-600 text-brand-700'
           : 'border-transparent text-ink-muted hover:text-ink-soft',
