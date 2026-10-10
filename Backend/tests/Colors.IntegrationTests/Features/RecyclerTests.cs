@@ -207,7 +207,6 @@ public class RecyclerTests(DatabaseFixture fixture)
         {
             Name = "Family REC10",
             Code = "N",
-            ProductTypeId = productType.Id,
             Versions =
             [
                 new RecipeVersion

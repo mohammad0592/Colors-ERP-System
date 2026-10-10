@@ -193,21 +193,23 @@ public class ProductionService(
                 $"Recipe {recipe.RecipeNumber} is still a draft. Put it into production first.");
         }
 
+        // The old Black families were retired when black became an ordinary colour
+        // (specification section 5). Their recipes stay for the rolls already made, but
+        // nothing new is made to them.
+        if (!recipe.Family.IsActive)
+        {
+            return InvalidRoll(
+                $"{recipe.Family.Name} is no longer used. Choose one of the main recipes.",
+                "roll.recipeRetired",
+                recipe.Family.Name);
+        }
+
         var colour = await db.Colors
             .FirstOrDefaultAsync(c => c.Id == request.ColorId && c.IsActive, cancellationToken);
 
         if (colour is null)
         {
             return InvalidRoll("Choose an active colour.");
-        }
-
-        // The recipe and the colour have to agree. A Black recipe is 35% recycled
-        // material, which is dark, so it cannot be made in white — and black is made on
-        // that recipe rather than the plain one, which is what "Except Black" means
-        // (specification section 5).
-        if (!RecipeColour.Agree(recipe.Family, colour))
-        {
-            return InvalidRoll(RecipeColour.RefusalFor(recipe.Family, colour));
         }
 
         if (string.IsNullOrWhiteSpace(recipe.Family.Code))
@@ -232,8 +234,20 @@ public class ProductionService(
             return InvalidRoll("Choose an active product.", "roll.chooseActiveProduct");
         }
 
-        // Absorbency is the one thing both the product and the recipe say, and they must
-        // say the same. Caught here, at the mixer, rather than as a puzzle at the thermo.
+        // Each product is made from one main recipe — Normal plates from Normal, lunch
+        // and burger boxes from Lunch Box. Caught here, at the extruder, rather than as
+        // a wrong mould at the thermo an hour later.
+        if (product.RecipeFamilyId is not null && product.RecipeFamilyId != recipe.RecipeFamilyId)
+        {
+            return InvalidRoll(
+                $"{product.Name} is not made from {recipe.Family.Name}. Choose a product this recipe makes.",
+                "roll.productWrongRecipe",
+                product.Name,
+                recipe.Family.Name);
+        }
+
+        // A product not yet given a main recipe can only be checked the old way, on
+        // absorbency, which both the product and the recipe still say.
         if (product.IsAbsorbent != recipe.Family.IsAbsorbent)
         {
             return InvalidRoll(

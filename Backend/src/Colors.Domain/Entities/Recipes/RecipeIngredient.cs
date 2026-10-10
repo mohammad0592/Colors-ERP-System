@@ -3,12 +3,16 @@ using Colors.Domain.Entities.MasterData;
 namespace Colors.Domain.Entities.Recipes;
 
 /// <summary>
-/// One material in one recipe version, with the range the supervisor allows.
+/// One material in one recipe version, at one percentage.
 ///
 /// The percentages are parts per hundred resin, confirmed by the factory's own
-/// worked example: GPPS at 100 with talc at 1 and nucleating at 1.5–2 on top
+/// worked example: GPPS at 100 with talc at 1 and nucleating at 1.8 on top
 /// (specification section 5). So the base resin rows total 100 and the additives
 /// are measured against them — the whole list does not add up to 100.
+///
+/// There is one number per material, not a range. The factory works to a figure, and
+/// a minimum and maximum beside it were boxes nobody filled in with anything but the
+/// same number three times.
 /// </summary>
 public class RecipeIngredient
 {
@@ -27,10 +31,6 @@ public class RecipeIngredient
     /// </summary>
     public bool IsBaseResin { get; set; }
 
-    /// <summary>What the operator aims for.</summary>
+    /// <summary>The percentage of this material in the mix.</summary>
     public decimal TargetPercentage { get; set; }
-
-    public decimal MinPercentage { get; set; }
-
-    public decimal MaxPercentage { get; set; }
 }

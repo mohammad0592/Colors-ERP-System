@@ -155,7 +155,6 @@ public class DashboardTests(DatabaseFixture fixture)
         {
             Name = $"Family {suffix}",
             Code = "N",
-            ProductTypeId = productType.Id,
             Versions =
             [
                 new Domain.Entities.Recipes.RecipeVersion

@@ -59,11 +59,17 @@ export function MaterialWasteReport({
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                 <th className="px-4 py-3 font-semibold">{t('term.material')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.issued')}</th>
-                <th className="px-4 py-3 text-end font-semibold">{t('field.returned')}</th>
+                <th className="px-4 py-3 text-end font-semibold">
+                  {t('field.returned')}
+                </th>
                 <th className="px-4 py-3 text-end font-semibold">{t('field.used')}</th>
                 <th className="px-4 py-3 text-end font-semibold">{t('term.recipe')}</th>
-                <th className="px-4 py-3 text-end font-semibold">{t('reports.shouldBe')}</th>
-                <th className="px-4 py-3 text-end font-semibold">{t('field.difference')}</th>
+                <th className="px-4 py-3 text-end font-semibold">
+                  {t('reports.shouldBe')}
+                </th>
+                <th className="px-4 py-3 text-end font-semibold">
+                  {t('field.difference')}
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -74,11 +80,6 @@ export function MaterialWasteReport({
                     {line.isBaseResin && (
                       <span className="ms-2 rounded-full bg-canvas px-2 py-0.5 text-xs font-semibold text-ink-soft">
                         base
-                      </span>
-                    )}
-                    {line.outsideRange && (
-                      <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
-                        outside the range
                       </span>
                     )}
                   </td>

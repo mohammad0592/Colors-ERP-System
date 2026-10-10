@@ -6,11 +6,15 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../lib/apiClient';
 import { materialsApi } from '../master-data/api';
 import { recipesApi, type RecipeVersionDto } from './api';
+import { RecipeFamilyDialog } from './RecipeFamilyDialog';
 import { RecipeStatusBadge } from './RecipeStatusBadge';
 import { RecipeVersionDialog } from './RecipeVersionDialog';
 
 /**
- * Recipes — the four families and every version of them.
+ * Recipes — the main recipes (Normal, Absorbent, Lunch Box) and every version of them.
+ *
+ * A new main recipe is written from nothing, not copied from an old one: the family
+ * first, then its formula as version 1.
  *
  * Old versions are never hidden: a supervisor comparing what changed between
  * recipe 2 and recipe 10 is exactly the improvement loop the specification
@@ -21,6 +25,9 @@ export function RecipesPage(): ReactElement {
   const queryClient = useQueryClient();
   const [familyFilter, setFamilyFilter] = useState<number | 'all'>('all');
   const [dialog, setDialog] = useState<RecipeVersionDto | 'new' | null>(null);
+  // The main recipe a new formula is for, when it was just created.
+  const [newFor, setNewFor] = useState<number | undefined>(undefined);
+  const [addingFamily, setAddingFamily] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
@@ -46,7 +53,9 @@ export function RecipesPage(): ReactElement {
   }
 
   function onActionError(caught: unknown): void {
-    setActionError(caught instanceof ApiError ? caught.message : t('common.somethingWrong'));
+    setActionError(
+      caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
+    );
   }
 
   const copy = useMutation({
@@ -100,20 +109,32 @@ export function RecipesPage(): ReactElement {
         title={t('page.recipes.title')}
         subtitle={t('page.recipes.subtitle')}
         actions={
-          <button
-            type="button"
-            className="btn-primary h-touch w-auto px-5 text-base"
-            onClick={() => {
-              setDialog('new');
-            }}
-          >
-            {t('recipes.new')}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="h-touch rounded-control border border-line px-5 text-base font-semibold text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+              onClick={() => {
+                setAddingFamily(true);
+              }}
+            >
+              {t('recipes.newMain')}
+            </button>
+            <button
+              type="button"
+              className="btn-primary h-touch w-auto px-5 text-base"
+              onClick={() => {
+                setNewFor(familyFilter === 'all' ? undefined : familyFilter);
+                setDialog('new');
+              }}
+            >
+              {t('recipes.new')}
+            </button>
+          </div>
         }
       />
 
       {/* Families, with the recipe number each one is running now. */}
-      <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {families.data.map((family) => (
           <button
             key={family.id}
@@ -135,8 +156,7 @@ export function RecipesPage(): ReactElement {
                 : `Running recipe ${String(family.currentRecipeNumber)}`}
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
-              {family.usesRecycle && <Tag label={t('recipes.usesRecycle')} />}
-              {family.blackOnly && <Tag label={t('recipes.blackOnly')} />}
+              <Tag label={family.code} />
               {family.isAbsorbent && <Tag label={t('term.absorbent')} />}
               <Tag
                 label={`${String(family.versionCount)} version${family.versionCount === 1 ? '' : 's'}`}
@@ -225,9 +245,9 @@ export function RecipesPage(): ReactElement {
                               title: `Put recipe ${String(version.recipeNumber)} into production?`,
                               message: (
                                 <>
-                                  {t('recipes.itCan')} <strong>never be changed</strong> afterwards,
-                                  because the rolls made with it must keep their exact
-                                  formula.
+                                  {t('recipes.itCan')} <strong>never be changed</strong>{' '}
+                                  afterwards, because the rolls made with it must keep
+                                  their exact formula.
                                   <br />
                                   <br />
                                   {version.familyName} is currently running recipe{' '}
@@ -289,9 +309,27 @@ export function RecipesPage(): ReactElement {
         />
       )}
 
+      {addingFamily && (
+        <RecipeFamilyDialog
+          onClose={() => {
+            setAddingFamily(false);
+          }}
+          onCreated={(family) => {
+            invalidate();
+            setAddingFamily(false);
+            // A main recipe with no formula makes nothing, so its first one is next.
+            setNewFor(family.id);
+            setDialog('new');
+          }}
+        />
+      )}
+
       {dialog !== null && (
         <RecipeVersionDialog
           version={dialog === 'new' ? null : dialog}
+          {...(dialog === 'new' && newFor !== undefined
+            ? { initialFamilyId: newFor }
+            : {})}
           families={families.data}
           materials={materials.data}
           onClose={() => {

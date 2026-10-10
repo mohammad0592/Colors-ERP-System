@@ -15,8 +15,12 @@ namespace Colors.Infrastructure.Services.MasterData;
 public class ProductService(ColorsDbContext db)
     : MasterListService<Product, ProductDto, SaveProductRequest>(db), IProductService
 {
+    // Read while validating, then written by Apply. The base class's Apply cannot wait
+    // on the database, and validation has to load the family anyway to check it exists.
+    private bool _familyIsAbsorbent;
+
     protected override IQueryable<Product> Query() =>
-        Db.Products.Include(p => p.Mould).Include(p => p.ProductType);
+        Db.Products.Include(p => p.Mould).Include(p => p.ProductType).Include(p => p.RecipeFamily);
 
     protected override ProductDto ToDto(Product entity, bool canDelete) =>
         new(
@@ -26,6 +30,8 @@ public class ProductService(ColorsDbContext db)
             entity.Mould.Name,
             entity.ProductTypeId,
             entity.ProductType.Name,
+            entity.RecipeFamilyId,
+            entity.RecipeFamily?.Name,
             entity.IsAbsorbent,
             entity.PiecesPerBag,
             entity.SmallBagsPerBag,
@@ -40,7 +46,9 @@ public class ProductService(ColorsDbContext db)
         entity.Name = request.Name.Trim();
         entity.MouldId = request.MouldId;
         entity.ProductTypeId = request.ProductTypeId;
-        entity.IsAbsorbent = request.IsAbsorbent;
+        entity.RecipeFamilyId = request.RecipeFamilyId;
+        // Never typed in: an absorbent product is one made from the absorbent recipe.
+        entity.IsAbsorbent = _familyIsAbsorbent;
         entity.PiecesPerBag = request.PiecesPerBag;
         entity.SmallBagsPerBag = request.SmallBagsPerBag;
         entity.BagsPerPallet = request.BagsPerPallet;
@@ -73,12 +81,24 @@ public class ProductService(ColorsDbContext db)
             return "Choose a product type.";
         }
 
+        var family = await Db.RecipeFamilies
+            .Where(f => f.Id == request.RecipeFamilyId && f.IsActive)
+            .Select(f => new { f.IsAbsorbent })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (family is null)
+        {
+            return "Choose the main recipe this product's rolls are made to.";
+        }
+
+        _familyIsAbsorbent = family.IsAbsorbent;
+
         // The thermo looks a product up by mould and absorbency alone, so that pair
         // must name exactly one thing. Without this a second row would make the lookup
         // ambiguous and the run would have no honest answer.
         var pairTaken = await Db.Products.AnyAsync(
             p => p.MouldId == request.MouldId
-                 && p.IsAbsorbent == request.IsAbsorbent
+                 && p.IsAbsorbent == family.IsAbsorbent
                  && (existingId == null || p.Id != existingId),
             cancellationToken);
 
@@ -90,7 +110,7 @@ public class ProductService(ColorsDbContext db)
                 .FirstAsync(cancellationToken);
 
             return $"{mould} already makes " +
-                   (request.IsAbsorbent ? "an absorbent product." : "a normal product.");
+                   (family.IsAbsorbent ? "an absorbent product." : "a normal product.");
         }
 
         if (request.PiecesPerBag < 1)

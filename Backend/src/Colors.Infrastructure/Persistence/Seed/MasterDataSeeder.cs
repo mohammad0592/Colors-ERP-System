@@ -122,22 +122,19 @@ public static class MasterDataSeeder
         }
 
         // --- Colours, with the letters used inside roll codes ------------------
-        // IsBlack decides which recipes a colour may be used with: the two Black
-        // families need it, and the two Except Black families refuse it (specification
-        // section 5). A flag rather than a check on the name or the letter B, which
-        // Blue also starts with.
-        var colors = new (string Name, string Code, bool IsBlack)[]
+        // Any colour may be made on any recipe, black included (specification section 5).
+        var colors = new (string Name, string Code)[]
         {
-            ("White", "W", false),
-            ("Green", "G", false),
-            ("Yellow", "Y", false),
-            ("Black", "B", true),
+            ("White", "W"),
+            ("Green", "G"),
+            ("Yellow", "Y"),
+            ("Black", "B"),
         };
         if (!await db.Colors.AnyAsync(cancellationToken))
         {
-            foreach (var (name, code, isBlack) in colors)
+            foreach (var (name, code) in colors)
             {
-                db.Colors.Add(new Color { Name = name, Code = code, IsBlack = isBlack });
+                db.Colors.Add(new Color { Name = name, Code = code });
                 before++;
             }
         }

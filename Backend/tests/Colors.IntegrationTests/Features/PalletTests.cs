@@ -45,7 +45,6 @@ public class PalletTests(DatabaseFixture fixture)
         {
             Name = $"Family {suffix}",
             Code = absorbent ? "Abs" : "N",
-            ProductTypeId = productType.Id,
             IsAbsorbent = absorbent,
             Versions =
             [

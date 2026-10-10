@@ -8,17 +8,12 @@
 /** Draft may be edited; Current and Archived are frozen for ever. */
 export type RecipeStatus = 'Draft' | 'Current' | 'Archived';
 
+/** A main recipe — Normal, Absorbent, Lunch Box. Any colour may be made on any of them. */
 export interface RecipeFamilyDto {
   id: number;
   name: string;
-  productTypeId: number;
-  productTypeName: string;
-  usesRecycle: boolean;
-  /**
-   * Which colours it may be made in: a black-only recipe needs black, and every other
-   * recipe refuses black.
-   */
-  blackOnly: boolean;
+  /** Its part of every roll code: N, Abs, LN. */
+  code: string;
   isAbsorbent: boolean;
   description: string | null;
   isActive: boolean;
@@ -29,9 +24,7 @@ export interface RecipeFamilyDto {
 
 export interface SaveRecipeFamily {
   name: string;
-  productTypeId: number;
-  usesRecycle: boolean;
-  blackOnly: boolean;
+  code: string;
   isAbsorbent: boolean;
   description: string | null;
 }
@@ -42,17 +35,14 @@ export interface RecipeIngredientDto {
   materialName: string;
   /** GPPS and Recycle — the polymer that forms the 100% base. */
   isBaseResin: boolean;
-  targetPercentage: number;
-  minPercentage: number;
-  maxPercentage: number;
+  /** One number per material; the factory works to a figure, not a range. */
+  percentage: number;
 }
 
 export interface SaveRecipeIngredient {
   materialId: number;
   isBaseResin: boolean;
-  targetPercentage: number;
-  minPercentage: number;
-  maxPercentage: number;
+  percentage: number;
 }
 
 export interface RecipeVersionSummaryDto {

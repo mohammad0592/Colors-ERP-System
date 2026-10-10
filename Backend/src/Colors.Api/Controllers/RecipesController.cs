@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Colors.Api.Controllers;
 
 /// <summary>
-/// Recipes — the four families and every version of them.
+/// Recipes — the main recipes and every version of them.
 ///
 /// Reading is open to any signed-in worker, because the extruder operator picks a
 /// recipe to start a batch. Writing belongs to the Administrator and the Supervisor:

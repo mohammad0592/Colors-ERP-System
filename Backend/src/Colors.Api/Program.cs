@@ -59,7 +59,7 @@ await IdentitySeeder.SeedAsync(app.Services);
 // Real factory data, not demo data — it runs everywhere and only adds what is missing.
 await MasterDataSeeder.SeedAsync(app.Services);
 
-// The four recipes the factory gave us, each as version 1 and in production.
+// The three main recipes, each as version 1 and in production, and the products each makes.
 await RecipeSeeder.SeedAsync(app.Services);
 
 if (app.Environment.IsDevelopment())

@@ -111,6 +111,13 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
             .WithMany()
             .HasForeignKey(e => e.ProductTypeId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Restrict, so a main recipe that products are made from cannot be deleted from
+        // under them — it is retired instead.
+        builder.HasOne(e => e.RecipeFamily)
+            .WithMany()
+            .HasForeignKey(e => e.RecipeFamilyId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 

@@ -117,12 +117,6 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 ? null
                 : Math.Round(net - required.Value, 3);
 
-            // The share actually used, against the range the supervisor set. Outside it
-            // is worth seeing even when the kilograms look small.
-            var outsideRange = ingredient is not null && resinUsed > 0
-                && (net / resinUsed * 100m < ingredient.MinPercentage
-                    || net / resinUsed * 100m > ingredient.MaxPercentage);
-
             lines.Add(new MaterialWasteLineDto(
                 materialId,
                 material.Code,
@@ -137,8 +131,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 difference,
                 required is null or 0
                     ? null
-                    : Math.Round(difference!.Value / required.Value * 100m, 2),
-                outsideRange));
+                    : Math.Round(difference!.Value / required.Value * 100m, 2)));
         }
 
         return Result<MaterialWasteReportDto>.Success(new MaterialWasteReportDto(

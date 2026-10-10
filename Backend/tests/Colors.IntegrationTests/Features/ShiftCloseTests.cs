@@ -45,7 +45,6 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         {
             Name = $"Family {suffix}",
             Code = "N",
-            ProductTypeId = productType.Id,
             Versions =
             [
                 new RecipeVersion

@@ -102,7 +102,6 @@ public class PackagingTests(DatabaseFixture fixture)
         {
             Name = $"Family {suffix}",
             Code = "N",
-            ProductTypeId = productType.Id,
             Versions =
             [
                 new RecipeVersion

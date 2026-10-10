@@ -12,17 +12,13 @@ public class RecipeFamilyConfiguration : IEntityTypeConfiguration<RecipeFamily>
         builder.ToTable("RecipeFamilies");
 
         builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
-        // Deliberately not unique: Normal and Normal Black are both "N", and the
-        // colour letter in the roll code is what separates them.
+        // Not unique in the database: the retired Black families still carry N and Abs,
+        // the same as Normal and Absorbent, because the rolls made with them say so. The
+        // service keeps the codes of the families in use apart.
         builder.Property(e => e.Code).IsRequired().HasMaxLength(10);
         builder.Property(e => e.Description).HasMaxLength(500);
 
         builder.HasIndex(e => e.Name).IsUnique().HasDatabaseName("ux_recipe_families_name");
-
-        builder.HasOne(e => e.ProductType)
-            .WithMany()
-            .HasForeignKey(e => e.ProductTypeId)
-            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -73,8 +69,6 @@ public class RecipeIngredientConfiguration : IEntityTypeConfiguration<RecipeIngr
 
         // Percentages carry two decimals — the factory writes 1.5, 2.25, never finer.
         builder.Property(e => e.TargetPercentage).HasPrecision(9, 2);
-        builder.Property(e => e.MinPercentage).HasPrecision(9, 2);
-        builder.Property(e => e.MaxPercentage).HasPrecision(9, 2);
 
         // A material may appear once per version — two GPPS rows would be ambiguous.
         builder.HasIndex(e => new { e.RecipeVersionId, e.MaterialId })

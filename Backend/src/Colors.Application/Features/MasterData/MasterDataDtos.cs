@@ -53,6 +53,11 @@ public sealed record ProductDto(
     string MouldName,
     int ProductTypeId,
     string ProductTypeName,
+    // The main recipe its rolls are made to. Null only on a product made before this
+    // existed and not yet given one.
+    int? RecipeFamilyId,
+    string? RecipeFamilyName,
+    // Follows the recipe family; shown, never typed in.
     bool IsAbsorbent,
     int PiecesPerBag,
     int SmallBagsPerBag,
@@ -68,7 +73,8 @@ public sealed record SaveProductRequest(
     string Name,
     int MouldId,
     int ProductTypeId,
-    bool IsAbsorbent,
+    // Which main recipe its rolls are made to. Whether it is absorbent comes from here.
+    int RecipeFamilyId,
     int PiecesPerBag,
     int SmallBagsPerBag,
     int BagsPerPallet,
@@ -93,21 +99,16 @@ public sealed record UnitDto(int Id, string Name, string Symbol, bool IsActive, 
 
 public sealed record SaveUnitRequest(string Name, string Symbol);
 
-/// <summary>
-/// A plate colour. <c>IsBlack</c> decides which recipes may use it: a black-only recipe
-/// needs it, and every other recipe refuses it (specification section 5). A flag rather
-/// than a check on the name or the letter B, which Blue also starts with.
-/// </summary>
+/// <summary>A plate colour. Any colour may be made on any recipe, black included.</summary>
 public sealed record ColorDto(
     int Id,
     string Name,
     string Code,
-    bool IsBlack,
     bool IsActive,
     bool CanDelete);
 
 // Code is one capital letter for the roll code: W, G, Y, B.
-public sealed record SaveColorRequest(string Name, string Code, bool IsBlack);
+public sealed record SaveColorRequest(string Name, string Code);
 
 public sealed record ShiftDto(
     int Id,

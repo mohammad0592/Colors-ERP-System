@@ -67,11 +67,16 @@ export function NewRollDialog({
   // wrong declaration is refused at the thermo an hour later, far from where it happened.
   const [productId, setProductId] = useState(() => lastProductId ?? 0);
 
-  // A product and a recipe must agree on absorbency or the roll is refused, so only the
-  // products this recipe can make are offered at all.
+  // Each product is made from one main recipe and a roll for any other is refused, so
+  // only the products this recipe makes are offered at all. A product not yet given a
+  // main recipe falls back to matching on absorbency, as the server does.
   const recipe = recipes.find((r) => r.id === recipeVersionId);
-  const fitting = products.filter(
-    (p) => recipe === undefined || p.isAbsorbent === recipe.isAbsorbent,
+  const fitting = products.filter((p) =>
+    recipe === undefined
+      ? true
+      : p.recipeFamilyId === null
+        ? p.isAbsorbent === recipe.isAbsorbent
+        : p.recipeFamilyId === recipe.recipeFamilyId,
   );
   const chosen = fitting.some((p) => p.id === productId) ? productId : 0;
   const [notes, setNotes] = useState('');
@@ -188,7 +193,8 @@ export function NewRollDialog({
 
         <div className="mb-4">
           <label className="field-label" htmlFor="roll-notes">
-            {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
+            {t('field.note')}{' '}
+            <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="roll-notes"

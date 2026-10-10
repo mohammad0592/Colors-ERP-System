@@ -176,12 +176,6 @@ public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductTyp
         ProductType entity,
         CancellationToken cancellationToken)
     {
-        var families = await Db.RecipeFamilies.CountAsync(f => f.ProductTypeId == entity.Id, cancellationToken);
-        if (families > 0)
-        {
-            return $"Used by {families} recipe famil{(families == 1 ? "y" : "ies")} — deactivate it instead.";
-        }
-
         var products = await Db.Products.CountAsync(p => p.ProductTypeId == entity.Id, cancellationToken);
         return products == 0
             ? null
@@ -190,10 +184,9 @@ public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductTyp
 
     protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken)
     {
-        var byFamilies = await Db.RecipeFamilies.Select(f => f.ProductTypeId).Distinct().ToListAsync(cancellationToken);
         var byProducts = await Db.Products.Select(p => p.ProductTypeId).Distinct().ToListAsync(cancellationToken);
 
-        return [.. byFamilies, .. byProducts];
+        return [.. byProducts];
     }
 }
 
@@ -259,13 +252,12 @@ public class ColorService(ColorsDbContext db)
     : MasterListService<Color, ColorDto, SaveColorRequest>(db), IColorService
 {
     protected override ColorDto ToDto(Color entity, bool canDelete) =>
-        new(entity.Id, entity.Name, entity.Code, entity.IsBlack, entity.IsActive, canDelete);
+        new(entity.Id, entity.Name, entity.Code, entity.IsActive, canDelete);
 
     protected override void Apply(SaveColorRequest request, Color entity)
     {
         entity.Name = request.Name.Trim();
         entity.Code = request.Code.Trim().ToUpperInvariant();
-        entity.IsBlack = request.IsBlack;
     }
 
     protected override async Task<string?> ValidateAsync(

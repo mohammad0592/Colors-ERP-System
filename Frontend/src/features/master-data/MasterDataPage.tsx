@@ -124,13 +124,6 @@ export function MasterDataPage(): ReactElement {
               maxLength: 1,
               hint: 'One letter A–Z, unique. It appears inside every roll code — the W in 01WN180726A.',
             },
-            // Not read off the name or the letter B, which Blue starts with too.
-            {
-              key: 'isBlack',
-              label: 'md.thisIsBlack',
-              type: 'checkbox',
-              hint: t('md.blackNote'),
-            },
           ]}
         />
       )}

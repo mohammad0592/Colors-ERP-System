@@ -1,4 +1,5 @@
 ﻿using Colors.Domain.Common;
+using Colors.Domain.Entities.Recipes;
 
 namespace Colors.Domain.Entities.MasterData;
 
@@ -26,8 +27,26 @@ public class Product : MasterEntity
     public ProductType ProductType { get; set; } = null!;
 
     /// <summary>
+    /// Which main recipe its rolls are made to — Normal plates from Normal, the lunch
+    /// and burger boxes from Lunch Box (specification section 5). A roll declared for
+    /// this product must be made to this recipe, so the roll screen only offers the
+    /// products the chosen recipe can make.
+    ///
+    /// Empty only on products made before this existed and not yet given one. The
+    /// seeder fills those in on startup, and Master Data will not save a product
+    /// without it.
+    /// </summary>
+    public int? RecipeFamilyId { get; set; }
+
+    public RecipeFamily? RecipeFamily { get; set; }
+
+    /// <summary>
     /// The NOR/ABS distinction, decided by what was mixed into the roll rather than by
     /// the mould. A flag, never matched on the name.
+    ///
+    /// Copied from the recipe family when the product is saved, never typed in, so the
+    /// two cannot disagree. Kept on the product because the thermo's lookup by mould and
+    /// absorbency, and the code printed on every bag, read it.
     /// </summary>
     public bool IsAbsorbent { get; set; }
 

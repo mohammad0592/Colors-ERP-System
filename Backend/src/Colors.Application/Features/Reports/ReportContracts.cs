@@ -28,9 +28,7 @@ public sealed record MaterialWasteLineDto(
     // Used less required. Positive means more went in than the recipe asks.
     decimal? Difference,
     // The difference as a share of what was required. Null where required is nothing.
-    decimal? DifferencePercentage,
-    // True where the used share falls outside the min–max the supervisor set.
-    bool OutsideRange);
+    decimal? DifferencePercentage);
 
 public sealed record MaterialWasteReportDto(
     int ShiftReportId,

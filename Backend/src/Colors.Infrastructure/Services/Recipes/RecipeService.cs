@@ -24,7 +24,6 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
         CancellationToken cancellationToken = default)
     {
         var families = await db.RecipeFamilies
-            .Include(f => f.ProductType)
             .Include(f => f.Versions)
             .Where(f => includeInactive || f.IsActive)
             .OrderBy(f => f.Name)
@@ -100,6 +99,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
         CancellationToken cancellationToken = default)
     {
         var versions = await VersionQuery()
+            .Where(v => v.Family.IsActive)
             .Where(v => familyId == null || v.RecipeFamilyId == familyId)
             .OrderByDescending(v => v.RecipeNumber)
             .ToListAsync(cancellationToken);
@@ -235,8 +235,6 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
                     MaterialId = i.MaterialId,
                     IsBaseResin = i.IsBaseResin,
                     TargetPercentage = i.TargetPercentage,
-                    MinPercentage = i.MinPercentage,
-                    MaxPercentage = i.MaxPercentage,
                 })
                 .ToList(),
         };
@@ -346,10 +344,20 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
             return "A recipe family with this name already exists.";
         }
 
-        var productTypeOk = await db.ProductTypes
-            .AnyAsync(p => p.Id == request.ProductTypeId && p.IsActive, cancellationToken);
+        // With black an ordinary colour, the code is all that tells two main recipes
+        // apart inside a roll code: 01WN… and 01WLN… must not both read 01WN…. Retired
+        // families keep theirs, because the rolls already made still carry it.
+        var code = request.Code.Trim().ToUpperInvariant();
+        var codeTaken = await db.RecipeFamilies.AnyAsync(
+            f => f.IsActive
+                 && f.Code.ToUpper() == code
+                 && (existingId == null || f.Id != existingId),
+            cancellationToken);
 
-        return productTypeOk ? null : "Choose an active product type.";
+        return codeTaken
+            ? $"Another main recipe already uses the code {request.Code.Trim()}. Each needs its own, "
+              + "or their roll codes could not be told apart."
+            : null;
     }
 
     private async Task<string?> ValidateIngredientsAsync(
@@ -366,23 +374,9 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
             return "Each material may appear only once.";
         }
 
-        foreach (var ingredient in ingredients)
+        if (ingredients.Any(i => i.Percentage <= 0))
         {
-            if (ingredient.MinPercentage < 0 || ingredient.MaxPercentage < 0 || ingredient.TargetPercentage < 0)
-            {
-                return "Percentages cannot be negative.";
-            }
-
-            if (ingredient.MinPercentage > ingredient.MaxPercentage)
-            {
-                return "A material's minimum cannot be above its maximum.";
-            }
-
-            if (ingredient.TargetPercentage < ingredient.MinPercentage
-                || ingredient.TargetPercentage > ingredient.MaxPercentage)
-            {
-                return "Each target must sit between its own minimum and maximum.";
-            }
+            return "Every material needs a percentage above zero.";
         }
 
         var baseResin = ingredients.Where(i => i.IsBaseResin).ToList();
@@ -394,7 +388,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
 
         // Parts per hundred resin: the polymer totals 100 and the additives sit on
         // top, which is why the whole list does not add up to 100.
-        var baseTotal = baseResin.Sum(i => i.TargetPercentage);
+        var baseTotal = baseResin.Sum(i => i.Percentage);
         if (baseTotal != 100m)
         {
             return $"The base resin must total 100%, not {baseTotal}%. "
@@ -436,9 +430,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
             {
                 MaterialId = i.MaterialId,
                 IsBaseResin = i.IsBaseResin,
-                TargetPercentage = i.TargetPercentage,
-                MinPercentage = i.MinPercentage,
-                MaxPercentage = i.MaxPercentage,
+                TargetPercentage = i.Percentage,
             })
             .ToList();
 
@@ -446,9 +438,6 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
     {
         family.Name = request.Name.Trim();
         family.Code = request.Code.Trim();
-        family.ProductTypeId = request.ProductTypeId;
-        family.UsesRecycle = request.UsesRecycle;
-        family.BlackOnly = request.BlackOnly;
         family.IsAbsorbent = request.IsAbsorbent;
         family.Description = Trimmed(request.Description);
     }
@@ -461,10 +450,6 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
             family.Id,
             family.Name,
             family.Code,
-            family.ProductTypeId,
-            family.ProductType.Name,
-            family.UsesRecycle,
-            family.BlackOnly,
             family.IsAbsorbent,
             family.Description,
             family.IsActive,
@@ -477,7 +462,6 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
     private async Task<RecipeFamilyDto> LoadFamilyDtoAsync(int id, CancellationToken cancellationToken)
     {
         var family = await db.RecipeFamilies
-            .Include(f => f.ProductType)
             .Include(f => f.Versions)
             .FirstAsync(f => f.Id == id, cancellationToken);
 
@@ -518,9 +502,7 @@ public class RecipeService(ColorsDbContext db, TimeProvider timeProvider) : IRec
                     i.Material.Code,
                     i.Material.Name,
                     i.IsBaseResin,
-                    i.TargetPercentage,
-                    i.MinPercentage,
-                    i.MaxPercentage))
+                    i.TargetPercentage))
                 .ToList());
     }
 

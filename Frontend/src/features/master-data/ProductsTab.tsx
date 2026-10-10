@@ -4,6 +4,7 @@ import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
+import { recipesApi } from '../recipes/api';
 import {
   mouldsApi,
   productsApi,
@@ -37,6 +38,11 @@ export function ProductsTab(): ReactElement {
     queryKey: ['product-types'],
     queryFn: () => productTypesApi.list(false),
   });
+  // Only the main recipes in use: a product is never made from a retired one.
+  const families = useQuery({
+    queryKey: ['recipe-families'],
+    queryFn: () => recipesApi.families(false),
+  });
 
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -54,16 +60,18 @@ export function ProductsTab(): ReactElement {
       setActionError(null);
     },
     onError: (caught) => {
-      setActionError(caught instanceof ApiError ? caught.message : t('common.deleteFailed'));
+      setActionError(
+        caught instanceof ApiError ? caught.message : t('common.deleteFailed'),
+      );
     },
     onSettled: invalidate,
   });
 
-  if (products.isPending || moulds.isPending || types.isPending) {
+  if (products.isPending || moulds.isPending || types.isPending || families.isPending) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
-  if (products.isError || moulds.isError || types.isError) {
+  if (products.isError || moulds.isError || types.isError || families.isError) {
     return <p className="p-6 text-bad">{t('md.productsFailed')}</p>;
   }
 
@@ -104,7 +112,7 @@ export function ProductsTab(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.mould')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.type')}</th>
-              <th className="px-4 py-3 font-semibold">{t('term.absorbent')}</th>
+              <th className="px-4 py-3 font-semibold">{t('md.madeFrom')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.piecesPerBagShort')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.smallBagsShort')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.bagsPerPalletShort')}</th>
@@ -120,7 +128,7 @@ export function ProductsTab(): ReactElement {
                 <td className="px-4 py-3 text-ink-soft">{product.mouldName}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.productTypeName}</td>
                 <td className="px-4 py-3 text-ink-soft">
-                  {product.isAbsorbent ? t('common.yes') : t('common.no')}
+                  {product.recipeFamilyName ?? '—'}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{product.piecesPerBag}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.smallBagsPerBag}</td>
@@ -140,7 +148,9 @@ export function ProductsTab(): ReactElement {
                       }}
                     />
                     <RowButton
-                      label={product.isActive ? t('common.deactivate') : t('common.activate')}
+                      label={
+                        product.isActive ? t('common.deactivate') : t('common.activate')
+                      }
                       onClick={() => {
                         setActive.mutate({
                           id: product.id,
@@ -191,6 +201,7 @@ export function ProductsTab(): ReactElement {
           product={editing === 'new' ? null : editing}
           moulds={moulds.data}
           types={types.data}
+          families={families.data}
           onClose={() => {
             setEditing(null);
           }}
@@ -210,12 +221,14 @@ function ProductDialog({
   product,
   moulds,
   types,
+  families,
   onClose,
   onSaved,
 }: {
   product: ProductDto | null;
   moulds: Named[];
   types: Named[];
+  families: Named[];
   onClose: () => void;
   onSaved: () => void;
 }): ReactElement {
@@ -225,7 +238,9 @@ function ProductDialog({
   const [productTypeId, setProductTypeId] = useState(
     product?.productTypeId ?? types[0]?.id ?? 0,
   );
-  const [isAbsorbent, setIsAbsorbent] = useState(product?.isAbsorbent ?? false);
+  // No default for a new product: picking the wrong recipe would let rolls of it be
+  // logged for this product, so the choice is made, not inherited.
+  const [recipeFamilyId, setRecipeFamilyId] = useState(product?.recipeFamilyId ?? 0);
   const [piecesPerBag, setPiecesPerBag] = useState(String(product?.piecesPerBag ?? 250));
   const [smallBagsPerBag, setSmallBagsPerBag] = useState(
     String(product?.smallBagsPerBag ?? 1),
@@ -256,7 +271,7 @@ function ProductDialog({
         name,
         mouldId,
         productTypeId,
-        isAbsorbent,
+        recipeFamilyId,
         piecesPerBag: Number(piecesPerBag),
         smallBagsPerBag: Number(smallBagsPerBag),
         bagsPerPallet: Number(bagsPerPallet),
@@ -281,7 +296,10 @@ function ProductDialog({
   }
 
   return (
-    <Modal title={product === null ? t('md.addProduct') : t('md.editProduct')} onClose={onClose}>
+    <Modal
+      title={product === null ? t('md.addProduct') : t('md.editProduct')}
+      onClose={onClose}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -350,25 +368,26 @@ function ProductDialog({
         </div>
 
         <div className="mb-4">
-          <label
-            className="flex items-center gap-3 text-sm font-medium text-ink"
-            htmlFor="prod-abs"
-          >
-            <input
-              id="prod-abs"
-              type="checkbox"
-              className="size-5"
-              checked={isAbsorbent}
-              disabled={isSaving}
-              onChange={(event) => {
-                setIsAbsorbent(event.target.checked);
-              }}
-            />
-            {t('term.absorbent')}
+          <label className="field-label" htmlFor="prod-family">
+            {t('md.madeFrom')}
           </label>
-          <p className="mt-1 ms-8 text-xs text-ink-muted">
-            {t('md.decidedByMix')}
-          </p>
+          <select
+            id="prod-family"
+            className="field-input"
+            value={recipeFamilyId}
+            disabled={isSaving}
+            onChange={(event) => {
+              setRecipeFamilyId(Number(event.target.value));
+            }}
+          >
+            <option value={0}>{t('action.choose')}</option>
+            {families.map((family) => (
+              <option key={family.id} value={family.id}>
+                {family.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-ink-muted">{t('md.madeFromHint')}</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">

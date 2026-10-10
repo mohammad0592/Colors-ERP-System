@@ -16,6 +16,8 @@ import { RecipeStatusBadge } from './RecipeStatusBadge';
 interface RecipeVersionDialogProps {
   /** The version being opened, or null when writing a new one. */
   version: RecipeVersionDto | null;
+  /** For a new one: the main recipe it is for, when that is already known. */
+  initialFamilyId?: number;
   families: RecipeFamilyDto[];
   materials: MaterialDto[];
   onClose: () => void;
@@ -31,6 +33,7 @@ interface RecipeVersionDialogProps {
  */
 export function RecipeVersionDialog({
   version,
+  initialFamilyId,
   families,
   materials,
   onClose,
@@ -40,9 +43,12 @@ export function RecipeVersionDialog({
   const isNew = version === null;
   const readOnly = version !== null && !version.isEditable;
 
-  const [familyId, setFamilyId] = useState(
-    version === null ? '' : String(version.recipeFamilyId),
-  );
+  const [familyId, setFamilyId] = useState(() => {
+    if (version !== null) {
+      return String(version.recipeFamilyId);
+    }
+    return initialFamilyId === undefined ? '' : String(initialFamilyId);
+  });
   const [notes, setNotes] = useState(version?.notes ?? '');
   const [rows, setRows] = useState<IngredientRow[]>(() =>
     version === null
@@ -50,9 +56,7 @@ export function RecipeVersionDialog({
       : version.ingredients.map((i) => ({
           materialId: String(i.materialId),
           isBaseResin: i.isBaseResin,
-          target: String(i.targetPercentage),
-          min: String(i.minPercentage),
-          max: String(i.maxPercentage),
+          percentage: String(i.percentage),
         })),
   );
   const [error, setError] = useState<string | null>(null);
@@ -72,20 +76,16 @@ export function RecipeVersionDialog({
         return 'Choose a material for every row.';
       }
 
-      const target = Number(row.target);
-      const min = Number(row.min);
-      const max = Number(row.max);
+      const percentage = Number(row.percentage);
 
-      if (![target, min, max].every(Number.isFinite)) {
+      if (row.percentage.trim() === '' || !Number.isFinite(percentage)) {
         return 'Every percentage must be a number.';
       }
 
       ingredients.push({
         materialId,
         isBaseResin: row.isBaseResin,
-        targetPercentage: target,
-        minPercentage: min,
-        maxPercentage: max,
+        percentage,
       });
     }
 
@@ -150,9 +150,10 @@ export function RecipeVersionDialog({
 
       {readOnly && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          {t('recipes.thisRecipeIs')} <strong>{version.status.toLowerCase()}</strong> and can no longer
-          be changed — the rolls made with it must keep their exact formula. Use{' '}
-          <strong>{t('action.copy')}</strong> to try a change under a new recipe number.
+          {t('recipes.thisRecipeIs')} <strong>{version.status.toLowerCase()}</strong> and
+          can no longer be changed — the rolls made with it must keep their exact formula.
+          Use <strong>{t('action.copy')}</strong> to try a change under a new recipe
+          number.
         </p>
       )}
 
@@ -224,7 +225,11 @@ export function RecipeVersionDialog({
 
         {!readOnly && (
           <button type="submit" className="btn-primary" disabled={isSaving}>
-            {isSaving ? 'Saving…' : isNew ? t('recipes.createDraft') : t('recipes.saveDraft')}
+            {isSaving
+              ? 'Saving…'
+              : isNew
+                ? t('recipes.createDraft')
+                : t('recipes.saveDraft')}
           </button>
         )}
       </form>

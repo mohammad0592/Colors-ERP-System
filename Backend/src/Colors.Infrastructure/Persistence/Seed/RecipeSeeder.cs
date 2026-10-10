@@ -1,4 +1,4 @@
-﻿using Colors.Domain.Entities.Recipes;
+using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Services.Recipes;
@@ -9,89 +9,68 @@ using Microsoft.Extensions.Logging;
 namespace Colors.Infrastructure.Persistence.Seed;
 
 /// <summary>
-/// The factory's four recipes, exactly as the owner wrote them down
-/// (specification section 5), each seeded as version 1 and put into production.
+/// The factory's three main recipes (specification section 5), each seeded as version 1
+/// and put into production, and the products each one makes.
 ///
-/// The percentages are parts per hundred resin: GPPS and Recycle total 100, and the
-/// additives are measured against that — which is why the numbers do not sum to 100.
+/// The percentages are parts per hundred resin: GPPS is the 100, and the additives are
+/// measured against it — which is why the numbers do not sum to 100. The factory gave the
+/// materials; the figures are the ones it used before, to be corrected by writing a new
+/// version.
 ///
 /// Only added when a family is missing, so a supervisor who has since created new
 /// versions is never overwritten.
 /// </summary>
 public static class RecipeSeeder
 {
-    private sealed record Ingredient(string MaterialName, bool IsBaseResin, decimal Target, decimal Min, decimal Max);
+    private sealed record Ingredient(string MaterialName, bool IsBaseResin, decimal Percentage);
 
     private sealed record Family(
         string Name,
-        // The family's part of a roll code. Normal and Normal Black share "N" — the
-        // colour letter is what separates them (specification section 8).
+        // The family's part of a roll code (specification section 8).
         string Code,
-        bool UsesRecycle,
-        // Which colours it may be made in. The two Black families need black; the two
-        // Except Black families refuse it (specification section 5).
-        bool BlackOnly,
         bool IsAbsorbent,
         string Description,
         Ingredient[] Ingredients);
 
+    private const string NormalCode = "N";
+    private const string AbsorbentCode = "Abs";
+    private const string LunchBoxCode = "LN";
+
     private static readonly Family[] Families =
     [
         new(
-            "Normal (Except Black)",
-            Code: "N",
-            UsesRecycle: false,
-            BlackOnly: false,
+            "Normal",
+            NormalCode,
             IsAbsorbent: false,
-            "Plain plates in any colour but black.",
+            "Rolls for the normal big and small plates.",
             [
-                new("GPPS", true, 100m, 100m, 100m),
-                new("Talc", false, 1m, 1m, 1m),
-                new("Nucleating Agent", false, 1.8m, 1.5m, 2m),
-                new("Coloring Agent", false, 1.6m, 1.5m, 2m),
+                new("GPPS", true, 100m),
+                new("Talc", false, 1m),
+                new("Coloring Agent", false, 1.6m),
+                new("Nucleating Agent", false, 1.8m),
             ]),
         new(
-            "Normal Black",
-            Code: "N",
-            UsesRecycle: true,
-            BlackOnly: true,
+            "Absorbent",
+            AbsorbentCode,
+            IsAbsorbent: true,
+            "Rolls for the absorbent big and small plates.",
+            [
+                new("GPPS", true, 100m),
+                new("Talc", false, 1m),
+                new("Coloring Agent", false, 1.6m),
+                new("Nucleating Agent", false, 1.8m),
+                new("Absorbent Agent", false, 3.5m),
+            ]),
+        new(
+            "Lunch Box",
+            LunchBoxCode,
             IsAbsorbent: false,
-            "Black plates. A third of the polymer is the factory's own recycled material.",
+            "Rolls for the lunch boxes and burger boxes. The same materials as Normal.",
             [
-                new("GPPS", true, 65m, 65m, 65m),
-                new("Recycled Material", true, 35m, 35m, 35m),
-                new("Talc", false, 1m, 1m, 1m),
-                new("Nucleating Agent", false, 1.8m, 1.5m, 2m),
-                new("Black Coloring Agent", false, 2.2m, 2m, 2.5m),
-            ]),
-        new(
-            "ABS (Except Black)",
-            Code: "Abs",
-            UsesRecycle: false,
-            BlackOnly: false,
-            IsAbsorbent: true,
-            "Absorbent plates in any colour but black.",
-            [
-                new("GPPS", true, 100m, 100m, 100m),
-                new("Absorbent Agent", false, 3.5m, 3m, 4m),
-                new("Coloring Agent", false, 1.6m, 1.5m, 2m),
-                new("Antistatic Agent", false, 2m, 1.5m, 3m),
-                new("Talc", false, 1m, 1m, 1m),
-            ]),
-        new(
-            "ABS Black",
-            Code: "Abs",
-            UsesRecycle: true,
-            BlackOnly: true,
-            IsAbsorbent: true,
-            "Absorbent black plates, with recycled material in the polymer.",
-            [
-                new("GPPS", true, 65m, 65m, 65m),
-                new("Recycled Material", true, 35m, 35m, 35m),
-                new("Absorbent Agent", false, 3.5m, 3m, 4m),
-                new("Coloring Agent", false, 1.6m, 1.5m, 2m),
-                new("Antistatic Agent", false, 2m, 1.5m, 3m),
-                new("Talc", false, 1m, 1m, 1m),
+                new("GPPS", true, 100m),
+                new("Talc", false, 1m),
+                new("Coloring Agent", false, 1.6m),
+                new("Nucleating Agent", false, 1.8m),
             ]),
     ];
 
@@ -102,13 +81,6 @@ public static class RecipeSeeder
 
         var db = provider.GetRequiredService<ColorsDbContext>();
         var logger = provider.GetRequiredService<ILoggerFactory>().CreateLogger(nameof(RecipeSeeder));
-
-        var productType = await db.ProductTypes.FirstOrDefaultAsync(p => p.Name == "Plate", cancellationToken);
-        if (productType is null)
-        {
-            logger.LogWarning("No 'Plate' product type, so recipes were not seeded.");
-            return;
-        }
 
         // Recipes are written by a person, and the audit trail should say who. Before
         // anyone has been hired, that is the seeded administrator.
@@ -151,9 +123,6 @@ public static class RecipeSeeder
             {
                 Name = family.Name,
                 Code = family.Code,
-                ProductTypeId = productType.Id,
-                UsesRecycle = family.UsesRecycle,
-                BlackOnly = family.BlackOnly,
                 IsAbsorbent = family.IsAbsorbent,
                 Description = family.Description,
                 Versions =
@@ -171,9 +140,7 @@ public static class RecipeSeeder
                             {
                                 MaterialId = materials[i.MaterialName],
                                 IsBaseResin = i.IsBaseResin,
-                                TargetPercentage = i.Target,
-                                MinPercentage = i.Min,
-                                MaxPercentage = i.Max,
+                                TargetPercentage = i.Percentage,
                             })
                             .ToList(),
                     },
@@ -187,6 +154,65 @@ public static class RecipeSeeder
         {
             await db.SaveChangesAsync(cancellationToken);
             logger.LogInformation("Seeded {Count} recipe families with their first version.", created);
+        }
+
+        await LinkProductsAsync(db, logger, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gives every product without a main recipe the one it is made from: absorbent
+    /// plates from Absorbent, the other plates from Normal, and the boxes from Lunch Box.
+    ///
+    /// Only for products that predate the link — the seeded ones, and any written in
+    /// Master Data before it asked. Anything saved since has chosen its own, and is left
+    /// alone. Reading the product type's name is acceptable here because it runs once,
+    /// on rows that were seeded with exactly these names; nothing after it does.
+    /// </summary>
+    private static async Task LinkProductsAsync(
+        ColorsDbContext db,
+        ILogger logger,
+        CancellationToken cancellationToken)
+    {
+        var unlinked = await db.Products
+            .Include(p => p.ProductType)
+            .Where(p => p.RecipeFamilyId == null)
+            .ToListAsync(cancellationToken);
+
+        if (unlinked.Count == 0)
+        {
+            return;
+        }
+
+        var byCode = await db.RecipeFamilies
+            .Where(f => f.IsActive)
+            .ToListAsync(cancellationToken);
+
+        int? IdOf(string code) =>
+            byCode.FirstOrDefault(f => string.Equals(f.Code, code, StringComparison.OrdinalIgnoreCase))?.Id;
+
+        var linked = 0;
+
+        foreach (var product in unlinked)
+        {
+            var familyId = product.IsAbsorbent
+                ? IdOf(AbsorbentCode)
+                : product.ProductType.Name == "Plate"
+                    ? IdOf(NormalCode)
+                    : IdOf(LunchBoxCode);
+
+            if (familyId is null)
+            {
+                continue;
+            }
+
+            product.RecipeFamilyId = familyId;
+            linked++;
+        }
+
+        if (linked > 0)
+        {
+            await db.SaveChangesAsync(cancellationToken);
+            logger.LogInformation("Linked {Count} products to the main recipe they are made from.", linked);
         }
     }
 }

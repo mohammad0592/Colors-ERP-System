@@ -497,8 +497,9 @@ The thermo machine forms whatever shape is bolted into it. The factory calls the
 
 **`Moulds`** — Id · Name · IsActive
 
-**`Products`** — Id · Name · MouldId (FK) · ProductTypeId (FK) · **IsAbsorbent** · **PiecesPerBag** · **SmallBagsPerBag** · **BagsPerPallet** · IsActive
-Unique on **(MouldId, IsAbsorbent)**.
+**`Products`** — Id · Name · MouldId (FK) · ProductTypeId (FK) · **RecipeFamilyId** (FK) · **IsAbsorbent** · **PiecesPerBag** · **SmallBagsPerBag** · **BagsPerPallet** · IsActive
+Unique on **(MouldId, IsAbsorbent)**. `RecipeFamilyId` is the main recipe its rolls are
+made to, and `IsAbsorbent` is copied from it (section 5).
 
 | Product | Mould | Abs | Pieces/bag | Small bags/bag | Bags/pallet |
 |---|---|---|---|---|---|
@@ -543,65 +544,82 @@ Direction is **data, not code**. The balance is `SUM(Quantity × Direction)`, an
 
 ## 5. Recipes
 
-The factory has **four main recipes** and creates variations often — *"the factory is like a startup, he tries new recipes a lot."*
+The factory has **three main recipes**, and tries new ones often — *"the factory is like a
+startup, he tries new recipes a lot."* A roll is told apart from another by two things
+only: **its main recipe and its colour**. Ten green Lunch Box rolls, five white Lunch Box
+rolls, thirty-one white Normal rolls.
 
-### The four families
+### The three main recipes
 
-| # | Family | Absorbent | Formula |
-|---|---|---|---|
-| 1 | Normal Except Black | No | GPPS 100% · Talc 1% · Nucleating 1.5–2% · Colouring 1.5–2% |
-| 2 | Normal Black | No | GPPS 65% · Recycle 35% · Talc 1% · Nucleating 1.5–2% · Black colouring 2–2.5% |
-| 3 | ABS Except Black | Yes | GPPS 100% · Absorbent 3–4% · Colouring 1.5–2% · Antistatic 1.5–3% · Talc 1% |
-| 4 | ABS Black | Yes | GPPS 65% · Recycle 35% · Absorbent 3–4% · Colouring 1.5–2% · Antistatic 1.5–3% · Talc 1% |
+| Main recipe | Code | Absorbent | Materials | Makes rolls for |
+|---|---|---|---|---|
+| Normal | `N` | No | GPPS · Talc · Colouring · Nucleating | Normal big plates, normal small plates |
+| Absorbent | `Abs` | Yes | GPPS · Talc · Colouring · Nucleating · Absorbent | Absorbent big plates, absorbent small plates |
+| Lunch Box | `LN` | No | GPPS · Talc · Colouring · Nucleating | 1- and 3-compartment lunch boxes, large and small burger boxes |
 
-### A recipe and a colour have to agree
+Normal and Lunch Box use the same materials and are still two recipes: they are run for
+different products, and a roll has to say which it was made for. A new main recipe is
+written **from nothing** on the Recipes screen — a name, a code, whether it is absorbent,
+then its formula — never copied from an old one.
 
-The names say it: two families are **Black**, two are **Except Black**. The system refuses a roll where the recipe and the colour disagree, in **both** directions.
+### Any colour on any recipe
 
-| Recipe | Colour | |
-|---|---|---|
-| Normal Black, ABS Black | Black | ✔ |
-| Normal Black, ABS Black | White, Green, Yellow… | ✘ refused |
-| Normal Except Black, ABS Except Black | White, Green, Yellow… | ✔ |
-| Normal Except Black, ABS Except Black | Black | ✘ refused |
+Black is a colour like any other, made on whichever recipe the product needs.
 
-The first refusal is physics. A Black recipe replaces **35% of the GPPS with recycled material**, which is dark — no amount of white colouring hides it, so a white roll cannot be made from that mix. The second is the factory's own policy, and it is what the family is named for: black goes on the recipe that uses recycle, because that is the cheap one and the whole reason the black recipes exist.
+*This replaced the first design, which had four families — Normal and ABS, each in a
+Black and an Except Black version, with the Black ones replacing 35% of the GPPS with
+recycled material — and refused a roll whose recipe and colour disagreed. The factory
+does not work that way: the main recipes carry no recycled material, and the colour is
+chosen per roll. The two Black families were retired rather than deleted, because rolls
+were made to them and keep their recipe; nothing new can be made to them.*
 
-**`RecipeFamilies.BlackOnly`** and **`Colors.IsBlack`**, and the rule is that they must be equal:
+### Which products a recipe makes
 
-```
-family.BlackOnly  ==  colour.IsBlack     →  allowed
-                                          otherwise refused
-```
+Each product names the main recipe its rolls are made to (`Products.RecipeFamilyId`). The
+roll screen offers only the products the chosen recipe makes, and a roll for any other is
+refused at the extruder — not discovered at the thermo an hour later.
 
-One comparison covers both directions. Two tick boxes rather than a list of permitted colours per family: a new colour is then allowed everywhere it should be without anybody remembering to add it to three lists, and a colour left out of a list is a refusal nobody can explain.
-
-`BlackOnly` is its own column and not read off `UsesRecycle`, even though the same two families carry both today. They mean different things — one is what goes in the mixer, the other is what may come out — and a future recycled recipe in dark grey would need one true and the other false.
+Whether a product is absorbent comes from its recipe. It is still stored on the product,
+because the thermo's lookup by mould and absorbency and the code printed on every bag read
+it, but it is copied from the recipe when the product is saved and never typed in, so the
+two cannot disagree.
 
 ### How percentages work
 
-The percentages do not add to 100, and that is correct. **GPPS + Recycle is the 100% base**, and everything else is added on top of it — the standard "parts per hundred resin" method.
+The percentages do not add to 100, and that is correct. **GPPS (with recycle, in a recipe
+that uses any) is the 100% base**, and everything else is added on top of it — the
+standard "parts per hundred resin" method.
 
-Confirmed by the factory's own example (Normal Except Black v1.0):
+| Material | % |
+|---|---|
+| GPPS | 100 |
+| Talc | 1 |
+| Nucleating Agent | 1.8 |
+| Colouring Agent | 1.6 |
 
-| Material | Target | Min | Max |
-|---|---|---|---|
-| GPPS | 100 | 100 | 100 |
-| Talc | 1 | 1 | 1 |
-| Nucleating Agent | 1.8 | 1.5 | 2 |
-| Colouring Agent | 1.6 | 1.5 | 2 |
+So each ingredient carries a flag saying whether it is base resin or an additive. Base
+resin rows must total 100.
 
-So each ingredient carries a flag saying whether it is base resin or an additive. Base resin rows must total 100.
+**One number per material, not a range.** The first design gave every ingredient a target,
+a minimum and a maximum. The factory works to a figure, so the minimum and maximum were
+removed; the shift's material report still shows how far the actual use was from it.
 
 ### Tables
 
-**`RecipeFamilies`** — Id · Name · **Code** · ProductTypeId (FK) · UsesRecycle · **IsAbsorbent** · Description · IsActive
+**`RecipeFamilies`** — Id · Name · **Code** · **IsAbsorbent** · Description · IsActive
 
-`Code` is the family's short form inside a roll code — `N` for Normal, `Abs` for Absorbent (section 8). Its length is not fixed, so a future family of any length needs no code change.
+`Code` is the family's short form inside a roll code — `N`, `Abs`, `LN` (section 8). Its
+length is not fixed, so a future family of any length needs no code change. A column rather
+than a rule over the name, because renaming a family must never silently change what the
+codes on the factory floor mean.
 
-**Not unique.** Two families share a code where the colour already separates them: *Normal* and *Normal Black* are both `N`, and the colour letter says which — `01WN180726A` against `01BN180726A`. The real label `13BAbs240526B` is the ABS Black family, black plus `Abs`. A column rather than a rule over the name, because renaming a family must never silently change what the codes on the factory floor mean.
+**No two main recipes in use share a code.** With black an ordinary colour, the code is
+all that tells two rolls' recipes apart inside a roll code. A retired family keeps its
+code — the rolls made with it still carry it — so the rule is kept by the service over the
+active families rather than by a unique index over all of them.
 
-`IsAbsorbent` is the NOR/ABS distinction. It is needed on every bag for pallet matching, and it must be a flag — never matched on the family's name.
+`IsAbsorbent` is the NOR/ABS distinction. It is needed on every bag for pallet matching,
+and it must be a flag — never matched on the family's name.
 
 **`RecipeVersions`**
 
@@ -621,9 +639,10 @@ CREATE UNIQUE INDEX ux_recipe_current
   ON "RecipeVersions" ("RecipeFamilyId") WHERE "Status" = 'Current';
 ```
 
-The operator picks **"Recipe 8"**. The system knows it is version 3 of Normal Except Black and holds the exact percentages forever.
+The operator picks **"Recipe 8"**. The system knows it is version 3 of Normal and holds
+the exact percentages forever.
 
-**`RecipeIngredients`** — Id · RecipeVersionId (FK) · MaterialId (FK) · **IsBaseResin** · TargetPercentage · MinPercentage · MaxPercentage
+**`RecipeIngredients`** — Id · RecipeVersionId (FK) · MaterialId (FK) · **IsBaseResin** · TargetPercentage
 
 ### Rules
 
@@ -631,6 +650,7 @@ The operator picks **"Recipe 8"**. The system knows it is version 3 of Normal Ex
 - Changing a percentage means **copying to a new version**, never editing.
 - Because they experiment often, creating a version must be two clicks: *copy recipe 8 → change one number → save as recipe 9*.
 - Every roll points at a `RecipeVersion`, never at a family. Years later the exact formula is still there.
+- The Recipes screen and the roll screen show only the main recipes in use. A retired family's versions stay in the database for the rolls made with them.
 
 ---
 
@@ -730,7 +750,7 @@ This is what the factory actually wants. All the numbers already exist:
 
 ```
 BATCH 47 — shift A, 2 Aug
-Rolls produced:  16   ·   recipes used:  8 (Normal Except Black)
+Rolls produced:  16   ·   recipes used:  8 (Normal)
 
   Materials in (net)     520.0 kg
   Rolls produced out     495.5 kg     (sum of measured roll weights)
@@ -1459,7 +1479,7 @@ nothing and unlocks nothing. It exists so a supervisor can see who types a lot.
 | Thermoforming waste | roll weight less the plates it made, per run and per shift |
 | Consumption by recipe | works because tickets link to batches |
 | Consumption by shift | |
-| Recycled material produced | per shift, and against the black recipes that consume it |
+| Recycled material produced | per shift, and against the recipes that consume it |
 | Pallet production | completed pallets by product |
 | Full traceability | pallet → bags → rolls → batches → recipe → materials |
 | Movement history | every stock change with its cause |
@@ -1754,12 +1774,12 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Seven changes, from watching the factory use the system. They are written here rather
+Eight changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
 Each says what it changes, what is already decided, and what is still to be answered.
-Nothing here is built yet.
+The ones that are built say so.
 
 ### 19.1 A roll is made for a product
 
@@ -1959,6 +1979,41 @@ Some figures are recorded and then never displayed — the hours on a roll do no
 the roll inventory, and there are others.
 
 **Still to answer:** which columns, on which screens. Each is small on its own.
+
+### 19.8 Three main recipes
+
+The Recipes screen had four families, built from the original brief: Normal and ABS, each
+in a Black version with 35% recycled material and an Except Black one, and a rule refusing
+black on any recipe but a Black one. Each ingredient had a target, a minimum and a maximum.
+None of that matches how the factory works.
+
+**Decided, and built:**
+
+- **Three main recipes — Normal (`N`), Absorbent (`Abs`), Lunch Box (`LN`).** Section 5
+  has the materials and the products each makes. The existing Normal and ABS Except Black
+  families were renamed, keeping their recipe numbers and rolls; Lunch Box was added.
+- **Black is just a colour.** The black-only rule, and the flags behind it on recipes and
+  colours, are gone. The two Black families were retired, not deleted: rolls made to them
+  keep their recipe, and nothing new can be made to them.
+- **One percentage per material.** The minimum and maximum were dropped, and with them the
+  "outside the range" mark on the shift's material report.
+- **A main recipe can be written from nothing** — name, code, absorbent — and its first
+  formula straight after. No copy of an older recipe is needed.
+- **Each product names the main recipe its rolls are made to.** The roll screen offers
+  only matching products, a roll for any other is refused (`roll.productWrongRecipe`), and
+  the product's absorbency is copied from its recipe instead of ticked by hand. Existing
+  products were linked on the first start after the change: absorbent plates to Absorbent,
+  the other plates to Normal, the boxes to Lunch Box.
+
+At the thermo nothing new was needed: a roll's product already has to be on the mould in
+the machine (19.1), so a Lunch Box roll is refused at a plate mould.
+
+**Still to answer:** the real percentages. The seeded figures are the ones used before
+(talc 1, nucleating 1.8, colouring 1.6, absorbent 3.5); the factory corrects them by writing
+a new version. Absorbent's version in production on a system that already had data is the
+old ABS formula, with antistatic and no nucleating, until that new version is written. The
+lunch and burger boxes — 1- and 3-compartment lunch boxes, large and small burger boxes —
+are added in Master Data with their moulds and packing numbers.
 
 ---
 

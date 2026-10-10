@@ -44,15 +44,15 @@ public static class TestSequences
     /// unique by their serial and date, not by their letter.
     /// </summary>
     /// <summary>
-    /// Kept out of the ordinary rotation and used only for the black colour, so a test
-    /// asking for "any colour" can never be handed the one that changes which recipes
-    /// are allowed (specification section 5).
+    /// Kept out of the ordinary rotation and used only for the black colour, so the test
+    /// proving black is an ordinary colour is handed black and nothing else.
     /// </summary>
     private const char BlackCode = 'K';
 
     /// <summary>
-    /// The black colour — the one a Black recipe needs and every other recipe refuses.
-    /// Shared, like the rest: a colour code is one letter and unique.
+    /// The black colour. Once a colour that only some recipes could use; now made on any
+    /// of them (specification section 5). Shared, like the rest: a colour code is one
+    /// letter and unique.
     /// </summary>
     public static async Task<Color> BlackColourAsync(ColorsDbContext db)
     {
@@ -62,7 +62,7 @@ public static class TestSequences
             return existing;
         }
 
-        var colour = new Color { Name = "Colour Black", Code = BlackCode.ToString(), IsBlack = true };
+        var colour = new Color { Name = "Colour Black", Code = BlackCode.ToString() };
         db.Colors.Add(colour);
         await db.SaveChangesAsync();
 

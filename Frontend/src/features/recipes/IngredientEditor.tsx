@@ -29,7 +29,7 @@ export function IngredientEditor({
   const { t } = useTranslation();
   const baseTotal = rows
     .filter((r) => r.isBaseResin)
-    .reduce((sum, r) => sum + (Number(r.target) || 0), 0);
+    .reduce((sum, r) => sum + (Number(r.percentage) || 0), 0);
 
   const hasBase = rows.some((r) => r.isBaseResin);
   const baseIsRight = Math.abs(baseTotal - 100) < 0.005;
@@ -57,9 +57,9 @@ export function IngredientEditor({
       </div>
 
       <p className="mb-3 text-xs text-ink-muted">
-        {t('recipes.tick')} <strong>base</strong> for GPPS and recycled material — together they must
-        make 100%. Everything else is measured against that base, so the whole list does
-        not add up to 100.
+        {t('recipes.tick')} <strong>base</strong> for GPPS and recycled material —
+        together they must make 100%. Everything else is measured against that base, so
+        the whole list does not add up to 100.
       </p>
 
       <div className="overflow-x-auto">
@@ -68,9 +68,7 @@ export function IngredientEditor({
             <tr className="text-xs tracking-wider text-ink-muted uppercase">
               <th className="pb-2 font-semibold">{t('term.material')}</th>
               <th className="w-16 pb-2 text-center font-semibold">{t('recipes.base')}</th>
-              <th className="w-24 pb-2 font-semibold">{t('recipes.targetPct')}</th>
-              <th className="w-24 pb-2 font-semibold">{t('recipes.minPct')}</th>
-              <th className="w-24 pb-2 font-semibold">{t('recipes.maxPct')}</th>
+              <th className="w-28 pb-2 font-semibold">{t('recipes.percent')}</th>
               <th className="w-10 pb-2" />
             </tr>
           </thead>
@@ -116,22 +114,20 @@ export function IngredientEditor({
                       disabled={disabled}
                     />
                   </td>
-                  {(['target', 'min', 'max'] as const).map((field) => (
-                    <td key={field} className="py-1 pe-2">
-                      <input
-                        type="number"
-                        aria-label={`${field} percentage`}
-                        min="0"
-                        step="0.01"
-                        className="field-input h-touch text-base"
-                        value={row[field]}
-                        onChange={(e) => {
-                          update(index, { [field]: e.target.value });
-                        }}
-                        disabled={disabled}
-                      />
-                    </td>
-                  ))}
+                  <td className="py-1 pe-2">
+                    <input
+                      type="number"
+                      aria-label={t('recipes.percent')}
+                      min="0"
+                      step="0.01"
+                      className="field-input h-touch text-base"
+                      value={row.percentage}
+                      onChange={(e) => {
+                        update(index, { percentage: e.target.value });
+                      }}
+                      disabled={disabled}
+                    />
+                  </td>
                   <td className="py-1">
                     <button
                       type="button"

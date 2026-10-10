@@ -25,8 +25,6 @@ export interface MaterialWasteLineDto {
   /** Used less required. Positive means more went in than the recipe asks. */
   difference: number | null;
   differencePercentage: number | null;
-  /** True where the used share falls outside the min–max the supervisor set. */
-  outsideRange: boolean;
 }
 
 export interface MaterialWasteReportDto {

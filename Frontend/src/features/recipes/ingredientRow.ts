@@ -11,11 +11,9 @@
 export interface IngredientRow {
   materialId: string;
   isBaseResin: boolean;
-  target: string;
-  min: string;
-  max: string;
+  percentage: string;
 }
 
 export function emptyRow(): IngredientRow {
-  return { materialId: '', isBaseResin: false, target: '', min: '', max: '' };
+  return { materialId: '', isBaseResin: false, percentage: '' };
 }

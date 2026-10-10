@@ -41,7 +41,6 @@ public class ThermoTests(DatabaseFixture fixture)
         {
             Name = $"Family {suffix}",
             Code = absorbent ? "Abs" : "N",
-            ProductTypeId = productType.Id,
             IsAbsorbent = absorbent,
             Versions =
             [
@@ -565,7 +564,6 @@ public class ThermoTests(DatabaseFixture fixture)
         {
             Name = "Family THRM1",
             Code = "N",
-            ProductTypeId = productType.Id,
             Versions =
             [
                 new RecipeVersion

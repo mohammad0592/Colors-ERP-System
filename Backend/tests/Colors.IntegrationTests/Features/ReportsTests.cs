@@ -48,7 +48,6 @@ public class ReportsTests(DatabaseFixture fixture)
         {
             Name = $"Family {suffix}",
             Code = "N",
-            ProductTypeId = productType.Id,
             Versions =
             [
                 new RecipeVersion
@@ -67,16 +66,12 @@ public class ReportsTests(DatabaseFixture fixture)
                             MaterialId = ids.GppsId,
                             IsBaseResin = true,
                             TargetPercentage = 100m,
-                            MinPercentage = 100m,
-                            MaxPercentage = 100m,
                         },
                         new RecipeIngredient
                         {
                             MaterialId = ids.TalcId,
                             IsBaseResin = false,
                             TargetPercentage = 1m,
-                            MinPercentage = 0.5m,
-                            MaxPercentage = 1.5m,
                         },
                     ],
                 },
@@ -215,31 +210,6 @@ public class ReportsTests(DatabaseFixture fixture)
         Assert.Equal(10m, talc.Required);
         Assert.Equal(2m, talc.Difference);
         Assert.Equal(20m, talc.DifferencePercentage);
-
-        // 1.2% used against a 0.5–1.5% range, so it is inside it — over the target is
-        // not the same as out of range, and the report says which.
-        Assert.False(talc.OutsideRange);
-    }
-
-    [Fact]
-    public async Task A_material_used_outside_its_range_is_marked()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "RPT2");
-        var recipe = await RecipeAsync(db, ids, "RPT2");
-
-        // 20 kg of talc on 1,000 kg of resin is 2% — the supervisor allows up to 1.5%.
-        await IssueAsync(db, ids, [
-            (ids.GppsId, 1000m, 0m),
-            (ids.TalcId, 20m, 0m),
-        ]);
-
-        await FormedRollAsync(db, ids, recipe, 95m, 10, 10m);
-
-        var report = await NewService(db).GetMaterialWasteAsync(ids.ShiftReportId);
-        var talc = report.Value!.Lines.First(l => l.MaterialId == ids.TalcId);
-
-        Assert.True(talc.OutsideRange);
     }
 
     [Fact]

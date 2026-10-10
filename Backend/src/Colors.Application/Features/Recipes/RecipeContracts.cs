@@ -7,15 +7,8 @@ namespace Colors.Application.Features.Recipes;
 public sealed record RecipeFamilyDto(
     int Id,
     string Name,
-    // The family's part of a roll code — "N", "Abs". Shared where the colour already
-    // separates two families (specification section 8).
+    // The family's part of a roll code — "N", "Abs", "LN" (specification section 8).
     string Code,
-    int ProductTypeId,
-    string ProductTypeName,
-    bool UsesRecycle,
-    // Which colours it may be made in: black-only recipes need black, and every other
-    // recipe refuses it (specification section 5).
-    bool BlackOnly,
     bool IsAbsorbent,
     string? Description,
     bool IsActive,
@@ -23,30 +16,29 @@ public sealed record RecipeFamilyDto(
     int? CurrentRecipeNumber,
     int VersionCount);
 
+/// <summary>
+/// A main recipe, written from nothing — no copy of an older one needed. Its formula is
+/// written afterwards as its first version.
+/// </summary>
 public sealed record SaveRecipeFamilyRequest(
     string Name,
     string Code,
-    int ProductTypeId,
-    bool UsesRecycle,
-    bool BlackOnly,
     bool IsAbsorbent,
     string? Description);
 
+// One number per material. There used to be a minimum and maximum beside it, and the
+// factory works to a figure, not a range (specification section 5).
 public sealed record RecipeIngredientDto(
     int MaterialId,
     string MaterialCode,
     string MaterialName,
     bool IsBaseResin,
-    decimal TargetPercentage,
-    decimal MinPercentage,
-    decimal MaxPercentage);
+    decimal Percentage);
 
 public sealed record SaveRecipeIngredientRequest(
     int MaterialId,
     bool IsBaseResin,
-    decimal TargetPercentage,
-    decimal MinPercentage,
-    decimal MaxPercentage);
+    decimal Percentage);
 
 /// <summary>A version in a list — enough for the table, without its ingredients.</summary>
 public sealed record RecipeVersionSummaryDto(
@@ -62,7 +54,7 @@ public sealed record RecipeVersionSummaryDto(
     string? Notes,
     int IngredientCount,
     // So the roll screen can offer only the products this recipe can make. A roll whose
-    // product disagrees on absorbency is refused (section 19.1); better never offered.
+    // product is made from another recipe is refused (section 19.1); better never offered.
     bool IsAbsorbent);
 
 /// <summary>A version with its full formula.</summary>
@@ -125,7 +117,10 @@ public interface IRecipeService
         bool isActive,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Every version, newest first, optionally narrowed to one family.</summary>
+    /// <summary>
+    /// Every version of the main recipes in use, newest first, optionally narrowed to one
+    /// family. Versions of a retired family are left out — nothing new is made to them.
+    /// </summary>
     Task<IReadOnlyList<RecipeVersionSummaryDto>> GetVersionsAsync(
         int? familyId = null,
         CancellationToken cancellationToken = default);
