@@ -5,7 +5,6 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import {
   colorsApi,
   materialCategoriesApi,
-  mouldsApi,
   productionLinesApi,
   productTypesApi,
   shiftsApi,
@@ -21,7 +20,6 @@ type TabId =
   | 'categories'
   | 'colors'
   | 'products'
-  | 'moulds'
   | 'productTypes'
   | 'lines'
   | 'shifts';
@@ -32,7 +30,6 @@ const tabs: { id: TabId; label: TranslationKey }[] = [
   { id: 'categories', label: 'md.categories' },
   { id: 'colors', label: 'md.colours' },
   { id: 'products', label: 'md.products' },
-  { id: 'moulds', label: 'md.moulds' },
   { id: 'productTypes', label: 'md.productTypes' },
   { id: 'lines', label: 'md.lines' },
   { id: 'shifts', label: 'md.shiftsTab' },
@@ -129,15 +126,6 @@ export function MasterDataPage(): ReactElement {
       )}
 
       {tab === 'products' && <ProductsTab />}
-
-      {tab === 'moulds' && (
-        <LookupTab
-          queryKey="moulds"
-          client={mouldsApi}
-          itemWord="mould"
-          fields={[{ key: 'name', label: 'field.name' }]}
-        />
-      )}
 
       {tab === 'productTypes' && (
         <LookupTab

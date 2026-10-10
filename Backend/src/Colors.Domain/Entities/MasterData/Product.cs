@@ -4,24 +4,20 @@ using Colors.Domain.Entities.Recipes;
 namespace Colors.Domain.Entities.MasterData;
 
 /// <summary>
-/// Something the factory makes (specification section 4).
+/// Something the factory makes (specification section 4) — Normal Big Plate, 3-Compartment
+/// Lunch Box, Small Burger Box.
 ///
-/// A product is what a given mould produces from a given kind of material. The two
-/// plate moulds each make a normal and an absorbent product; the meal box and clamshell
-/// moulds make one each. Nobody chooses a product on screen: the mould comes from the
-/// shift, the absorbency comes from the roll's recipe, and those two together are the
-/// unique key here.
+/// There is no separate list of moulds. The mould is what shapes the product, so naming
+/// the product says which mould it came off, and keeping both lists meant writing every
+/// shape down twice. The product is chosen once, on the roll at the extruder
+/// (section 19.1), and the bags formed from that roll are that product.
 ///
-/// Size lives in the name — "Big Plate", "Small Meal Box" — rather than in a separate
-/// list, because a clamshell has no size and would have had to carry a meaningless one.
+/// Size lives in the name — "Big Plate", "Small Burger Box" — rather than in a separate
+/// list, because not every product has a size.
 /// </summary>
 public class Product : MasterEntity
 {
-    public int MouldId { get; set; }
-
-    public Mould Mould { get; set; } = null!;
-
-    /// <summary>Plate · Meal Box · Clamshell. For grouping in reports.</summary>
+    /// <summary>Plate · Lunch Box · Burger Box. For grouping in reports.</summary>
     public int ProductTypeId { get; set; }
 
     public ProductType ProductType { get; set; } = null!;
@@ -41,12 +37,12 @@ public class Product : MasterEntity
     public RecipeFamily? RecipeFamily { get; set; }
 
     /// <summary>
-    /// The NOR/ABS distinction, decided by what was mixed into the roll rather than by
-    /// the mould. A flag, never matched on the name.
+    /// The NOR/ABS distinction, decided by what was mixed into the roll. A flag, never
+    /// matched on the name.
     ///
     /// Copied from the recipe family when the product is saved, never typed in, so the
-    /// two cannot disagree. Kept on the product because the thermo's lookup by mould and
-    /// absorbency, and the code printed on every bag, read it.
+    /// two cannot disagree. Kept on the product because the code printed on every bag
+    /// reads it.
     /// </summary>
     public bool IsAbsorbent { get; set; }
 

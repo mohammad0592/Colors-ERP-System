@@ -27,7 +27,6 @@ public static class FactoryData
         // Line 2. The same shift, a second line — which is the whole point of the shift
         // restructure: one shift for the factory, a row underneath for each line.
         int ThermoShiftLineId,
-        int MouldId,
         int NormalProductId,
         int AbsorbentProductId);
 
@@ -166,12 +165,8 @@ public static class FactoryData
             user.Id,
             "Opening count of wooden pallets");
 
-        // The mould bolted into the thermo, and the two products it can make. Which one
-        // comes out is not the mould's doing — it is what was mixed into the roll — so
-        // both exist and (mould, absorbency) picks between them.
-        var mould = new Mould { Name = $"Big Plate Mould {suffix}" };
-        db.Moulds.Add(mould);
-
+        // Two products, a normal and an absorbent plate. A roll names one of them, and the
+        // bags formed from it are that product (specification section 19.9).
         var productType = await db.ProductTypes.FirstOrDefaultAsync(t => t.Name == "Plate");
         if (productType is null)
         {
@@ -184,7 +179,6 @@ public static class FactoryData
         var normal = new Product
         {
             Name = $"Big Plate {suffix}",
-            MouldId = mould.Id,
             ProductTypeId = productType.Id,
             IsAbsorbent = false,
             PiecesPerBag = 500,
@@ -197,7 +191,6 @@ public static class FactoryData
         var absorbent = new Product
         {
             Name = $"Big Plate ABS {suffix}",
-            MouldId = mould.Id,
             ProductTypeId = productType.Id,
             IsAbsorbent = true,
             PiecesPerBag = 500,
@@ -249,10 +242,6 @@ public static class FactoryData
 
         await db.SaveChangesAsync();
 
-        // The mould is mounted after the shift lines exist, because it hangs off one.
-        report.Lines[1].MouldId = mould.Id;
-        await db.SaveChangesAsync();
-
         return new Ids(
             user.Id,
             report.Id,
@@ -261,7 +250,6 @@ public static class FactoryData
             talc.Id,
             largeBags.Id,
             report.Lines[1].Id,
-            mould.Id,
             normal.Id,
             absorbent.Id);
     }

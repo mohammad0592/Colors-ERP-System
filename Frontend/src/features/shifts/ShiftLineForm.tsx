@@ -1,7 +1,6 @@
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../lib/apiClient';
-import type { LookupDto } from '../master-data/api';
 import type { PersonDto, RoleDto } from '../people/api';
 import {
   shiftReportsApi,
@@ -17,8 +16,6 @@ interface ShiftLineFormProps {
   line: ShiftLineDto;
   people: PersonDto[];
   roles: RoleDto[];
-  /** Empty for a line that takes no mould, so the picker is simply not shown. */
-  moulds: LookupDto[];
   locked: boolean;
   onSaved: (report: ShiftReportDto) => void;
 }
@@ -35,12 +32,10 @@ export function ShiftLineForm({
   line,
   people,
   roles,
-  moulds,
   locked,
   onSaved,
 }: ShiftLineFormProps): ReactElement {
   const { t } = useTranslation();
-  const [mouldId, setMouldId] = useState<number | null>(line.mouldId);
   const [startTime, setStartTime] = useState(line.productionStartTime ?? '');
   const [endTime, setEndTime] = useState(line.productionEndTime ?? '');
   const [downtime, setDowntime] = useState(toField(line.downtimeHours));
@@ -64,8 +59,6 @@ export function ShiftLineForm({
     setIsSaving(true);
     try {
       const report = await shiftReportsApi.updateLine(reportId, line.id, {
-        // Only the forming line takes one; the server refuses it elsewhere.
-        mouldId: line.recordsMachineSettings ? mouldId : null,
         productionStartTime: startTime === '' ? null : startTime,
         productionEndTime: endTime === '' ? null : endTime,
         downtimeHours: toNumberOrNull(downtime),
@@ -97,39 +90,6 @@ export function ShiftLineForm({
       }}
       noValidate
     >
-      {/* Only the forming line takes a mould, and it is chosen once for the shift —
-          everything made on the line inherits it. */}
-      {line.recordsMachineSettings && (
-        <>
-          <Section title={t('shifts.templateInMachine')} />
-
-          <Field label={t('term.mould')} htmlFor={`mould-${String(line.id)}`}>
-            <select
-              id={`mould-${String(line.id)}`}
-              className="field-input"
-              value={mouldId ?? ''}
-              disabled={disabled}
-              onChange={(event) => {
-                setMouldId(event.target.value === '' ? null : Number(event.target.value));
-              }}
-            >
-              <option value="">{t('shifts.notMounted')}</option>
-              {moulds.map((mould) => (
-                <option key={mould.id} value={mould.id}>
-                  {mould.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-
-          <p className="-mt-2 mb-4 text-xs text-ink-muted">
-            Changing a template is heavy work, so one is mounted for the whole shift.
-            Everything formed on this line takes its product from it and from the
-            roll&rsquo;s recipe — nobody types a product.
-          </p>
-        </>
-      )}
-
       <Section title={t('shifts.times')} />
 
       <div className="grid gap-4 sm:grid-cols-3">

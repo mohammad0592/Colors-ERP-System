@@ -43,7 +43,6 @@ public interface IMaterialCategoryService
 
 public interface IColorService : IMasterListService<ColorDto, SaveColorRequest>;
 
-public interface IMouldService : IMasterListService<LookupDto, SaveLookupRequest>;
 
 public interface IProductService : IMasterListService<ProductDto, SaveProductRequest>;
 

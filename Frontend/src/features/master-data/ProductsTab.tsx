@@ -5,13 +5,7 @@ import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmD
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { recipesApi } from '../recipes/api';
-import {
-  mouldsApi,
-  productsApi,
-  productTypesApi,
-  type ProductDto,
-  type SaveProduct,
-} from './api';
+import { productsApi, productTypesApi, type ProductDto, type SaveProduct } from './api';
 import { RowButton, StatusBadge } from './LookupTab';
 
 /**
@@ -33,7 +27,6 @@ export function ProductsTab(): ReactElement {
     queryFn: () => productsApi.list(true),
   });
 
-  const moulds = useQuery({ queryKey: ['moulds'], queryFn: () => mouldsApi.list(false) });
   const types = useQuery({
     queryKey: ['product-types'],
     queryFn: () => productTypesApi.list(false),
@@ -67,11 +60,11 @@ export function ProductsTab(): ReactElement {
     onSettled: invalidate,
   });
 
-  if (products.isPending || moulds.isPending || types.isPending || families.isPending) {
+  if (products.isPending || types.isPending || families.isPending) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
-  if (products.isError || moulds.isError || types.isError || families.isError) {
+  if (products.isError || types.isError || families.isError) {
     return <p className="p-6 text-bad">{t('md.productsFailed')}</p>;
   }
 
@@ -92,10 +85,6 @@ export function ProductsTab(): ReactElement {
         </button>
       </div>
 
-      <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-        {t('md.mouldPlusAbsorbency')}
-      </p>
-
       {actionError !== null && (
         <p
           role="alert"
@@ -110,7 +99,6 @@ export function ProductsTab(): ReactElement {
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">{t('term.product')}</th>
-              <th className="px-4 py-3 font-semibold">{t('term.mould')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.type')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.madeFrom')}</th>
               <th className="px-4 py-3 font-semibold">{t('md.piecesPerBagShort')}</th>
@@ -125,7 +113,6 @@ export function ProductsTab(): ReactElement {
             {products.data.map((product) => (
               <tr key={product.id} className="border-b border-line last:border-0">
                 <td className="px-4 py-3 font-medium text-ink">{product.name}</td>
-                <td className="px-4 py-3 text-ink-soft">{product.mouldName}</td>
                 <td className="px-4 py-3 text-ink-soft">{product.productTypeName}</td>
                 <td className="px-4 py-3 text-ink-soft">
                   {product.recipeFamilyName ?? '—'}
@@ -199,7 +186,6 @@ export function ProductsTab(): ReactElement {
       {editing !== null && (
         <ProductDialog
           product={editing === 'new' ? null : editing}
-          moulds={moulds.data}
           types={types.data}
           families={families.data}
           onClose={() => {
@@ -219,14 +205,12 @@ interface Named {
 
 function ProductDialog({
   product,
-  moulds,
   types,
   families,
   onClose,
   onSaved,
 }: {
   product: ProductDto | null;
-  moulds: Named[];
   types: Named[];
   families: Named[];
   onClose: () => void;
@@ -234,7 +218,6 @@ function ProductDialog({
 }): ReactElement {
   const { t } = useTranslation();
   const [name, setName] = useState(product?.name ?? '');
-  const [mouldId, setMouldId] = useState(product?.mouldId ?? moulds[0]?.id ?? 0);
   const [productTypeId, setProductTypeId] = useState(
     product?.productTypeId ?? types[0]?.id ?? 0,
   );
@@ -269,7 +252,6 @@ function ProductDialog({
     try {
       const body: SaveProduct = {
         name,
-        mouldId,
         productTypeId,
         recipeFamilyId,
         piecesPerBag: Number(piecesPerBag),
@@ -324,27 +306,6 @@ function ProductDialog({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div className="mb-4">
-            <label className="field-label" htmlFor="prod-mould">
-              {t('term.mould')}
-            </label>
-            <select
-              id="prod-mould"
-              className="field-input"
-              value={mouldId}
-              disabled={isSaving}
-              onChange={(event) => {
-                setMouldId(Number(event.target.value));
-              }}
-            >
-              {moulds.map((mould) => (
-                <option key={mould.id} value={mould.id}>
-                  {mould.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="mb-4">
             <label className="field-label" htmlFor="prod-type">
               {t('md.productType')}

@@ -24,8 +24,7 @@ public class ThermoProduction
 
     /// <summary>
     /// The thermo's part of a shift: which line, which shift, which day. Its line must
-    /// form bags and must have a mould mounted, or there is no way to know what is
-    /// being made.
+    /// form bags. What is being made comes from the roll, not the line.
     /// </summary>
     public int ShiftLineId { get; set; }
 

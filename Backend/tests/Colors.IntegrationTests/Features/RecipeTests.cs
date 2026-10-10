@@ -1,6 +1,5 @@
 using Colors.Application.Features.MasterData;
 using Colors.Application.Features.Recipes;
-using Colors.Domain.Entities.MasterData;
 using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.Recipes;
@@ -130,15 +129,11 @@ public class RecipeTests(DatabaseFixture fixture)
         var recipes = NewService(db);
         var absorbent = await recipes.CreateFamilyAsync(Family("RCP5", absorbent: true));
 
-        // A mould of its own: the one FactoryData made already has both its products.
-        var mould = new Mould { Name = "Mould RCP5" };
-        db.Moulds.Add(mould);
-        await db.SaveChangesAsync();
         var productType = await db.ProductTypes.FirstAsync();
 
         var products = new ProductService(db);
         var saved = await products.CreateAsync(
-            new SaveProductRequest("Plate RCP5", mould.Id, productType.Id, absorbent.Value!.Id, 500, 2, 15, null, null));
+            new SaveProductRequest("Plate RCP5", productType.Id, absorbent.Value!.Id, 500, 2, 15, null, null));
 
         // Never typed in, so it cannot disagree with what the rolls are mixed from.
         Assert.True(saved.IsSuccess, saved.Message);
@@ -151,13 +146,10 @@ public class RecipeTests(DatabaseFixture fixture)
     {
         await using var db = fixture.CreateContext();
         await FactoryData.CreateAsync(db, "RCP6");
-        var mould = new Mould { Name = "Mould RCP6" };
-        db.Moulds.Add(mould);
-        await db.SaveChangesAsync();
         var productType = await db.ProductTypes.FirstAsync();
 
         var saved = await new ProductService(db).CreateAsync(
-            new SaveProductRequest("Plate RCP6", mould.Id, productType.Id, 0, 500, 2, 15, null, null));
+            new SaveProductRequest("Plate RCP6", productType.Id, 0, 500, 2, 15, null, null));
 
         Assert.False(saved.IsSuccess);
     }

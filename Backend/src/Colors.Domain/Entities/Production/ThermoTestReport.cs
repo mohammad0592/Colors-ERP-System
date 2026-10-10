@@ -25,10 +25,9 @@ public class ThermoTestReport
     public ThermoProduction ThermoProduction { get; set; } = null!;
 
     /// <summary>
-    /// حجم الصنف — what was made. Never chosen on screen: the mould comes from the
-    /// shift and the absorbency from the roll's recipe, and those two are the unique
-    /// key on <see cref="MasterData.Product"/>. Stored here because a mould may be
-    /// swapped later in the shift, so history must be fixed at the moment it happened.
+    /// حجم الصنف — what was made. Never chosen here: it is the product the roll was made
+    /// for. Stored rather than read through the roll, so the count keeps saying what it
+    /// counted however the roll is later corrected.
     /// </summary>
     public int ProductId { get; set; }
 

@@ -17,7 +17,7 @@ interface NewRollDialogProps {
   products: ProductDto[];
   /**
    * The product of the last roll logged on this shift, or null if this is the first.
-   * The operator picks the product once and then only when the mould changes — so the
+   * The operator picks the product once and then only when it changes — so the
    * first roll of a shift asks, and every roll after it is already filled in.
    */
   lastProductId: number | null;

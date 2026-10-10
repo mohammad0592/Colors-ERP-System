@@ -151,72 +151,50 @@ public static class MasterDataSeeder
             }
         }
 
-        // --- Product types, moulds and products (specification section 4) ------
+        // --- Product types and products (specification section 4) --------------
         if (!await db.ProductTypes.AnyAsync(cancellationToken))
         {
-            foreach (var name in new[] { "Plate", "Meal Box", "Clamshell" })
+            foreach (var name in new[] { "Plate", "Lunch Box", "Burger Box" })
             {
                 db.ProductTypes.Add(new ProductType { Name = name });
                 before++;
             }
         }
 
-        // The five templates the factory has. Three of them arrived new. The factory's
-        // own name for the small hinged box is still to be confirmed (specification
-        // section 18, question 8), so expect these to be renamed — which is exactly
-        // why the list is only seeded into an empty table.
-        if (!await db.Moulds.AnyAsync(cancellationToken))
-        {
-            foreach (var name in new[]
-                     {
-                         "Big Plate",
-                         "Small Plate",
-                         "Large Meal Box",
-                         "Small Meal Box",
-                         "3-Compartment Clamshell",
-                     })
-            {
-                db.Moulds.Add(new Mould { Name = name });
-                before++;
-            }
-        }
-
         await db.SaveChangesAsync(cancellationToken);
 
-        // A mould plus an absorbency names exactly one product — that pair is what the
-        // thermo looks up, so the two plate moulds carry two rows each.
+        // The eight things the factory makes. There is no list of moulds beside them: the
+        // mould is what shapes the product, so the product names it (section 19.9).
         //
-        // Several of these numbers are provisional: the new moulds arrived the day
-        // before this was written and the factory has not finished packing with them
-        // (specification section 18, questions 9 to 11). They are rows, so correcting
-        // one is an edit in Master Data.
-        // A plate goes into a big bag holding two small ones; a meal box or clamshell
-        // goes into the small bag directly, with no large bag at all. Both figures are
-        // stated rather than one inferred from the other (specification section 10).
-        var products = new (string Name, string Mould, string Type, bool Abs, int Pieces, int SmallBags, int LargeBags, int PerPallet)[]
+        // A plate goes into a big bag holding two small ones; a box goes into the small
+        // bag directly, with no large bag at all (specification section 10). The box
+        // numbers are carried over from the meal boxes they replaced and are provisional
+        // — they are rows, so correcting one is an edit in Master Data.
+        var products = new (string Name, string Type, bool Abs, int Pieces, int SmallBags, int LargeBags, int PerPallet)[]
         {
-            ("Big Plate — Normal", "Big Plate", "Plate", false, 500, 2, 1, 15),
-            ("Big Plate — Absorbent", "Big Plate", "Plate", true, 500, 2, 1, 15),
-            ("Small Plate — Normal", "Small Plate", "Plate", false, 500, 2, 1, 15),
-            ("Small Plate — Absorbent", "Small Plate", "Plate", true, 500, 2, 1, 15),
-            ("Large Meal Box", "Large Meal Box", "Meal Box", false, 250, 1, 0, 21),
-            ("Small Meal Box", "Small Meal Box", "Meal Box", false, 250, 1, 0, 21),
-            ("3-Compartment Clamshell", "3-Compartment Clamshell", "Clamshell", false, 250, 1, 0, 21),
+            ("Normal Big Plate", "Plate", false, 500, 2, 1, 15),
+            ("Normal Small Plate", "Plate", false, 500, 2, 1, 15),
+            ("Absorbent Big Plate", "Plate", true, 500, 2, 1, 15),
+            ("Absorbent Small Plate", "Plate", true, 500, 2, 1, 15),
+            ("1-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 21),
+            ("3-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 21),
+            ("Large Burger Box", "Burger Box", false, 250, 1, 0, 21),
+            ("Small Burger Box", "Burger Box", false, 250, 1, 0, 21),
         };
 
-        // Only into an empty table, and only if the moulds and types are still the ones
-        // seeded above — otherwise the names below would not find them.
+        // Only into an empty table, and only if the types are still the ones seeded above
+        // — otherwise the names below would not find them. Each product's main recipe is
+        // filled in by the recipe seeder, which runs next.
         if (!await db.Products.AnyAsync(cancellationToken))
         {
             foreach (var p in products)
             {
-                var mould = await db.Moulds.SingleOrDefaultAsync(m => m.Name == p.Mould, cancellationToken);
                 var type = await db.ProductTypes.SingleOrDefaultAsync(t => t.Name == p.Type, cancellationToken);
 
-                if (mould is null || type is null)
+                if (type is null)
                 {
                     logger.LogWarning(
-                        "Skipped seeding product {Product}: its mould or product type has been renamed. " +
+                        "Skipped seeding product {Product}: its product type has been renamed. " +
                         "Add it in Master Data.",
                         p.Name);
                     continue;
@@ -225,7 +203,6 @@ public static class MasterDataSeeder
                 db.Products.Add(new Product
                 {
                     Name = p.Name,
-                    MouldId = mould.Id,
                     ProductTypeId = type.Id,
                     IsAbsorbent = p.Abs,
                     PiecesPerBag = p.Pieces,

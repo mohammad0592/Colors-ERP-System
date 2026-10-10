@@ -20,14 +20,12 @@ public class ProductService(ColorsDbContext db)
     private bool _familyIsAbsorbent;
 
     protected override IQueryable<Product> Query() =>
-        Db.Products.Include(p => p.Mould).Include(p => p.ProductType).Include(p => p.RecipeFamily);
+        Db.Products.Include(p => p.ProductType).Include(p => p.RecipeFamily);
 
     protected override ProductDto ToDto(Product entity, bool canDelete) =>
         new(
             entity.Id,
             entity.Name,
-            entity.MouldId,
-            entity.Mould.Name,
             entity.ProductTypeId,
             entity.ProductType.Name,
             entity.RecipeFamilyId,
@@ -44,7 +42,6 @@ public class ProductService(ColorsDbContext db)
     protected override void Apply(SaveProductRequest request, Product entity)
     {
         entity.Name = request.Name.Trim();
-        entity.MouldId = request.MouldId;
         entity.ProductTypeId = request.ProductTypeId;
         entity.RecipeFamilyId = request.RecipeFamilyId;
         // Never typed in: an absorbent product is one made from the absorbent recipe.
@@ -71,11 +68,6 @@ public class ProductService(ColorsDbContext db)
             return "A product with this name already exists.";
         }
 
-        if (!await Db.Moulds.AnyAsync(m => m.Id == request.MouldId, cancellationToken))
-        {
-            return "Choose the mould that makes this product.";
-        }
-
         if (!await Db.ProductTypes.AnyAsync(t => t.Id == request.ProductTypeId, cancellationToken))
         {
             return "Choose a product type.";
@@ -92,26 +84,6 @@ public class ProductService(ColorsDbContext db)
         }
 
         _familyIsAbsorbent = family.IsAbsorbent;
-
-        // The thermo looks a product up by mould and absorbency alone, so that pair
-        // must name exactly one thing. Without this a second row would make the lookup
-        // ambiguous and the run would have no honest answer.
-        var pairTaken = await Db.Products.AnyAsync(
-            p => p.MouldId == request.MouldId
-                 && p.IsAbsorbent == family.IsAbsorbent
-                 && (existingId == null || p.Id != existingId),
-            cancellationToken);
-
-        if (pairTaken)
-        {
-            var mould = await Db.Moulds
-                .Where(m => m.Id == request.MouldId)
-                .Select(m => m.Name)
-                .FirstAsync(cancellationToken);
-
-            return $"{mould} already makes " +
-                   (family.IsAbsorbent ? "an absorbent product." : "a normal product.");
-        }
 
         if (request.PiecesPerBag < 1)
         {

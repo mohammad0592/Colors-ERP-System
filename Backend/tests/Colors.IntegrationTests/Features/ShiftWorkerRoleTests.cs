@@ -40,7 +40,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
     }
 
     private static UpdateShiftLineRequest LineWith(params SaveShiftWorkerRequest[] workers) =>
-        new(null, "08:00", "16:00", null, null, null, null, workers);
+        new("08:00", "16:00", null, null, null, null, workers);
 
     [Fact]
     public async Task One_man_may_hold_two_jobs_on_the_same_shift()

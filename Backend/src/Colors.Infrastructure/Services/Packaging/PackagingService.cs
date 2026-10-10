@@ -237,9 +237,9 @@ public class PackagingService(
     /// <summary>
     /// The figures nobody types, read off what the shift actually made.
     ///
-    /// The bag counts come from the <b>product</b>, so a shift that switched mould
+    /// The bag counts come from the <b>product</b>, so a shift that switched product
     /// halfway is still counted correctly — the plates take a large bag and two small,
-    /// the meal boxes one small and no large, and each bag knows which it is.
+    /// the boxes one small and no large, and each bag knows which it is.
     ///
     /// The pallet count is here to be read, not deducted. Its material left the store
     /// one pallet at a time as they were started.

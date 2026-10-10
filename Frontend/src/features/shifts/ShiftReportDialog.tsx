@@ -3,7 +3,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
-import type { LookupDto, ProductionLineDto } from '../master-data/api';
+import type { ProductionLineDto } from '../master-data/api';
 import type { PersonDto, RoleDto } from '../people/api';
 import { shiftReportsApi, type ShiftReportDto } from './api';
 import { formatDate, orDash, toField, toNumberOrNull } from './shiftFormat';
@@ -15,7 +15,6 @@ interface ShiftReportDialogProps {
   allLines: ProductionLineDto[];
   people: PersonDto[];
   roles: RoleDto[];
-  moulds: LookupDto[];
   onClose: () => void;
   onChanged: (report: ShiftReportDto) => void;
 }
@@ -31,7 +30,6 @@ export function ShiftReportDialog({
   allLines,
   people,
   roles,
-  moulds,
   onClose,
   onChanged,
 }: ShiftReportDialogProps): ReactElement {
@@ -169,14 +167,14 @@ export function ShiftReportDialog({
 
         <div className="mb-4 rounded-control bg-canvas px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-medium text-ink-soft">{t('shifts.electricityUsed')}</span>
+            <span className="text-sm font-medium text-ink-soft">
+              {t('shifts.electricityUsed')}
+            </span>
             <span className="text-lg font-bold text-ink">
               {orDash(report.electricityUsed)}
             </span>
           </div>
-          <p className="mt-1 text-xs text-ink-muted">
-            {t('shifts.meterNote')}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">{t('shifts.meterNote')}</p>
         </div>
 
         <div className="mb-4">
@@ -296,7 +294,6 @@ export function ShiftReportDialog({
             line={active}
             people={people}
             roles={roles}
-            moulds={moulds}
             locked={locked}
             onSaved={onChanged}
           />

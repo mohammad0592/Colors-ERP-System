@@ -73,7 +73,8 @@ public sealed record ThermoRunDto(
     string ProductionLineName,
     string ShiftName,
     DateOnly ProductionDate,
-    string? MouldName,
+    // What the roll was made for, so what the bags formed from it will be.
+    string? ProductName,
     string OperatorName,
     DateTimeOffset StartedAt,
     DateTimeOffset? FinishedAt,
@@ -110,7 +111,11 @@ public sealed record AvailableRollDto(
     bool IsAbsorbent,
     DateOnly ProductionDate,
     decimal? Weight,
-    decimal? Length);
+    decimal? Length,
+    // What it was made for. Null only on a roll made before rolls said, and then the
+    // start dialog asks.
+    int? ProductId,
+    string? ProductName);
 
 /// <summary>
 /// Puts a roll into the thermo. The operator scans the barcode — he never types the
@@ -122,7 +127,10 @@ public sealed record StartThermoRunRequest(
     int? RollId,
     int ShiftLineId,
     DateTimeOffset? StartedAt,
-    string? Notes);
+    string? Notes,
+    // Only for a roll made before rolls said what they were for. Every other roll
+    // already names its product, and this is ignored.
+    int? ProductId = null);
 
 /// <summary>Takes the roll out. The run is over; the counting comes next.</summary>
 public sealed record FinishThermoRunRequest(DateTimeOffset? FinishedAt);
@@ -130,9 +138,8 @@ public sealed record FinishThermoRunRequest(DateTimeOffset? FinishedAt);
 /// <summary>
 /// What was counted and measured after forming.
 ///
-/// The product is not here: it is decided by the mould on the line and the absorbency
-/// of the roll's recipe. Neither is the piece count, which is the bag count times the
-/// product's pieces per bag.
+/// The product is not here: it is the one the roll was made for. Neither is the piece
+/// count, which is the bag count times the product's pieces per bag.
 ///
 /// <b>Saving this creates the bags and their barcodes.</b>
 /// </summary>

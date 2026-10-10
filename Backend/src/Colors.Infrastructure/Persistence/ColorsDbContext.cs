@@ -36,7 +36,6 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<Material> Materials => Set<Material>();
     public DbSet<MaterialPackaging> MaterialPackagings => Set<MaterialPackaging>();
     public DbSet<Color> Colors => Set<Color>();
-    public DbSet<Mould> Moulds => Set<Mould>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<MovementType> MovementTypes => Set<MovementType>();
 

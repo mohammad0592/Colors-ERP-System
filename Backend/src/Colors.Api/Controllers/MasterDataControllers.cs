@@ -27,10 +27,6 @@ public class MaterialCategoriesController(IMaterialCategoryService service)
 public class ColorsController(IColorService service)
     : MasterDataControllerBase<ColorDto, SaveColorRequest>(service);
 
-[Route("api/moulds")]
-public class MouldsController(IMouldService service)
-    : MasterDataControllerBase<LookupDto, SaveLookupRequest>(service);
-
 [Route("api/products")]
 public class ProductsController(IProductService service)
     : MasterDataControllerBase<ProductDto, SaveProductRequest>(service);

@@ -6,7 +6,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames } from '../../lib/roles';
-import { mouldsApi, productionLinesApi, shiftsApi } from '../master-data/api';
+import { productionLinesApi, shiftsApi } from '../master-data/api';
 import { peopleApi } from '../people/api';
 import { shiftReportsApi, type ShiftReportDto, type ShiftReportSummaryDto } from './api';
 import { OpenShiftDialog } from './OpenShiftDialog';
@@ -57,12 +57,6 @@ export function ShiftsPage(): ReactElement {
     queryFn: () => peopleApi.roles(),
   });
 
-  // Only active moulds — a retired template must not be mountable on a new shift.
-  const moulds = useQuery({
-    queryKey: ['moulds', 'active'],
-    queryFn: () => mouldsApi.list(false),
-  });
-
   const reports = useQuery({
     queryKey: ['shift-reports', lineFilter, openOnly],
     queryFn: () =>
@@ -74,7 +68,9 @@ export function ShiftsPage(): ReactElement {
   }
 
   function onActionError(caught: unknown): void {
-    setActionError(caught instanceof ApiError ? caught.message : t('common.somethingWrong'));
+    setActionError(
+      caught instanceof ApiError ? caught.message : t('common.somethingWrong'),
+    );
   }
 
   const open = useMutation({
@@ -109,19 +105,12 @@ export function ShiftsPage(): ReactElement {
     shifts.isPending ||
     people.isPending ||
     roles.isPending ||
-    moulds.isPending ||
     reports.isPending
   ) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
-  if (
-    lines.isError ||
-    shifts.isError ||
-    people.isError ||
-    roles.isError ||
-    moulds.isError
-  ) {
+  if (lines.isError || shifts.isError || people.isError || roles.isError) {
     return <p className="p-6 text-bad">{t('shifts.loadScreenFailed')}</p>;
   }
 
@@ -332,7 +321,6 @@ export function ShiftsPage(): ReactElement {
           allLines={lines.data}
           people={people.data}
           roles={roles.data}
-          moulds={moulds.data}
           onClose={() => {
             setEditing(null);
           }}

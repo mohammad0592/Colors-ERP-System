@@ -55,9 +55,7 @@ export function TracePage(): ReactElement {
       </div>
 
       {asked === '' && (
-        <p className="card p-8 text-center text-ink-muted">
-          {t('trace.nothingScanned')}
-        </p>
+        <p className="card p-8 text-center text-ink-muted">{t('trace.nothingScanned')}</p>
       )}
 
       {trace.isPending && asked !== '' && <p className="p-6 text-ink-muted">Looking…</p>}
@@ -140,7 +138,6 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
           <Facts
             rows={[
               ['Operator', trace.thermo.operatorName],
-              ['Mould', trace.thermo.mouldName ?? '—'],
               ['Product', trace.thermo.productName ?? 'not counted yet'],
               [
                 'Time in the machine',
@@ -221,9 +218,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
           subtitle={`${trace.mix.productionLineName} · ${trace.mix.shiftName} · ${formatDate(trace.mix.productionDate)}`}
         >
           {trace.mix.materials.length === 0 ? (
-            <p className="text-sm text-ink-muted">
-              {t('trace.noMaterialIssued')}
-            </p>
+            <p className="text-sm text-ink-muted">{t('trace.noMaterialIssued')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-start text-sm">
@@ -231,8 +226,12 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
                   <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                     <th className="py-2 pe-4 font-semibold">{t('term.ticket')}</th>
                     <th className="py-2 pe-4 font-semibold">{t('term.material')}</th>
-                    <th className="py-2 pe-4 text-end font-semibold">{t('field.issued')}</th>
-                    <th className="py-2 pe-4 text-end font-semibold">{t('field.returned')}</th>
+                    <th className="py-2 pe-4 text-end font-semibold">
+                      {t('field.issued')}
+                    </th>
+                    <th className="py-2 pe-4 text-end font-semibold">
+                      {t('field.returned')}
+                    </th>
                     <th className="py-2 text-end font-semibold">{t('field.used')}</th>
                   </tr>
                 </thead>
@@ -296,7 +295,8 @@ function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
     <>
       {rolls.length > 1 && (
         <p className="mb-3 text-sm text-ink-soft">
-          {t('field.from')} <strong>{rolls.length}</strong> different rolls: {rolls.join(', ')}
+          {t('field.from')} <strong>{rolls.length}</strong> different rolls:{' '}
+          {rolls.join(', ')}
         </p>
       )}
 

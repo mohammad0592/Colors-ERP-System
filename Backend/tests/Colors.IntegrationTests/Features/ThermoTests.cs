@@ -177,27 +177,6 @@ public class ThermoTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task A_line_with_no_mould_refuses_the_run()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "THR5");
-        var roll = await AvailableRollAsync(db, ids, "THR5");
-
-        var thermoLine = await db.ShiftLines.FirstAsync(l => l.Id == ids.ThermoShiftLineId);
-        thermoLine.MouldId = null;
-        await db.SaveChangesAsync();
-
-        // Without a mould there is no way to know what is being made, and the product is
-        // never typed. Better to say so now than at the end of the run.
-        var run = await NewService(db).StartRunAsync(
-            new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null),
-            ids.UserId);
-
-        Assert.False(run.IsSuccess);
-        Assert.Contains("mould", run.Message!, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
     public async Task The_total_time_is_worked_out_from_the_two_timestamps()
     {
         await using var db = fixture.CreateContext();
@@ -307,29 +286,6 @@ public class ThermoTests(DatabaseFixture fixture)
 
         Assert.False(counted.IsSuccess);
         Assert.Contains("not absorbent", counted.Message!, StringComparison.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task A_mould_with_no_product_for_this_material_is_refused()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "THR12");
-        var run = await FinishedRunAsync(db, ids, "THR12", absorbent: true);
-
-        // The factory stops making absorbent plates on this mould.
-        var product = await db.Products.FirstAsync(p => p.Id == ids.AbsorbentProductId);
-        db.Products.Remove(product);
-        await db.SaveChangesAsync();
-
-        // Refused plainly, rather than quietly producing bags marked as something the
-        // factory does not make.
-        var counted = await NewService(db).SaveTestReportAsync(
-            run.Id,
-            new SaveThermoTestRequest(5, 4m, 10m, 12.5m, null),
-            ids.UserId);
-
-        Assert.False(counted.IsSuccess);
-        Assert.Contains("does not make", counted.Message!, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -532,30 +488,26 @@ public class ThermoTests(DatabaseFixture fixture)
         await Assert.ThrowsAsync<Npgsql.PostgresException>(duplicate);
     }
 
-    // ------------------------------------------------ the wrong mould (19.1)
+    // ------------------------------------------------ the product comes from the roll (19.9)
 
     [Fact]
-    public async Task A_roll_made_for_another_mould_is_refused()
+    public async Task The_bags_are_the_product_the_roll_was_made_for()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "THRM1");
         var colour = await TestSequences.ColourAsync(db);
 
-        // A second product, on a mould the thermo line does not have mounted.
-        var boxMould = new Mould { Name = "Lunch Box Mould THRM1" };
-        db.Moulds.Add(boxMould);
-        await db.SaveChangesAsync();
-
+        // Nothing on the thermo line says what is in the machine. A lunch-box roll is a
+        // lunch box from the moment it is made, whatever line it is formed on.
         var productType = await db.ProductTypes.FirstAsync();
         var lunchBox = new Product
         {
             Name = "Lunch Box THRM1",
-            MouldId = boxMould.Id,
             ProductTypeId = productType.Id,
             IsAbsorbent = false,
             PiecesPerBag = 250,
             SmallBagsPerBag = 1,
-            LargeBagsPerBag = 1,
+            LargeBagsPerBag = 0,
             BagsPerPallet = 21,
         };
         db.Products.Add(lunchBox);
@@ -592,28 +544,54 @@ public class ThermoTests(DatabaseFixture fixture)
             ids.UserId);
         Assert.True(measured.IsSuccess, measured.Message);
 
-        // The thermo has the plate mould on. A lunch-box roll does not go in.
-        var started = await NewService(db).StartRunAsync(
+        var service = NewService(db);
+        var started = await service.StartRunAsync(
             new StartThermoRunRequest(measured.Value!.Barcode, null, ids.ThermoShiftLineId, null, null),
             ids.UserId);
+        Assert.True(started.IsSuccess, started.Message);
+        Assert.Equal(lunchBox.Name, started.Value!.ProductName);
 
-        Assert.False(started.IsSuccess);
-        Assert.Equal("thermo.wrongMould", started.MessageCode);
+        var finished = await service.FinishRunAsync(
+            started.Value.Id,
+            new FinishThermoRunRequest(started.Value.StartedAt.AddMinutes(50)));
+        Assert.True(finished.IsSuccess, finished.Message);
+
+        var counted = await service.SaveTestReportAsync(
+            started.Value.Id,
+            new SaveThermoTestRequest(2, 4.2m, 10.5m, 0m, null),
+            ids.UserId);
+        Assert.True(counted.IsSuccess, counted.Message);
+        Assert.All(counted.Value!.Bags, bag => Assert.Equal(lunchBox.Name, bag.ProductName));
     }
 
     [Fact]
-    public async Task A_roll_made_for_the_mounted_mould_goes_in()
+    public async Task A_roll_made_before_rolls_named_a_product_is_given_one_at_the_thermo()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "THRM2");
-
-        // Made for Big Plate, and Big Plate's mould is the one on the line.
         var roll = await AvailableRollAsync(db, ids, "THRM2");
 
-        var started = await NewService(db).StartRunAsync(
+        // As every roll was before section 19.1: no product said.
+        var stored = await db.Rolls.SingleAsync(r => r.Id == roll.Id);
+        stored.ProductId = null;
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var service = NewService(db);
+        var asked = await service.StartRunAsync(
             new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null),
             ids.UserId);
 
+        Assert.False(asked.IsSuccess);
+        Assert.Equal("thermo.chooseProduct", asked.MessageCode);
+
+        // Once given, it is written onto the roll and the run goes ahead.
+        var started = await service.StartRunAsync(
+            new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null, ids.NormalProductId),
+            ids.UserId);
+
         Assert.True(started.IsSuccess, started.Message);
+        db.ChangeTracker.Clear();
+        Assert.Equal(ids.NormalProductId, (await db.Rolls.SingleAsync(r => r.Id == roll.Id)).ProductId);
     }
 }

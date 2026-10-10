@@ -59,7 +59,6 @@ public sealed record TraceThermoDto(
     DateTimeOffset StartedAt,
     DateTimeOffset? FinishedAt,
     int? TotalTimeMinutes,
-    string? MouldName,
     string? ProductName,
     int? BagCount,
     int? PieceCount,

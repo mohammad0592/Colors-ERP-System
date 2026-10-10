@@ -271,21 +271,14 @@ ShiftReport         Shift A · 04/08/2026 · Open · meter 12000 → 12850
 | ProductionLineId (FK) | Extruder / Thermo / Recycler |
 | ProductionStartTime, ProductionEndTime | actual times worked, this line |
 | DowntimeHours | this line |
-| **MouldId** (FK, nullable) | which template is bolted in — forming line only |
 | MachineSpeed, FeedDistance, CycleTime | only where `RecordsMachineSettings` is true — cycles/hour, mm, **seconds** |
 
-### The mould belongs to the shift
+### Nothing on the shift says what is in the thermo
 
-Changing a mould is heavy work, so the factory mounts one at the start of a shift and
-**runs it all shift**. That makes the mould a property of the shift's forming line, not
-of each roll — it is chosen once, and every run that shift inherits it.
-
-It may still be changed while the shift is open, because occasionally they do swap one.
-That costs nothing: each production run stores the **product** it actually made, so
-history is fixed at the moment it happened and a later swap cannot rewrite it.
-
-The mould is asked for on the line whose `RecordsMachineSettings` is true — the same
-flag that marks the forming machine. The extruder and the recycler never see it.
+The forming line records no mould. The mould is what shapes the product, so the product
+names it, and every roll already says which product it was made for (section 19.9). A
+change of product halfway through a shift needs nothing on the line: the next roll simply
+names a different one.
 
 **`ShiftWorkers`** — Id · **ShiftLineId** (FK) · UserId (FK) · IsTrainee
 Unique on (ShiftLineId, UserId).
@@ -480,36 +473,30 @@ A material may have several packaging rows, so the same material arriving in 25 
 ### Product attributes
 
 **`Colors`** — Id · Name · **Code** (single letter for the roll code: W, G, Y, B) · IsActive
-**`ProductTypes`** — Id · Name · IsActive · *(Plate, Meal Box, Clamshell)*
+**`ProductTypes`** — Id · Name · IsActive · *(Plate, Lunch Box, Burger Box)*
 
-### Moulds and products
+### Products
 
-The thermo machine forms whatever shape is bolted into it. The factory calls these
-**templates**; the trade calls them moulds. There are five:
+The thermo forms whatever shape is bolted into it — the factory calls these
+**templates**, the trade calls them moulds. The mould is what shapes the product, so
+there is **one list, of products**, and no separate list of moulds: naming the product
+says which mould it came off. Normal and absorbent plates come off the same mould and are
+still two products, because what was mixed into the roll is part of what the product is.
 
-| # | Mould | Makes |
-|---|---|---|
-| 1 | Big Plate | Big plate — normal **and** absorbent |
-| 2 | Small Plate | Small plate — normal **and** absorbent |
-| 3 | Large Meal Box | one product |
-| 4 | Small Meal Box | one product |
-| 5 | 3-Compartment Clamshell | one product |
+**`Products`** — Id · Name · ProductTypeId (FK) · **RecipeFamilyId** (FK) · **IsAbsorbent** · **PiecesPerBag** · **SmallBagsPerBag** · **LargeBagsPerBag** · **BagsPerPallet** · MinThickness · MaxThickness · IsActive
+`RecipeFamilyId` is the main recipe its rolls are made to, and `IsAbsorbent` is copied from
+it (section 5).
 
-**`Moulds`** — Id · Name · IsActive
-
-**`Products`** — Id · Name · MouldId (FK) · ProductTypeId (FK) · **RecipeFamilyId** (FK) · **IsAbsorbent** · **PiecesPerBag** · **SmallBagsPerBag** · **BagsPerPallet** · IsActive
-Unique on **(MouldId, IsAbsorbent)**. `RecipeFamilyId` is the main recipe its rolls are
-made to, and `IsAbsorbent` is copied from it (section 5).
-
-| Product | Mould | Abs | Pieces/bag | Small bags/bag | Bags/pallet |
+| Product | Type | Made from | Pieces/bag | Small bags/bag | Bags/pallet |
 |---|---|---|---|---|---|
-| Big Plate — Normal | 1 | no | 500 | 2 | 15 |
-| Big Plate — Absorbent | 1 | yes | 500 | 2 | 15 |
-| Small Plate — Normal | 2 | no | 500 | 2 | 15 |
-| Small Plate — Absorbent | 2 | yes | 500 | 2 | 15 |
-| Large Meal Box | 3 | no | 250 | 1 | 21 |
-| Small Meal Box | 4 | no | 250 | 1 | 21 |
-| 3-Compartment Clamshell | 5 | no | 250 | 1 | 21 |
+| Normal Big Plate | Plate | Normal | 500 | 2 | 15 |
+| Normal Small Plate | Plate | Normal | 500 | 2 | 15 |
+| Absorbent Big Plate | Plate | Absorbent | 500 | 2 | 15 |
+| Absorbent Small Plate | Plate | Absorbent | 500 | 2 | 15 |
+| 1-Compartment Lunch Box | Lunch Box | Lunch Box | 250 | 1 | 21 |
+| 3-Compartment Lunch Box | Lunch Box | Lunch Box | 250 | 1 | 21 |
+| Large Burger Box | Burger Box | Lunch Box | 250 | 1 | 21 |
+| Small Burger Box | Burger Box | Lunch Box | 250 | 1 | 21 |
 
 **Why a product table and not a type × size grid.** The old model described a product as
 *type × size × absorbent*. That stopped being true the moment a clamshell existed: a
@@ -517,8 +504,8 @@ made to, and `IsAbsorbent` is copied from it (section 5).
 same for everything. Size is now part of what a product *is*, not a separate axis that
 every non-plate would have to carry meaninglessly.
 
-**The numbers above are data, not code.** Several are provisional — the moulds arrived
-the day before this was written and the factory has not finished packing with them.
+**The numbers above are data, not code.** Several are provisional — the box figures are
+carried over from the meal boxes they replaced, and the factory has not confirmed them.
 Correcting one is an edit in Master Data: no migration, no deployment. See
 [section 18](#18-still-open) for what is still to be confirmed.
 
@@ -580,9 +567,8 @@ roll screen offers only the products the chosen recipe makes, and a roll for any
 refused at the extruder — not discovered at the thermo an hour later.
 
 Whether a product is absorbent comes from its recipe. It is still stored on the product,
-because the thermo's lookup by mould and absorbency and the code printed on every bag read
-it, but it is copied from the recipe when the product is saved and never typed in, so the
-two cannot disagree.
+because the code printed on every bag reads it, but it is copied from the recipe when the
+product is saved and never typed in, so the two cannot disagree.
 
 ### How percentages work
 
@@ -929,7 +915,7 @@ The operator scans the roll barcode to start. If the roll is not `Available` the
 
 `TotalTimeMinutes` is **calculated** from StartedAt and FinishedAt, never stored — see [calculated or stored](#calculated-or-stored). The paper form has a box for the total time (الزمن الكلي); the screen shows it in the same place, worked out.
 
-**The line must be one that forms bags.** `ShiftLineId` must point at a line whose `FormsBags` is true, and that line must have a **mould mounted for this shift** — without one there is no way to know what is being made. Both are refused plainly rather than guessed at.
+**The line must be one that forms bags.** `ShiftLineId` must point at a line whose `FormsBags` is true. Anything else is refused plainly rather than guessed at.
 
 **Why this table exists when the roll already has a status.** A roll made on 18 July by Ali may be used on 2 August by Omar. The roll's own columns already hold *18 July, shift A, Ali* — that is its birth at the extruder. The thermo facts — *2 August, shift B, Omar, in at 09:10, out at 10:00* — are a **different event** and have nowhere else to live.
 
@@ -1001,23 +987,18 @@ once here after forming. Both are kept. A gap between them points at a forming p
 
 ### Nobody chooses the product
 
-The operator does not pick what he is making, because two facts already decide it:
+The operator does not pick what he is making. **The bags are the product the roll was made
+for**, named at the extruder (section 19.1). The mould is the product, so nothing on the
+thermo line names it a second time (section 19.9).
 
-```
-mould  (mounted on the line for this shift)
-  +  absorbency  (from the roll's recipe — it is the material, not the mould)
-  →  product
-```
+A roll made before rolls named a product has none. The first time one goes into the
+machine, the start screen asks which product it is being formed into — offering only the
+products its recipe makes — and writes the answer onto the roll. From then on it is like
+any other.
 
-The two plate moulds each make a normal **and** an absorbent product. Which one comes
-out is not the mould's doing — it is what was mixed into the roll. So the system looks
-the product up on **(MouldId, IsAbsorbent)**, which is exactly the unique key on
-`Products`. Nothing is typed and nothing can be mislabelled.
-
-**If there is no such product, the run is refused.** Put an absorbent roll on the Large
-Meal Box mould and the system says so plainly, rather than quietly producing bags marked
-as something the factory does not make. If they ever do start making absorbent meal
-boxes, that is one new row in `Products` — no code.
+*The first design looked the product up on the mould mounted on the shift plus the roll's
+absorbency, and refused a roll whose product the mounted mould did not make. Moulds were
+removed in 19.9, and with them the lookup and the refusal.*
 
 **Relationship:** `ThermoProduction 1 → 0..1 ThermoTestReport`.
 
@@ -1293,7 +1274,7 @@ at a time as each pallet is started, not once at the end of the shift — see
 out of the store twice.
 
 A meal box or clamshell is packed in the small bag directly: one small, no large. Both
-figures come from the **product**, so a shift that switches mould is still counted
+figures come from the **product**, so a shift that switches product is still counted
 correctly, and neither is inferred from the other.
 
 **`Products.LargeBagsPerBag`** is a new column beside `SmallBagsPerBag`. It could have
@@ -1646,7 +1627,7 @@ The trial runs as Production, so the demonstration logins do not exist ([section
 ## 16. Complete table list
 
 **Master (14)**
-ProductionLines · Shifts · Units · MaterialCategories · Materials · MaterialPackagings · MovementTypes · Colors · ProductTypes · **Moulds** · **Products** · RecipeFamilies · RecipeVersions · RecipeIngredients
+ProductionLines · Shifts · Units · MaterialCategories · Materials · MaterialPackagings · MovementTypes · Colors · ProductTypes · **Products** · RecipeFamilies · RecipeVersions · RecipeIngredients
 
 **Identity (3)**
 Users · Roles · UserRoles *(ASP.NET Identity)*
@@ -1687,7 +1668,7 @@ Barcodes · AuditLog · RefreshTokens
 
 ### Removed
 
-`Templates` *(no mold recorded; restore it when meal boxes arrive)* · polymorphic `Inventory` *(materials only now)* · `ThermoShiftSummary` *(now a view)*
+`Templates` and later `Moulds` *(the mould is the product — section 19.9)* · polymorphic `Inventory` *(materials only now)* · `ThermoShiftSummary` *(now a view)*
 
 ---
 
@@ -1736,11 +1717,11 @@ Small items. None block building.
 | 5 | Does one batch use one recipe, or several? | **Open** — the design works either way; see [section 8](#8-line-1--mixer-and-extruder) |
 | 6 | Small bags: the form shows 4.14 where 122 were used | **Answered** — every big bag holds 2 small bags; the counts on the form are wrong, and the weights prove it |
 | 7 | Dashboard contents | **Agreed** — the proposal below is accepted for now, to be adjusted after the factory uses it |
-| 8 | The floor name for the small hinged box (mould 4) | **Open** — the photo looks like what the trade calls a *burger box*, not a shrunken meal box. Rename the row when the factory says. |
-| 9 | Pieces per bag and bags per pallet for the **Small Meal Box** | **Open** — seeded as 250 and 21, copied from the large box |
-| 10 | Bags per pallet for the Large Meal Box and the Clamshell — 21 or 23? | **Open** — seeded as 21 |
+| 8 | The floor name for the small hinged box (mould 4) | **Answered** — it is a burger box. The products were renamed in 19.9. |
+| 9 | Pieces per bag and bags per pallet for the **burger and lunch boxes** | **Open** — seeded as 250 and 21, copied from the old meal box |
+| 10 | Bags per pallet for the boxes — 21 or 23? | **Open** — seeded as 21 |
 | 11 | Is the **small plate** really 500 per bag, like the big one? | **Open** — inherited from the old form; seeded as 500 |
-| 12 | Are absorbent meal boxes or clamshells ever made? | **Open** — today those moulds have a normal product only, and an absorbent roll on them is refused |
+| 12 | Are absorbent lunch or burger boxes ever made? | **Open** — today they are made from Lunch Box, which is not absorbent. If they are, that is new products in Master Data, no code |
 | 13 | May one man work **two lines** in the same shift? | **Open** — allowed today, which is right if he moves from the extruder to the thermo mid-shift. Enforcing one line per man is a small change if the factory says so. |
 | 14 | Is raw material ever issued to the **thermo or recycler** line, or only to the mixer? | **Answered with 15** — by `TakesRawMaterial`, seeded true for the extruder only. If the recycler turns out to draw something, that is one tick box in Master Data. |
 | 15 | Which lines can a **batch** be started on? | **Answered.** 14 and 15 asked the same thing — which line does what — and are settled by three flags on `ProductionLines`: `MakesRolls`, `FormsBags`, `TakesRawMaterial` ([section 4](#production-lines)). Seeded as the factory works today: the extruder mixes and takes raw material, the thermo forms bags. |
@@ -1748,7 +1729,7 @@ Small items. None block building.
 | 17 | Does anything **ship** a pallet yet? | **Answered** — yes, from the Dispatch screen ([section 10](#sending-a-pallet-out)). A finished pallet is scanned onto the lorry; a wrong scan is undone with a reason. Deliberately no customer and no delivery note: the system records that the pallet left and who released it, nothing about where it went. |
 
 Questions 8 to 12 arrived with the new moulds. **None of them blocks anything**, because
-every one is a value in `Moulds` or `Products` — a row edited in Master Data, with no
+every one is a value in `Products` — a row edited in Master Data, with no
 migration and no deployment. They are listed so the wrong number is never mistaken for a
 decision somebody made.
 
@@ -1774,7 +1755,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Eight changes, from watching the factory use the system. They are written here rather
+Nine changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -1783,8 +1764,8 @@ The ones that are built say so.
 
 ### 19.1 A roll is made for a product
 
-Today a roll has a recipe and a colour, and **the product is worked out rather than
-chosen**: the mould comes from the shift, the absorbency from the recipe, and those two
+Before this, a roll had a recipe and a colour, and **the product was worked out rather
+than chosen**: the mould came from the shift, the absorbency from the recipe, and those two
 together name the product ([section 4](#4-master-data)). Nobody picks a product on a
 screen.
 
@@ -1794,7 +1775,7 @@ is made *for* something, and the label should say so.
 
 **The product is declared on the roll, and remembered.** The operator picks it on the
 first roll of the shift; every roll after that is already filled in with the last
-product used, and he picks again only when the mould changes. Once a shift, in practice,
+product used, and he picks again only when the product changes. Once a shift, in practice,
 not once a roll.
 
 It was going to be declared on the batch, and it is worth recording why it is not. In
@@ -1833,9 +1814,10 @@ No range set on the product              →  no verdict at all
 it was. That gives the factory a figure it does not have today: how much material a
 setup costs, in kilograms, instead of in somebody's memory.
 
-**A wrong mould is refused.** Once a roll names its product, putting it into a mould
-that makes something else is a mistake the system can see, and the factory asked for it
-to be stopped rather than warned about.
+**A wrong mould was refused.** Once a roll named its product, putting it into a mould
+that makes something else was a mistake the system could see, and the factory asked for it
+to be stopped. *Since 19.9 the thermo line records no mould, so there is nothing to compare
+against: the roll's product is what the bags are.*
 
 **The label prints the product and the range**, which is what makes the intent visible
 to the man holding the roll.
@@ -1850,9 +1832,9 @@ departure from the rule above. After this there are two answers to "what is this
 | The roll's product | the operator, at the extruder | what it was **made for** |
 | Mould and absorbency | the shift and the recipe | what was **actually made** |
 
-They should agree, and the value is in noticing when they do not. That is the whole
-reason for the change, and it is why the thermo refuses a mismatch rather than
-recording one.
+They should agree, and the value is in noticing when they do not. *That held until 19.9,
+which removed the mould: since then there is only the first answer, and the bags are the
+roll's product.*
 
 #### The absorbency has to agree too
 
@@ -1909,16 +1891,16 @@ of product mid-shift is just a different product on the next roll. *An earlier v
 of this section said a second product would be a second batch. That was wrong — the
 batch is the whole shift and there is only ever one per shift.*
 
-The thermo half is not. **A shift line holds one mould** ([section 2](#2-shifts-and-shift-reports)),
-so the thermo's part of a shift cannot say that the mould changed at eleven o'clock, and
-the machine settings recorded against it belong to whichever product was running when
-somebody typed them.
+The thermo half is mostly handled since 19.9: the thermo line holds no mould, and each
+roll names its product, so a second product is just the next roll. What is left is the
+**machine settings**, which a shift line still holds once — they belong to whichever
+product was running when somebody typed them.
 
 This shares a cause with 19.2: both assume a shift line is one continuous run of one
 thing. They should be answered together and migrated once.
 
-**Still to answer:** is a mould change a second *run* on the same shift line, or does the
-shift line itself split in two?
+**Still to answer:** should the machine settings move from the shift line to each run, so
+a change of product can carry its own speed, feed and cycle time?
 
 ### 19.4 Roles the administrator can change
 
@@ -2005,15 +1987,45 @@ None of that matches how the factory works.
   products were linked on the first start after the change: absorbent plates to Absorbent,
   the other plates to Normal, the boxes to Lunch Box.
 
-At the thermo nothing new was needed: a roll's product already has to be on the mould in
-the machine (19.1), so a Lunch Box roll is refused at a plate mould.
+At the thermo the bags are the roll's product (19.9), and the roll's product has to be
+made from the roll's recipe, so a Lunch Box roll cannot come out as a plate.
 
 **Still to answer:** the real percentages. The seeded figures are the ones used before
 (talc 1, nucleating 1.8, colouring 1.6, absorbent 3.5); the factory corrects them by writing
 a new version. Absorbent's version in production on a system that already had data is the
 old ABS formula, with antistatic and no nucleating, until that new version is written. The
-lunch and burger boxes — 1- and 3-compartment lunch boxes, large and small burger boxes —
-are added in Master Data with their moulds and packing numbers.
+lunch and burger boxes were added as products in 19.9; their packing numbers are
+provisional.
+
+### 19.9 The product is the mould
+
+Master Data had two lists, **Moulds** and **Products**, with every product pointing at a
+mould, and the thermo line recorded which mould was mounted each shift. The factory sees it
+more simply: whatever mould is installed, the product is that mould, because the mould is
+what shapes it. Keeping both lists meant writing every shape down twice.
+
+**Decided, and built:**
+
+- **One list, Products, and no Moulds.** The Moulds tab, table and column are gone. The
+  products are the factory's eight: Normal and Absorbent Big and Small Plates, the 1- and
+  3-Compartment Lunch Boxes, and the Large and Small Burger Boxes (section 4).
+- **The thermo line records nothing about what is in the machine.** The bags are the
+  product the roll was made for at the extruder (19.1). The shift form no longer asks for
+  a mould.
+- **The old products were replaced.** The four plates were renamed and keep anything made
+  as them; the meal boxes and clamshell were deleted where nothing had been made as them,
+  and retired where something had. The product types followed: Meal Box became Burger
+  Box, Clamshell became Lunch Box.
+- **A roll made before rolls named a product** is asked for one when it first goes into the
+  thermo, and the answer is written onto the roll (section 9).
+
+**What is given up.** The thermo used to refuse a roll whose product the mounted mould did
+not make. With no mould recorded there is nothing to compare against, so a roll put into the
+wrong machine is not caught — its bags are labelled with the roll's product. The factory
+chose this over asking the supervisor to name the mould on every shift.
+
+**Still to answer:** the packing numbers for the four boxes, carried over from the meal
+boxes (section 18, questions 9 and 10).
 
 ---
 

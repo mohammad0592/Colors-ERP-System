@@ -16,8 +16,8 @@ const MaxBags = 200;
 /**
  * The thermo form, filled in after the run (specification section 9).
  *
- * Two things are deliberately missing. The product, because the mould and the roll's
- * recipe decide it. And the piece count, because it is the bag count times what the
+ * Two things are deliberately missing. The product, because the roll named it at the
+ * extruder. And the piece count, because it is the bag count times what the
  * product holds — shown as he types, never typed.
  *
  * The roll's own weight, length and thickness sit at the top read-only. They are on the
@@ -40,7 +40,7 @@ export function ThermoTestDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
-  // The full run carries the roll's readings and the mould, which the list does not.
+  // The full run carries the roll's readings and its product, which the list does not.
   const [detail, setDetail] = useState<ThermoRunDto | null>(null);
 
   useEffect(() => {
@@ -122,16 +122,29 @@ export function ThermoTestDialog({
               {t('thermo.rollMeasured')}
             </p>
             <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-              <Reading label={t('field.weight')} value={`${String(readings.weight)} kg`} />
+              <Reading
+                label={t('field.weight')}
+                value={`${String(readings.weight)} kg`}
+              />
               <Reading label={t('field.length')} value={String(readings.length)} />
-              <Reading label={t('thermo.plateWeight')} value={`${String(readings.plateWeight)} g`} />
-              <Reading label={t('thermo.thickness')} value={String(readings.averageThickness)} />
+              <Reading
+                label={t('thermo.plateWeight')}
+                value={`${String(readings.plateWeight)} g`}
+              />
+              <Reading
+                label={t('thermo.thickness')}
+                value={String(readings.averageThickness)}
+              />
             </div>
           </div>
         )}
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <Field label={t('thermo.bagsProduced')} arabic="عدد الأكياس المنتجة" htmlFor="thermo-bags">
+          <Field
+            label={t('thermo.bagsProduced')}
+            arabic="عدد الأكياس المنتجة"
+            htmlFor="thermo-bags"
+          >
             <input
               id="thermo-bags"
               type="number"
@@ -223,14 +236,14 @@ export function ThermoTestDialog({
           </div>
           <p className="mt-1 text-xs text-ink-muted">
             Each one gets its own barcode. The pieces are worked out from the product, so
-            they are never typed — and what the product is comes from the mould and this
-            roll&apos;s recipe.
+            they are never typed — and the product is the one this roll was made for.
           </p>
         </div>
 
         <div className="mb-4">
           <label className="field-label" htmlFor="thermo-notes">
-            {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
+            {t('field.note')}{' '}
+            <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="thermo-notes"
@@ -256,9 +269,7 @@ export function ThermoTestDialog({
         <button type="submit" className="btn-primary" disabled={isSaving || !complete}>
           {isSaving ? 'Saving…' : t('thermo.saveAndPrint')}
         </button>
-        <p className="mt-2 text-xs text-ink-muted">
-          {t('thermo.savingCreatesBags')}
-        </p>
+        <p className="mt-2 text-xs text-ink-muted">{t('thermo.savingCreatesBags')}</p>
       </form>
     </Modal>
   );

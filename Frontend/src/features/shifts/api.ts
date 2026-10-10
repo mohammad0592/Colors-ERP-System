@@ -50,12 +50,6 @@ export interface ShiftLineDto {
   formsBags: boolean;
   takesRawMaterial: boolean;
   recycles: boolean;
-  /**
-   * Which template is bolted in this shift. Everything formed on the line inherits it,
-   * so it is chosen once rather than per roll.
-   */
-  mouldId: number | null;
-  mouldName: string | null;
   /** "HH:mm" */
   productionStartTime: string | null;
   productionEndTime: string | null;
@@ -69,7 +63,6 @@ export interface ShiftLineDto {
 }
 
 export interface UpdateShiftLine {
-  mouldId: number | null;
   productionStartTime: string | null;
   productionEndTime: string | null;
   downtimeHours: number | null;

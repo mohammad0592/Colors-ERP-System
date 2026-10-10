@@ -55,7 +55,6 @@ export interface TraceThermoDto {
   startedAt: string;
   finishedAt: string | null;
   totalTimeMinutes: number | null;
-  mouldName: string | null;
   productName: string | null;
   bagCount: number | null;
   pieceCount: number | null;

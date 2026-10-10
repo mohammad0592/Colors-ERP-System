@@ -104,8 +104,6 @@ public class TraceService(ColorsDbContext db) : ITraceService
             .Include(b => b.Product)
             .Include(b => b.ThermoProduction).ThenInclude(t => t.TestReport).ThenInclude(r => r!.Product)
             .Include(b => b.ThermoProduction).ThenInclude(t => t.ShiftLine)
-                .ThenInclude(l => l.Mould)
-            .Include(b => b.ThermoProduction).ThenInclude(t => t.ShiftLine)
                 .ThenInclude(l => l.ShiftReport).ThenInclude(s => s.Shift)
             .AsSplitQuery()
             .FirstOrDefaultAsync(b => b.Id == bagId, cancellationToken);
@@ -139,7 +137,6 @@ public class TraceService(ColorsDbContext db) : ITraceService
                 run.StartedAt,
                 run.FinishedAt,
                 run.TotalTimeMinutes,
-                run.ShiftLine.Mould?.Name,
                 run.TestReport?.Product.Name,
                 run.TestReport?.BagCount,
                 run.TestReport?.PieceCount,

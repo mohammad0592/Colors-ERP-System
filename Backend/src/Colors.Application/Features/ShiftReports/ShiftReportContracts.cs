@@ -30,7 +30,7 @@ public sealed record ShiftLineDto(
     int ProductionLineId,
     string ProductionLineName,
     // From the line itself: true only for the thermo, and it decides whether the
-    // screen shows the machine settings and the mould at all.
+    // screen shows the machine settings at all.
     bool RecordsMachineSettings,
     // What the line does. The server refuses the wrong line anyway, but a screen that
     // offers only the lines that can do the job never puts the man in that position
@@ -39,10 +39,6 @@ public sealed record ShiftLineDto(
     bool FormsBags,
     bool TakesRawMaterial,
     bool Recycles,
-    // Which template is bolted in this shift. Everything formed on the line inherits
-    // it, so it is chosen once rather than per roll.
-    int? MouldId,
-    string? MouldName,
     string? ProductionStartTime,
     string? ProductionEndTime,
     decimal? DowntimeHours,
@@ -56,7 +52,6 @@ public sealed record ShiftLineDto(
 
 /// <summary>Everything recorded for one line while the shift runs. Times are "HH:mm".</summary>
 public sealed record UpdateShiftLineRequest(
-    int? MouldId,
     string? ProductionStartTime,
     string? ProductionEndTime,
     decimal? DowntimeHours,

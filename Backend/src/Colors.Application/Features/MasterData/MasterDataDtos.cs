@@ -43,14 +43,12 @@ public sealed record SaveProductionLineRequest(
     bool TakesRawMaterial);
 
 /// <summary>
-/// Something the factory makes. <c>IsAbsorbent</c> together with the mould is what the
-/// thermo looks a product up by, so the pair is unique.
+/// Something the factory makes. The product is also the mould it comes off — there is
+/// no separate list of moulds (specification section 19.9).
 /// </summary>
 public sealed record ProductDto(
     int Id,
     string Name,
-    int MouldId,
-    string MouldName,
     int ProductTypeId,
     string ProductTypeName,
     // The main recipe its rolls are made to. Null only on a product made before this
@@ -71,7 +69,6 @@ public sealed record ProductDto(
 
 public sealed record SaveProductRequest(
     string Name,
-    int MouldId,
     int ProductTypeId,
     // Which main recipe its rolls are made to. Whether it is absorbent comes from here.
     int RecipeFamilyId,

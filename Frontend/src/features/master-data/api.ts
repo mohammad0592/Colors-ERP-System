@@ -34,12 +34,10 @@ export interface ProductionLineDto extends LookupDto {
 }
 
 /**
- * Something the factory makes. The thermo finds a product by mould and absorbency —
- * that pair is unique — so nobody ever picks one on screen.
+ * Something the factory makes — and the mould it comes off, since the mould is what
+ * shapes it. The roll names its product at the extruder, and the bags are that product.
  */
 export interface ProductDto extends LookupDto {
-  mouldId: number;
-  mouldName: string;
   productTypeId: number;
   productTypeName: string;
   /** The main recipe its rolls are made to. Null only on a product from before this. */
@@ -62,7 +60,6 @@ export interface ProductDto extends LookupDto {
 
 export interface SaveProduct {
   name: string;
-  mouldId: number;
   productTypeId: number;
   /** Which main recipe its rolls are made to. Whether it is absorbent follows from it. */
   recipeFamilyId: number;
@@ -184,7 +181,6 @@ export const materialCategoriesApi = crudFor<
   { name: string; issuedOnTickets: boolean }
 >('/api/material-categories');
 export const colorsApi = crudFor<ColorDto, { name: string; code: string }>('/api/colors');
-export const mouldsApi = crudFor<LookupDto, { name: string }>('/api/moulds');
 export const productsApi = crudFor<ProductDto, SaveProduct>('/api/products');
 export const productTypesApi = crudFor<LookupDto, { name: string }>('/api/product-types');
 export const materialsApi = crudFor<MaterialDto, SaveMaterial>('/api/materials');

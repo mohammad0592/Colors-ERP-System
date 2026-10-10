@@ -14,8 +14,8 @@ namespace Colors.Infrastructure.Services.Thermo;
 /// Line 2 — thermoforming. Specification section 9.
 ///
 /// Three rules carry this phase. A roll goes in whole and is formed once. Nobody
-/// chooses what is being made — the mould on the line and the roll's absorbency decide
-/// it between them. And saving the counts is what creates the bags, because the factory
+/// chooses what is being made — the roll named its product at the extruder, and the
+/// bags are that. And saving the counts is what creates the bags, because the factory
 /// counts them at the end of the run, so until then the number does not exist.
 /// </summary>
 public class ThermoService(
@@ -92,6 +92,7 @@ public class ThermoService(
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(r => r.Color)
             .Include(r => r.TestReport)
+            .Include(r => r.Product)
             .Where(r => r.Status == RollStatus.Available)
             // Oldest first: rolls sit for weeks, and the oldest should move first.
             .OrderBy(r => r.ProductionDate)
@@ -113,7 +114,9 @@ public class ThermoService(
                 r.RecipeVersion.Family.IsAbsorbent,
                 r.ProductionDate,
                 r.TestReport?.Weight,
-                r.TestReport?.Length))
+                r.TestReport?.Length,
+                r.ProductId,
+                r.Product?.Name))
             .ToList();
     }
 
@@ -124,7 +127,6 @@ public class ThermoService(
     {
         var shiftLine = await db.ShiftLines
             .Include(l => l.ProductionLine)
-            .Include(l => l.Mould)
             .Include(l => l.ShiftReport).ThenInclude(r => r.Shift)
             .FirstOrDefaultAsync(l => l.Id == request.ShiftLineId, cancellationToken);
 
@@ -144,14 +146,6 @@ public class ThermoService(
             return InvalidRun(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
-        // Without a mould there is no way to know what is being made, and the product is
-        // never typed. Better to say so now than to refuse at the end of the run.
-        if (shiftLine.MouldId is null)
-        {
-            return InvalidRun(
-                "No mould is mounted on this line for this shift. Set it on the shift first.");
-        }
-
         var roll = await FindRollAsync(request, cancellationToken);
         if (!roll.IsSuccess)
         {
@@ -165,23 +159,19 @@ public class ThermoService(
             return InvalidRun(StatusRefusal(found));
         }
 
-        // The roll says what it was made for; the mould says what it makes. When they
-        // disagree the roll is refused, which is what the factory asked for rather than a
-        // warning (specification section 19.1). A lunch-box roll is thicker than a plate
-        // roll, and forming it on the plate mould wastes the roll and the time.
+        // The roll says what it was made for, and the bags formed from it are that product
+        // (specification section 19.9). Nothing on the line says what is in the machine:
+        // the mould is the product, and the roll already named it at the extruder.
         //
-        // A roll made before products were declared has none, and is let through: it
-        // cannot be judged against something it never said.
-        if (found.Product is not null && found.Product.MouldId != shiftLine.MouldId)
+        // A roll made before rolls said has no product, so it is asked for here, once,
+        // and written onto the roll — from then on it is like any other.
+        if (found.ProductId is null)
         {
-            return InvalidRun(
-                $"Roll {found.RollCode} was made for {found.Product.Name}, "
-                + $"but {shiftLine.Mould!.Name} is mounted. Put it on the right line, "
-                + "or change the mould on the shift.",
-                "thermo.wrongMould",
-                found.RollCode,
-                found.Product.Name,
-                shiftLine.Mould!.Name);
+            var refusal = await DeclareProductAsync(found, request.ProductId, cancellationToken);
+            if (refusal is not null)
+            {
+                return refusal;
+            }
         }
 
         var startedAt = request.StartedAt ?? timeProvider.GetUtcNow();
@@ -281,21 +271,15 @@ public class ThermoService(
                 + "which is not absorbent. Leave the absorbency at zero.");
         }
 
-        // Nobody chooses the product. The mould comes from the shift, the absorbency from
-        // the roll's recipe, and those two are the unique key on Products.
-        var product = await db.Products
-            .Include(p => p.Mould)
-            .FirstOrDefaultAsync(
-                p => p.MouldId == run.ShiftLine.MouldId && p.IsAbsorbent == isAbsorbent,
-                cancellationToken);
+        // Nobody chooses the product here. The roll named it at the extruder, or when it
+        // went into the machine if it was made before rolls did (specification 19.9).
+        var product = run.Roll.Product;
 
         if (product is null)
         {
-            var mould = run.ShiftLine.Mould?.Name ?? "this mould";
-            var kind = isAbsorbent ? "an absorbent" : "a normal";
             return InvalidRun(
-                $"The factory does not make {kind} product on {mould}. Check the mould on the "
-                + "shift, or add the product in Master Data.");
+                $"Roll {run.Roll.RollCode} does not say what it was made for, so the bags "
+                + "cannot be named.");
         }
 
         var pieceCount = request.BagCount * product.PiecesPerBag;
@@ -392,6 +376,51 @@ public class ThermoService(
     /// The scan comes first, because that is what the floor does. An id is accepted too,
     /// for the office picking off the list.
     /// </summary>
+    /// <summary>
+    /// Gives a roll made before rolls named their product the one it is being formed into.
+    /// The same rules as at the extruder: an active product, made from the roll's recipe.
+    /// </summary>
+    private async Task<Result<ThermoRunDto>?> DeclareProductAsync(
+        Roll roll,
+        int? productId,
+        CancellationToken cancellationToken)
+    {
+        if (productId is null)
+        {
+            return InvalidRun(
+                $"Roll {roll.RollCode} was made before rolls said what they were for. "
+                + "Choose the product it is being formed into.",
+                "thermo.chooseProduct",
+                roll.RollCode);
+        }
+
+        var product = await db.Products
+            .FirstOrDefaultAsync(p => p.Id == productId && p.IsActive, cancellationToken);
+
+        if (product is null)
+        {
+            return InvalidRun("Choose an active product.", "roll.chooseActiveProduct");
+        }
+
+        var family = roll.RecipeVersion.Family;
+        var fits = product.RecipeFamilyId is null
+            ? product.IsAbsorbent == family.IsAbsorbent
+            : product.RecipeFamilyId == family.Id;
+
+        if (!fits)
+        {
+            return InvalidRun(
+                $"{product.Name} is not made from {family.Name}. Choose a product this recipe makes.",
+                "roll.productWrongRecipe",
+                product.Name,
+                family.Name);
+        }
+
+        roll.ProductId = product.Id;
+        roll.Product = product;
+        return null;
+    }
+
     private async Task<Result<Roll>> FindRollAsync(
         StartThermoRunRequest request,
         CancellationToken cancellationToken)
@@ -460,6 +489,7 @@ public class ThermoService(
             // The roll's own test carries its weight, which is what the run's scrap is
             // worked out from (specification section 9).
             .Include(p => p.Roll).ThenInclude(r => r.TestReport)
+            .Include(p => p.Roll).ThenInclude(r => r.Product)
             .Include(p => p.ShiftLine).ThenInclude(l => l.ProductionLine)
             .Include(p => p.ShiftLine).ThenInclude(l => l.ShiftReport).ThenInclude(r => r.Shift)
             .Include(p => p.TestReport).ThenInclude(t => t!.Product);
@@ -470,7 +500,6 @@ public class ThermoService(
     /// </summary>
     private IQueryable<ThermoProduction> RunQuery() =>
         ListQuery()
-            .Include(p => p.ShiftLine).ThenInclude(l => l.Mould)
             .Include(p => p.Bags).ThenInclude(b => b.Product)
             .Include(p => p.Bags).ThenInclude(b => b.Color)
             .AsSplitQuery();
@@ -544,7 +573,7 @@ public class ThermoService(
             run.ShiftLine.ProductionLine.Name,
             run.ShiftLine.ShiftReport.Shift.Name,
             run.ShiftLine.ShiftReport.ProductionDate,
-            run.ShiftLine.Mould?.Name,
+            run.Roll.Product?.Name,
             names.GetValueOrDefault(run.OperatorUserId, "—"),
             run.StartedAt,
             run.FinishedAt,

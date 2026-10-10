@@ -53,7 +53,7 @@ public class AuditInterceptor(ICurrentActor actor, ICurrentEntry entry) : SaveCh
     private static readonly HashSet<Type> Always =
     [
         typeof(Material), typeof(MaterialCategory), typeof(MaterialPackaging),
-        typeof(Product), typeof(ProductType), typeof(Mould), typeof(Color),
+        typeof(Product), typeof(ProductType), typeof(Color),
         typeof(Unit), typeof(ProductionLine), typeof(Shift), typeof(MovementType),
         typeof(RecipeFamily), typeof(RecipeVersion), typeof(RecipeIngredient),
         typeof(ApplicationUser), typeof(ApplicationRole),

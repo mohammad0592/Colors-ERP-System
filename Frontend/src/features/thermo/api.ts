@@ -91,7 +91,8 @@ export interface ThermoRunDto {
   productionLineName: string;
   shiftName: string;
   productionDate: string;
-  mouldName: string | null;
+  /** What the roll was made for, so what its bags will be. */
+  productName: string | null;
   operatorName: string;
   startedAt: string;
   finishedAt: string | null;
@@ -115,6 +116,9 @@ export interface AvailableRollDto {
   productionDate: string;
   weight: number | null;
   length: number | null;
+  /** Null only on a roll made before rolls said what they were for. */
+  productId: number | null;
+  productName: string | null;
 }
 
 export const thermoApi = {
@@ -139,6 +143,8 @@ export const thermoApi = {
       shiftLineId: number;
       startedAt: string | null;
       notes: string | null;
+      /** Only for a roll made before rolls named their product. */
+      productId?: number | null;
     },
     entry?: EntryMethod,
   ): Promise<ThermoRunDto> =>

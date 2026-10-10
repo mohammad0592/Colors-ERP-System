@@ -16,8 +16,8 @@ import { StartRunDialog } from './StartRunDialog';
  * Line 2 — thermoforming (specification section 9).
  *
  * One roll goes in whole and is never split, so the screen is a list of runs: one roll,
- * one row. What is being made is not on this screen at all, because nobody chooses it —
- * the mould on the line and the roll's recipe decide it between them.
+ * one row. What is being made is not chosen here — the roll named its product at the
+ * extruder, and the bags are that product.
  */
 export function ThermoProductionPage(): ReactElement {
   const { t } = useTranslation();
@@ -30,7 +30,6 @@ export function ThermoProductionPage(): ReactElement {
     shiftLineId: number;
     lineName: string;
     shiftLabel: string;
-    mouldName: string | null;
   } | null>(null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -59,7 +58,6 @@ export function ThermoProductionPage(): ReactElement {
           .filter((line) => line.formsBags)
           .map((line) => ({
             shiftLineId: line.id,
-            mouldName: line.mouldName,
             lineName: line.productionLineName,
             shiftLabel: `shift ${shift.shiftName}, ${formatDate(shift.productionDate)}`,
           })),
@@ -119,8 +117,7 @@ export function ThermoProductionPage(): ReactElement {
 
       {canForm && lines.length === 0 && (
         <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          No forming line is open. Open a shift with the thermo line on it, and set the
-          mould — without a mould there is no way to know what is being made.
+          No forming line is open. Open a shift with the thermo line on it.
         </p>
       )}
 
@@ -152,9 +149,9 @@ export function ThermoProductionPage(): ReactElement {
 
       {justStarted !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-          {t('term.roll')} <strong className="font-mono">{justStarted.rollCode}</strong> is in the
-          machine on the {justStarted.mouldName ?? 'mounted'} mould. Take it out when the
-          run is done, then count what it made.
+          {t('term.roll')} <strong className="font-mono">{justStarted.rollCode}</strong>{' '}
+          is in the machine, making {justStarted.productName ?? 'its product'}. Take it
+          out when the run is done, then count what it made.
         </p>
       )}
 
@@ -176,9 +173,7 @@ export function ThermoProductionPage(): ReactElement {
             {runs.data.length === 0 && (
               <tr>
                 <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
-                  {openOnly
-                    ? t('thermo.nothingToCount')
-                    : t('thermo.noneFormed')}
+                  {openOnly ? t('thermo.nothingToCount') : t('thermo.noneFormed')}
                 </td>
               </tr>
             )}

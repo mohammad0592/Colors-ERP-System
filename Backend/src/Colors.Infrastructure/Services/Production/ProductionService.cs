@@ -235,8 +235,8 @@ public class ProductionService(
         }
 
         // Each product is made from one main recipe — Normal plates from Normal, lunch
-        // and burger boxes from Lunch Box. Caught here, at the extruder, rather than as
-        // a wrong mould at the thermo an hour later.
+        // and burger boxes from Lunch Box. Caught here, at the extruder: the bags formed
+        // from the roll will be this product, and nothing later checks it again.
         if (product.RecipeFamilyId is not null && product.RecipeFamilyId != recipe.RecipeFamilyId)
         {
             return InvalidRoll(

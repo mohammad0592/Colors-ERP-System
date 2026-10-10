@@ -139,37 +139,6 @@ public class MaterialCategoryService(ColorsDbContext db)
         [.. await Db.Materials.Select(m => m.CategoryId).Distinct().ToListAsync(cancellationToken)];
 }
 
-public class MouldService(ColorsDbContext db) : NameOnlyService<Mould>(db), IMouldService
-{
-    protected override async Task<string?> CanDeleteAsync(
-        Mould entity,
-        CancellationToken cancellationToken)
-    {
-        var products = await Db.Products.CountAsync(p => p.MouldId == entity.Id, cancellationToken);
-        if (products > 0)
-        {
-            return $"Makes {products} product{(products == 1 ? "" : "s")} — deactivate it instead.";
-        }
-
-        var shifts = await Db.ShiftLines.CountAsync(l => l.MouldId == entity.Id, cancellationToken);
-        return shifts == 0
-            ? null
-            : $"Mounted on {shifts} shift{(shifts == 1 ? "" : "s")} — deactivate it instead.";
-    }
-
-    protected override async Task<HashSet<int>> ReferencedIdsAsync(CancellationToken cancellationToken)
-    {
-        var byProducts = await Db.Products.Select(p => p.MouldId).Distinct().ToListAsync(cancellationToken);
-        var byShifts = await Db.ShiftLines
-            .Where(l => l.MouldId != null)
-            .Select(l => l.MouldId!.Value)
-            .Distinct()
-            .ToListAsync(cancellationToken);
-
-        return [.. byProducts, .. byShifts];
-    }
-}
-
 public class ProductTypeService(ColorsDbContext db) : NameOnlyService<ProductType>(db), IProductTypeService
 {
     protected override async Task<string?> CanDeleteAsync(
