@@ -31,6 +31,19 @@ public class ShiftLine
     /// <summary>Hours this line stood still. Subtracted from its running time.</summary>
     public decimal? DowntimeHours { get; set; }
 
+    /// <summary>
+    /// The operator answerable for this line this shift — the Extruder, Thermoforming or
+    /// Recycler Operator — chosen by the supervisor when the shift starts.
+    ///
+    /// Only this person, the supervisor and the administrator may fill in the line's
+    /// configuration (specification section 2). Somebody else holding the same job can
+    /// read it, but the figures have one author.
+    /// </summary>
+    public int? OperatorUserId { get; set; }
+
+    /// <summary>The operator's own notes for this line, apart from the other lines'.</summary>
+    public string? Notes { get; set; }
+
     // No electricity here: the factory has one meter for the whole building, so the
     // reading belongs to the shift (specification section 2).
 

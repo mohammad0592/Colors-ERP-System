@@ -54,7 +54,7 @@ public class ShiftReportsController(IShiftReportService reports) : ApiController
         [FromBody] UpdateShiftReportRequest request,
         CancellationToken cancellationToken)
     {
-        return ToResponse(await reports.UpdateAsync(id, request, cancellationToken));
+        return ToResponse(await reports.UpdateAsync(id, request, CurrentUserId(), cancellationToken));
     }
 
     // ---------- the lines that ran ----------
@@ -70,15 +70,40 @@ public class ShiftReportsController(IShiftReportService reports) : ApiController
         return ToResponse(await reports.AddLineAsync(id, request, cancellationToken));
     }
 
+    /// <summary>
+    /// A line's configuration. Open to anyone signed in at the door; the service lets
+    /// through only the line's own operator, the supervisor and the administrator.
+    /// </summary>
     [HttpPut("{id:int}/lines/{lineId:int}")]
-    [Authorize(Roles = CanRun)]
     public async Task<IActionResult> UpdateLine(
         int id,
         int lineId,
         [FromBody] UpdateShiftLineRequest request,
         CancellationToken cancellationToken)
     {
-        return ToResponse(await reports.UpdateLineAsync(id, lineId, request, cancellationToken));
+        return ToResponse(await reports.UpdateLineAsync(id, lineId, request, Actor(), cancellationToken));
+    }
+
+    /// <summary>The supervisor puts an operator on a line.</summary>
+    [HttpPut("{id:int}/lines/{lineId:int}/operator")]
+    [Authorize(Roles = CanRun)]
+    public async Task<IActionResult> SetLineOperator(
+        int id,
+        int lineId,
+        [FromBody] SetLineOperatorRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await reports.SetLineOperatorAsync(id, lineId, request, cancellationToken));
+    }
+
+    /// <summary>The meter, shared by every line. Any of the shift's operators may enter it.</summary>
+    [HttpPut("{id:int}/electricity")]
+    public async Task<IActionResult> RecordElectricity(
+        int id,
+        [FromBody] RecordElectricityRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await reports.RecordElectricityAsync(id, request, Actor(), cancellationToken));
     }
 
     /// <summary>Takes a line off a shift when it turned out not to run.</summary>
@@ -118,6 +143,10 @@ public class ShiftReportsController(IShiftReportService reports) : ApiController
         var result = await reports.DeleteAsync(id, cancellationToken);
         return result.IsSuccess ? NoContent() : ToResponse(result);
     }
+
+    /// <summary>Who is acting and whether they run the shift. From the token, never the body.</summary>
+    private ShiftActor Actor() =>
+        new(CurrentUserId(), User.IsInRole(RoleNames.Administrator) || User.IsInRole(RoleNames.Supervisor));
 
     /// <summary>Who is acting. From the token, never from the body.</summary>
     private int CurrentUserId() =>

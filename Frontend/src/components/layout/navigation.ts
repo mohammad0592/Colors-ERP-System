@@ -57,6 +57,7 @@ const layout: { heading: TranslationKey; items: Omit<NavItem, 'roles'>[] }[] = [
       { label: 'nav.packaging', path: '/production/packaging', icon: 'packaging' },
       { label: 'nav.dispatch', path: '/production/dispatch', icon: 'pallet' },
       { label: 'nav.recycler', path: '/production/recycler', icon: 'recycler' },
+      { label: 'nav.shiftConfig', path: '/production/shift-config', icon: 'shift' },
     ],
   },
   {

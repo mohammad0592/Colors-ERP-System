@@ -37,6 +37,17 @@ public class ShiftReport
 
     public decimal? ElectricityEndMeter { get; set; }
 
+    // Who wrote each reading last, and when. Any of the shift's operators may enter the
+    // meter, and each sees the others' screens — so the screen says it has been entered,
+    // and by whom, rather than leaving three men to read the same meter three times.
+    public int? ElectricityStartRecordedByUserId { get; set; }
+
+    public DateTimeOffset? ElectricityStartRecordedAt { get; set; }
+
+    public int? ElectricityEndRecordedByUserId { get; set; }
+
+    public DateTimeOffset? ElectricityEndRecordedAt { get; set; }
+
     public string? Notes { get; set; }
 
     public int OpenedByUserId { get; set; }

@@ -49,6 +49,8 @@ public class ShiftReportConfiguration : IEntityTypeConfiguration<ShiftReport>
                      nameof(ShiftReport.OpenedByUserId),
                      nameof(ShiftReport.ClosedByUserId),
                      nameof(ShiftReport.SupervisorUserId),
+                     nameof(ShiftReport.ElectricityStartRecordedByUserId),
+                     nameof(ShiftReport.ElectricityEndRecordedByUserId),
                  })
         {
             builder.HasOne<ApplicationUser>()
@@ -67,6 +69,7 @@ public class ShiftLineConfiguration : IEntityTypeConfiguration<ShiftLine>
 
         builder.Property(e => e.DowntimeHours).HasPrecision(9, 2);
         builder.Property(e => e.CycleTimeSeconds).HasPrecision(9, 2);
+        builder.Property(e => e.Notes).HasMaxLength(1000);
 
         // Calculated on the entity, never stored.
         builder.Ignore(e => e.ActualProductionHours);
@@ -89,6 +92,11 @@ public class ShiftLineConfiguration : IEntityTypeConfiguration<ShiftLine>
         builder.HasOne(e => e.ProductionLine)
             .WithMany()
             .HasForeignKey(e => e.ProductionLineId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.OperatorUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -39,6 +39,11 @@ public sealed record ShiftLineDto(
     bool FormsBags,
     bool TakesRawMaterial,
     bool Recycles,
+    // The job its operator must hold — ExtruderOperator, ThermoOperator,
+    // RecyclerOperator — read off the line's flags, so the picker offers only those.
+    string? OperatorRole,
+    int? OperatorUserId,
+    string? OperatorName,
     string? ProductionStartTime,
     string? ProductionEndTime,
     decimal? DowntimeHours,
@@ -48,6 +53,7 @@ public sealed record ShiftLineDto(
     int? MachineSpeed,
     int? FeedDistanceMm,
     decimal? CycleTimeSeconds,
+    string? Notes,
     IReadOnlyList<ShiftWorkerDto> Workers);
 
 /// <summary>Everything recorded for one line while the shift runs. Times are "HH:mm".</summary>
@@ -58,7 +64,26 @@ public sealed record UpdateShiftLineRequest(
     int? MachineSpeed,
     int? FeedDistanceMm,
     decimal? CycleTimeSeconds,
-    IReadOnlyList<SaveShiftWorkerRequest> Workers);
+    IReadOnlyList<SaveShiftWorkerRequest> Workers,
+    // The operator's notes for this line. Each line keeps its own.
+    string? Notes = null);
+
+/// <summary>
+/// Who is asking to change a shift. The rules differ: the supervisor and the
+/// administrator may change any line, an operator only the line he was put on.
+/// </summary>
+public sealed record ShiftActor(int UserId, bool IsManager);
+
+/// <summary>The supervisor puts an operator on a line, or takes him off with null.</summary>
+public sealed record SetLineOperatorRequest(int? OperatorUserId);
+
+/// <summary>
+/// The factory's one meter, read at the start and end of the shift. Either may be sent
+/// on its own; only a reading that changed is recorded against the person sending it.
+/// </summary>
+public sealed record RecordElectricityRequest(
+    decimal? ElectricityStartMeter,
+    decimal? ElectricityEndMeter);
 
 /// <summary>A shift in a list — enough for the table, without its crews.</summary>
 public sealed record ShiftReportSummaryDto(
@@ -97,6 +122,11 @@ public sealed record ShiftReportDto(
     decimal? ElectricityStartMeter,
     decimal? ElectricityEndMeter,
     decimal? ElectricityUsed,
+    // Who entered each reading last, and when — shown on every operator's screen.
+    string? ElectricityStartRecordedBy,
+    DateTimeOffset? ElectricityStartRecordedAt,
+    string? ElectricityEndRecordedBy,
+    DateTimeOffset? ElectricityEndRecordedAt,
     string? Notes,
     string OpenedByName,
     DateTimeOffset OpenedAt,
@@ -150,6 +180,7 @@ public interface IShiftReportService
     Task<Result<ShiftReportDto>> UpdateAsync(
         int id,
         UpdateShiftReportRequest request,
+        int userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>Adds a line to an open shift — one that started later than the others.</summary>
@@ -158,10 +189,32 @@ public interface IShiftReportService
         AddShiftLineRequest request,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// A line's configuration — times, crew, notes and, on the thermo, the machine
+    /// settings. Only the line's operator, the supervisor and the administrator.
+    /// </summary>
     Task<Result<ShiftReportDto>> UpdateLineAsync(
         int id,
         int lineId,
         UpdateShiftLineRequest request,
+        ShiftActor actor,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>The supervisor names the operator for a line.</summary>
+    Task<Result<ShiftReportDto>> SetLineOperatorAsync(
+        int id,
+        int lineId,
+        SetLineOperatorRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The meter readings. Any of the shift's operators, the supervisor or the
+    /// administrator; whoever sends a changed reading is recorded as having entered it.
+    /// </summary>
+    Task<Result<ShiftReportDto>> RecordElectricityAsync(
+        int id,
+        RecordElectricityRequest request,
+        ShiftActor actor,
         CancellationToken cancellationToken = default);
 
     /// <summary>Removes a line that did not run after all. Never one with work on it.</summary>

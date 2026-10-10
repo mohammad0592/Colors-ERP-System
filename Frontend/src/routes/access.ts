@@ -88,6 +88,17 @@ export const screenAccess = {
   // is part of the shift he answers for.
   '/production/recycler': [Administrator, Supervisor, RecyclerOperator],
 
+  // Each line's times, crew, notes and machine settings, filled in by its operator, and
+  // the shared meter. Every line operator may open it; the server lets each one change
+  // only the line he was put on (section 2).
+  '/production/shift-config': [
+    Administrator,
+    Supervisor,
+    ExtruderOperator,
+    ThermoOperator,
+    RecyclerOperator,
+  ],
+
   // Reports account for the shift, so they are for the people who answer for it. The
   // inventory manager is here for the waste control report, which is his (section 7).
   '/reports': [Administrator, Supervisor, InventoryManager],

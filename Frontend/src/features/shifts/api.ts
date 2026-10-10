@@ -50,6 +50,14 @@ export interface ShiftLineDto {
   formsBags: boolean;
   takesRawMaterial: boolean;
   recycles: boolean;
+  /**
+   * The job the line's operator must hold — ExtruderOperator, ThermoOperator,
+   * RecyclerOperator — so the picker offers only people who hold it.
+   */
+  operatorRole: string | null;
+  /** Chosen by the supervisor. Only this person fills in the line. */
+  operatorUserId: number | null;
+  operatorName: string | null;
   /** "HH:mm" */
   productionStartTime: string | null;
   productionEndTime: string | null;
@@ -59,6 +67,8 @@ export interface ShiftLineDto {
   machineSpeed: number | null;
   feedDistanceMm: number | null;
   cycleTimeSeconds: number | null;
+  /** The operator's own notes for this line. */
+  notes: string | null;
   workers: ShiftWorkerDto[];
 }
 
@@ -70,6 +80,7 @@ export interface UpdateShiftLine {
   feedDistanceMm: number | null;
   cycleTimeSeconds: number | null;
   workers: SaveShiftWorker[];
+  notes: string | null;
 }
 
 export interface ShiftReportSummaryDto {
@@ -112,6 +123,11 @@ export interface ShiftReportDto {
   electricityStartMeter: number | null;
   electricityEndMeter: number | null;
   electricityUsed: number | null;
+  /** Who entered each reading last, and when — shown to every operator. */
+  electricityStartRecordedBy: string | null;
+  electricityStartRecordedAt: string | null;
+  electricityEndRecordedBy: string | null;
+  electricityEndRecordedAt: string | null;
   notes: string | null;
   openedByName: string;
   openedAt: string;
@@ -179,6 +195,27 @@ export const shiftReportsApi = {
       `/api/shift-reports/${String(id)}/lines/${String(lineId)}`,
       { method: 'PUT', body },
     ),
+
+  /** The supervisor puts an operator on a line, or takes him off with null. */
+  setLineOperator: (
+    id: number,
+    lineId: number,
+    operatorUserId: number | null,
+  ): Promise<ShiftReportDto> =>
+    apiRequest<ShiftReportDto>(
+      `/api/shift-reports/${String(id)}/lines/${String(lineId)}/operator`,
+      { method: 'PUT', body: { operatorUserId } },
+    ),
+
+  /** The factory's one meter. Any operator on the shift may enter it. */
+  recordElectricity: (
+    id: number,
+    body: { electricityStartMeter: number | null; electricityEndMeter: number | null },
+  ): Promise<ShiftReportDto> =>
+    apiRequest<ShiftReportDto>(`/api/shift-reports/${String(id)}/electricity`, {
+      method: 'PUT',
+      body,
+    }),
 
   removeLine: (id: number, lineId: number): Promise<ShiftReportDto> =>
     apiRequest<ShiftReportDto>(

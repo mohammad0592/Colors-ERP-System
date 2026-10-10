@@ -259,6 +259,7 @@ ShiftReport         Shift A · 04/08/2026 · Open · meter 12000 → 12850
 | Status | `Open` · `Closed` |
 | SupervisorUserId (FK) | who is answerable for the shift |
 | ElectricityStartMeter, ElectricityEndMeter | **the factory has one meter** — see below |
+| ElectricityStartRecordedByUserId · …At, ElectricityEndRecordedByUserId · …At | who entered each reading last, and when — shown to every operator (19.10) |
 | Notes | |
 | OpenedByUserId, OpenedAt, ClosedByUserId, ClosedAt | |
 
@@ -271,6 +272,8 @@ ShiftReport         Shift A · 04/08/2026 · Open · meter 12000 → 12850
 | ProductionLineId (FK) | Extruder / Thermo / Recycler |
 | ProductionStartTime, ProductionEndTime | actual times worked, this line |
 | DowntimeHours | this line |
+| **OperatorUserId** (FK, nullable) | the line's operator for the shift, chosen by the supervisor — only he fills the line in (19.10) |
+| Notes | the operator's notes for this line |
 | MachineSpeed, FeedDistance, CycleTime | only where `RecordsMachineSettings` is true — cycles/hour, mm, **seconds** |
 
 ### Nothing on the shift says what is in the thermo
@@ -1755,7 +1758,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Nine changes, from watching the factory use the system. They are written here rather
+Ten changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2026,6 +2029,35 @@ chose this over asking the supervisor to name the mould on every shift.
 
 **Still to answer:** the packing numbers for the four boxes, carried over from the meal
 boxes (section 18, questions 9 and 10).
+
+### 19.10 Each line has an operator, and fills itself in
+
+Opening a shift showed two windows: the first for the date, the shift, the lines and the
+supervisor; the second for everything else — the meter, the notes, and every line's times,
+crew and machine settings. The supervisor was typing the operators' figures for them.
+
+**Decided, and built:**
+
+- **The second window is only the lines and their operators.** The supervisor picks the
+  operator for each line from the people holding its job — Extruder, Thermoforming or
+  Recycler Operator, read off what the line does, never its name. Lines can still be added
+  and taken off there. The supervisor himself is chosen when the shift is opened.
+- **Everything else moved to Production → Shift Configurations**, with a tab for each line:
+  Extruder, Thermoforming and Recycle Shift Configuration. Each holds the line's own times,
+  downtime, crew and notes; the thermoforming tab also holds the machine settings. It opens
+  on the open shift, or on any shift linked from the Shifts screen.
+- **Only a line's own operator fills it in**, with the supervisor and the administrator.
+  Another operator holding the same job can read it but not change it; the server refuses
+  it (`shift.notLineOperator`), not only the screen.
+- **The notes belong to each line**, so each operator writes his own.
+- **The meter is shared.** It sits above the tabs, and every operator on the shift sees the
+  same reading. Any of them may enter or correct it; each reading shows who entered it last
+  and when, so nobody reads the meter again thinking it was missed. Somebody who is not an
+  operator on the shift cannot (`shift.notShiftOperator`). The screen refreshes every half
+  minute, so a reading entered on another tablet appears without reloading.
+
+The shift-level notes column is kept for the shifts recorded before this, but no screen
+writes to it any more.
 
 ---
 

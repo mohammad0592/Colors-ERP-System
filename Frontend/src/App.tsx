@@ -18,6 +18,7 @@ import { PalletsPage } from './features/pallets/PalletsPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
 import { RecyclerPage } from './features/recycler/RecyclerPage';
 import { ReportsPage } from './features/reports/ReportsPage';
+import { ShiftConfigurationsPage } from './features/shifts/ShiftConfigurationsPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
 import { UsersPage } from './features/users/UsersPage';
 import { TracePage } from './features/trace/TracePage';
@@ -63,6 +64,7 @@ const screens: { path: ScreenPath; element: ReactElement }[] = [
   { path: '/production/packaging', element: <PackagingPage /> },
   { path: '/production/dispatch', element: <DispatchPage /> },
   { path: '/production/recycler', element: <RecyclerPage /> },
+  { path: '/production/shift-config', element: <ShiftConfigurationsPage /> },
   { path: '/reports', element: <ReportsPage /> },
   { path: '/audit', element: <AuditPage /> },
   { path: '/recipes', element: <RecipesPage /> },

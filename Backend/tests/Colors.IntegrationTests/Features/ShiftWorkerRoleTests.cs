@@ -39,6 +39,9 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         return (await Ensure(RoleNames.ExtruderOperator), await Ensure(RoleNames.ExtruderTestPerson));
     }
 
+    // These are about the crew, not about who may write it, so the supervisor writes.
+    private static readonly ShiftActor Supervisor = new(0, IsManager: true);
+
     private static UpdateShiftLineRequest LineWith(params SaveShiftWorkerRequest[] workers) =>
         new("08:00", "16:00", null, null, null, null, workers);
 
@@ -54,7 +57,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,
             ids.ShiftLineId,
-            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, test], false)));
+            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, test], false)), Supervisor);
 
         Assert.True(saved.IsSuccess, saved.Message);
 
@@ -76,7 +79,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,
             ids.ShiftLineId,
-            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, op], false)));
+            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, op], false)), Supervisor);
 
         Assert.False(saved.IsSuccess);
     }
@@ -92,7 +95,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,
             ids.ShiftLineId,
-            LineWith(new SaveShiftWorkerRequest(ids.UserId, [], true)));
+            LineWith(new SaveShiftWorkerRequest(ids.UserId, [], true)), Supervisor);
 
         Assert.True(saved.IsSuccess, saved.Message);
 
@@ -110,7 +113,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,
             ids.ShiftLineId,
-            LineWith(new SaveShiftWorkerRequest(ids.UserId, [999999], false)));
+            LineWith(new SaveShiftWorkerRequest(ids.UserId, [999999], false)), Supervisor);
 
         Assert.False(saved.IsSuccess);
     }
@@ -124,10 +127,10 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         var service = NewService(db);
 
         await service.UpdateLineAsync(ids.ShiftReportId, ids.ShiftLineId,
-            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, test], false)));
+            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, test], false)), Supervisor);
 
         var second = await service.UpdateLineAsync(ids.ShiftReportId, ids.ShiftLineId,
-            LineWith(new SaveShiftWorkerRequest(ids.UserId, [test], false)));
+            LineWith(new SaveShiftWorkerRequest(ids.UserId, [test], false)), Supervisor);
 
         var worker = second.Value!.Lines.Single(l => l.Id == ids.ShiftLineId).Workers.Single();
         Assert.Single(worker.RoleInShiftIds);
@@ -155,7 +158,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,
             ids.ShiftLineId,
-            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, test], true)));
+            LineWith(new SaveShiftWorkerRequest(ids.UserId, [op, test], true)), Supervisor);
 
         // Two jobs, one worker row — so being a trainee cannot end up true for one job
         // and false for the other.

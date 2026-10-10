@@ -1,6 +1,8 @@
 ﻿using System.Globalization;
 using Colors.Application.Common.Models;
 using Colors.Application.Features.ShiftReports;
+using Colors.Domain.Constants;
+using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Shifts;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
@@ -143,6 +145,7 @@ public class ShiftReportService(
     public async Task<Result<ShiftReportDto>> UpdateAsync(
         int id,
         UpdateShiftReportRequest request,
+        int userId,
         CancellationToken cancellationToken = default)
     {
         var report = await Query().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
@@ -168,8 +171,7 @@ public class ShiftReportService(
         }
 
         report.SupervisorUserId = request.SupervisorUserId;
-        report.ElectricityStartMeter = request.ElectricityStartMeter;
-        report.ElectricityEndMeter = request.ElectricityEndMeter;
+        RecordMeters(report, request.ElectricityStartMeter, request.ElectricityEndMeter, userId);
         report.Notes = Trimmed(request.Notes);
 
         await db.SaveChangesAsync(cancellationToken);
@@ -215,6 +217,7 @@ public class ShiftReportService(
         int id,
         int lineId,
         UpdateShiftLineRequest request,
+        ShiftActor actor,
         CancellationToken cancellationToken = default)
     {
         var report = await Query().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
@@ -234,6 +237,17 @@ public class ShiftReportService(
             return Result<ShiftReportDto>.Failure(
                 ErrorCode.NotFound,
                 "That line is not part of this shift.", "shift.lineNotOnShift");
+        }
+
+        // One author per line. Another operator holding the same job may read it, but
+        // the figures are the assigned operator's to give (specification section 2).
+        if (!actor.IsManager && line.OperatorUserId != actor.UserId)
+        {
+            return Invalid(
+                $"Only the operator set on {line.ProductionLine.Name} for this shift, the supervisor "
+                + "or an administrator can change it.",
+                "shift.notLineOperator",
+                line.ProductionLine.Name);
         }
 
         var start = ParseTime(request.ProductionStartTime);
@@ -294,6 +308,7 @@ public class ShiftReportService(
         line.MachineSpeed = request.MachineSpeed;
         line.FeedDistanceMm = request.FeedDistanceMm;
         line.CycleTimeSeconds = request.CycleTimeSeconds;
+        line.Notes = Trimmed(request.Notes);
 
         // The request carries the whole crew, so the list is replaced rather than
         // reconciled — nothing else points at these rows.
@@ -310,6 +325,112 @@ public class ShiftReportService(
             })
             .ToList();
 
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadAsync(id, cancellationToken);
+    }
+
+    public async Task<Result<ShiftReportDto>> SetLineOperatorAsync(
+        int id,
+        int lineId,
+        SetLineOperatorRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var report = await Query().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        if (report is null)
+        {
+            return NotFound();
+        }
+
+        if (report.Status == ShiftReportStatus.Closed)
+        {
+            return ClosedShift();
+        }
+
+        var line = report.Lines.FirstOrDefault(l => l.Id == lineId);
+        if (line is null)
+        {
+            return Result<ShiftReportDto>.Failure(
+                ErrorCode.NotFound,
+                "That line is not part of this shift.", "shift.lineNotOnShift");
+        }
+
+        if (request.OperatorUserId is not null)
+        {
+            var person = await db.Set<ApplicationUser>()
+                .Where(u => u.Id == request.OperatorUserId && u.IsActive)
+                .Select(u => new { u.Id, u.FullName })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (person is null)
+            {
+                return Invalid("Choose an active person as the operator.", "shift.chooseActiveOperator");
+            }
+
+            // The extruder's operator must be an extruder operator, and so on. Read off
+            // the line's flags, never its name, so a renamed line keeps the rule.
+            var role = OperatorRoleFor(line.ProductionLine);
+            if (role is not null)
+            {
+                var holdsIt = await db.UserRoles
+                    .Join(db.Set<ApplicationRole>(), ur => ur.RoleId, r => r.Id, (ur, r) => new { ur.UserId, r.Name })
+                    .AnyAsync(x => x.UserId == person.Id && x.Name == role, cancellationToken);
+
+                if (!holdsIt)
+                {
+                    return Invalid(
+                        $"{person.FullName} does not hold the job that runs {line.ProductionLine.Name}. "
+                        + "Give it to them in Users first.",
+                        "shift.operatorLacksRole",
+                        person.FullName,
+                        line.ProductionLine.Name);
+                }
+            }
+        }
+
+        line.OperatorUserId = request.OperatorUserId;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadAsync(id, cancellationToken);
+    }
+
+    public async Task<Result<ShiftReportDto>> RecordElectricityAsync(
+        int id,
+        RecordElectricityRequest request,
+        ShiftActor actor,
+        CancellationToken cancellationToken = default)
+    {
+        var report = await Query().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
+        if (report is null)
+        {
+            return NotFound();
+        }
+
+        if (report.Status == ShiftReportStatus.Closed)
+        {
+            return ClosedShift();
+        }
+
+        // The meter is the whole factory's, so any of tonight's operators may read it —
+        // but only someone who is on this shift.
+        if (!actor.IsManager && !report.Lines.Any(l => l.OperatorUserId == actor.UserId))
+        {
+            return Invalid(
+                "Only an operator on this shift, the supervisor or an administrator can enter "
+                + "the electricity.",
+                "shift.notShiftOperator");
+        }
+
+        if (request.ElectricityStartMeter is not null
+            && request.ElectricityEndMeter is not null
+            && request.ElectricityEndMeter < request.ElectricityStartMeter)
+        {
+            return Invalid(
+                "The end meter is below the start meter. Check the readings — if the meter "
+                + "rolled over or was replaced, record it in the shift's notes.", "shift.meterWentBackwards");
+        }
+
+        RecordMeters(report, request.ElectricityStartMeter, request.ElectricityEndMeter, actor.UserId);
         await db.SaveChangesAsync(cancellationToken);
 
         return await LoadAsync(id, cancellationToken);
@@ -578,6 +699,40 @@ public class ShiftReportService(
 
     // ---------- helpers ----------
 
+    /// <summary>
+    /// Writes the meter readings, and against each one that changed, who wrote it and
+    /// when. A reading sent back unchanged keeps its author.
+    /// </summary>
+    private void RecordMeters(ShiftReport report, decimal? start, decimal? end, int userId)
+    {
+        var now = timeProvider.GetUtcNow();
+
+        if (start != report.ElectricityStartMeter)
+        {
+            report.ElectricityStartMeter = start;
+            report.ElectricityStartRecordedByUserId = start is null ? null : userId;
+            report.ElectricityStartRecordedAt = start is null ? null : now;
+        }
+
+        if (end != report.ElectricityEndMeter)
+        {
+            report.ElectricityEndMeter = end;
+            report.ElectricityEndRecordedByUserId = end is null ? null : userId;
+            report.ElectricityEndRecordedAt = end is null ? null : now;
+        }
+    }
+
+    /// <summary>
+    /// The job a line's operator must hold, from what the line does: the line that makes
+    /// rolls is run by an extruder operator, and so on. Null for a line that does none of
+    /// the three, which takes anybody.
+    /// </summary>
+    private static string? OperatorRoleFor(ProductionLine line) =>
+        line.MakesRolls ? RoleNames.ExtruderOperator
+        : line.FormsBags ? RoleNames.ThermoOperator
+        : line.Recycles ? RoleNames.RecyclerOperator
+        : null;
+
     private IQueryable<ShiftReport> Query() =>
         db.Set<ShiftReport>()
             .Include(r => r.Shift)
@@ -645,6 +800,21 @@ public class ShiftReportService(
             yield return report.ClosedByUserId.Value;
         }
 
+        if (report.ElectricityStartRecordedByUserId is not null)
+        {
+            yield return report.ElectricityStartRecordedByUserId.Value;
+        }
+
+        if (report.ElectricityEndRecordedByUserId is not null)
+        {
+            yield return report.ElectricityEndRecordedByUserId.Value;
+        }
+
+        foreach (var line in report.Lines.Where(l => l.OperatorUserId is not null))
+        {
+            yield return line.OperatorUserId!.Value;
+        }
+
         foreach (var worker in report.Lines.SelectMany(l => l.Workers))
         {
             yield return worker.UserId;
@@ -706,6 +876,10 @@ public class ShiftReportService(
             report.ElectricityStartMeter,
             report.ElectricityEndMeter,
             report.ElectricityUsed,
+            NameOf(names, report.ElectricityStartRecordedByUserId),
+            report.ElectricityStartRecordedAt,
+            NameOf(names, report.ElectricityEndRecordedByUserId),
+            report.ElectricityEndRecordedAt,
             report.Notes,
             names.GetValueOrDefault(report.OpenedByUserId, "—"),
             report.OpenedAt,
@@ -721,6 +895,9 @@ public class ShiftReportService(
                     line.ProductionLine.FormsBags,
                     line.ProductionLine.TakesRawMaterial,
                     line.ProductionLine.Recycles,
+                    OperatorRoleFor(line.ProductionLine),
+                    line.OperatorUserId,
+                    NameOf(names, line.OperatorUserId),
                     Format(line.ProductionStartTime),
                     Format(line.ProductionEndTime),
                     line.DowntimeHours,
@@ -728,6 +905,7 @@ public class ShiftReportService(
                     line.MachineSpeed,
                     line.FeedDistanceMm,
                     line.CycleTimeSeconds,
+                    line.Notes,
                     line.Workers
                         .Select(w => new ShiftWorkerDto(
                             w.UserId,
@@ -745,6 +923,9 @@ public class ShiftReportService(
                         .ToList()))
                 .ToList());
     }
+
+    private static string? NameOf(Dictionary<int, string> names, int? userId) =>
+        userId is null ? null : names.GetValueOrDefault(userId.Value);
 
     private static string? Format(TimeOnly? time) =>
         time?.ToString("HH:mm", CultureInfo.InvariantCulture);

@@ -52,11 +52,6 @@ export function ShiftsPage(): ReactElement {
     queryFn: () => peopleApi.list(false),
   });
 
-  const roles = useQuery({
-    queryKey: ['roles'],
-    queryFn: () => peopleApi.roles(),
-  });
-
   const reports = useQuery({
     queryKey: ['shift-reports', lineFilter, openOnly],
     queryFn: () =>
@@ -100,17 +95,11 @@ export function ShiftsPage(): ReactElement {
     onSettled: invalidate,
   });
 
-  if (
-    lines.isPending ||
-    shifts.isPending ||
-    people.isPending ||
-    roles.isPending ||
-    reports.isPending
-  ) {
+  if (lines.isPending || shifts.isPending || people.isPending || reports.isPending) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
-  if (lines.isError || shifts.isError || people.isError || roles.isError) {
+  if (lines.isError || shifts.isError || people.isError) {
     return <p className="p-6 text-bad">{t('shifts.loadScreenFailed')}</p>;
   }
 
@@ -320,13 +309,12 @@ export function ShiftsPage(): ReactElement {
           report={editing}
           allLines={lines.data}
           people={people.data}
-          roles={roles.data}
           onClose={() => {
             setEditing(null);
           }}
           onChanged={(report) => {
-            // The dialog stays open on the fresh copy, so the calculated hours and
-            // the tabs update the moment a line is saved.
+            // The dialog stays open on the fresh copy, so an operator just chosen
+            // shows at once.
             setEditing(report);
             invalidate();
           }}

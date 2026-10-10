@@ -22,7 +22,8 @@ interface ShiftLineFormProps {
 
 /**
  * One line's part of a shift — the screen version of the paper form headed "Daily
- * Production Report for the Forming Department".
+ * Production Report for the Forming Department". Shown on the Shift Configurations
+ * screen, one tab per line.
  *
  * Each line saves on its own, so the extruder operator writing his hours cannot
  * overwrite what the thermo operator typed a minute earlier.
@@ -42,6 +43,7 @@ export function ShiftLineForm({
   const [machineSpeed, setMachineSpeed] = useState(toField(line.machineSpeed));
   const [feedDistance, setFeedDistance] = useState(toField(line.feedDistanceMm));
   const [cycleTime, setCycleTime] = useState(toField(line.cycleTimeSeconds));
+  const [notes, setNotes] = useState(line.notes ?? '');
   const [workers, setWorkers] = useState<SaveShiftWorker[]>(() =>
     line.workers.map((worker) => ({
       userId: worker.userId,
@@ -68,6 +70,7 @@ export function ShiftLineForm({
         feedDistanceMm: line.recordsMachineSettings ? toNumberOrNull(feedDistance) : null,
         cycleTimeSeconds: line.recordsMachineSettings ? toNumberOrNull(cycleTime) : null,
         workers,
+        notes: notes.trim() === '' ? null : notes.trim(),
       });
       setSavedAt(Date.now());
       onSaved(report);
@@ -140,7 +143,7 @@ export function ShiftLineForm({
       />
 
       {/* No electricity here: the factory has one meter for the whole building, so
-          it is read once per shift, above the lines. */}
+          it is read once per shift, above the tabs. */}
 
       {/* Only the thermo line has forming settings. Elsewhere the section is left
           out altogether rather than shown empty. */}
@@ -199,6 +202,22 @@ export function ShiftLineForm({
           roles={roles}
           disabled={disabled}
           onChange={setWorkers}
+        />
+      </div>
+
+      <Section title={t('shiftCfg.lineNotes')} />
+
+      <div className="mb-4">
+        <textarea
+          aria-label={t('shiftCfg.lineNotes')}
+          rows={3}
+          maxLength={1000}
+          className="field-input"
+          value={notes}
+          disabled={disabled}
+          onChange={(event) => {
+            setNotes(event.target.value);
+          }}
         />
       </div>
 
