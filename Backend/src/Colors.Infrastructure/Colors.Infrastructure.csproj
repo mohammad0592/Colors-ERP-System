@@ -5,10 +5,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="ClosedXML" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
     <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Inside the DLL rather than beside it, so a published build cannot lose it. -->
+    <EmbeddedResource Include="Reports\Templates\thermo-shift-report.xlsx" />
   </ItemGroup>
 
 </Project>

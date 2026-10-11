@@ -1758,7 +1758,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Ten changes, from watching the factory use the system. They are written here rather
+Eleven changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2058,6 +2058,46 @@ crew and machine settings. The supervisor was typing the operators' figures for 
 
 The shift-level notes column is kept for the shifts recorded before this, but no screen
 writes to it any more.
+
+### 19.11 The thermoforming report, on screen and as the factory's Excel form
+
+The factory keeps a daily report for the forming line on its own Excel form —
+تقرير الإنتاج اليومي لقسم التشكيل. Every figure on it is already in the system.
+
+**Decided, and built:**
+
+- **Reports → Thermoforming shift report**, one per shift, laid out for a screen: the
+  operator, hours, electricity and machine settings; the crew; every roll formed with its
+  weight, length, thickness, time, product, bags, plates, plate and bag weight, absorbency,
+  recycled share, the shift it was made on, and its scrap; the yield per product; the
+  pallets built; the packaging used; the line's notes.
+- **Export to Excel** fills in the factory's form itself — kept as a file inside the build
+  (`Reports/Templates/thermo-shift-report.xlsx`) and filled cell by cell, so the export has
+  the same layout, colours, merged boxes and print setup as the paper. Its formulas stay
+  formulas: plates are bags × the product's pieces per bag, the totals are sums, and the
+  yield block works the loss out from the roll table, so a number corrected in Excel
+  carries through.
+- **A busy shift gets more rows.** The form has room for nine rolls, five pallets and two
+  products; more are added inside each table and everything below moves down.
+- **A roll still in the machine** is listed with nothing counted, and is left out of the
+  bags, the plates and the yield — otherwise the shift would read as having lost it.
+
+**Where the form and the system differ, and what was done:**
+
+| On the form | In the export |
+|---|---|
+| Plates = bags × 250 | bags × the product's own pieces per bag |
+| Plate weight worked out from the bag weight | the plate weight as weighed at the thermo |
+| Loss = rolls − total bags × one bag's weight | rolls − plates × each roll's plate weight |
+| Packaging columns headed shrink, hood, two kinds of bag, pallets, tape | headed with the materials actually recorded, up to six |
+| REC.% | the recycled share of the roll's recipe; "-" when it has none |
+| Shifts column | the shift the roll was made on at the extruder |
+| Lists of operator names and product names behind two cells | removed — they named people and products from before |
+| "ABS-Big" and "NOR-BIG" beside the totals | removed — they were left over and meant nothing |
+
+**Still to answer:** whether the two packaging-bag columns (95/130 dry and red) are
+materials the system should track separately; today the export writes whichever packaging
+was recorded.
 
 ---
 

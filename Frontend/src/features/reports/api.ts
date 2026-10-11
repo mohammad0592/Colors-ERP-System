@@ -1,4 +1,4 @@
-import { apiRequest } from '../../lib/apiClient';
+import { apiDownload, apiRequest } from '../../lib/apiClient';
 
 /**
  * Reports, mirroring Colors.Application.Features.Reports.
@@ -161,10 +161,107 @@ export interface RecycledMaterialReportDto {
   shifts: RecycledShiftLineDto[];
 }
 
+/** One roll formed on the shift — a row of the thermoforming form. */
+export interface ThermoReportRollDto {
+  rollCode: string;
+  colorName: string;
+  rollWeight: number | null;
+  rollLength: number | null;
+  averageThickness: number | null;
+  totalTimeMinutes: number | null;
+  productName: string | null;
+  piecesPerBag: number | null;
+  /** Null until the bags have been counted. */
+  bagCount: number | null;
+  pieceCount: number | null;
+  /** Grams, as weighed. */
+  pieceWeight: number | null;
+  bagWeight: number | null;
+  isAbsorbent: boolean;
+  absorbentPercentage: number | null;
+  /** The share of recycled material in the roll's recipe, 0–100. */
+  recycledPercentage: number | null;
+  /** The shift the roll was made on at the extruder. */
+  rollShiftName: string;
+  scrapWeight: number | null;
+}
+
+export interface ThermoReportProductDto {
+  productName: string;
+  productCode: string;
+  rollWeight: number;
+  pieceCount: number;
+  productWeight: number;
+  scrapWeight: number;
+  scrapPercentage: number | null;
+}
+
+export interface ThermoReportPalletDto {
+  palletNumber: number;
+  status: string;
+  bagCount: number;
+  piecesPerBag: number | null;
+  pieceCount: number | null;
+  productName: string | null;
+  colorName: string | null;
+  rollCodes: string[];
+}
+
+export interface ThermoReportPackagingDto {
+  materialName: string;
+  unitSymbol: string;
+  quantity: number;
+  weight: number | null;
+}
+
+/** The thermoforming line's report for one shift (specification section 13). */
+export interface ThermoShiftReportDto {
+  shiftReportId: number;
+  productionDate: string;
+  shiftName: string;
+  status: string;
+  lineName: string;
+  operatorName: string | null;
+  operatorEmployeeNumber: string | null;
+  electricityStartMeter: number | null;
+  electricityEndMeter: number | null;
+  electricityUsed: number | null;
+  cycleTimeSeconds: number | null;
+  feedDistanceMm: number | null;
+  machineSpeed: number | null;
+  productionStartTime: string | null;
+  productionEndTime: string | null;
+  downtimeHours: number | null;
+  actualProductionHours: number | null;
+  workers: string[];
+  trainees: string[];
+  notes: string | null;
+  rolls: ThermoReportRollDto[];
+  totalRollWeight: number;
+  totalBagCount: number;
+  totalPieceCount: number;
+  products: ThermoReportProductDto[];
+  pallets: ThermoReportPalletDto[];
+  packagingRecorded: boolean;
+  packaging: ThermoReportPackagingDto[];
+}
+
 export const reportsApi = {
   materialWaste: (shiftReportId: number): Promise<MaterialWasteReportDto> =>
     apiRequest<MaterialWasteReportDto>(
       `/api/reports/material-waste/${String(shiftReportId)}`,
+    ),
+
+  thermoShift: (shiftReportId: number): Promise<ThermoShiftReportDto> =>
+    apiRequest<ThermoShiftReportDto>(
+      `/api/reports/thermo-shift/${String(shiftReportId)}`,
+    ),
+
+  /** The same report as the factory's Excel form, saved by the browser. */
+  thermoShiftExcel: (report: ThermoShiftReportDto): Promise<void> =>
+    apiDownload(
+      `/api/reports/thermo-shift/${String(report.shiftReportId)}/excel`,
+      `Thermo report ${report.productionDate} shift ${report.shiftName}.xlsx`,
     ),
 
   shiftSummary: (shiftReportId: number): Promise<ShiftSummaryReportDto> =>

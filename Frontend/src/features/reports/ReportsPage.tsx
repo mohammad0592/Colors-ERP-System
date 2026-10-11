@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { ApiError } from '../../lib/apiClient';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { reportsApi } from './api';
@@ -12,6 +13,7 @@ import { MaterialWasteReport } from './MaterialWasteReport';
 import { PalletProductionReport } from './PalletProductionReport';
 import { RecycledMaterialReport } from './RecycledMaterialReport';
 import { ShiftSummaryReport } from './ShiftSummaryReport';
+import { ThermoShiftReport } from './ThermoShiftReport';
 
 /**
  * Reports (specification section 13).
@@ -23,12 +25,13 @@ import { ShiftSummaryReport } from './ShiftSummaryReport';
  * stretch of days and share a date range. Whichever the chosen report needs is the one
  * shown, and both keep their value while the reader moves between reports.
  */
-type ReportName = 'waste' | 'summary' | 'consumption' | 'pallets' | 'recycled';
+type ReportName = 'waste' | 'summary' | 'thermo' | 'consumption' | 'pallets' | 'recycled';
 
 /** True for the reports that read a stretch of days rather than one shift. */
 const readsARange: Record<ReportName, boolean> = {
   waste: false,
   summary: false,
+  thermo: false,
   consumption: true,
   pallets: true,
   recycled: true,
@@ -61,6 +64,14 @@ export function ReportsPage(): ReactElement {
     enabled: chosen !== null && report === 'waste',
   });
 
+  const thermo = useQuery({
+    queryKey: ['report-thermo', chosen],
+    queryFn: () => reportsApi.thermoShift(chosen ?? 0),
+    enabled: chosen !== null && report === 'thermo',
+    // A shift without the thermo line is answered in words, not retried.
+    retry: false,
+  });
+
   const summary = useQuery({
     queryKey: ['report-summary', chosen],
     queryFn: () => reportsApi.shiftSummary(chosen ?? 0),
@@ -84,6 +95,13 @@ export function ReportsPage(): ReactElement {
           active={report === 'summary'}
           onClick={() => {
             setReport('summary');
+          }}
+        />
+        <Chip
+          label={t('reports.thermoShift')}
+          active={report === 'thermo'}
+          onClick={() => {
+            setReport('thermo');
           }}
         />
         <Chip
@@ -134,9 +152,7 @@ export function ReportsPage(): ReactElement {
           </select>
 
           {shifts.data?.length === 0 && (
-            <p className="mt-2 text-sm text-ink-muted">
-              {t('reports.noShiftYet')}
-            </p>
+            <p className="mt-2 text-sm text-ink-muted">{t('reports.noShiftYet')}</p>
           )}
         </section>
       )}
@@ -153,9 +169,27 @@ export function ReportsPage(): ReactElement {
         </>
       )}
 
+      {report === 'thermo' && chosen !== null && (
+        <>
+          {thermo.isPending && (
+            <p className="p-6 text-ink-muted">{t('common.loading')}</p>
+          )}
+          {thermo.isError && (
+            <p className="p-6 text-bad">
+              {thermo.error instanceof ApiError
+                ? thermo.error.message
+                : t('msg.reportFailed')}
+            </p>
+          )}
+          {thermo.data !== undefined && <ThermoShiftReport report={thermo.data} />}
+        </>
+      )}
+
       {report === 'summary' && chosen !== null && (
         <>
-          {summary.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
+          {summary.isPending && (
+            <p className="p-6 text-ink-muted">{t('common.loading')}</p>
+          )}
           {summary.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
           {summary.data !== undefined && <ShiftSummaryReport report={summary.data} />}
         </>

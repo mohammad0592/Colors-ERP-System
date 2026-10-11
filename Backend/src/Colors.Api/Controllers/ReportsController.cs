@@ -14,7 +14,10 @@ namespace Colors.Api.Controllers;
 [ApiController]
 [Route("api/reports")]
 [Authorize(Roles = CanRead)]
-public class ReportsController(IReportsService reports) : ApiControllerBase
+public class ReportsController(
+    IReportsService reports,
+    IThermoShiftReportService thermoReports,
+    IThermoShiftReportExcel thermoExcel) : ApiControllerBase
 {
     private const string CanRead =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.InventoryManager}";
@@ -26,6 +29,38 @@ public class ReportsController(IReportsService reports) : ApiControllerBase
         CancellationToken cancellationToken)
     {
         return ToResponse(await reports.GetMaterialWasteAsync(shiftReportId, cancellationToken));
+    }
+
+    /// <summary>The thermoforming line's report for one shift.</summary>
+    [HttpGet("thermo-shift/{shiftReportId:int}")]
+    public async Task<IActionResult> GetThermoShift(
+        int shiftReportId,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await thermoReports.GetAsync(shiftReportId, cancellationToken));
+    }
+
+    /// <summary>
+    /// The same report as the factory's Excel form, ready to print or send on.
+    /// </summary>
+    [HttpGet("thermo-shift/{shiftReportId:int}/excel")]
+    public async Task<IActionResult> GetThermoShiftExcel(
+        int shiftReportId,
+        CancellationToken cancellationToken)
+    {
+        var report = await thermoReports.GetAsync(shiftReportId, cancellationToken);
+        if (!report.IsSuccess)
+        {
+            return ToResponse(report);
+        }
+
+        var shift = report.Value!;
+        var name = $"Thermo report {shift.ProductionDate:yyyy-MM-dd} shift {shift.ShiftName}.xlsx";
+
+        return File(
+            thermoExcel.Build(shift),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            name);
     }
 
     /// <summary>The paper form's summary block, worked out rather than typed.</summary>

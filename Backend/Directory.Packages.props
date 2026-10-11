@@ -11,6 +11,8 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup Label="ASP.NET Core">
+    <!-- The thermoforming report is written into the factory's own Excel form. -->
+    <PackageVersion Include="ClosedXML" Version="0.105.1" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10" />
 
     <!-- Logging to files from day one (specification section 15). Without it a failure

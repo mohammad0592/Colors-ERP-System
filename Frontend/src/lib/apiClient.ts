@@ -127,7 +127,8 @@ function refusalText(problem: ProblemResponse): string {
   // The server sends a short name -- `pallet.alreadyGone` -- and knows nothing about
   // how the screens file their words. The namespace is added here so every refusal sits
   // together in the dictionary without the backend having to care.
-  const key = problem.messageCode === undefined ? undefined : `refusal.${problem.messageCode}`;
+  const key =
+    problem.messageCode === undefined ? undefined : `refusal.${problem.messageCode}`;
 
   if (key !== undefined && isTranslationKey(key)) {
     const wording = translate(key);
@@ -215,4 +216,60 @@ export async function apiRequest<TResponse>(
   }
 
   return payload as TResponse;
+}
+
+/**
+ * Fetches a file and hands it to the browser to save — the Excel reports.
+ *
+ * Not `apiRequest`, which reads every answer as JSON. The token, its refresh and the
+ * worded refusal are the same, so a report the server refuses says why rather than
+ * saving an error page as a spreadsheet.
+ */
+export async function apiDownload(path: string, fileName: string): Promise<void> {
+  if (isAccessTokenExpired() && getRefreshToken() !== null) {
+    await refreshAccessToken();
+  }
+
+  const send = (): Promise<Response> => {
+    const token = getAccessToken();
+    return fetch(`${BASE_URL}${path}`, {
+      headers: token === null ? {} : { Authorization: `Bearer ${token}` },
+    });
+  };
+
+  let response: Response;
+  try {
+    response = await send();
+  } catch {
+    throw new ApiError(
+      'Cannot reach the server. Check the network connection.',
+      0,
+      'NetworkError',
+    );
+  }
+
+  if (response.status === 401 && getRefreshToken() !== null) {
+    if (await refreshAccessToken()) {
+      response = await send();
+    }
+  }
+
+  if (!response.ok) {
+    const text = await response.text();
+    const problem = (text === '' ? {} : JSON.parse(text)) as ProblemResponse;
+    throw new ApiError(
+      refusalText(problem),
+      response.status,
+      problem.errorCode ?? 'Unknown',
+    );
+  }
+
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }

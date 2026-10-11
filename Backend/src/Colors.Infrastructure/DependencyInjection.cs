@@ -177,6 +177,8 @@ public static class DependencyInjection
 
         // Reports (specification section 13). Read-only over what already exists.
         services.AddScoped<IReportsService, ReportsService>();
+        services.AddScoped<IThermoShiftReportService, ThermoShiftReportService>();
+        services.AddSingleton<IThermoShiftReportExcel, Colors.Infrastructure.Reports.ThermoShiftReportExcel>();
 
         // The home screen. Reads the shift's figures through the reports service, so the
         // two can never tell different stories about the same shift.
