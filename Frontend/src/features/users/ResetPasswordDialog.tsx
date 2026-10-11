@@ -3,6 +3,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { usersApi, type UserDto } from './api';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 
 /**
  * Setting somebody's password (specification section 3).
@@ -56,9 +57,8 @@ export function ResetPasswordDialog({
           <label className="field-label" htmlFor="new-password">
             {t('field.newPassword')}
           </label>
-          <input
+          <PasswordInput
             id="new-password"
-            type="password"
             className="field-input"
             value={password}
             disabled={isSaving}
@@ -66,9 +66,7 @@ export function ResetPasswordDialog({
               setPassword(event.target.value);
             }}
           />
-          <p className="mt-1 text-xs text-ink-muted">
-            {t('users.passwordRule')}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">{t('users.passwordRule')}</p>
         </div>
 
         {error !== null && (

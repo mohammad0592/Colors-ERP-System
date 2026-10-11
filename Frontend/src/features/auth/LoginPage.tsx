@@ -3,6 +3,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ApiError } from '../../lib/apiClient';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 
 /** Where the worker was heading before being sent to sign in. */
 interface LoginLocationState {
@@ -90,9 +91,7 @@ export function LoginPage(): ReactElement {
           />
           {/* The logo already carries the company name, so the heading says what
               the system is rather than repeating "Colors". */}
-          <h1 className="text-xl font-bold text-ink">
-            {t('login.system')}
-          </h1>
+          <h1 className="text-xl font-bold text-ink">{t('login.system')}</h1>
           <p className="mt-1 text-sm text-ink-muted">{t('app.tagline')}</p>
         </div>
 
@@ -123,10 +122,9 @@ export function LoginPage(): ReactElement {
           <label className="field-label" htmlFor="password">
             {t('login.password')}
           </label>
-          <input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             className="field-input"
             autoComplete="current-password"
             value={password}
@@ -152,9 +150,7 @@ export function LoginPage(): ReactElement {
           {isSubmitting ? 'Signing in…' : t('common.signIn')}
         </button>
 
-        <p className="mt-6 text-center text-xs text-ink-muted">
-          {t('login.askAdmin')}
-        </p>
+        <p className="mt-6 text-center text-xs text-ink-muted">{t('login.askAdmin')}</p>
       </form>
     </div>
   );

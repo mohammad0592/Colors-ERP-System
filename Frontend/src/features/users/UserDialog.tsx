@@ -4,6 +4,7 @@ import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import { RoleNames, labelForRole, type RoleName } from '../../lib/roles';
 import { usersApi, type UserDto } from './api';
+import { PasswordInput } from '../../components/ui/PasswordInput';
 
 /**
  * Adding a worker, or changing one (specification section 3).
@@ -77,7 +78,10 @@ export function UserDialog({
     employeeNumber.trim() !== '' && fullName.trim() !== '' && (!isNew || password !== '');
 
   return (
-    <Modal title={isNew ? t('action.addWorker') : `Edit ${user.fullName}`} onClose={onClose}>
+    <Modal
+      title={isNew ? t('action.addWorker') : `Edit ${user.fullName}`}
+      onClose={onClose}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -100,9 +104,7 @@ export function UserDialog({
                 setEmployeeNumber(event.target.value);
               }}
             />
-            <p className="mt-1 text-xs text-ink-muted">
-              {t('users.numberIsLogin')}
-            </p>
+            <p className="mt-1 text-xs text-ink-muted">{t('users.numberIsLogin')}</p>
           </div>
 
           <div>
@@ -127,9 +129,8 @@ export function UserDialog({
             <label className="field-label" htmlFor="user-password">
               {t('users.firstPassword')}
             </label>
-            <input
+            <PasswordInput
               id="user-password"
-              type="password"
               className="field-input"
               value={password}
               disabled={isSaving}
@@ -164,9 +165,7 @@ export function UserDialog({
               </label>
             ))}
           </div>
-          <p className="mt-1 text-xs text-ink-muted">
-            {t('users.severalRoles')}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">{t('users.severalRoles')}</p>
         </fieldset>
 
         {!isNew && (
@@ -196,11 +195,7 @@ export function UserDialog({
           {isSaving ? 'Saving…' : isNew ? t('users.addHim') : t('users.saveChanges')}
         </button>
 
-        {!isNew && (
-          <p className="mt-2 text-xs text-ink-muted">
-            {t('users.leaverNote')}
-          </p>
-        )}
+        {!isNew && <p className="mt-2 text-xs text-ink-muted">{t('users.leaverNote')}</p>}
       </form>
     </Modal>
   );

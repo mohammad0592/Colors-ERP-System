@@ -34,6 +34,9 @@ const paths: Record<string, string> = {
   chevronRight: 'M9 18l6-6-6-6',
   menu: 'M3 6h18M3 12h18M3 18h18',
   close: 'M18 6L6 18M6 6l12 12',
+  eye: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
+  eyeOff:
+    'M3 3l18 18M10.6 5.1A10 10 0 0112 5c6.4 0 10 7 10 7a17 17 0 01-3.2 4.1M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 005.4-1.6M9.9 9.9a3 3 0 004.2 4.2',
 };
 
 interface IconProps {

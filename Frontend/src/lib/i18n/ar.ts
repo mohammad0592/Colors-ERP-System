@@ -415,6 +415,8 @@ export const ar: Record<TranslationKey, string> = {
   'audit.newest300': 'أحدث 300. استخدم عوامل التصفية للعودة أبعد.',
   'login.system': 'نظام الإنتاج والمخزون',
   'login.password': 'كلمة المرور',
+  'password.show': 'إظهار كلمة المرور',
+  'password.hide': 'إخفاء كلمة المرور',
   'login.askAdmin': 'اسأل المدير إذا لم تستطع الدخول.',
   'labels.loadFailed': 'تعذّر تحميل الملصقات.',
   'labels.none': 'لم يُعثر على ملصق لهذا.',
