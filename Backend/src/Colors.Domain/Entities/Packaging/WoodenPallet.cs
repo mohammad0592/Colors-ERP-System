@@ -36,7 +36,8 @@ public class WoodenPallet
     /// <summary>
     /// Null until the first bag is scanned. Once set it also decides how many bags
     /// complete the pallet, through the product's own <c>BagsPerPallet</c> — 15 for
-    /// plates, about 21 for the rest. Never a number in the code.
+    /// plates, 23 for lunch boxes, 30 and 40 for the burger boxes. Never a number in the
+    /// code.
     /// </summary>
     public int? ProductId { get; set; }
 

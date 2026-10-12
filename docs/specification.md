@@ -496,10 +496,10 @@ it (section 5).
 | Normal Small Plate | Plate | Normal | 500 | 2 | 15 |
 | Absorbent Big Plate | Plate | Absorbent | 500 | 2 | 15 |
 | Absorbent Small Plate | Plate | Absorbent | 500 | 2 | 15 |
-| 1-Compartment Lunch Box | Lunch Box | Lunch Box | 250 | 1 | 21 |
-| 3-Compartment Lunch Box | Lunch Box | Lunch Box | 250 | 1 | 21 |
-| Large Burger Box | Burger Box | Lunch Box | 250 | 1 | 21 |
-| Small Burger Box | Burger Box | Lunch Box | 250 | 1 | 21 |
+| 1-Compartment Lunch Box | Lunch Box | Lunch Box | 250 | 1 | 23 |
+| 3-Compartment Lunch Box | Lunch Box | Lunch Box | 250 | 1 | 23 |
+| Large Burger Box | Burger Box | Lunch Box | 250 | 1 | 30 |
+| Small Burger Box | Burger Box | Lunch Box | 250 | 1 | 40 |
 
 **Why a product table and not a type × size grid.** The old model described a product as
 *type × size × absorbent*. That stopped being true the moment a clamshell existed: a
@@ -507,8 +507,9 @@ it (section 5).
 same for everything. Size is now part of what a product *is*, not a separate axis that
 every non-plate would have to carry meaninglessly.
 
-**The numbers above are data, not code.** Several are provisional — the box figures are
-carried over from the meal boxes they replaced, and the factory has not confirmed them.
+**The numbers above are data, not code.** The bags per pallet are the factory's own. The
+boxes' pieces per bag are still carried over from the meal boxes they replaced, and the
+factory has not confirmed them.
 Correcting one is an edit in Master Data: no migration, no deployment. See
 [section 18](#18-still-open) for what is still to be confirmed.
 
@@ -1721,8 +1722,8 @@ Small items. None block building.
 | 6 | Small bags: the form shows 4.14 where 122 were used | **Answered** — every big bag holds 2 small bags; the counts on the form are wrong, and the weights prove it |
 | 7 | Dashboard contents | **Agreed** — the proposal below is accepted for now, to be adjusted after the factory uses it |
 | 8 | The floor name for the small hinged box (mould 4) | **Answered** — it is a burger box. The products were renamed in 19.9. |
-| 9 | Pieces per bag and bags per pallet for the **burger and lunch boxes** | **Open** — seeded as 250 and 21, copied from the old meal box |
-| 10 | Bags per pallet for the boxes — 21 or 23? | **Open** — seeded as 21 |
+| 9 | Pieces per bag for the **burger and lunch boxes** | **Open** — seeded as 250, copied from the old meal box. Bags per pallet are answered under 10 |
+| 10 | Bags per pallet for the boxes — 21 or 23? | **Answered** — 23 for both lunch boxes, 30 for the large burger box, 40 for the small one; 15 for every plate |
 | 11 | Is the **small plate** really 500 per bag, like the big one? | **Open** — inherited from the old form; seeded as 500 |
 | 12 | Are absorbent lunch or burger boxes ever made? | **Open** — today they are made from Lunch Box, which is not absorbent. If they are, that is new products in Master Data, no code |
 | 13 | May one man work **two lines** in the same shift? | **Open** — allowed today, which is right if he moves from the extruder to the thermo mid-shift. Enforcing one line per man is a small change if the factory says so. |
@@ -2027,8 +2028,8 @@ not make. With no mould recorded there is nothing to compare against, so a roll 
 wrong machine is not caught — its bags are labelled with the roll's product. The factory
 chose this over asking the supervisor to name the mould on every shift.
 
-**Still to answer:** the packing numbers for the four boxes, carried over from the meal
-boxes (section 18, questions 9 and 10).
+**Still to answer:** the pieces per bag for the four boxes, carried over from the meal
+boxes (section 18, question 9). Their bags per pallet are answered (question 10).
 
 ### 19.10 Each line has an operator, and fills itself in
 

@@ -167,19 +167,19 @@ public static class MasterDataSeeder
         // mould is what shapes the product, so the product names it (section 19.9).
         //
         // A plate goes into a big bag holding two small ones; a box goes into the small
-        // bag directly, with no large bag at all (specification section 10). The box
-        // numbers are carried over from the meal boxes they replaced and are provisional
-        // — they are rows, so correcting one is an edit in Master Data.
+        // bag directly, with no large bag at all (specification section 10). The bags per
+        // pallet are the factory's own: 15 for plates, 23 for lunch boxes, 30 and 40 for
+        // the burger boxes. They are rows, so correcting one is an edit in Master Data.
         var products = new (string Name, string Type, bool Abs, int Pieces, int SmallBags, int LargeBags, int PerPallet)[]
         {
             ("Normal Big Plate", "Plate", false, 500, 2, 1, 15),
             ("Normal Small Plate", "Plate", false, 500, 2, 1, 15),
             ("Absorbent Big Plate", "Plate", true, 500, 2, 1, 15),
             ("Absorbent Small Plate", "Plate", true, 500, 2, 1, 15),
-            ("1-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 21),
-            ("3-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 21),
-            ("Large Burger Box", "Burger Box", false, 250, 1, 0, 21),
-            ("Small Burger Box", "Burger Box", false, 250, 1, 0, 21),
+            ("1-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 23),
+            ("3-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 23),
+            ("Large Burger Box", "Burger Box", false, 250, 1, 0, 30),
+            ("Small Burger Box", "Burger Box", false, 250, 1, 0, 40),
         };
 
         // Only into an empty table, and only if the types are still the ones seeded above
