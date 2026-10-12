@@ -21,7 +21,9 @@ namespace Colors.Api.Controllers;
 [Authorize]
 public class PalletsController(IPalletService pallets) : ApiControllerBase
 {
-    private const string CanPack = $"{RoleNames.Administrator},{RoleNames.PackagingOperator}";
+    // The thermo operator builds the pallets from the bags his line makes.
+    private const string CanPack =
+        $"{RoleNames.Administrator},{RoleNames.PackagingOperator},{RoleNames.ThermoOperator}";
     private const string CanReverse = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
 
     // Sending a pallet out is not floor work. It takes the pallet out of the factory's

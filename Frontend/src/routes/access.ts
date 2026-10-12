@@ -76,8 +76,9 @@ export const screenAccess = {
 
   // Packing. The supervisor is here because he answers for what is still part-built at
   // the end of his shift, and he is the one who takes a wrongly scanned bag back off.
-  '/production/pallets': [Administrator, Supervisor, PackagingOperator],
-  '/production/packaging': [Administrator, Supervisor, PackagingOperator],
+  // The thermo operator is here because he builds the pallets from what his line makes.
+  '/production/pallets': [Administrator, Supervisor, PackagingOperator, ThermoOperator],
+  '/production/packaging': [Administrator, Supervisor, PackagingOperator, ThermoOperator],
 
   // Sending a finished pallet out is not floor work. It takes the pallet out of the
   // factory's stock for good, so it sits with the supervisor — the same fence as taking
@@ -121,6 +122,22 @@ export const screenAccess = {
 } as const satisfies Record<string, ScreenRoles>;
 
 export type ScreenPath = keyof typeof screenAccess;
+
+/**
+ * Who sees the raw and packing material on the Inventory screen. Every job but the
+ * thermo operator's: his part of the store is the rolls, bags and pallets, and the server
+ * refuses him the material list too.
+ */
+export const materialStockRoles = [
+  Administrator,
+  Supervisor,
+  InventoryManager,
+  ExtruderOperator,
+  ExtruderTestPerson,
+  ThermoTestPerson,
+  PackagingOperator,
+  RecyclerOperator,
+] as const;
 
 /**
  * The roles for one screen.

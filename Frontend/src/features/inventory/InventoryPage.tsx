@@ -5,6 +5,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
+import { materialStockRoles } from '../../routes/access';
 import { ProducedStockTab } from '../labels/ProducedStockTab';
 import { AdjustStockDialog } from './AdjustStockDialog';
 import { inventoryApi, type MaterialStockDto } from './api';
@@ -28,8 +29,11 @@ export function InventoryPage(): ReactElement {
   const { hasRole } = useAuth();
   const canAdjust = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
   const canReceive = hasRole(RoleNames.Administrator, RoleNames.InventoryManager);
+  // The thermo operator's part of the store is what his line makes; the materials tabs
+  // are not shown to him, and the server refuses him the list anyway.
+  const seesMaterials = hasRole(...materialStockRoles);
 
-  const [section, setSection] = useState<Section>('raw');
+  const [section, setSection] = useState<Section>(() => (seesMaterials ? 'raw' : 'Roll'));
   const [lowOnly, setLowOnly] = useState(false);
   const [adjusting, setAdjusting] = useState<MaterialStockDto | null>(null);
   const [historyFor, setHistoryFor] = useState<MaterialStockDto | null>(null);
@@ -39,11 +43,13 @@ export function InventoryPage(): ReactElement {
   const stock = useQuery({
     queryKey: ['inventory'],
     queryFn: () => inventoryApi.stock(),
+    enabled: seesMaterials,
   });
 
   const movements = useQuery({
     queryKey: ['inventory-movements', historyFor?.materialId ?? null],
     queryFn: () => inventoryApi.movements(historyFor?.materialId, 100),
+    enabled: seesMaterials,
   });
 
   function invalidate(): void {
@@ -51,16 +57,17 @@ export function InventoryPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
   }
 
-  if (stock.isPending) {
+  if (seesMaterials && stock.isPending) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
-  if (stock.isError) {
+  if (seesMaterials && stock.isError) {
     return <p className="p-6 text-bad">{t('inventory.loadFailed')}</p>;
   }
 
-  const isMaterials = section === 'raw' || section === 'packing';
-  const inSection = stock.data.filter(
+  const isMaterials = seesMaterials && (section === 'raw' || section === 'packing');
+  const producedKind = section === 'raw' || section === 'packing' ? null : section;
+  const inSection = (stock.data ?? []).filter(
     (row) => row.issuedOnTickets === (section === 'raw'),
   );
   const lowCount = inSection.filter((row) => row.isBelowMinimum).length;
@@ -75,8 +82,12 @@ export function InventoryPage(): ReactElement {
   }
 
   const tabs: { key: Section; label: string }[] = [
-    { key: 'raw', label: t('inventory.rawMaterials') },
-    { key: 'packing', label: t('inventory.packingMaterials') },
+    ...(seesMaterials
+      ? [
+          { key: 'raw' as const, label: t('inventory.rawMaterials') },
+          { key: 'packing' as const, label: t('inventory.packingMaterials') },
+        ]
+      : []),
     { key: 'Roll', label: t('term.rolls') },
     { key: 'Bag', label: t('term.bags') },
     { key: 'Pallet', label: t('term.pallets') },
@@ -115,7 +126,9 @@ export function InventoryPage(): ReactElement {
       </nav>
 
       {/* Keyed by kind so a status picked for rolls does not carry over to bags. */}
-      {!isMaterials && <ProducedStockTab key={section} kind={section} />}
+      {producedKind !== null && (
+        <ProducedStockTab key={producedKind} kind={producedKind} />
+      )}
 
       {isMaterials && (
         <>

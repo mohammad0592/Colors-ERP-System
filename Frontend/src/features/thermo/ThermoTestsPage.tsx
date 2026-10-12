@@ -19,7 +19,11 @@ export function ThermoTestsPage(): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const canTest = hasRole(RoleNames.Administrator, RoleNames.ThermoTestPerson);
+  const canTest = hasRole(
+    RoleNames.Administrator,
+    RoleNames.ThermoTestPerson,
+    RoleNames.ThermoOperator,
+  );
 
   const [waitingOnly, setWaitingOnly] = useState(true);
   const [counting, setCounting] = useState<ThermoRunSummaryDto | null>(null);
@@ -76,9 +80,7 @@ export function ThermoTestsPage(): ReactElement {
 
   // Now that a running roll stays on the list, the table is only empty when there is
   // genuinely nothing — so two sentences cover it.
-  const emptyMessage = waitingOnly
-    ? t('thermo.allCounted')
-    : t('thermo.noneFormed');
+  const emptyMessage = waitingOnly ? t('thermo.allCounted') : t('thermo.noneFormed');
 
   return (
     <>
@@ -106,8 +108,8 @@ export function ThermoTestsPage(): ReactElement {
 
       {justSaved !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-          {t('term.roll')} <strong className="font-mono">{justSaved.rollCode}</strong> made{' '}
-          {justSaved.bags.length} bag{justSaved.bags.length === 1 ? '' : 's'} of{' '}
+          {t('term.roll')} <strong className="font-mono">{justSaved.rollCode}</strong>{' '}
+          made {justSaved.bags.length} bag{justSaved.bags.length === 1 ? '' : 's'} of{' '}
           {justSaved.testReport?.productName} —{' '}
           {justSaved.testReport?.pieceCount.toLocaleString('en-GB')} pieces. The labels
           run from <strong className="font-mono">{justSaved.bags[0]?.barcode}</strong>.
@@ -183,7 +185,9 @@ export function ThermoTestsPage(): ReactElement {
                       </button>
                     )}
                     {run.needsTest && !run.isFinished && (
-                      <span className="text-xs text-ink-muted">{t('thermo.stillInMachine')}</span>
+                      <span className="text-xs text-ink-muted">
+                        {t('thermo.stillInMachine')}
+                      </span>
                     )}
                     {/* Already counted, so the bags exist. A torn label must not mean
                         counting the run again. */}

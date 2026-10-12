@@ -357,7 +357,7 @@ There are **two testing stages** in the factory — one at the extruder and one 
 | Inventory Manager | Receives materials, issues tickets, records returns | Store |
 | Extruder Operator | Creates batches and rolls, prints roll barcodes | 1 |
 | **Extruder Test Person** | Records **roll test reports** — weight, length, plate weight, four thickness readings | 1 |
-| Thermo Operator | Consumes rolls, records forming, creates produced bags | 2 |
+| Thermo Operator | Consumes rolls, records forming and **counts the bags**, builds the pallets and records the packaging, fills in his line's shift configuration. Sees the rolls, bags and pallets in Inventory — **not** the raw or packing material | 2 |
 | **Thermo Test Person** | Records **thermo test reports** — plate weight after forming, absorbent percentage | 2 |
 | **Packaging Operator** | Creates pallets, scans bags onto them, completes pallets, records packaging materials | 2 |
 | Recycler Operator | Records scrap and recycled output | 3 |

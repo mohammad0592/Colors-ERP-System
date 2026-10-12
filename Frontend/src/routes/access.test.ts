@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { navigation } from '../components/layout/navigation';
 import { RoleNames, type RoleName } from '../lib/roles';
-import { rolesFor, screenAccess, type ScreenPath } from './access';
+import { materialStockRoles, rolesFor, screenAccess, type ScreenPath } from './access';
 
 /**
  * The menu and the route guard must offer the same screens to the same people.
@@ -142,5 +142,36 @@ describe('who may open what', () => {
     ] as const) {
       expect(guardAllows(path, RoleNames.InventoryManager)).toBe(false);
     }
+  });
+
+  it("gives the thermoforming operator his line's screens and nothing else of production", () => {
+    const thermo = RoleNames.ThermoOperator;
+    const his = [
+      '/inventory',
+      '/trace',
+      '/production/thermo',
+      '/production/thermo-tests',
+      '/production/pallets',
+      '/production/packaging',
+      '/production/shift-config',
+    ] as const;
+    const notHis = [
+      '/inventory/receive',
+      '/inventory/issue',
+      '/production/rolls',
+      '/production/roll-tests',
+      '/production/dispatch',
+      '/production/recycler',
+    ] as const;
+
+    for (const path of his) {
+      expect(guardAllows(path, thermo)).toBe(true);
+    }
+    for (const path of notHis) {
+      expect(guardAllows(path, thermo)).toBe(false);
+    }
+
+    // Inventory, but only its rolls, bags and pallets: never the raw or packing material.
+    expect((materialStockRoles as readonly string[]).includes(thermo)).toBe(false);
   });
 });

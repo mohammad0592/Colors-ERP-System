@@ -30,7 +30,11 @@ export function PalletsPage(): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const canPack = hasRole(RoleNames.Administrator, RoleNames.PackagingOperator);
+  const canPack = hasRole(
+    RoleNames.Administrator,
+    RoleNames.PackagingOperator,
+    RoleNames.ThermoOperator,
+  );
   const canReverse = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
 
   const [openOnly, setOpenOnly] = useState(true);
@@ -253,7 +257,9 @@ export function PalletsPage(): ReactElement {
                   {open.bagCount}
                   {open.capacity === null ? '' : ` / ${String(open.capacity)}`}
                 </Row>
-                <Row label={t('pallets.totalPieces')}>{open.pieceCount.toLocaleString('en-GB')}</Row>
+                <Row label={t('pallets.totalPieces')}>
+                  {open.pieceCount.toLocaleString('en-GB')}
+                </Row>
                 <Row label={t('field.weight')}>{open.weight} kg</Row>
                 <Row label={t('term.colour')}>
                   {open.colorName ?? <span className="text-ink-muted">not set yet</span>}
@@ -282,8 +288,12 @@ export function PalletsPage(): ReactElement {
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                   <th className="px-4 py-3 font-semibold">{t('term.bag')}</th>
                   <th className="px-4 py-3 font-semibold">{t('term.fromRoll')}</th>
-                  <th className="px-4 py-3 text-end font-semibold">{t('field.pieces')}</th>
-                  <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
+                  <th className="px-4 py-3 text-end font-semibold">
+                    {t('field.pieces')}
+                  </th>
+                  <th className="px-4 py-3 text-end font-semibold">
+                    {t('field.weight')}
+                  </th>
                   <th className="px-4 py-3 font-semibold">{t('pallets.scannedBy')}</th>
                   <th className="px-4 py-3" />
                 </tr>

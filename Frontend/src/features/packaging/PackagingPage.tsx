@@ -30,7 +30,11 @@ export function PackagingPage(): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const canRecord = hasRole(RoleNames.Administrator, RoleNames.PackagingOperator);
+  const canRecord = hasRole(
+    RoleNames.Administrator,
+    RoleNames.PackagingOperator,
+    RoleNames.ThermoOperator,
+  );
 
   const [recording, setRecording] = useState<StartableLine | null>(null);
   const [typed, setTyped] = useState<
@@ -189,9 +193,15 @@ export function PackagingPage(): ReactElement {
                   <thead>
                     <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                       <th className="px-2 py-2 font-semibold">{t('term.material')}</th>
-                      <th className="px-2 py-2 text-end font-semibold">{t('field.used')}</th>
-                      <th className="px-2 py-2 text-end font-semibold">{t('field.weightKg')}</th>
-                      <th className="px-2 py-2 text-end font-semibold">{t('field.inStock')}</th>
+                      <th className="px-2 py-2 text-end font-semibold">
+                        {t('field.used')}
+                      </th>
+                      <th className="px-2 py-2 text-end font-semibold">
+                        {t('field.weightKg')}
+                      </th>
+                      <th className="px-2 py-2 text-end font-semibold">
+                        {t('field.inStock')}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -260,7 +270,8 @@ export function PackagingPage(): ReactElement {
 
               <div className="mb-4">
                 <label className="field-label" htmlFor="packaging-notes">
-                  {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
+                  {t('field.note')}{' '}
+                  <span className="font-normal text-ink-muted">(optional)</span>
                 </label>
                 <input
                   id="packaging-notes"
@@ -297,9 +308,7 @@ export function PackagingPage(): ReactElement {
       {records.isError && <p className="p-6 text-bad">{t('packaging.loadFailed')}</p>}
 
       {records.data?.length === 0 && (
-        <p className="card p-8 text-center text-ink-muted">
-          {t('packaging.none')}
-        </p>
+        <p className="card p-8 text-center text-ink-muted">{t('packaging.none')}</p>
       )}
 
       {records.data?.map((record) => (
@@ -318,8 +327,12 @@ export function PackagingPage(): ReactElement {
                 <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
                   <th className="py-2 pe-4 font-semibold">{t('term.material')}</th>
                   <th className="py-2 pe-4 text-end font-semibold">{t('field.used')}</th>
-                  <th className="py-2 pe-4 text-end font-semibold">{t('packaging.weighed')}</th>
-                  <th className="py-2 pe-4 text-end font-semibold">{t('packaging.expected')}</th>
+                  <th className="py-2 pe-4 text-end font-semibold">
+                    {t('packaging.weighed')}
+                  </th>
+                  <th className="py-2 pe-4 text-end font-semibold">
+                    {t('packaging.expected')}
+                  </th>
                   <th className="py-2 text-end font-semibold">{t('field.difference')}</th>
                 </tr>
               </thead>

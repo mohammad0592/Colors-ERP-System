@@ -17,7 +17,8 @@ namespace Colors.Api.Controllers;
 [Authorize]
 public class PackagingController(IPackagingService packaging) : ApiControllerBase
 {
-    private const string CanRecord = $"{RoleNames.Administrator},{RoleNames.PackagingOperator}";
+    private const string CanRecord =
+        $"{RoleNames.Administrator},{RoleNames.PackagingOperator},{RoleNames.ThermoOperator}";
 
     [HttpGet]
     public async Task<IActionResult> GetAll(

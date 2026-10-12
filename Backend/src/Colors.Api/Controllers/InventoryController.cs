@@ -26,7 +26,16 @@ public class InventoryController(
     private const string CanReceive = $"{RoleNames.Administrator},{RoleNames.InventoryManager}";
     private const string CanAdjust = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
 
+    // Who may see the raw and packing material in the store: every job but the thermo
+    // operator's, whose part of the inventory is the rolls, bags and pallets. Listed
+    // rather than "all but one", so a job added later sees nothing until it is given it.
+    private const string CanSeeMaterials =
+        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.InventoryManager},"
+        + $"{RoleNames.ExtruderOperator},{RoleNames.ExtruderTestPerson},{RoleNames.ThermoTestPerson},"
+        + $"{RoleNames.PackagingOperator},{RoleNames.RecyclerOperator}";
+
     [HttpGet]
+    [Authorize(Roles = CanSeeMaterials)]
     public async Task<IActionResult> GetStock(
         [FromQuery] bool belowMinimumOnly = false,
         CancellationToken cancellationToken = default)
@@ -71,6 +80,7 @@ public class InventoryController(
 
     /// <summary>The units a material may be received in — pallet, bag, kilogram.</summary>
     [HttpGet("materials/{materialId:int}/units")]
+    [Authorize(Roles = CanSeeMaterials)]
     public async Task<IActionResult> GetReceivingUnits(
         int materialId,
         CancellationToken cancellationToken)
@@ -79,6 +89,7 @@ public class InventoryController(
     }
 
     [HttpGet("movements")]
+    [Authorize(Roles = CanSeeMaterials)]
     public async Task<IActionResult> GetMovements(
         [FromQuery] int? materialId = null,
         [FromQuery] int take = 100,

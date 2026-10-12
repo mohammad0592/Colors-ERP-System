@@ -22,7 +22,10 @@ namespace Colors.Api.Controllers;
 public class ThermoController(IThermoService thermo) : ApiControllerBase
 {
     private const string CanForm = $"{RoleNames.Administrator},{RoleNames.ThermoOperator}";
-    private const string CanTest = $"{RoleNames.Administrator},{RoleNames.ThermoTestPerson}";
+    // The operator counts too: on the floor the man who ran the roll is usually the one
+    // who counts what came out.
+    private const string CanTest =
+        $"{RoleNames.Administrator},{RoleNames.ThermoTestPerson},{RoleNames.ThermoOperator}";
 
     // ---------- runs ----------
 
