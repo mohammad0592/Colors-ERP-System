@@ -1,10 +1,12 @@
-﻿import { useState, type ReactElement } from 'react';
+﻿import { useQuery } from '@tanstack/react-query';
+import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
 import type { ColorDto, ProductDto } from '../master-data/api';
 import type { RecipeVersionSummaryDto } from '../recipes/api';
 import { productionApi, type RollDto } from './api';
+import { fromOutTimeField, toOutTimeField } from './outTime';
 
 interface NewRollDialogProps {
   /** The extruder's part of the open shift. The mix underneath is created by the
@@ -32,8 +34,9 @@ interface NewRollDialogProps {
  * both change while a mix is still running: the colouring agent is fed separately at
  * the extruder, so the operator switches colour without stopping.
  *
- * The roll code and the barcode are not asked for. They are generated — the whole
- * point is that nobody types them.
+ * The roll code is worked out and shown already filled in, so nobody has to type it.
+ * It can still be typed over, for a roll labelled by hand before it was logged. The
+ * barcode is never asked for: it names the roll, whatever code is written on it.
  */
 /** " — 2.8–3.0 mm", " — 3.0 mm or more", or nothing when no range is set. */
 function thicknessRange(min: number | null, max: number | null): string {
@@ -80,6 +83,22 @@ export function NewRollDialog({
   );
   const chosen = fitting.some((p) => p.id === productId) ? productId : 0;
   const [notes, setNotes] = useState('');
+
+  // The code the system would give. It follows the recipe and colour until somebody
+  // types over it; from then on what he typed is kept.
+  const suggestion = useQuery({
+    queryKey: ['next-roll-code', shiftLine.shiftLineId, recipeVersionId, colorId],
+    queryFn: () =>
+      productionApi.nextRollCode(shiftLine.shiftLineId, recipeVersionId, colorId),
+    enabled: recipeVersionId !== 0 && colorId !== 0,
+  });
+  const [typedCode, setTypedCode] = useState<string | null>(null);
+  const rollCode = typedCode ?? suggestion.data ?? '';
+
+  // Now, unless he changes it — a roll logged a few minutes after it came off.
+  const [outAt, setOutAt] = useState(() => toOutTimeField(new Date()));
+  const [outAtChanged, setOutAtChanged] = useState(false);
+
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -93,8 +112,14 @@ export function NewRollDialog({
         colorId,
         productId: chosen === 0 ? null : chosen,
         // Null means now. He is usually standing at the machine.
-        producedAt: null,
+        producedAt: outAtChanged ? fromOutTimeField(outAt) : null,
         notes: notes.trim() === '' ? null : notes.trim(),
+        // Sent only when typed over. Otherwise the server works it out again at the
+        // moment of saving, in case another roll took the suggested number meanwhile.
+        rollCode:
+          typedCode !== null && typedCode.trim() !== (suggestion.data ?? '')
+            ? typedCode.trim()
+            : null,
       });
       onCreated(roll);
       onClose();
@@ -208,9 +233,43 @@ export function NewRollDialog({
           />
         </div>
 
-        <p className="mb-4 rounded-control bg-canvas px-4 py-3 text-sm text-ink-soft">
-          {t('rolls.codePrinted')}
-        </p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mb-4">
+            <label className="field-label" htmlFor="roll-code">
+              {t('term.rollCode')}
+            </label>
+            <input
+              id="roll-code"
+              className="field-input font-mono"
+              maxLength={30}
+              autoComplete="off"
+              value={rollCode}
+              disabled={isSaving}
+              onChange={(event) => {
+                setTypedCode(event.target.value);
+              }}
+            />
+            <p className="mt-1 text-xs text-ink-muted">{t('rolls.codeHint')}</p>
+          </div>
+
+          <div className="mb-4">
+            <label className="field-label" htmlFor="roll-out">
+              {t('rolls.outAt')}
+            </label>
+            <input
+              id="roll-out"
+              type="datetime-local"
+              className="field-input"
+              value={outAt}
+              disabled={isSaving}
+              onChange={(event) => {
+                setOutAt(event.target.value);
+                setOutAtChanged(true);
+              }}
+            />
+            <p className="mt-1 text-xs text-ink-muted">{t('rolls.outAtHint')}</p>
+          </div>
+        </div>
 
         {error !== null && (
           <p

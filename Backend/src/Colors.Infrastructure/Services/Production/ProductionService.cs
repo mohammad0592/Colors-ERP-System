@@ -270,22 +270,42 @@ public class ProductionService(
 
         var serial = await NextDailySerialAsync(productionDate, cancellationToken);
 
-        var roll = new Roll
-        {
-            ProductionDate = productionDate,
-            DailySerial = serial,
-            RollCode = RollCode.For(
+        // The code the system works out, unless the operator gave one — a roll labelled
+        // by hand before it was logged keeps the code that is already written on it.
+        var rollCode = string.IsNullOrWhiteSpace(request.RollCode)
+            ? RollCode.For(
                 serial,
                 colour.Code,
                 recipe.Family.Code,
                 productionDate,
-                shiftLine.ShiftReport.Shift.Name),
+                shiftLine.ShiftReport.Shift.Name)
+            : request.RollCode.Trim();
+
+        var codeError = await RollCodeErrorAsync(rollCode, exceptRollId: null, cancellationToken);
+        if (codeError is not null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return codeError;
+        }
+
+        var producedAt = request.ProducedAt ?? timeProvider.GetUtcNow();
+        if (producedAt > timeProvider.GetUtcNow().AddMinutes(5))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return InvalidRoll("A roll cannot come off the extruder in the future. Check the out time.", "roll.outAtInFuture");
+        }
+
+        var roll = new Roll
+        {
+            ProductionDate = productionDate,
+            DailySerial = serial,
+            RollCode = rollCode,
             Batch = batch,
             RecipeVersionId = recipe.Id,
             ColorId = colour.Id,
             ProductId = product.Id,
             ProducedByUserId = userId,
-            ProducedAt = request.ProducedAt ?? timeProvider.GetUtcNow(),
+            ProducedAt = producedAt,
             Status = RollStatus.NeedsTest,
             Notes = Trimmed(request.Notes),
         };
@@ -304,6 +324,110 @@ public class ProductionService(
         await transaction.CommitAsync(cancellationToken);
 
         return await LoadRollAsync(roll.Id, cancellationToken);
+    }
+
+    public async Task<Result<string>> SuggestRollCodeAsync(
+        int shiftLineId,
+        int recipeVersionId,
+        int colorId,
+        CancellationToken cancellationToken = default)
+    {
+        var shiftLine = await db.ShiftLines
+            .Include(l => l.ShiftReport).ThenInclude(r => r.Shift)
+            .FirstOrDefaultAsync(l => l.Id == shiftLineId, cancellationToken);
+        var recipe = await db.RecipeVersions
+            .Include(v => v.Family)
+            .FirstOrDefaultAsync(v => v.Id == recipeVersionId, cancellationToken);
+        var colour = await db.Colors.FirstOrDefaultAsync(c => c.Id == colorId, cancellationToken);
+
+        if (shiftLine is null || recipe is null || colour is null)
+        {
+            return Result<string>.Failure(
+                ErrorCode.ValidationFailed, "Choose the line, the recipe and the colour first.", "roll.chooseForCode");
+        }
+
+        var productionDate = shiftLine.ShiftReport.ProductionDate;
+        var serial = await NextDailySerialAsync(productionDate, cancellationToken);
+
+        return Result<string>.Success(RollCode.For(
+            serial,
+            colour.Code,
+            recipe.Family.Code,
+            productionDate,
+            shiftLine.ShiftReport.Shift.Name));
+    }
+
+    public async Task<Result<RollDto>> UpdateRollAsync(
+        int rollId,
+        UpdateRollRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var roll = await db.Rolls
+            .Include(r => r.Batch).ThenInclude(b => b.ShiftLine).ThenInclude(l => l.ShiftReport)
+            .FirstOrDefaultAsync(r => r.Id == rollId, cancellationToken);
+
+        if (roll is null)
+        {
+            return RollNotFound();
+        }
+
+        // A closed shift accepts nothing further (specification section 2) — the roll's
+        // record is part of it, and correcting it is the reopened shift's business.
+        if (roll.Batch.ShiftLine.ShiftReport.Status == ShiftReportStatus.Closed)
+        {
+            return InvalidRoll(
+                $"Roll {roll.RollCode} belongs to a closed shift. An administrator must reopen it first.",
+                "roll.shiftClosed",
+                roll.RollCode);
+        }
+
+        var code = request.RollCode?.Trim() ?? string.Empty;
+        var codeError = await RollCodeErrorAsync(code, roll.Id, cancellationToken);
+        if (codeError is not null)
+        {
+            return codeError;
+        }
+
+        if (request.ProducedAt > timeProvider.GetUtcNow().AddMinutes(5))
+        {
+            return InvalidRoll("A roll cannot come off the extruder in the future. Check the out time.", "roll.outAtInFuture");
+        }
+
+        // The barcode does not change: it names the roll, not the code written on it, so
+        // every scan already made still finds it.
+        roll.RollCode = code;
+        roll.ProducedAt = request.ProducedAt;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadRollAsync(roll.Id, cancellationToken);
+    }
+
+    /// <summary>
+    /// Why a code cannot be used, or null. The code is what the factory reads off the roll
+    /// and repeats on every bag, so two rolls may never share one.
+    /// </summary>
+    private async Task<Result<RollDto>?> RollCodeErrorAsync(
+        string code,
+        int? exceptRollId,
+        CancellationToken cancellationToken)
+    {
+        if (code.Length == 0)
+        {
+            return InvalidRoll("The roll needs a code.", "roll.codeRequired");
+        }
+
+        if (code.Length > 30)
+        {
+            return InvalidRoll("A roll code is at most 30 characters.", "roll.codeTooLong");
+        }
+
+        var taken = await db.Rolls.AnyAsync(
+            r => r.RollCode == code && (exceptRollId == null || r.Id != exceptRollId),
+            cancellationToken);
+
+        return taken
+            ? InvalidRoll($"Another roll already has the code {code}.", "roll.codeTaken", code)
+            : null;
     }
 
     public async Task<Result<RollDto>> SaveTestReportAsync(

@@ -114,7 +114,17 @@ public sealed record CreateRollRequest(
     // The "out time" the operator knows. Null means now — he is usually standing at
     // the machine, but may be logging a roll a few minutes late.
     DateTimeOffset? ProducedAt,
-    string? Notes);
+    string? Notes,
+    // The code to write on the roll. Null means the one the system works out, which is
+    // nearly always right; the operator types one only when the roll was labelled by
+    // hand differently.
+    string? RollCode = null);
+
+/// <summary>
+/// Corrects a roll's code or out time after it was logged — a code mistyped on the
+/// label, a roll logged late and stamped with the wrong time.
+/// </summary>
+public sealed record UpdateRollRequest(string RollCode, DateTimeOffset ProducedAt);
 
 /// <summary>
 /// The measurements, taken once as the roll leaves the extruder.
@@ -164,6 +174,22 @@ public interface IProductionService
         CancellationToken cancellationToken = default);
 
     Task<Result<RollDto>> GetRollAsync(int rollId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// The code the next roll would get, so the screen can show it before it is saved.
+    /// A suggestion only: another roll logged first takes the number.
+    /// </summary>
+    Task<Result<string>> SuggestRollCodeAsync(
+        int shiftLineId,
+        int recipeVersionId,
+        int colorId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Corrects a roll's code and out time while its shift is still open.</summary>
+    Task<Result<RollDto>> UpdateRollAsync(
+        int rollId,
+        UpdateRollRequest request,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Logs a roll and prints its barcode, both or neither.</summary>
     Task<Result<RollDto>> CreateRollAsync(

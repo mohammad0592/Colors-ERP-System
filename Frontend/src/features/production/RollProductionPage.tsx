@@ -13,7 +13,8 @@ import { colorsApi, productsApi } from '../master-data/api';
 import { recipesApi } from '../recipes/api';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
-import { productionApi, type RollDto } from './api';
+import { productionApi, type RollDto, type RollSummaryDto } from './api';
+import { EditRollDialog } from './EditRollDialog';
 import { NewRollDialog } from './NewRollDialog';
 import { RollStatusBadge } from './RollStatusBadge';
 import { ThicknessVerdict } from './ThicknessVerdict';
@@ -32,6 +33,13 @@ export function RollProductionPage(): ReactElement {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canProduce = hasRole(RoleNames.Administrator, RoleNames.ExtruderOperator);
+  // Correcting the shift's record is the supervisor's job too.
+  const canCorrect = hasRole(
+    RoleNames.Administrator,
+    RoleNames.Supervisor,
+    RoleNames.ExtruderOperator,
+  );
+  const [correcting, setCorrecting] = useState<RollSummaryDto | null>(null);
 
   const [logging, setLogging] = useState<StartableLine | null>(null);
   const [justLogged, setJustLogged] = useState<RollDto | null>(null);
@@ -134,8 +142,8 @@ export function RollProductionPage(): ReactElement {
 
       {justLogged !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-          {t('term.roll')} <strong className="font-mono">{justLogged.rollCode}</strong> logged —
-          barcode <strong className="font-mono">{justLogged.barcode}</strong>.{' '}
+          {t('term.roll')} <strong className="font-mono">{justLogged.rollCode}</strong>{' '}
+          logged — barcode <strong className="font-mono">{justLogged.barcode}</strong>.{' '}
           <button
             type="button"
             className="font-semibold underline"
@@ -162,12 +170,13 @@ export function RollProductionPage(): ReactElement {
               <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
               <th className="px-4 py-3 font-semibold">{t('rolls.madeBy')}</th>
               <th className="px-4 py-3 font-semibold">{t('rolls.outAt')}</th>
+              {canCorrect && <th className="px-4 py-3" />}
             </tr>
           </thead>
           <tbody>
             {rolls.data.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-ink-muted">
+                <td colSpan={11} className="px-4 py-8 text-center text-ink-muted">
                   {t('rolls.none')}
                 </td>
               </tr>
@@ -219,6 +228,19 @@ export function RollProductionPage(): ReactElement {
                     minute: '2-digit',
                   })}
                 </td>
+                {canCorrect && (
+                  <td className="px-4 py-3 text-end">
+                    <button
+                      type="button"
+                      className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                      onClick={() => {
+                        setCorrecting(roll);
+                      }}
+                    >
+                      {t('action.edit')}
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -242,6 +264,26 @@ export function RollProductionPage(): ReactElement {
               headline: `Roll ${roll.rollCode} logged. Print this and stick it on the roll.`,
             });
             invalidate();
+          }}
+        />
+      )}
+
+      {correcting !== null && (
+        <EditRollDialog
+          roll={correcting}
+          onClose={() => {
+            setCorrecting(null);
+          }}
+          onSaved={(roll, codeChanged) => {
+            invalidate();
+            // The label shows the code, so a new code needs a new label. The barcode on
+            // the old one still scans to the same roll.
+            if (codeChanged) {
+              setPrinting({
+                barcodes: [roll.barcode],
+                headline: `Roll ${roll.rollCode} changed. Print a new label and replace the old one.`,
+              });
+            }
           }}
         />
       )}

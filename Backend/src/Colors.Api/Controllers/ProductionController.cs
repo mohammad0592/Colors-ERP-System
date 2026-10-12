@@ -24,6 +24,8 @@ public class ProductionController(IProductionService production) : ApiController
 {
     private const string CanProduce = $"{RoleNames.Administrator},{RoleNames.ExtruderOperator}";
     private const string CanTest = $"{RoleNames.Administrator},{RoleNames.ExtruderTestPerson}";
+    private const string CanCorrect =
+        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator}";
 
     // ---------- batches ----------
 
@@ -60,6 +62,33 @@ public class ProductionController(IProductionService production) : ApiController
     public async Task<IActionResult> GetRoll(int id, CancellationToken cancellationToken)
     {
         return ToResponse(await production.GetRollAsync(id, cancellationToken));
+    }
+
+    /// <summary>The code the next roll would get, shown before it is saved.</summary>
+    [HttpGet("rolls/next-code")]
+    [Authorize(Roles = CanProduce)]
+    public async Task<IActionResult> SuggestRollCode(
+        [FromQuery] int shiftLineId,
+        [FromQuery] int recipeVersionId,
+        [FromQuery] int colorId,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(
+            await production.SuggestRollCodeAsync(shiftLineId, recipeVersionId, colorId, cancellationToken));
+    }
+
+    /// <summary>
+    /// Corrects a roll's code or out time. The supervisor too, because correcting the
+    /// shift's record is his job.
+    /// </summary>
+    [HttpPut("rolls/{id:int}")]
+    [Authorize(Roles = CanCorrect)]
+    public async Task<IActionResult> UpdateRoll(
+        int id,
+        [FromBody] UpdateRollRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await production.UpdateRollAsync(id, request, cancellationToken));
     }
 
     /// <summary>Logs a roll off the extruder and prints its barcode.</summary>

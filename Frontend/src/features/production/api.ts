@@ -118,8 +118,28 @@ export const productionApi = {
     productId: number | null;
     producedAt: string | null;
     notes: string | null;
+    /** Null for the code the system works out. */
+    rollCode: string | null;
   }): Promise<RollDto> =>
     apiRequest<RollDto>('/api/production/rolls', { method: 'POST', body }),
+
+  /** The code the next roll would get. A suggestion: another roll logged first takes it. */
+  nextRollCode: (
+    shiftLineId: number,
+    recipeVersionId: number,
+    colorId: number,
+  ): Promise<string> =>
+    apiRequest<string>(
+      `/api/production/rolls/next-code?shiftLineId=${String(shiftLineId)}` +
+        `&recipeVersionId=${String(recipeVersionId)}&colorId=${String(colorId)}`,
+    ),
+
+  /** Corrects a roll's code or out time while its shift is still open. */
+  updateRoll: (
+    id: number,
+    body: { rollCode: string; producedAt: string },
+  ): Promise<RollDto> =>
+    apiRequest<RollDto>(`/api/production/rolls/${String(id)}`, { method: 'PUT', body }),
 
   /** Saving the measurements is what makes the roll usable by the thermo. */
   saveTest: (
