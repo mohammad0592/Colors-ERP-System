@@ -73,7 +73,9 @@ export function LabelPrintScreen({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label={many ? `Print ${String(barcodes.length)} labels` : t('labels.printLabel')}
+        aria-label={
+          many ? `Print ${String(barcodes.length)} labels` : t('labels.printLabel')
+        }
         className="label-card relative max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-card bg-surface p-5 shadow-raised"
       >
         <div className="no-print mb-4 flex items-start justify-between gap-4">
@@ -95,10 +97,10 @@ export function LabelPrintScreen({
           </button>
         </div>
 
-        {labels.isPending && <p className="no-print text-ink-muted">{t('common.loading')}</p>}
-        {labels.isError && (
-          <p className="no-print text-bad">{t('labels.loadFailed')}</p>
+        {labels.isPending && (
+          <p className="no-print text-ink-muted">{t('common.loading')}</p>
         )}
+        {labels.isError && <p className="no-print text-bad">{t('labels.loadFailed')}</p>}
 
         {labels.data?.length === 0 && (
           <p className="no-print text-ink-muted">{t('labels.none')}</p>
@@ -124,7 +126,7 @@ export function LabelPrintScreen({
                 : t('labels.printThis')}
             </button>
             <p className="no-print mt-2 text-xs text-ink-muted">
-              100 × 70 mm, one to a page. Reprinting is allowed.
+              4 × 4 in (102 × 102 mm), one to a page. Reprinting is allowed.
             </p>
           </>
         )}
@@ -168,27 +170,27 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
   const made = new Date(label.createdAt);
 
   return (
-    <div className="print-label mx-auto mb-4 flex flex-col rounded-card border-2 border-ink bg-white p-3 text-ink">
-      <div className="mb-1.5 flex items-start justify-between gap-3 border-b-2 border-ink pb-1.5">
+    <div className="print-label mx-auto mb-4 flex flex-col rounded-card border-2 border-ink bg-white p-[3mm] text-ink">
+      <div className="mb-[2mm] flex items-start justify-between gap-3 border-b-2 border-ink pb-[1.5mm]">
         <div className="min-w-0">
-          <p className="text-[8px] font-bold tracking-widest uppercase">
+          <p className="text-[9px] font-bold tracking-widest uppercase">
             Colors — Paper &amp; Plastic
           </p>
-          <p className="truncate text-base leading-tight font-bold">
-            {label.headlineCode}
-          </p>
+          <p className="truncate text-xl leading-tight font-bold">{label.headlineCode}</p>
         </div>
-        <span className="shrink-0 rounded border border-ink px-1.5 py-0.5 text-[9px] font-bold uppercase">
+        <span className="shrink-0 rounded border border-ink px-2 py-0.5 text-[11px] font-bold uppercase">
           {label.kind}
         </span>
       </div>
 
-      <div className="flex min-h-0 flex-1 gap-3">
-        <div className="min-w-0 flex-1 text-[10px] leading-tight">
+      <div className="flex min-h-0 flex-1 gap-[3mm]">
+        <div className="min-w-0 flex-1 text-[11px] leading-tight">
           {label.productName !== null && (
             <Field label={t('term.product')} value={label.productName} />
           )}
-          {label.colorName !== null && <Field label={t('term.colour')} value={label.colorName} />}
+          {label.colorName !== null && (
+            <Field label={t('term.colour')} value={label.colorName} />
+          )}
           {label.rollCode !== null && (
             /* رقم الرول — already on the factory's own bag label today. */
             <Field label="Roll · رقم الرول" value={label.rollCode} mono />
@@ -199,7 +201,9 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
           {label.weight !== null && (
             <Field label={t('field.weight')} value={`${String(label.weight)} kg`} />
           )}
-          {label.length !== null && <Field label={t('field.length')} value={String(label.length)} />}
+          {label.length !== null && (
+            <Field label={t('field.length')} value={String(label.length)} />
+          )}
           {(label.minThickness !== null || label.maxThickness !== null) && (
             <Field
               label={t('md.thickness')}
@@ -221,23 +225,26 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
           />
         </div>
 
-        <div className="flex w-[26mm] shrink-0 flex-col items-center">
+        {/* The QR takes the larger half of the square: it is scanned by a tablet camera
+            from arm's length on the floor, and a bigger code reads from further away
+            and at a steeper angle. */}
+        <div className="flex w-[54mm] shrink-0 flex-col items-center justify-center">
           {/* The code above the barcode, so a torn label can still be typed in. */}
-          <p className="mb-0.5 font-mono text-xs font-bold">{label.barcode}</p>
+          <p className="mb-[1mm] font-mono text-base font-bold">{label.barcode}</p>
           {qr === null ? (
-            <div className="grid h-[24mm] w-[24mm] place-items-center border border-ink text-[9px]">
+            <div className="grid h-[52mm] w-[52mm] place-items-center border border-ink text-xs">
               no code
             </div>
           ) : (
             <div
-              className="h-[24mm] w-[24mm] [&>svg]:h-full [&>svg]:w-full"
+              className="h-[52mm] w-[52mm] [&>svg]:h-full [&>svg]:w-full"
               // The library returns a complete SVG string; there is no user input in it,
               // only the barcode this server issued.
               dangerouslySetInnerHTML={{ __html: qr }}
             />
           )}
           {label.productCode !== null && (
-            <p className="mt-0.5 font-mono text-[9px]">{label.productCode}</p>
+            <p className="mt-[1mm] font-mono text-sm font-bold">{label.productCode}</p>
           )}
         </div>
       </div>
@@ -263,9 +270,13 @@ function Field({
   mono?: boolean;
 }): ReactElement {
   return (
-    <div className="flex justify-between gap-2 border-b border-dotted border-ink/30 py-[1px]">
-      <span className="shrink-0 text-ink/70">{label}</span>
-      <span className={`truncate font-semibold ${mono ? 'font-mono' : ''}`}>{value}</span>
+    // Stacked, the name above the value: the column beside the QR is narrow, and a roll
+    // code next to its name would not fit on one line.
+    <div className="border-b border-dotted border-ink/30 py-[0.6mm]">
+      <p className="text-[9px] text-ink/70">{label}</p>
+      <p className={`line-clamp-2 font-semibold break-words ${mono ? 'font-mono' : ''}`}>
+        {value}
+      </p>
     </div>
   );
 }

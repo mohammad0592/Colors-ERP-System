@@ -106,20 +106,19 @@
 
 /* The sticky label that goes on a roll, a bag or a pallet (specification section 12).
    Sized in millimetres rather than pixels, because it is printed on a physical label
-   and 100mm x 70mm is what comes out of the printer whatever the screen is doing.
-   Border-box, so the padding is inside those 100mm and not added to them. */
+   and a 4 x 4 inch sticker — 101.6mm square — is what comes out of the printer whatever
+   the screen is doing. Border-box, so the padding is inside the square, not added to it. */
 .print-label {
   box-sizing: border-box;
-  width: 100mm;
-  height: 70mm;
+  width: 101.6mm;
+  height: 101.6mm;
   overflow: hidden;
 }
 
-/* The page is exactly the sticker. No margin at all: a margin here would leave 92mm to
-   print on, which a 100mm label cannot fit into, and Chrome would break one label
-   across several sheets. */
+/* The page is exactly the sticker. No margin at all: a margin here would leave less than
+   the label to print on, and Chrome would break one label across several sheets. */
 @page {
-  size: 100mm 70mm;
+  size: 101.6mm 101.6mm;
   margin: 0;
 }
 
@@ -167,7 +166,7 @@
        paginator no slack at all, and a fraction of a pixel of rounding at print DPI is
        then enough to spill an empty sheet — a wasted sticker on every print. Label
        printers want a little tolerance at the edge anyway. */
-    height: 69.5mm;
+    height: 101.1mm;
     /* Never split down the middle. */
     break-inside: avoid;
     page-break-inside: avoid;
