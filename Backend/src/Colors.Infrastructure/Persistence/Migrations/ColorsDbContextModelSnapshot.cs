@@ -985,7 +985,14 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int>("ColorId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("DailySerial")
+                    b.Property<decimal?>("Length")
+                        .HasPrecision(9, 3)
+                        .HasColumnType("numeric(9,3)");
+
+                    b.Property<DateTimeOffset?>("MeasuredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("MeasuredByUserId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Notes")
@@ -1009,19 +1016,28 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("RollCode")
                         .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("character varying(30)");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<int>("RollNumber")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
+                    b.Property<decimal?>("Weight")
+                        .HasPrecision(9, 3)
+                        .HasColumnType("numeric(9,3)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BatchId");
 
                     b.HasIndex("ColorId");
+
+                    b.HasIndex("MeasuredByUserId");
 
                     b.HasIndex("ProducedByUserId");
 
@@ -1036,11 +1052,34 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("ix_rolls_status");
 
-                    b.HasIndex("ProductionDate", "DailySerial")
-                        .IsUnique()
-                        .HasDatabaseName("ux_rolls_date_serial");
+                    b.ToTable("Rolls", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_rolls_measured_positive", "(\"Weight\" IS NULL OR \"Weight\" > 0) AND (\"Length\" IS NULL OR \"Length\" > 0)");
+                        });
+                });
 
-                    b.ToTable("Rolls", (string)null);
+            modelBuilder.Entity("Colors.Domain.Entities.Production.RollNumberCounter", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("LastResetAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("LastResetByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NextNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LastResetByUserId");
+
+                    b.ToTable("RollNumberCounters", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_roll_number_positive", "\"NextNumber\" > 0");
+                        });
                 });
 
             modelBuilder.Entity("Colors.Domain.Entities.Production.RollTestReport", b =>
@@ -1050,10 +1089,6 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("Length")
-                        .HasPrecision(9, 3)
-                        .HasColumnType("numeric(9,3)");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
@@ -1091,10 +1126,6 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
 
-                    b.Property<decimal>("Weight")
-                        .HasPrecision(9, 3)
-                        .HasColumnType("numeric(9,3)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("RollId")
@@ -1105,7 +1136,7 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.ToTable("RollTestReports", null, t =>
                         {
-                            t.HasCheckConstraint("ck_roll_tests_positive", "\"Weight\" > 0 AND \"Length\" > 0 AND \"PlateWeight\" > 0");
+                            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" > 0");
                         });
                 });
 
@@ -2163,6 +2194,11 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
+                        .HasForeignKey("MeasuredByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
                         .HasForeignKey("ProducedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -2185,6 +2221,14 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("RecipeVersion");
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.Production.RollNumberCounter", b =>
+                {
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("LastResetByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Colors.Domain.Entities.Production.RollTestReport", b =>

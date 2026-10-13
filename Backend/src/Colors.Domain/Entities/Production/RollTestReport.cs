@@ -1,7 +1,9 @@
 namespace Colors.Domain.Entities.Production;
 
 /// <summary>
-/// What was measured as the roll left the extruder (specification section 8).
+/// What was tested as the roll left the extruder (specification section 8): the sample
+/// plate and the four thickness readings. The weight and length used to be here too, and
+/// moved to the roll itself in section 19.12.
 ///
 /// Written by the Extruder Test Person — today the same man as the operator, holding
 /// both roles. Separate from the roll because it is a different event, by a different
@@ -14,11 +16,6 @@ public class RollTestReport
     public int RollId { get; set; }
 
     public Roll Roll { get; set; } = null!;
-
-    /// <summary>Kilograms.</summary>
-    public decimal Weight { get; set; }
-
-    public decimal Length { get; set; }
 
     /// <summary>
     /// Grams, from a sample plate pressed from this roll. Measured again after

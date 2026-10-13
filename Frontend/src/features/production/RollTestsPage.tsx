@@ -141,7 +141,7 @@ export function RollTestsPage(): ReactElement {
                           setMeasuring(roll);
                         }}
                       >
-                        {t('rolls.measure')}
+                        {t('rolls.test')}
                       </button>
                     )}
                   </div>

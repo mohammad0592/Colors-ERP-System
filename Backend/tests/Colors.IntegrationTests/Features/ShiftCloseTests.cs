@@ -74,9 +74,10 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         var roll = await Production(db).CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
+        await Production(db).MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
         await Production(db).SaveTestReportAsync(
             roll.Value!.Id,
-            new SaveRollTestRequest(95m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
+            new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
             ids.UserId);
 
         var run = await Thermo(db).StartRunAsync(
@@ -102,9 +103,10 @@ public class ShiftCloseTests(DatabaseFixture fixture)
         var roll = await Production(db).CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
+        await Production(db).MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
         await Production(db).SaveTestReportAsync(
             roll.Value!.Id,
-            new SaveRollTestRequest(95m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
+            new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
             ids.UserId);
 
         var run = await Thermo(db).StartRunAsync(

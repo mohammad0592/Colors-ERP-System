@@ -1,5 +1,6 @@
 ﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Barcodes;
+using Colors.Domain.Common;
 using Colors.Domain.Entities.Barcodes;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Persistence;
@@ -46,6 +47,38 @@ public class BarcodeService(ColorsDbContext db, TimeProvider timeProvider) : IBa
         var barcode = new Barcode
         {
             Value = await NextValueAsync(objectType, cancellationToken),
+            ObjectType = objectType,
+            ObjectId = objectId,
+            CreatedAt = timeProvider.GetUtcNow(),
+            IsActive = true,
+        };
+
+        db.Barcodes.Add(barcode);
+        await db.SaveChangesAsync(cancellationToken);
+
+        return Result<BarcodeDto>.Success(ToDto(barcode));
+    }
+
+    public async Task<Result<BarcodeDto>> IssueAsync(
+        BarcodeObjectType objectType,
+        int objectId,
+        string value,
+        CancellationToken cancellationToken = default)
+    {
+        var cleaned = Clean(value);
+        if (objectId <= 0 || cleaned.Length == 0)
+        {
+            return Invalid("A barcode needs an object and a value.", "barcode.needsAnObject");
+        }
+
+        if (await db.Barcodes.AnyAsync(b => b.Value == cleaned, cancellationToken))
+        {
+            return Invalid($"Another label already carries {cleaned}.", "barcode.valueTaken", cleaned);
+        }
+
+        var barcode = new Barcode
+        {
+            Value = cleaned,
             ObjectType = objectType,
             ObjectId = objectId,
             CreatedAt = timeProvider.GetUtcNow(),
@@ -210,8 +243,9 @@ public class BarcodeService(ColorsDbContext db, TimeProvider timeProvider) : IBa
     /// <summary>
     /// Scanners append a newline, and a man typing a torn label uses whatever case is
     /// under his thumb. Neither should be the difference between finding a bag and not.
+    /// Spaces go too: a roll's barcode is its code, and the screen's scan box drops them.
     /// </summary>
-    private static string Clean(string value) => value.Trim().ToUpperInvariant();
+    private static string Clean(string value) => RollCode.AsBarcode(value);
 
     private static string Describe(Barcode barcode) =>
         $"{barcode.ObjectType} #{barcode.ObjectId}";

@@ -48,6 +48,17 @@ public interface IBarcodeService
         int objectId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// The same, with the value given rather than drawn from the sequence — a roll's
+    /// barcode is its own code (specification section 19.12). Refused if another label
+    /// already carries it.
+    /// </summary>
+    Task<Result<BarcodeDto>> IssueAsync(
+        BarcodeObjectType objectType,
+        int objectId,
+        string value,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Scan anything, or type it when the label is torn.</summary>
     Task<Result<BarcodeLookupDto>> LookupAsync(
         string value,

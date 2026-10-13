@@ -3,7 +3,7 @@ import { Modal } from '../../components/ui/Modal';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../lib/apiClient';
 import { productionApi, type RollDto, type RollSummaryDto } from './api';
-import { fromOutTimeField, toOutTimeField } from './outTime';
+import { fromTimeField, toOffsetIso, toTimeField } from './outTime';
 
 interface EditRollDialogProps {
   roll: RollSummaryDto;
@@ -16,8 +16,8 @@ interface EditRollDialogProps {
  * Corrects a roll's code or out time after it was logged — a code mistyped on the label,
  * a roll logged late and stamped with the wrong time (specification section 8).
  *
- * The barcode is left alone. It names the roll, not the code written on it, so every scan
- * already made still finds it; only the printed code needs a new label.
+ * For a roll whose barcode is its code, the barcode follows the code, and a new label is
+ * printed. An older roll with a separate R-barcode keeps it.
  */
 export function EditRollDialog({
   roll,
@@ -26,12 +26,14 @@ export function EditRollDialog({
 }: EditRollDialogProps): ReactElement {
   const { t } = useTranslation();
   const [rollCode, setRollCode] = useState(roll.rollCode);
-  const [outAt, setOutAt] = useState(() => toOutTimeField(new Date(roll.producedAt)));
+  // The time only; the date stays the day the roll came off (section 19.12).
+  const [outAt, setOutAt] = useState(() => toTimeField(new Date(roll.producedAt)));
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   async function save(): Promise<void> {
-    const producedAt = fromOutTimeField(outAt);
+    const moment = fromTimeField(outAt, new Date(roll.producedAt));
+    const producedAt = moment === null ? null : toOffsetIso(moment);
     if (producedAt === null) {
       setError(t('rolls.outAtHint'));
       return;
@@ -87,7 +89,7 @@ export function EditRollDialog({
           </label>
           <input
             id="edit-roll-out"
-            type="datetime-local"
+            type="time"
             className="field-input"
             value={outAt}
             disabled={isSaving}

@@ -60,9 +60,10 @@ public class ThermoShiftReportTests(DatabaseFixture fixture)
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 
+        await production.MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
         var measured = await production.SaveTestReportAsync(
             roll.Value!.Id,
-            new SaveRollTestRequest(95m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
+            new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
             ids.UserId);
         Assert.True(measured.IsSuccess, measured.Message);
 

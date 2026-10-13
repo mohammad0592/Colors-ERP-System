@@ -70,9 +70,10 @@ public class ThermoTests(DatabaseFixture fixture)
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 
+        await production.MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
         var measured = await production.SaveTestReportAsync(
             roll.Value!.Id,
-            new SaveRollTestRequest(95m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
+            new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
             ids.UserId);
         Assert.True(measured.IsSuccess, measured.Message);
 
@@ -394,10 +395,10 @@ public class ThermoTests(DatabaseFixture fixture)
         await service.SaveTestReportAsync(
             run.Id, new SaveThermoTestRequest(10, 10m, 10m, 0m, null), ids.UserId);
 
-        // Take the roll's test away. Without a roll weight there is nothing to subtract
-        // from, and a run that cannot say what it lost must not claim it lost nothing.
-        var rollTest = await db.RollTestReports.FirstAsync(t => t.RollId == run.RollId);
-        db.RollTestReports.Remove(rollTest);
+        // Take the roll's weight away. Without it there is nothing to subtract from, and a
+        // run that cannot say what it lost must not claim it lost nothing.
+        var roll = await db.Rolls.FirstAsync(r => r.Id == run.RollId);
+        roll.Weight = null;
         await db.SaveChangesAsync();
         db.ChangeTracker.Clear();
 
@@ -538,9 +539,10 @@ public class ThermoTests(DatabaseFixture fixture)
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 
+        await production.MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
         var measured = await production.SaveTestReportAsync(
             roll.Value!.Id,
-            new SaveRollTestRequest(95m, 1200m, 9m, 3.2m, 3.2m, 3.2m, 3.2m, null),
+            new SaveRollTestRequest(9m, 3.2m, 3.2m, 3.2m, 3.2m, null),
             ids.UserId);
         Assert.True(measured.IsSuccess, measured.Message);
 

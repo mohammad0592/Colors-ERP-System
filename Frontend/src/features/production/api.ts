@@ -26,8 +26,6 @@ export interface BatchSummaryDto {
 
 export interface RollTestReportDto {
   id: number;
-  weight: number;
-  length: number;
   plateWeight: number;
   thicknessRs: number;
   thicknessRm: number;
@@ -49,8 +47,9 @@ export interface RollTestReportDto {
 export interface RollSummaryDto {
   id: number;
   rollCode: string;
+  /** For rolls logged since 19.12, the code itself in capitals. */
   barcode: string;
-  dailySerial: number;
+  rollNumber: number;
   productionDate: string;
   batchId: number;
   batchNumber: number;
@@ -60,9 +59,12 @@ export interface RollSummaryDto {
   colorId: number;
   colorName: string;
   status: RollStatus;
+  /** Still to be done before the thermo may take it, in either order. */
   needsTest: boolean;
+  needsMeasure: boolean;
   producedByName: string;
   producedAt: string;
+  /** Measured on the production screen. Null until then. */
   weight: number | null;
   length: number | null;
   averageThickness: number | null;
@@ -78,10 +80,19 @@ export interface RollSummaryDto {
 
 export interface RollDto extends Omit<
   RollSummaryDto,
-  'weight' | 'length' | 'averageThickness' | 'thicknessInSpec'
+  'averageThickness' | 'thicknessInSpec'
 > {
+  measuredByName: string | null;
+  measuredAt: string | null;
   notes: string | null;
   testReport: RollTestReportDto | null;
+}
+
+/** The factory's running roll number (section 19.12). */
+export interface RollNumberDto {
+  nextNumber: number;
+  lastResetAt: string | null;
+  lastResetByName: string | null;
 }
 
 export const productionApi = {
@@ -128,11 +139,32 @@ export const productionApi = {
     shiftLineId: number,
     recipeVersionId: number,
     colorId: number,
+    /** The out time with the tablet's offset — the code carries the factory's clock. */
+    at: string,
   ): Promise<string> =>
     apiRequest<string>(
       `/api/production/rolls/next-code?shiftLineId=${String(shiftLineId)}` +
-        `&recipeVersionId=${String(recipeVersionId)}&colorId=${String(colorId)}`,
+        `&recipeVersionId=${String(recipeVersionId)}&colorId=${String(colorId)}` +
+        `&at=${encodeURIComponent(at)}`,
     ),
+
+  /** The roll's weight and length, taken on the production screen (section 19.12). */
+  measureRoll: (id: number, body: { weight: number; length: number }): Promise<RollDto> =>
+    apiRequest<RollDto>(`/api/production/rolls/${String(id)}/measure`, {
+      method: 'POST',
+      body,
+    }),
+
+  /** The number the next roll will get, and when it was last put back to 1. */
+  rollNumber: (): Promise<RollNumberDto> =>
+    apiRequest<RollNumberDto>('/api/production/roll-number'),
+
+  /** Supervisor and administrator only. */
+  resetRollNumber: (): Promise<RollNumberDto> =>
+    apiRequest<RollNumberDto>('/api/production/roll-number/reset', {
+      method: 'POST',
+      body: {},
+    }),
 
   /** Corrects a roll's code or out time while its shift is still open. */
   updateRoll: (
@@ -145,8 +177,6 @@ export const productionApi = {
   saveTest: (
     rollId: number,
     body: {
-      weight: number;
-      length: number;
       plateWeight: number;
       thicknessRs: number;
       thicknessRm: number;

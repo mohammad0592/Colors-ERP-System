@@ -1,4 +1,5 @@
 ﻿using Colors.Application.Features.Production;
+using Colors.Domain.Common;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Enums;
@@ -150,16 +151,17 @@ public class ProductionTests(DatabaseFixture fixture)
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
         Assert.True(roll.IsSuccess, roll.Message);
-        Assert.Equal(1, roll.Value!.DailySerial);
+        Assert.True(roll.Value!.RollNumber > 0);
         Assert.NotEmpty(roll.Value.RollCode);
 
         // The label and the roll are one act — a roll nobody can scan is no use on the
-        // floor, and a label naming nothing is worse.
-        Assert.StartsWith("R", roll.Value.Barcode, StringComparison.Ordinal);
+        // floor, and a label naming nothing is worse. And it is one code: the barcode is
+        // the roll code itself, in the capitals every scan is cleaned to (section 19.12).
+        Assert.Equal(RollCode.AsBarcode(roll.Value.RollCode), roll.Value.Barcode);
     }
 
     [Fact]
-    public async Task The_serial_counts_up_within_a_day()
+    public async Task The_roll_number_counts_on()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD2");
@@ -171,8 +173,8 @@ public class ProductionTests(DatabaseFixture fixture)
         var second = await service.CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
-        Assert.Equal(1, first.Value!.DailySerial);
-        Assert.Equal(2, second.Value!.DailySerial);
+        // On from wherever the factory's count stands — it is not restarted per day or shift.
+        Assert.Equal(first.Value!.RollNumber + 1, second.Value!.RollNumber);
         Assert.NotEqual(first.Value.RollCode, second.Value.RollCode);
     }
 
@@ -191,26 +193,39 @@ public class ProductionTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task Saving_the_measurements_makes_the_roll_available()
+    public async Task A_roll_is_ready_once_it_is_both_measured_and_tested()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD4");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD4", ids.UserId);
         var service = NewService(db);
 
-        var roll = await service.CreateRollAsync(
+        var first = await service.CreateRollAsync(
+            new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
+        var second = await service.CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
+        // Tested first: still waiting for its weight.
         var tested = await service.SaveTestReportAsync(
-            roll.Value!.Id,
-            new SaveRollTestRequest(95.5m, 1200m, 9m, 1.2m, 1.25m, 1.3m, 1.25m, null),
-            ids.UserId);
-
+            first.Value!.Id, new SaveRollTestRequest(9m, 1.2m, 1.25m, 1.3m, 1.25m, null), ids.UserId);
         Assert.True(tested.IsSuccess, tested.Message);
-        Assert.Equal(RollStatus.Available.ToString(), tested.Value!.Status);
-
+        Assert.Equal(RollStatus.NeedsTest.ToString(), tested.Value!.Status);
+        Assert.True(tested.Value.NeedsMeasure);
         // The mean of the four readings, worked out rather than stored.
         Assert.Equal(1.25m, tested.Value.TestReport!.AverageThickness);
+
+        var ready = await service.MeasureRollAsync(first.Value.Id, new MeasureRollRequest(95.5m, 1200m), ids.UserId);
+        Assert.Equal(RollStatus.Available.ToString(), ready.Value!.Status);
+        Assert.Equal(95.5m, ready.Value.Weight);
+
+        // Measured first: the other way round ends the same.
+        var measured = await service.MeasureRollAsync(second.Value!.Id, new MeasureRollRequest(96m, 1200m), ids.UserId);
+        Assert.Equal(RollStatus.NeedsTest.ToString(), measured.Value!.Status);
+        Assert.True(measured.Value.NeedsTest);
+
+        var both = await service.SaveTestReportAsync(
+            second.Value.Id, new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null), ids.UserId);
+        Assert.Equal(RollStatus.Available.ToString(), both.Value!.Status);
     }
 
     [Fact]
@@ -226,17 +241,15 @@ public class ProductionTests(DatabaseFixture fixture)
 
         // The real Roll Log export has one: the operator typed the length into the
         // weight box. On paper it was wrong for ever; here he is still at the machine.
-        var tested = await service.SaveTestReportAsync(
-            roll.Value!.Id,
-            new SaveRollTestRequest(350m, 1200m, 9m, 1.2m, 1.25m, 1.3m, 1.25m, null),
-            ids.UserId);
+        var measured = await service.MeasureRollAsync(
+            roll.Value!.Id, new MeasureRollRequest(350m, 1200m), ids.UserId);
 
-        Assert.False(tested.IsSuccess);
-        Assert.Contains("weight box", tested.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.False(measured.IsSuccess);
+        Assert.Equal("roll.weightOutOfRange", measured.MessageCode);
     }
 
     [Fact]
-    public async Task A_roll_is_measured_once()
+    public async Task A_roll_is_tested_once_but_its_weight_may_be_corrected()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD6");
@@ -245,15 +258,50 @@ public class ProductionTests(DatabaseFixture fixture)
 
         var roll = await service.CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
-        var request = new SaveRollTestRequest(95m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null);
+        var request = new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null);
 
         await service.SaveTestReportAsync(roll.Value!.Id, request, ids.UserId);
         var again = await service.SaveTestReportAsync(roll.Value.Id, request, ids.UserId);
-
         Assert.False(again.IsSuccess);
+
+        // A weight written down wrong is put right while the roll is still in stock.
+        await service.MeasureRollAsync(roll.Value.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
+        var corrected = await service.MeasureRollAsync(roll.Value.Id, new MeasureRollRequest(94m, 1200m), ids.UserId);
+        Assert.True(corrected.IsSuccess, corrected.Message);
+        Assert.Equal(94m, corrected.Value!.Weight);
     }
 
+    [Fact]
+    public async Task Resetting_the_roll_number_starts_the_count_again_at_one()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PRD7");
+        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD7", ids.UserId);
+        var service = NewService(db);
+        var before = (await service.GetRollNumberAsync()).NextNumber;
 
+        try
+        {
+            var reset = await service.ResetRollNumberAsync(ids.UserId);
+            Assert.Equal(1, reset.NextNumber);
+            Assert.NotNull(reset.LastResetAt);
+            Assert.NotNull(reset.LastResetByName);
+
+            var roll = await service.CreateRollAsync(
+                new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
+                ids.UserId);
+            Assert.Equal(1, roll.Value!.RollNumber);
+            Assert.StartsWith("01", roll.Value.RollCode, StringComparison.Ordinal);
+        }
+        finally
+        {
+            // The suite shares one database and one counter. Put it back where it was, so
+            // no later test is handed a number an earlier one already used this minute.
+            var counter = await db.RollNumberCounters.SingleAsync(c => c.Id == 1);
+            counter.NextNumber = before + 1000;
+            await db.SaveChangesAsync();
+        }
+    }
 
     [Fact]
     public async Task A_draft_recipe_cannot_make_a_roll()
@@ -276,7 +324,7 @@ public class ProductionTests(DatabaseFixture fixture)
 
 
     [Fact]
-    public async Task The_database_refuses_two_rolls_with_the_same_serial_on_a_day()
+    public async Task The_database_refuses_two_rolls_with_the_same_code()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD11");
@@ -290,8 +338,8 @@ public class ProductionTests(DatabaseFixture fixture)
         db.Rolls.Add(new Domain.Entities.Production.Roll
         {
             ProductionDate = saved.ProductionDate,
-            DailySerial = saved.DailySerial,
-            RollCode = saved.RollCode + "X",
+            RollNumber = saved.RollNumber,
+            RollCode = saved.RollCode,
             BatchId = saved.BatchId,
             RecipeVersionId = recipeId,
             ColorId = colourId,
@@ -299,7 +347,7 @@ public class ProductionTests(DatabaseFixture fixture)
             ProducedAt = DateTimeOffset.UtcNow,
         });
 
-        // Two tablets logging a roll in the same moment must not both be handed 13.
+        // The number repeats after a reset; the code never may, because it is the barcode.
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
     }
 
@@ -316,10 +364,7 @@ public class ProductionTests(DatabaseFixture fixture)
         await service.CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
 
-        await service.SaveTestReportAsync(
-            first.Value!.Id,
-            new SaveRollTestRequest(96m, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
-            ids.UserId);
+        await service.MeasureRollAsync(first.Value!.Id, new MeasureRollRequest(96m, 1200m), ids.UserId);
 
         var batches = await service.GetBatchesAsync(ids.ShiftReportId);
         var batch = batches.Single();
@@ -415,7 +460,7 @@ public class ProductionTests(DatabaseFixture fixture)
 
     /// <summary>Four readings with the same value, so the average is exactly that.</summary>
     private static SaveRollTestRequest Measured(decimal thickness) =>
-        new(95m, 1200m, 9m, thickness, thickness, thickness, thickness, null);
+        new(9m, thickness, thickness, thickness, thickness, null);
 
     [Fact]
     public async Task A_roll_must_say_what_it_was_made_for()
@@ -518,6 +563,7 @@ public class ProductionTests(DatabaseFixture fixture)
                 ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
             ids.UserId);
 
+        await service.MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
         var measured = await service.SaveTestReportAsync(roll.Value!.Id, Measured(4.0m), ids.UserId);
 
         Assert.True(measured.IsSuccess, measured.Message);

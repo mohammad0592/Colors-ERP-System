@@ -36,9 +36,17 @@ public class RollConfiguration : IEntityTypeConfiguration<Roll>
 {
     public void Configure(EntityTypeBuilder<Roll> builder)
     {
-        builder.ToTable("Rolls");
+        // The Roll Log export contains a roll weighing 350 — the operator typed the length
+        // into the weight box. Ranges are checked in the service while he is still at the
+        // machine; this is the outer wall no path gets past.
+        builder.ToTable("Rolls", t => t.HasCheckConstraint(
+            "ck_rolls_measured_positive",
+            "(\"Weight\" IS NULL OR \"Weight\" > 0) AND (\"Length\" IS NULL OR \"Length\" > 0)"));
 
-        builder.Property(e => e.RollCode).IsRequired().HasMaxLength(30);
+        // Room for the colour's name at the end: 04N2309260844-White.
+        builder.Property(e => e.RollCode).IsRequired().HasMaxLength(50);
+        builder.Property(e => e.Weight).HasPrecision(9, 3);
+        builder.Property(e => e.Length).HasPrecision(9, 3);
         builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(e => e.Notes).HasMaxLength(500);
 
@@ -47,11 +55,8 @@ public class RollConfiguration : IEntityTypeConfiguration<Roll>
             .IsUnique()
             .HasDatabaseName("ux_rolls_code");
 
-        // The serial restarts each day, so it is only unique within its day — and that
-        // pair is what stops two tablets handing out roll 13 twice.
-        builder.HasIndex(e => new { e.ProductionDate, e.DailySerial })
-            .IsUnique()
-            .HasDatabaseName("ux_rolls_date_serial");
+        // Not unique: the number starts again when a supervisor resets it. The code is
+        // unique, and the counter hands each number out once between resets.
 
         // "What is in stock?" — the question the thermo asks all day.
         builder.HasIndex(e => e.Status).HasDatabaseName("ix_rolls_status");
@@ -80,6 +85,28 @@ public class RollConfiguration : IEntityTypeConfiguration<Roll>
             .WithMany()
             .HasForeignKey(e => e.ProducedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.MeasuredByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class RollNumberCounterConfiguration : IEntityTypeConfiguration<RollNumberCounter>
+{
+    public void Configure(EntityTypeBuilder<RollNumberCounter> builder)
+    {
+        builder.ToTable("RollNumberCounters", t =>
+            t.HasCheckConstraint("ck_roll_number_positive", "\"NextNumber\" > 0"));
+
+        // Handed out by the database, never by the code, so it is not generated here.
+        builder.Property(e => e.Id).ValueGeneratedNever();
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.LastResetByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
 
@@ -88,15 +115,8 @@ public class RollTestReportConfiguration : IEntityTypeConfiguration<RollTestRepo
     public void Configure(EntityTypeBuilder<RollTestReport> builder)
     {
         builder.ToTable("RollTestReports", t =>
-            // The Roll Log export contains a roll weighing 350 — the operator typed the
-            // length into the weight box. Ranges are checked in the service while he is
-            // still at the machine; these are the outer walls no path gets past.
-            t.HasCheckConstraint(
-                "ck_roll_tests_positive",
-                "\"Weight\" > 0 AND \"Length\" > 0 AND \"PlateWeight\" > 0"));
+            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" > 0"));
 
-        builder.Property(e => e.Weight).HasPrecision(9, 3);
-        builder.Property(e => e.Length).HasPrecision(9, 3);
         builder.Property(e => e.PlateWeight).HasPrecision(9, 3);
         builder.Property(e => e.ThicknessRs).HasPrecision(9, 3);
         builder.Property(e => e.ThicknessRm).HasPrecision(9, 3);

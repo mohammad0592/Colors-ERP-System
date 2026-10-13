@@ -58,8 +58,10 @@ public class RollCorrectionTests(DatabaseFixture fixture)
         var (colourId, recipeId) = await RecipeAndColourAsync(db, ids, "RCC1");
         var service = NewService(db);
 
-        var suggested = await service.SuggestRollCodeAsync(ids.ShiftLineId, recipeId, colourId);
-        var roll = await service.CreateRollAsync(Roll(ids, recipeId, colourId), ids.UserId);
+        // The same moment for both, as the tablet would send it.
+        var outAt = DateTimeOffset.UtcNow.AddMinutes(-1);
+        var suggested = await service.SuggestRollCodeAsync(ids.ShiftLineId, recipeId, colourId, outAt);
+        var roll = await service.CreateRollAsync(Roll(ids, recipeId, colourId, outAt: outAt), ids.UserId);
 
         Assert.True(roll.IsSuccess, roll.Message);
         Assert.Equal(suggested.Value, roll.Value!.RollCode);
@@ -102,7 +104,7 @@ public class RollCorrectionTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task A_logged_roll_can_be_corrected_and_keeps_its_barcode()
+    public async Task A_logged_roll_can_be_corrected_and_its_barcode_follows_the_code()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "RCC4");
@@ -116,8 +118,9 @@ public class RollCorrectionTests(DatabaseFixture fixture)
         Assert.True(corrected.IsSuccess, corrected.Message);
         Assert.Equal("FIX-RCC4", corrected.Value!.RollCode);
         Assert.Equal(earlier.ToUnixTimeSeconds(), corrected.Value.ProducedAt.ToUnixTimeSeconds());
-        // Every scan already made still finds it.
-        Assert.Equal(roll.Barcode, corrected.Value.Barcode);
+        // One code: the barcode is the code, so it changes with it and a new label is
+        // printed (section 19.12).
+        Assert.Equal("FIX-RCC4", corrected.Value.Barcode);
     }
 
     [Fact]

@@ -61,7 +61,7 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             .ToListAsync(cancellationToken);
 
         var rolls = runs.Select(ToRollRow).ToList();
-        var counted = runs.Where(p => p.TestReport is not null && p.Roll.TestReport is not null).ToList();
+        var counted = runs.Where(p => p.TestReport is not null && p.Roll.Weight is not null).ToList();
 
         // One line per product, as the form's yield block has. Only counted rolls: a roll
         // still in the machine has a weight but no plates yet, and counting it would read
@@ -71,7 +71,7 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             .Select(g =>
             {
                 var product = g.First().TestReport!.Product;
-                var rollWeight = g.Sum(p => p.Roll.TestReport!.Weight);
+                var rollWeight = g.Sum(p => p.Roll.Weight!.Value);
                 var pieces = g.Sum(p => p.TestReport!.PieceCount);
                 var productWeight = Math.Round(
                     g.Sum(p => p.TestReport!.PieceCount * p.TestReport.PieceWeight / 1000m), 3);
@@ -134,7 +134,7 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             rolls,
             // Every roll that went in, as the form's own total adds them; the yield block
             // below takes only the counted ones.
-            runs.Sum(p => p.Roll.TestReport?.Weight ?? 0m),
+            runs.Sum(p => p.Roll.Weight ?? 0m),
             counted.Sum(p => p.TestReport!.BagCount),
             counted.Sum(p => p.TestReport!.PieceCount),
             products,
@@ -158,8 +158,8 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
         return new ThermoReportRollDto(
             roll.RollCode,
             roll.Color.Name,
-            roll.TestReport?.Weight,
-            roll.TestReport?.Length,
+            roll.Weight,
+            roll.Length,
             roll.TestReport?.AverageThickness,
             run.TotalTimeMinutes,
             product?.Name,

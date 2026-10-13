@@ -10,20 +10,17 @@ interface RollTestDialogProps {
   onSaved: (roll: RollDto) => void;
 }
 
-/** A roll weighs between these. 350 means the length went into the weight box. */
-const MinWeight = 50;
-const MaxWeight = 150;
-
 /**
- * The measurements, taken once as the roll leaves the extruder
- * (specification section 8).
+ * The roll test, taken once as the roll leaves the extruder (specification section 8):
+ * the sample plate and the four thickness readings. Weight and length are measured on
+ * the production screen instead (section 19.12).
  *
  * The four thickness boxes are named by position — RS, RM, LM, LS — because that is
  * what the gauge shows and what the man reads. Their average is displayed as he types
  * but never typed itself.
  *
- * Saving this is what lets the thermo use the roll. It is not approval: nothing is
- * compared against a limit, and no roll is rejected for its numbers.
+ * With the measuring, this is what lets the thermo use the roll. It is not approval:
+ * nothing is compared against a limit, and no roll is rejected for its numbers.
  */
 export function RollTestDialog({
   roll,
@@ -31,8 +28,6 @@ export function RollTestDialog({
   onSaved,
 }: RollTestDialogProps): ReactElement {
   const { t } = useTranslation();
-  const [weight, setWeight] = useState('');
-  const [length, setLength] = useState('');
   const [plateWeight, setPlateWeight] = useState('');
   const [rs, setRs] = useState('');
   const [rm, setRm] = useState('');
@@ -51,25 +46,13 @@ export function RollTestDialog({
     ? Math.round((readings.reduce((sum, v) => sum + v, 0) / 4) * 1000) / 1000
     : null;
 
-  const weightNumber = Number(weight);
-  const weightTyped = weight.trim() !== '' && Number.isFinite(weightNumber);
-  const weightLooksWrong =
-    weightTyped && (weightNumber < MinWeight || weightNumber > MaxWeight);
-
-  const complete =
-    weightTyped &&
-    !weightLooksWrong &&
-    Number(length) > 0 &&
-    Number(plateWeight) > 0 &&
-    allReadings;
+  const complete = Number(plateWeight) > 0 && allReadings;
 
   async function save(): Promise<void> {
     setError(null);
     setIsSaving(true);
     try {
       const saved = await productionApi.saveTest(roll.id, {
-        weight: weightNumber,
-        length: Number(length),
         plateWeight: Number(plateWeight),
         thicknessRs: readings[0] ?? 0,
         thicknessRm: readings[1] ?? 0,
@@ -89,7 +72,7 @@ export function RollTestDialog({
   }
 
   return (
-    <Modal title={`Measure roll ${roll.rollCode}`} onClose={onClose}>
+    <Modal title={`${t('rolls.testTitle')} — ${roll.rollCode}`} onClose={onClose}>
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -104,56 +87,20 @@ export function RollTestDialog({
           </span>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Field label={t('field.weightKg')} htmlFor="test-weight">
-            <input
-              id="test-weight"
-              type="number"
-              step="0.001"
-              className="field-input"
-              value={weight}
-              disabled={isSaving}
-              onChange={(event) => {
-                setWeight(event.target.value);
-              }}
-            />
-          </Field>
-          <Field label={t('field.length')} htmlFor="test-length">
-            <input
-              id="test-length"
-              type="number"
-              step="0.001"
-              className="field-input"
-              value={length}
-              disabled={isSaving}
-              onChange={(event) => {
-                setLength(event.target.value);
-              }}
-            />
-          </Field>
-          <Field label={t('rolls.plateWeightG')} htmlFor="test-plate">
-            <input
-              id="test-plate"
-              type="number"
-              step="0.001"
-              className="field-input"
-              value={plateWeight}
-              disabled={isSaving}
-              onChange={(event) => {
-                setPlateWeight(event.target.value);
-              }}
-            />
-          </Field>
-        </div>
-
-        {/* The mistake that is already in the real Roll Log: the length typed into
-            the weight box. Caught while he is still at the machine. */}
-        {weightLooksWrong && (
-          <p className="mb-4 rounded-control border border-s-4 border-warn/30 border-s-warn bg-warn-soft px-4 py-3 text-sm font-medium text-warn">
-            A roll weighs between {MinWeight} and {MaxWeight} kg. Is {weight} the length
-            typed into the weight box?
-          </p>
-        )}
+        <Field label={t('rolls.plateWeightG')} htmlFor="test-plate">
+          <input
+            id="test-plate"
+            type="number"
+            inputMode="decimal"
+            step="0.001"
+            className="field-input"
+            value={plateWeight}
+            disabled={isSaving}
+            onChange={(event) => {
+              setPlateWeight(event.target.value);
+            }}
+          />
+        </Field>
 
         <p className="field-label">{t('rolls.fourReadings')}</p>
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -189,17 +136,18 @@ export function RollTestDialog({
 
         <div className="mb-4 rounded-control bg-canvas px-4 py-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="text-sm font-medium text-ink-soft">{t('rolls.averageThickness')}</span>
+            <span className="text-sm font-medium text-ink-soft">
+              {t('rolls.averageThickness')}
+            </span>
             <span className="text-lg font-bold text-ink">{average ?? '—'}</span>
           </div>
-          <p className="mt-1 text-xs text-ink-muted">
-            {t('rolls.meanOfFour')}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">{t('rolls.meanOfFour')}</p>
         </div>
 
         <div className="mb-4">
           <label className="field-label" htmlFor="test-notes">
-            {t('field.note')} <span className="font-normal text-ink-muted">(optional)</span>
+            {t('field.note')}{' '}
+            <span className="font-normal text-ink-muted">(optional)</span>
           </label>
           <input
             id="test-notes"
@@ -225,9 +173,7 @@ export function RollTestDialog({
         <button type="submit" className="btn-primary" disabled={isSaving || !complete}>
           {isSaving ? 'Saving…' : t('rolls.saveAndRelease')}
         </button>
-        <p className="mt-2 text-xs text-ink-muted">
-          {t('rolls.thermoCanUse')}
-        </p>
+        <p className="mt-2 text-xs text-ink-muted">{t('rolls.thermoCanUse')}</p>
       </form>
     </Modal>
   );

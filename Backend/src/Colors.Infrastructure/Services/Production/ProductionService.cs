@@ -94,14 +94,15 @@ public class ProductionService(
     {
         var rolls = await RollQuery()
             .Where(r => batchId == null || r.BatchId == batchId)
-            .Where(r => !needsTestOnly || r.Status == RollStatus.NeedsTest)
+            // Rolls still waiting for their test. Measured or not: the two are separate
+            // jobs, done in either order (specification section 19.12).
+            .Where(r => !needsTestOnly || (r.TestReport == null && r.Status == RollStatus.NeedsTest))
             // The open shift, of which there is exactly one -- a partial unique index
             // in the database says so (specification section 2), so this needs no
             // second thought about which shift is meant.
             .Where(r => !currentShiftOnly
                         || r.Batch.ShiftLine.ShiftReport.Status == ShiftReportStatus.Open)
-            .OrderByDescending(r => r.ProductionDate)
-            .ThenByDescending(r => r.DailySerial)
+            .OrderByDescending(r => r.ProducedAt)
             .Take(300)
             .ToListAsync(cancellationToken);
 
@@ -113,7 +114,7 @@ public class ProductionService(
                 r.Id,
                 r.RollCode,
                 codes.GetValueOrDefault(r.Id, string.Empty),
-                r.DailySerial,
+                r.RollNumber,
                 r.ProductionDate,
                 r.BatchId,
                 r.Batch.BatchNumber,
@@ -123,11 +124,12 @@ public class ProductionService(
                 r.ColorId,
                 r.Color.Name,
                 r.Status.ToString(),
-                r.Status == RollStatus.NeedsTest,
+                r.TestReport is null,
+                r.Weight is null,
                 names.GetValueOrDefault(r.ProducedByUserId, "—"),
                 r.ProducedAt,
-                r.TestReport?.Weight,
-                r.TestReport?.Length,
+                r.Weight,
+                r.Length,
                 r.TestReport?.AverageThickness,
                 r.ProductId,
                 r.Product?.Name,
@@ -268,17 +270,23 @@ public class ProductionService(
         // The mix this shift is running, created by this roll if it is the first.
         var batch = await OpenBatchForAsync(shiftLine, userId, cancellationToken);
 
-        var serial = await NextDailySerialAsync(productionDate, cancellationToken);
+        var producedAt = request.ProducedAt ?? timeProvider.GetUtcNow();
+        if (producedAt > timeProvider.GetUtcNow().AddMinutes(5))
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return InvalidRoll("A roll cannot come off the extruder in the future. Check the out time.", "roll.outAtInFuture");
+        }
+
+        // The running number, taken inside this transaction: the counter's row stays locked
+        // until it commits, so two tablets cannot both be handed 13, and a refusal below
+        // rolls it back so the number is not lost.
+        var rollNumber = await TakeRollNumberAsync(cancellationToken);
 
         // The code the system works out, unless the operator gave one — a roll labelled
-        // by hand before it was logged keeps the code that is already written on it.
+        // by hand before it was logged keeps the code that is already written on it. The
+        // time in it is the out time as the tablet sent it, in the factory's own clock.
         var rollCode = string.IsNullOrWhiteSpace(request.RollCode)
-            ? RollCode.For(
-                serial,
-                colour.Code,
-                recipe.Family.Code,
-                productionDate,
-                shiftLine.ShiftReport.Shift.Name)
+            ? RollCode.For(rollNumber, recipe.Family.Code, producedAt, colour.Name)
             : request.RollCode.Trim();
 
         var codeError = await RollCodeErrorAsync(rollCode, exceptRollId: null, cancellationToken);
@@ -288,24 +296,18 @@ public class ProductionService(
             return codeError;
         }
 
-        var producedAt = request.ProducedAt ?? timeProvider.GetUtcNow();
-        if (producedAt > timeProvider.GetUtcNow().AddMinutes(5))
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return InvalidRoll("A roll cannot come off the extruder in the future. Check the out time.", "roll.outAtInFuture");
-        }
-
         var roll = new Roll
         {
             ProductionDate = productionDate,
-            DailySerial = serial,
+            RollNumber = rollNumber,
             RollCode = rollCode,
             Batch = batch,
             RecipeVersionId = recipe.Id,
             ColorId = colour.Id,
             ProductId = product.Id,
             ProducedByUserId = userId,
-            ProducedAt = producedAt,
+            // Stored as a moment; the offset it arrived with has done its work in the code.
+            ProducedAt = producedAt.ToUniversalTime(),
             Status = RollStatus.NeedsTest,
             Notes = Trimmed(request.Notes),
         };
@@ -313,7 +315,9 @@ public class ProductionService(
         db.Rolls.Add(roll);
         await db.SaveChangesAsync(cancellationToken);
 
-        var barcode = await barcodes.IssueAsync(BarcodeObjectType.Roll, roll.Id, cancellationToken);
+        // One code: the roll's barcode is its code, in the capitals every scan is cleaned to.
+        var barcode = await barcodes.IssueAsync(
+            BarcodeObjectType.Roll, roll.Id, RollCode.AsBarcode(rollCode), cancellationToken);
         if (!barcode.IsSuccess)
         {
             await transaction.RollbackAsync(cancellationToken);
@@ -330,6 +334,7 @@ public class ProductionService(
         int shiftLineId,
         int recipeVersionId,
         int colorId,
+        DateTimeOffset? outAt,
         CancellationToken cancellationToken = default)
     {
         var shiftLine = await db.ShiftLines
@@ -346,15 +351,13 @@ public class ProductionService(
                 ErrorCode.ValidationFailed, "Choose the line, the recipe and the colour first.", "roll.chooseForCode");
         }
 
-        var productionDate = shiftLine.ShiftReport.ProductionDate;
-        var serial = await NextDailySerialAsync(productionDate, cancellationToken);
+        var number = (await GetRollNumberAsync(cancellationToken)).NextNumber;
 
         return Result<string>.Success(RollCode.For(
-            serial,
-            colour.Code,
+            number,
             recipe.Family.Code,
-            productionDate,
-            shiftLine.ShiftReport.Shift.Name));
+            outAt ?? timeProvider.GetUtcNow(),
+            colour.Name));
     }
 
     public async Task<Result<RollDto>> UpdateRollAsync(
@@ -393,10 +396,20 @@ public class ProductionService(
             return InvalidRoll("A roll cannot come off the extruder in the future. Check the out time.", "roll.outAtInFuture");
         }
 
-        // The barcode does not change: it names the roll, not the code written on it, so
-        // every scan already made still finds it.
+        // A roll whose barcode is its code takes the new code into its barcode too — one
+        // code, as section 19.12 asks, so a new label is printed. An older roll with a
+        // separate R-barcode keeps it, and its printed label goes on scanning.
+        var oldBarcode = RollCode.AsBarcode(roll.RollCode);
+        var label = await db.Barcodes.FirstOrDefaultAsync(
+            b => b.ObjectType == BarcodeObjectType.Roll && b.ObjectId == roll.Id && b.IsActive,
+            cancellationToken);
+        if (label is not null && label.Value == oldBarcode)
+        {
+            label.Value = RollCode.AsBarcode(code);
+        }
+
         roll.RollCode = code;
-        roll.ProducedAt = request.ProducedAt;
+        roll.ProducedAt = request.ProducedAt.ToUniversalTime();
         await db.SaveChangesAsync(cancellationToken);
 
         return await LoadRollAsync(roll.Id, cancellationToken);
@@ -416,14 +429,20 @@ public class ProductionService(
             return InvalidRoll("The roll needs a code.", "roll.codeRequired");
         }
 
-        if (code.Length > 30)
+        if (code.Length > 50)
         {
-            return InvalidRoll("A roll code is at most 30 characters.", "roll.codeTooLong");
+            return InvalidRoll("A roll code is at most 50 characters.", "roll.codeTooLong");
         }
 
+        // Taken by another roll, or — since the code is the barcode — by any other label.
+        var asBarcode = RollCode.AsBarcode(code);
         var taken = await db.Rolls.AnyAsync(
-            r => r.RollCode == code && (exceptRollId == null || r.Id != exceptRollId),
-            cancellationToken);
+                        r => r.RollCode == code && (exceptRollId == null || r.Id != exceptRollId),
+                        cancellationToken)
+                    || await db.Barcodes.AnyAsync(
+                        b => b.Value == asBarcode
+                             && !(b.ObjectType == BarcodeObjectType.Roll && b.ObjectId == exceptRollId),
+                        cancellationToken);
 
         return taken
             ? InvalidRoll($"Another roll already has the code {code}.", "roll.codeTaken", code)
@@ -445,7 +464,7 @@ public class ProductionService(
         if (roll.TestReport is not null)
         {
             return InvalidRoll(
-                $"Roll {roll.RollCode} has already been measured. An administrator corrects a "
+                $"Roll {roll.RollCode} has already been tested. An administrator corrects a "
                 + "reading that was written down wrong.");
         }
 
@@ -463,8 +482,6 @@ public class ProductionService(
         var report = new RollTestReport
         {
             RollId = roll.Id,
-            Weight = request.Weight,
-            Length = request.Length,
             PlateWeight = request.PlateWeight,
             ThicknessRs = request.ThicknessRs,
             ThicknessRm = request.ThicknessRm,
@@ -483,31 +500,143 @@ public class ProductionService(
 
         db.RollTestReports.Add(report);
 
-        // Measured, so it may now go to the thermo -- whatever the verdict. An out-of-spec
-        // roll is still a roll for its product and is still used; the verdict records
-        // what it was, it does not decide what happens to it.
-        roll.Status = RollStatus.Available;
+        // Tested, and if it has been weighed too it may now go to the thermo -- whatever
+        // the verdict. An out-of-spec roll is still a roll for its product and is still
+        // used; the verdict records what it was, it does not decide what happens to it.
+        if (roll.Weight is not null)
+        {
+            roll.Status = RollStatus.Available;
+        }
 
         await db.SaveChangesAsync(cancellationToken);
 
         return await LoadRollAsync(rollId, cancellationToken);
     }
 
-    // ---------- helpers ----------
-
-    private static string? Validate(SaveRollTestRequest request)
+    public async Task<Result<RollDto>> MeasureRollAsync(
+        int rollId,
+        MeasureRollRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
     {
+        var roll = await RollQuery().FirstOrDefaultAsync(r => r.Id == rollId, cancellationToken);
+        if (roll is null)
+        {
+            return RollNotFound();
+        }
+
+        // Once it is in the thermo its weight is what the run's scrap is worked out from,
+        // and changing it would change a run already counted.
+        if (roll.Status is RollStatus.InThermo or RollStatus.Processed or RollStatus.Scrapped)
+        {
+            return InvalidRoll(
+                $"Roll {roll.RollCode} has gone into the thermo. Its weight is part of that run now.",
+                "roll.alreadyFormed",
+                roll.RollCode);
+        }
+
+        // The Roll Log export has one: the operator typed the length into the weight box.
+        // On paper it was wrong for ever; here he is still at the machine.
         if (request.Weight is < MinRollWeight or > MaxRollWeight)
         {
-            return $"A roll weighs between {MinRollWeight:0} and {MaxRollWeight:0} kg. "
-                   + $"{request.Weight:0.###} looks like the length typed into the weight box.";
+            return InvalidRoll(
+                $"A roll weighs between {MinRollWeight:0} and {MaxRollWeight:0} kg. "
+                + $"{request.Weight:0.###} looks like the length typed into the weight box.",
+                "roll.weightOutOfRange",
+                MinRollWeight.ToString("0", System.Globalization.CultureInfo.InvariantCulture),
+                MaxRollWeight.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
         }
 
         if (request.Length <= 0)
         {
-            return "The roll's length is missing.";
+            return InvalidRoll("The roll's length is missing.", "roll.lengthMissing");
         }
 
+        roll.Weight = request.Weight;
+        roll.Length = request.Length;
+        roll.MeasuredByUserId = userId;
+        roll.MeasuredAt = timeProvider.GetUtcNow();
+
+        // Weighed, and if it has been tested too it is ready for the thermo.
+        if (roll.TestReport is not null && roll.Status == RollStatus.NeedsTest)
+        {
+            roll.Status = RollStatus.Available;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadRollAsync(rollId, cancellationToken);
+    }
+
+    public async Task<RollNumberDto> GetRollNumberAsync(CancellationToken cancellationToken = default)
+    {
+        var counter = await db.RollNumberCounters.AsNoTracking()
+            .FirstOrDefaultAsync(c => c.Id == 1, cancellationToken);
+
+        if (counter is null)
+        {
+            return new RollNumberDto(1, null, null);
+        }
+
+        var names = counter.LastResetByUserId is null
+            ? []
+            : await UserNamesAsync([counter.LastResetByUserId.Value], cancellationToken);
+
+        return new RollNumberDto(
+            counter.NextNumber,
+            counter.LastResetAt,
+            counter.LastResetByUserId is null ? null : names.GetValueOrDefault(counter.LastResetByUserId.Value));
+    }
+
+    public async Task<RollNumberDto> ResetRollNumberAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var counter = await db.RollNumberCounters.FirstOrDefaultAsync(c => c.Id == 1, cancellationToken);
+        if (counter is null)
+        {
+            counter = new RollNumberCounter { Id = 1 };
+            db.RollNumberCounters.Add(counter);
+        }
+
+        counter.NextNumber = 1;
+        counter.LastResetAt = timeProvider.GetUtcNow();
+        counter.LastResetByUserId = userId;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await GetRollNumberAsync(cancellationToken);
+    }
+
+    // ---------- helpers ----------
+
+    /// <summary>
+    /// Takes the next roll number and moves the counter on, in one statement. The update
+    /// locks the row until the caller's transaction ends, so a second tablet waits rather
+    /// than reading the same number.
+    /// </summary>
+    private async Task<int> TakeRollNumberAsync(CancellationToken cancellationToken)
+    {
+        // The row is put there by the migration; this only covers a database where
+        // somebody removed it, so the first roll after does not fail.
+        await db.Database.ExecuteSqlAsync(
+            $"""
+             INSERT INTO "RollNumberCounters" ("Id", "NextNumber") VALUES (1, 1)
+             ON CONFLICT ("Id") DO NOTHING
+             """,
+            cancellationToken);
+
+        var taken = await db.Database
+            .SqlQuery<int>(
+                $"""
+                 UPDATE "RollNumberCounters" SET "NextNumber" = "NextNumber" + 1
+                 WHERE "Id" = 1
+                 RETURNING "NextNumber" - 1 AS "Value"
+                 """)
+            .ToListAsync(cancellationToken);
+
+        return taken[0];
+    }
+
+    private static string? Validate(SaveRollTestRequest request)
+    {
         if (request.PlateWeight <= 0)
         {
             return "The sample plate's weight is missing.";
@@ -519,23 +648,6 @@ public class ProductionService(
         return readings.Any(r => r <= 0)
             ? "All four thickness readings are needed — RS, RM, LM and LS."
             : null;
-    }
-
-    /// <summary>
-    /// The next serial for this day. Taken under the transaction that creates the roll,
-    /// with a unique index on (date, serial) behind it — two tablets logging a roll in
-    /// the same moment must not both be handed number 13.
-    /// </summary>
-    private async Task<int> NextDailySerialAsync(
-        DateOnly productionDate,
-        CancellationToken cancellationToken)
-    {
-        var highest = await db.Rolls
-            .Where(r => r.ProductionDate == productionDate)
-            .Select(r => (int?)r.DailySerial)
-            .MaxAsync(cancellationToken);
-
-        return (highest ?? 0) + 1;
     }
 
     private async Task<int> NextNumberAsync(string sequence, CancellationToken cancellationToken)
@@ -572,8 +684,8 @@ public class ProductionService(
             names.GetValueOrDefault(batch.CreatedByUserId, "—"),
             batch.FinishedAt is not null,
             batch.Rolls.Count,
-            batch.Rolls.Any(r => r.TestReport is not null)
-                ? batch.Rolls.Where(r => r.TestReport is not null).Sum(r => r.TestReport!.Weight)
+            batch.Rolls.Any(r => r.Weight is not null)
+                ? batch.Rolls.Where(r => r.Weight is not null).Sum(r => r.Weight!.Value)
                 : null,
             batch.StartedAt,
             batch.FinishedAt);
@@ -627,6 +739,11 @@ public class ProductionService(
             ids.Add(roll.TestReport.TestedByUserId);
         }
 
+        if (roll.MeasuredByUserId is not null)
+        {
+            ids.Add(roll.MeasuredByUserId.Value);
+        }
+
         var names = await UserNamesAsync(ids, cancellationToken);
         var codes = await BarcodesForAsync([roll.Id], cancellationToken);
 
@@ -634,7 +751,7 @@ public class ProductionService(
             roll.Id,
             roll.RollCode,
             codes.GetValueOrDefault(roll.Id, string.Empty),
-            roll.DailySerial,
+            roll.RollNumber,
             roll.ProductionDate,
             roll.BatchId,
             roll.Batch.BatchNumber,
@@ -648,16 +765,19 @@ public class ProductionService(
             roll.Product?.MinThickness,
             roll.Product?.MaxThickness,
             roll.Status.ToString(),
-            roll.Status == RollStatus.NeedsTest,
+            roll.TestReport is null,
+            roll.Weight is null,
             names.GetValueOrDefault(roll.ProducedByUserId, "—"),
             roll.ProducedAt,
+            roll.Weight,
+            roll.Length,
+            roll.MeasuredByUserId is null ? null : names.GetValueOrDefault(roll.MeasuredByUserId.Value),
+            roll.MeasuredAt,
             roll.Notes,
             roll.TestReport is null
                 ? null
                 : new RollTestReportDto(
                     roll.TestReport.Id,
-                    roll.TestReport.Weight,
-                    roll.TestReport.Length,
                     roll.TestReport.PlateWeight,
                     roll.TestReport.ThicknessRs,
                     roll.TestReport.ThicknessRm,

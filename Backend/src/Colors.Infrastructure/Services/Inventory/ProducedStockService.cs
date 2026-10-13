@@ -86,7 +86,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
         string barcode,
         CancellationToken cancellationToken = default)
     {
-        var value = Trimmed(barcode)?.ToUpperInvariant();
+        // Cleaned as every lookup cleans: capitals, no spaces (specification section 19.12).
+        var value = Trimmed(barcode) is { } typed ? RollCode.AsBarcode(typed) : null;
         if (value is null)
         {
             return Result<BarcodeLabelDto>.Failure(
@@ -160,8 +161,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 // The shift, not the batch. Nobody opens a mix any more, so its number
                 // is not a thing anybody in the factory knows (specification section 8).
                 $"Shift {r.Batch.ShiftLine.ShiftReport.Shift.Name}",
-                r.TestReport?.Weight,
-                r.TestReport?.Length,
+                r.Weight,
+                r.Length,
                 null,
                 r.ProductionDate,
                 r.ProducedAt))
@@ -283,8 +284,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 roll.Product?.Name ?? roll.RecipeVersion.Family.Name,
                 roll.Color.Name,
                 null,
-                roll.TestReport?.Weight,
-                roll.TestReport?.Length,
+                roll.Weight,
+                roll.Length,
                 roll.Batch.ShiftLine.ShiftReport.Shift.Name,
                 roll.ProductionDate,
                 roll.ProducedAt,

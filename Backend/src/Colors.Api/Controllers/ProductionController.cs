@@ -24,6 +24,11 @@ public class ProductionController(IProductionService production) : ApiController
 {
     private const string CanProduce = $"{RoleNames.Administrator},{RoleNames.ExtruderOperator}";
     private const string CanTest = $"{RoleNames.Administrator},{RoleNames.ExtruderTestPerson}";
+    // Weighing moved from the roll test to the production screen (section 19.12), so both
+    // the man logging rolls and the man testing them may do it.
+    private const string CanMeasure =
+        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator},{RoleNames.ExtruderTestPerson}";
+    private const string CanReset = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
     private const string CanCorrect =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator}";
 
@@ -64,17 +69,50 @@ public class ProductionController(IProductionService production) : ApiController
         return ToResponse(await production.GetRollAsync(id, cancellationToken));
     }
 
-    /// <summary>The code the next roll would get, shown before it is saved.</summary>
+    /// <summary>
+    /// The code the next roll would get, shown before it is saved. <paramref name="at"/> is
+    /// the out time with the tablet's own offset, so the time in the code is the factory's.
+    /// </summary>
     [HttpGet("rolls/next-code")]
     [Authorize(Roles = CanProduce)]
     public async Task<IActionResult> SuggestRollCode(
         [FromQuery] int shiftLineId,
         [FromQuery] int recipeVersionId,
         [FromQuery] int colorId,
+        [FromQuery] DateTimeOffset? at,
         CancellationToken cancellationToken)
     {
         return ToResponse(
-            await production.SuggestRollCodeAsync(shiftLineId, recipeVersionId, colorId, cancellationToken));
+            await production.SuggestRollCodeAsync(shiftLineId, recipeVersionId, colorId, at, cancellationToken));
+    }
+
+    /// <summary>The roll's weight and length, taken on the production screen.</summary>
+    [HttpPost("rolls/{id:int}/measure")]
+    [Authorize(Roles = CanMeasure)]
+    public async Task<IActionResult> MeasureRoll(
+        int id,
+        [FromBody] MeasureRollRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await production.MeasureRollAsync(id, request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>The number the next roll will get, and when it was last reset.</summary>
+    [HttpGet("roll-number")]
+    public async Task<IActionResult> GetRollNumber(CancellationToken cancellationToken)
+    {
+        return Ok(await production.GetRollNumberAsync(cancellationToken));
+    }
+
+    /// <summary>
+    /// Puts the roll number back to 1. The supervisor's decision, because every roll code
+    /// after it changes with it.
+    /// </summary>
+    [HttpPost("roll-number/reset")]
+    [Authorize(Roles = CanReset)]
+    public async Task<IActionResult> ResetRollNumber(CancellationToken cancellationToken)
+    {
+        return Ok(await production.ResetRollNumberAsync(CurrentUserId(), cancellationToken));
     }
 
     /// <summary>

@@ -6,7 +6,8 @@ import { ApiError } from '../../lib/apiClient';
 import type { ColorDto, ProductDto } from '../master-data/api';
 import type { RecipeVersionSummaryDto } from '../recipes/api';
 import { productionApi, type RollDto } from './api';
-import { fromOutTimeField, toOutTimeField } from './outTime';
+import { fromTimeField, toOffsetIso, toTimeField } from './outTime';
+import { readRollChoices, saveRollChoices } from './rollChoices';
 
 interface NewRollDialogProps {
   /** The extruder's part of the open shift. The mix underneath is created by the
@@ -62,13 +63,24 @@ export function NewRollDialog({
   onCreated,
 }: NewRollDialogProps): ReactElement {
   const { t } = useTranslation();
-  const [recipeVersionId, setRecipeVersionId] = useState(() => recipes[0]?.id ?? 0);
-  const [colorId, setColorId] = useState(() => colors[0]?.id ?? 0);
-
-  // Deliberately no default on the first roll of a shift. Quietly picking the first
-  // product in the list would turn a forgotten choice into a wrong declaration, and a
-  // wrong declaration is refused at the thermo an hour later, far from where it happened.
-  const [productId, setProductId] = useState(() => lastProductId ?? 0);
+  // Each opens on what was chosen last on this tablet, as long as it is still on offer
+  // (section 19.12). The extruder runs the same mix for hours, across shift changes.
+  const [remembered] = useState(readRollChoices);
+  const [recipeVersionId, setRecipeVersionId] = useState(() =>
+    recipes.some((r) => r.id === remembered.recipeVersionId)
+      ? (remembered.recipeVersionId ?? 0)
+      : (recipes[0]?.id ?? 0),
+  );
+  const [colorId, setColorId] = useState(() =>
+    colors.some((c) => c.id === remembered.colorId)
+      ? (remembered.colorId ?? 0)
+      : (colors[0]?.id ?? 0),
+  );
+  const [productId, setProductId] = useState(() =>
+    products.some((p) => p.id === remembered.productId)
+      ? (remembered.productId ?? 0)
+      : (lastProductId ?? 0),
+  );
 
   // Each product is made from one main recipe and a roll for any other is refused, so
   // only the products this recipe makes are offered at all. A product not yet given a
@@ -84,25 +96,43 @@ export function NewRollDialog({
   const chosen = fitting.some((p) => p.id === productId) ? productId : 0;
   const [notes, setNotes] = useState('');
 
-  // The code the system would give. It follows the recipe and colour until somebody
-  // types over it; from then on what he typed is kept.
+  // The time only, now unless he changes it; the date is today behind it, or yesterday
+  // for a time after now (section 19.12).
+  const [outAt, setOutAt] = useState(() => toTimeField(new Date()));
+  const outMoment = fromTimeField(outAt, new Date());
+  const outAtIso = outMoment === null ? null : toOffsetIso(outMoment);
+
+  // The code the system would give — number, type, date and time, colour. It follows
+  // the choices and the time until somebody types over it; then what he typed is kept.
   const suggestion = useQuery({
-    queryKey: ['next-roll-code', shiftLine.shiftLineId, recipeVersionId, colorId],
+    queryKey: [
+      'next-roll-code',
+      shiftLine.shiftLineId,
+      recipeVersionId,
+      colorId,
+      outAtIso,
+    ],
     queryFn: () =>
-      productionApi.nextRollCode(shiftLine.shiftLineId, recipeVersionId, colorId),
-    enabled: recipeVersionId !== 0 && colorId !== 0,
+      productionApi.nextRollCode(
+        shiftLine.shiftLineId,
+        recipeVersionId,
+        colorId,
+        outAtIso ?? toOffsetIso(new Date()),
+      ),
+    enabled: recipeVersionId !== 0 && colorId !== 0 && outAtIso !== null,
   });
   const [typedCode, setTypedCode] = useState<string | null>(null);
   const rollCode = typedCode ?? suggestion.data ?? '';
-
-  // Now, unless he changes it — a roll logged a few minutes after it came off.
-  const [outAt, setOutAt] = useState(() => toOutTimeField(new Date()));
-  const [outAtChanged, setOutAtChanged] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   async function save(): Promise<void> {
+    if (outAtIso === null) {
+      setError(t('rolls.outAtHint'));
+      return;
+    }
+
     setError(null);
     setIsSaving(true);
     try {
@@ -111,8 +141,8 @@ export function NewRollDialog({
         recipeVersionId,
         colorId,
         productId: chosen === 0 ? null : chosen,
-        // Null means now. He is usually standing at the machine.
-        producedAt: outAtChanged ? fromOutTimeField(outAt) : null,
+        // Always sent, with the tablet's offset: the code is built from it.
+        producedAt: outAtIso,
         notes: notes.trim() === '' ? null : notes.trim(),
         // Sent only when typed over. Otherwise the server works it out again at the
         // moment of saving, in case another roll took the suggested number meanwhile.
@@ -121,6 +151,7 @@ export function NewRollDialog({
             ? typedCode.trim()
             : null,
       });
+      saveRollChoices({ recipeVersionId, productId: chosen, colorId });
       onCreated(roll);
       onClose();
     } catch (caught) {
@@ -258,13 +289,12 @@ export function NewRollDialog({
             </label>
             <input
               id="roll-out"
-              type="datetime-local"
+              type="time"
               className="field-input"
               value={outAt}
               disabled={isSaving}
               onChange={(event) => {
                 setOutAt(event.target.value);
-                setOutAtChanged(true);
               }}
             />
             <p className="mt-1 text-xs text-ink-muted">{t('rolls.outAtHint')}</p>

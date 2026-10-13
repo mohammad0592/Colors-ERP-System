@@ -3,59 +3,55 @@ using Colors.Domain.Common;
 namespace Colors.IntegrationTests.Features;
 
 /// <summary>
-/// The code printed on every roll and repeated on every bag made from it
-/// (specification section 8). Pure arithmetic on a date, so no database is involved.
+/// The code printed on every roll, which is its barcode too (specification section 19.12).
+/// Pure arithmetic on a time, so no database is involved.
 /// </summary>
 public class RollCodeTests
 {
-    [Fact]
-    public void It_reproduces_the_code_on_the_real_bag_label()
-    {
-        // 13BAbs240526B, photographed on a bag of black absorbent plates: roll 13 of
-        // 24 May 2026, black, absorbent, shift B.
-        var code = RollCode.For(13, "B", "Abs", new DateOnly(2026, 5, 24), "B");
+    // The factory's clock, three hours ahead of UTC — the code must show its time, not
+    // the server's.
+    private static DateTimeOffset At(int day, int month, int year, int hour, int minute) =>
+        new(year, month, day, hour, minute, 0, TimeSpan.FromHours(3));
 
-        Assert.Equal("13BAbs240526B", code);
+    [Theory]
+    // The factory's own three examples.
+    [InlineData(4, "N", 23, 9, 2026, 8, 44, "White", "04N2309260844-White")]
+    [InlineData(31, "ABS", 19, 10, 2026, 17, 14, "Green", "31ABS1910261714-Green")]
+    [InlineData(61, "LN", 1, 9, 2026, 22, 21, "Black", "61LN0109262221-Black")]
+    public void It_is_number_type_date_time_and_colour(
+        int number, string family, int day, int month, int year, int hour, int minute, string colour, string expected)
+    {
+        Assert.Equal(expected, RollCode.For(number, family, At(day, month, year, hour, minute), colour));
     }
 
     [Fact]
-    public void The_date_is_day_month_year()
+    public void The_time_is_the_factory_clock_the_tablet_sent()
     {
-        // The settling evidence is a code elsewhere reading 310526 — 31 cannot be a
-        // year, so the order is DDMMYY and not YYMMDD.
-        var code = RollCode.For(1, "W", "N", new DateOnly(2026, 5, 31), "A");
+        // 05:44 UTC is 08:44 on the factory floor.
+        var outAt = new DateTimeOffset(2026, 9, 23, 5, 44, 0, TimeSpan.Zero).ToOffset(TimeSpan.FromHours(3));
 
-        Assert.Contains("310526", code, StringComparison.Ordinal);
+        Assert.Equal("04N2309260844-White", RollCode.For(4, "N", outAt, "White"));
     }
 
     [Fact]
-    public void The_serial_is_padded_to_two_digits()
+    public void The_type_is_in_capitals_whatever_master_data_says()
     {
-        Assert.StartsWith("01", RollCode.For(1, "W", "N", new DateOnly(2026, 7, 18), "A"), StringComparison.Ordinal);
+        // The family is stored as "Abs"; the code says ABS.
+        Assert.StartsWith("31ABS", RollCode.For(31, " Abs ", At(19, 10, 2026, 17, 14), "Green"), StringComparison.Ordinal);
     }
 
     [Fact]
     public void A_hundredth_roll_grows_a_digit_rather_than_wrapping()
     {
-        // Two digits is how the factory writes it, not a limit. A day that somehow
-        // passes 99 rolls must not start again at 00 and collide.
-        Assert.StartsWith("100", RollCode.For(100, "W", "N", new DateOnly(2026, 7, 18), "A"), StringComparison.Ordinal);
-    }
-
-    [Theory]
-    [InlineData("N", "01WN180726A")]
-    [InlineData("Abs", "01WAbs180726A")]
-    public void The_family_part_is_not_a_fixed_length(string familyCode, string expected)
-    {
-        // "N" is one letter and "Abs" is three, so nothing may assume a width.
-        Assert.Equal(expected, RollCode.For(1, "W", familyCode, new DateOnly(2026, 7, 18), "A"));
+        // Two digits is how the factory writes it, not a limit.
+        Assert.StartsWith("100N", RollCode.For(100, "N", At(1, 9, 2026, 8, 0), "White"), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void The_colour_and_shift_are_upper_case_whatever_is_typed()
+    public void The_barcode_is_the_code_in_capitals_without_spaces()
     {
-        Assert.Equal(
-            "01WN180726A",
-            RollCode.For(1, " w ", "N", new DateOnly(2026, 7, 18), " a "));
+        // What a scanner or a man typing will produce, whatever case and spacing he uses.
+        Assert.Equal("05LN0109262221-LIGHTGREEN", RollCode.AsBarcode("05LN0109262221-Light Green"));
+        Assert.Equal(RollCode.AsBarcode("04n2309260844-white"), RollCode.AsBarcode("04N2309260844-White"));
     }
 }

@@ -52,6 +52,8 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     // Line 1, the mixer and extruder — specification section 8.
     public DbSet<Batch> Batches => Set<Batch>();
     public DbSet<Roll> Rolls => Set<Roll>();
+
+    public DbSet<RollNumberCounter> RollNumberCounters => Set<RollNumberCounter>();
     public DbSet<RollTestReport> RollTestReports => Set<RollTestReport>();
 
     // Line 2, thermoforming — specification section 9.

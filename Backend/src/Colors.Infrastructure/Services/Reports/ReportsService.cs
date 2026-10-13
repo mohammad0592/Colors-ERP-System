@@ -63,7 +63,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 r.RecipeVersion.RecipeNumber,
                 r.RecipeVersion.VersionNumber,
                 FamilyName = r.RecipeVersion.Family.Name,
-                Weight = r.TestReport == null ? (decimal?)null : r.TestReport.Weight,
+                Weight = r.Weight,
             })
             .ToListAsync(cancellationToken);
 
@@ -209,7 +209,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 r.RecipeVersionId,
                 r.RecipeVersion.RecipeNumber,
                 FamilyName = r.RecipeVersion.Family.Name,
-                Weight = r.TestReport == null ? (decimal?)null : r.TestReport.Weight,
+                Weight = r.Weight,
             })
             .ToListAsync(cancellationToken);
 
@@ -478,7 +478,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         // What the extruder made.
         var made = await db.Rolls
             .Where(r => lineIds.Contains(r.Batch.ShiftLineId))
-            .Select(r => r.TestReport == null ? (decimal?)null : r.TestReport.Weight)
+            .Select(r => r.Weight)
             .ToListAsync(cancellationToken);
 
         // What the thermo formed, one row per counted run. Each carries its own plate
@@ -493,10 +493,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 t.BagCount,
                 t.PieceCount,
                 t.PieceWeight,
-                RollWeight = db.RollTestReports
-                    .Where(rt => rt.RollId == t.ThermoProduction.RollId)
-                    .Select(rt => (decimal?)rt.Weight)
-                    .FirstOrDefault(),
+                RollWeight = t.ThermoProduction.Roll.Weight,
             })
             .ToListAsync(cancellationToken);
 

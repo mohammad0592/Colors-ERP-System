@@ -21,14 +21,34 @@ const labels: Record<RollStatus, TranslationKey> = {
   Scrapped: 'status.roll.scrapped',
 };
 
-export function RollStatusBadge({ status }: { status: RollStatus }): ReactElement {
+/**
+ * A roll's state. Before it is ready it says what is still missing — the test, the
+ * measuring, or both — since the two are done separately, in either order (19.12).
+ */
+export function RollStatusBadge({
+  status,
+  needsTest = true,
+  needsMeasure = false,
+}: {
+  status: RollStatus;
+  needsTest?: boolean;
+  needsMeasure?: boolean;
+}): ReactElement {
   const { t } = useTranslation();
+  const label: TranslationKey =
+    status !== 'NeedsTest'
+      ? labels[status]
+      : needsTest && needsMeasure
+        ? 'status.roll.needsTestAndMeasure'
+        : needsMeasure
+          ? 'status.roll.needsMeasure'
+          : 'status.roll.needsTest';
 
   return (
     <span
       className={`rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${styles[status]}`}
     >
-      {t(labels[status])}
+      {t(label)}
     </span>
   );
 }

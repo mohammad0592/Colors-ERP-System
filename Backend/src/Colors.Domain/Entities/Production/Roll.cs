@@ -23,12 +23,19 @@ public class Roll
     /// </summary>
     public DateOnly ProductionDate { get; set; }
 
-    /// <summary>Starts at 1 each day and resets the next — the leading number in the roll code.</summary>
-    public int DailySerial { get; set; }
+    /// <summary>
+    /// The leading number in the roll code, from the factory's running count. It does not
+    /// start again each day or shift — only when a supervisor resets it — so two rolls
+    /// may share a number, and the date and time in the code tell them apart.
+    /// </summary>
+    public int RollNumber { get; set; }
 
     /// <summary>
-    /// <c>01WN180726A</c> — serial, colour letter, recipe family code, DDMMYY, shift.
-    /// Generated, never typed, and unique.
+    /// <c>04N2309260844-White</c> — number, recipe type, date and 24-hour out time,
+    /// colour. Worked out when the roll is logged, unless the operator types one; unique.
+    ///
+    /// It is the barcode too: rolls logged since 19.12 carry this code in their QR, in
+    /// capitals. Older rolls keep the separate <c>R000123</c> barcode printed on them.
     /// </summary>
     public required string RollCode { get; set; }
 
@@ -72,6 +79,24 @@ public class Roll
     /// </summary>
     public DateTimeOffset ProducedAt { get; set; }
 
+    // ---- measured at the extruder, on the roll production screen ----------
+    // Weight and length moved here from the roll test (specification section 19.12):
+    // they are taken where the roll comes off, by whoever logs it, and the test is the
+    // plate and the thickness. A roll goes to the thermo when it has both.
+
+    /// <summary>Kilograms. Null until it is weighed.</summary>
+    public decimal? Weight { get; set; }
+
+    public decimal? Length { get; set; }
+
+    public int? MeasuredByUserId { get; set; }
+
+    public DateTimeOffset? MeasuredAt { get; set; }
+
+    /// <summary>
+    /// NeedsTest until it has been both measured and tested, in either order; Available
+    /// after that.
+    /// </summary>
     public RollStatus Status { get; set; } = RollStatus.NeedsTest;
 
     public string? Notes { get; set; }

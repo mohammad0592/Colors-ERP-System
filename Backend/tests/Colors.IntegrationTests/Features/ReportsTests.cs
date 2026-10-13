@@ -146,9 +146,10 @@ public class ReportsTests(DatabaseFixture fixture)
             ids.UserId);
         Assert.True(roll.IsSuccess, roll.Message);
 
+        await production.MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(rollWeight, 1200m), ids.UserId);
         var measured = await production.SaveTestReportAsync(
             roll.Value!.Id,
-            new SaveRollTestRequest(rollWeight, 1200m, 9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
+            new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
             ids.UserId);
 
         // Loud, because a roll weight outside the 50–150 kg range is refused here and a

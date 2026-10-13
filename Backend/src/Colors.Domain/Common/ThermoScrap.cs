@@ -32,7 +32,7 @@ public static class ThermoScrap
     /// </summary>
     public static decimal? For(ThermoProduction run)
     {
-        var rollWeight = run.Roll.TestReport?.Weight;
+        var rollWeight = run.Roll.Weight;
         var counted = run.TestReport;
 
         return rollWeight is null || counted is null

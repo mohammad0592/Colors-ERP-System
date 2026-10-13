@@ -69,7 +69,7 @@ public class ThermoService(
                 p.TestReport?.Product.Name,
                 p.TestReport?.BagCount,
                 p.TestReport?.PieceCount,
-                p.Roll.TestReport?.Weight,
+                p.Roll.Weight,
                 ThermoScrap.For(p)))
             .ToList();
     }
@@ -95,8 +95,7 @@ public class ThermoService(
             .Include(r => r.Product)
             .Where(r => r.Status == RollStatus.Available)
             // Oldest first: rolls sit for weeks, and the oldest should move first.
-            .OrderBy(r => r.ProductionDate)
-            .ThenBy(r => r.DailySerial)
+            .OrderBy(r => r.ProducedAt)
             .Take(300)
             .ToListAsync(cancellationToken);
 
@@ -113,8 +112,8 @@ public class ThermoService(
                 r.RecipeVersion.Family.Name,
                 r.RecipeVersion.Family.IsAbsorbent,
                 r.ProductionDate,
-                r.TestReport?.Weight,
-                r.TestReport?.Length,
+                r.Weight,
+                r.Length,
                 r.ProductId,
                 r.Product?.Name))
             .ToList();
@@ -580,11 +579,11 @@ public class ThermoService(
             run.TotalTimeMinutes,
             run.Notes,
             // Read-only, pulled from the roll rather than typed again here.
-            run.Roll.TestReport is null
+            run.Roll.TestReport is null || run.Roll.Weight is null || run.Roll.Length is null
                 ? null
                 : new RollReadingsDto(
-                    run.Roll.TestReport.Weight,
-                    run.Roll.TestReport.Length,
+                    run.Roll.Weight.Value,
+                    run.Roll.Length.Value,
                     run.Roll.TestReport.PlateWeight,
                     run.Roll.TestReport.AverageThickness),
             run.TestReport is null

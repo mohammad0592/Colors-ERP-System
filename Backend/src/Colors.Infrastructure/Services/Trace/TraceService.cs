@@ -1,5 +1,6 @@
 ﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Trace;
+using Colors.Domain.Common;
 using Colors.Domain.Entities.Packaging;
 using Colors.Domain.Entities.Production;
 using Colors.Domain.Enums;
@@ -22,7 +23,8 @@ public class TraceService(ColorsDbContext db) : ITraceService
         string barcode,
         CancellationToken cancellationToken = default)
     {
-        var value = barcode?.Trim().ToUpperInvariant();
+        // Cleaned as every lookup cleans: capitals, no spaces (specification section 19.12).
+        var value = barcode is null ? null : RollCode.AsBarcode(barcode);
         if (string.IsNullOrEmpty(value))
         {
             return Invalid("Scan a label, or type the code printed under it.", "trace.scanOrType");
@@ -38,7 +40,7 @@ public class TraceService(ColorsDbContext db) : ITraceService
             // reads out and types when the barcode is torn or he is holding a paper
             // form rather than the roll.
             var rollId = await db.Rolls
-                .Where(r => r.RollCode.ToUpper() == value)
+                .Where(r => r.RollCode.ToUpper().Replace(" ", "") == value)
                 .Select(r => (int?)r.Id)
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -251,8 +253,8 @@ public class TraceService(ColorsDbContext db) : ITraceService
             names.GetValueOrDefault(roll.ProducedByUserId, "—"),
             roll.ProducedAt,
             Spaced(roll.Status.ToString()),
-            roll.TestReport?.Weight,
-            roll.TestReport?.Length,
+            roll.Weight,
+            roll.Length,
             roll.TestReport?.PlateWeight,
             roll.TestReport?.AverageThickness);
 

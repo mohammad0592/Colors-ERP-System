@@ -23,7 +23,7 @@ public sealed record RollSummaryDto(
     int Id,
     string RollCode,
     string Barcode,
-    int DailySerial,
+    int RollNumber,
     DateOnly ProductionDate,
     int BatchId,
     int BatchNumber,
@@ -33,13 +33,16 @@ public sealed record RollSummaryDto(
     int ColorId,
     string ColorName,
     string Status,
+    // What is still to be done before the thermo may take it: the test (plate and
+    // thickness) and the measuring (weight and length), in either order.
     bool NeedsTest,
+    bool NeedsMeasure,
     string ProducedByName,
     DateTimeOffset ProducedAt,
-    // All three come from the roll's measurements, so all three are null until it has
-    // been measured.
+    // Null until the roll has been measured on the production screen.
     decimal? Weight,
     decimal? Length,
+    // Null until it has been tested.
     decimal? AverageThickness,
     // What it was made for, and the range that product asks for. Null on rolls made
     // before products were declared, and the range is null wherever nobody has set one.
@@ -53,8 +56,6 @@ public sealed record RollSummaryDto(
 
 public sealed record RollTestReportDto(
     int Id,
-    decimal Weight,
-    decimal Length,
     decimal PlateWeight,
     decimal ThicknessRs,
     decimal ThicknessRm,
@@ -73,7 +74,7 @@ public sealed record RollDto(
     int Id,
     string RollCode,
     string Barcode,
-    int DailySerial,
+    int RollNumber,
     DateOnly ProductionDate,
     int BatchId,
     int BatchNumber,
@@ -88,8 +89,13 @@ public sealed record RollDto(
     decimal? MaxThickness,
     string Status,
     bool NeedsTest,
+    bool NeedsMeasure,
     string ProducedByName,
     DateTimeOffset ProducedAt,
+    decimal? Weight,
+    decimal? Length,
+    string? MeasuredByName,
+    DateTimeOffset? MeasuredAt,
     string? Notes,
     RollTestReportDto? TestReport);
 
@@ -111,8 +117,9 @@ public sealed record CreateRollRequest(
     // What the roll is being made for (specification section 19.1). Required: nullable
     // here only so a missing one is answered in words rather than as a malformed request.
     int? ProductId,
-    // The "out time" the operator knows. Null means now — he is usually standing at
-    // the machine, but may be logging a roll a few minutes late.
+    // The "out time" the operator knows, sent with the tablet's own UTC offset: the
+    // date and time in the roll code are the factory's clock, and the server knows no
+    // time zone. Null means now, in UTC — only the tests send that.
     DateTimeOffset? ProducedAt,
     string? Notes,
     // The code to write on the roll. Null means the one the system works out, which is
@@ -121,19 +128,27 @@ public sealed record CreateRollRequest(
     string? RollCode = null);
 
 /// <summary>
+/// The roll's weight and length, taken on the production screen as it comes off. May be
+/// given again to correct it, until the roll goes into the thermo.
+/// </summary>
+public sealed record MeasureRollRequest(decimal Weight, decimal Length);
+
+/// <summary>The running roll number, and when it was last put back to 1.</summary>
+public sealed record RollNumberDto(int NextNumber, DateTimeOffset? LastResetAt, string? LastResetByName);
+
+/// <summary>
 /// Corrects a roll's code or out time after it was logged — a code mistyped on the
 /// label, a roll logged late and stamped with the wrong time.
 /// </summary>
 public sealed record UpdateRollRequest(string RollCode, DateTimeOffset ProducedAt);
 
 /// <summary>
-/// The measurements, taken once as the roll leaves the extruder.
+/// The roll test: the sample plate and the four thickness readings, taken once.
 ///
-/// Saving this is what moves the roll from <c>Needs Test</c> to <c>Available</c>.
+/// With the roll's weight and length (<see cref="MeasureRollRequest"/>) it moves the roll
+/// from <c>Needs Test</c> to <c>Available</c> — whichever of the two comes second.
 /// </summary>
 public sealed record SaveRollTestRequest(
-    decimal Weight,
-    decimal Length,
     decimal PlateWeight,
     decimal ThicknessRs,
     decimal ThicknessRm,
@@ -183,7 +198,20 @@ public interface IProductionService
         int shiftLineId,
         int recipeVersionId,
         int colorId,
+        DateTimeOffset? outAt,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Records or corrects a roll's weight and length.</summary>
+    Task<Result<RollDto>> MeasureRollAsync(
+        int rollId,
+        MeasureRollRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    Task<RollNumberDto> GetRollNumberAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Puts the running roll number back to 1. The supervisor's decision.</summary>
+    Task<RollNumberDto> ResetRollNumberAsync(int userId, CancellationToken cancellationToken = default);
 
     /// <summary>Corrects a roll's code and out time while its shift is still open.</summary>
     Task<Result<RollDto>> UpdateRollAsync(

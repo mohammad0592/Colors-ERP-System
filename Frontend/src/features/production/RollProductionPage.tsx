@@ -1,6 +1,7 @@
-﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
+import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   StartOnLineButton,
@@ -15,6 +16,7 @@ import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { productionApi, type RollDto, type RollSummaryDto } from './api';
 import { EditRollDialog } from './EditRollDialog';
+import { MeasureRollDialog } from './MeasureRollDialog';
 import { NewRollDialog } from './NewRollDialog';
 import { RollStatusBadge } from './RollStatusBadge';
 import { ThicknessVerdict } from './ThicknessVerdict';
@@ -40,6 +42,16 @@ export function RollProductionPage(): ReactElement {
     RoleNames.ExtruderOperator,
   );
   const [correcting, setCorrecting] = useState<RollSummaryDto | null>(null);
+  // Weighing moved here from the roll test (section 19.12).
+  const canMeasure = hasRole(
+    RoleNames.Administrator,
+    RoleNames.Supervisor,
+    RoleNames.ExtruderOperator,
+    RoleNames.ExtruderTestPerson,
+  );
+  const canReset = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
+  const [measuring, setMeasuring] = useState<RollSummaryDto | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const [logging, setLogging] = useState<StartableLine | null>(null);
   const [justLogged, setJustLogged] = useState<RollDto | null>(null);
@@ -73,6 +85,20 @@ export function RollProductionPage(): ReactElement {
     queryFn: () => productsApi.list(false),
   });
 
+  // The factory's running roll number, which goes back to 01 only when reset.
+  const rollNumber = useQuery({
+    queryKey: ['roll-number'],
+    queryFn: () => productionApi.rollNumber(),
+  });
+
+  const reset = useMutation({
+    mutationFn: () => productionApi.resetRollNumber(),
+    onSuccess: (fresh) => {
+      queryClient.setQueryData(['roll-number'], fresh);
+      void queryClient.invalidateQueries({ queryKey: ['next-roll-code'] });
+    },
+  });
+
   // Lines of the open shift that actually mix (specification section 4).
   const openLines = useQuery({
     queryKey: ['shift-reports', 'mixing-lines'],
@@ -94,6 +120,7 @@ export function RollProductionPage(): ReactElement {
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: ['rolls'] });
     void queryClient.invalidateQueries({ queryKey: ['batches'] });
+    void queryClient.invalidateQueries({ queryKey: ['roll-number'] });
   }
 
   if (rolls.isPending || recipes.isPending || colors.isPending || products.isPending) {
@@ -119,18 +146,47 @@ export function RollProductionPage(): ReactElement {
         title={t('page.rolls.title')}
         subtitle={t('page.rolls.subtitle')}
         actions={
-          canProduce ? (
-            <StartOnLineButton
-              lines={lines}
-              action="Log a roll"
-              onStart={(shiftLineId) => {
-                const line = lines.find((l) => l.shiftLineId === shiftLineId);
-                if (line !== undefined) {
-                  setLogging(line);
-                }
-              }}
-            />
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-3">
+            {rollNumber.data !== undefined && (
+              <span className="text-sm text-ink-muted">
+                {t('rolls.nextNumber')}{' '}
+                <strong className="font-mono text-base text-ink">
+                  {String(rollNumber.data.nextNumber).padStart(2, '0')}
+                </strong>
+              </span>
+            )}
+            {canReset && (
+              <button
+                type="button"
+                className="h-touch rounded-control border border-line px-4 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                disabled={reset.isPending}
+                onClick={() => {
+                  setConfirm({
+                    title: t('rolls.resetTitle'),
+                    message: t('rolls.resetMessage'),
+                    confirmLabel: t('rolls.resetNumber'),
+                    onConfirm: () => {
+                      reset.mutate();
+                    },
+                  });
+                }}
+              >
+                {t('rolls.resetNumber')}
+              </button>
+            )}
+            {canProduce && (
+              <StartOnLineButton
+                lines={lines}
+                action="Log a roll"
+                onStart={(shiftLineId) => {
+                  const line = lines.find((l) => l.shiftLineId === shiftLineId);
+                  if (line !== undefined) {
+                    setLogging(line);
+                  }
+                }}
+              />
+            )}
+          </div>
         }
       />
 
@@ -143,7 +199,7 @@ export function RollProductionPage(): ReactElement {
       {justLogged !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           {t('term.roll')} <strong className="font-mono">{justLogged.rollCode}</strong>{' '}
-          logged — barcode <strong className="font-mono">{justLogged.barcode}</strong>.{' '}
+          logged.{' '}
           <button
             type="button"
             className="font-semibold underline"
@@ -161,7 +217,6 @@ export function RollProductionPage(): ReactElement {
           <thead>
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">{t('term.rollCode')}</th>
-              <th className="px-4 py-3 font-semibold">{t('term.barcode')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.recipe')}</th>
               <th className="px-4 py-3 font-semibold">{t('rolls.madeFor')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.colour')}</th>
@@ -170,7 +225,7 @@ export function RollProductionPage(): ReactElement {
               <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
               <th className="px-4 py-3 font-semibold">{t('rolls.madeBy')}</th>
               <th className="px-4 py-3 font-semibold">{t('rolls.outAt')}</th>
-              {canCorrect && <th className="px-4 py-3" />}
+              {(canCorrect || canMeasure) && <th className="px-4 py-3" />}
             </tr>
           </thead>
           <tbody>
@@ -183,20 +238,19 @@ export function RollProductionPage(): ReactElement {
             )}
             {rolls.data.map((roll) => (
               <tr key={roll.id} className="border-b border-line last:border-0">
-                <td className="px-4 py-3 font-mono font-semibold text-ink">
-                  {roll.rollCode}
-                </td>
                 <td className="px-4 py-3">
-                  {/* The label is reachable from the roll itself, not only from the
-                      banner that appears once when it is logged. */}
+                  {/* One code, which is the barcode too (section 19.12). The label is
+                      reachable from the roll itself, not only from the banner that
+                      appears once when it is logged. */}
                   <button
                     type="button"
-                    className="font-mono text-xs text-ink-muted underline-offset-2 hover:text-brand-700 hover:underline"
+                    title={t('rolls.printLabel')}
+                    className="font-mono font-semibold whitespace-nowrap text-ink underline-offset-2 hover:text-brand-700 hover:underline"
                     onClick={() => {
                       setPrinting({ barcodes: [roll.barcode] });
                     }}
                   >
-                    {roll.barcode}
+                    {roll.rollCode}
                   </button>
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
@@ -211,7 +265,11 @@ export function RollProductionPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{roll.colorName}</td>
                 <td className="px-4 py-3">
-                  <RollStatusBadge status={roll.status} />
+                  <RollStatusBadge
+                    status={roll.status}
+                    needsTest={roll.needsTest}
+                    needsMeasure={roll.needsMeasure}
+                  />
                 </td>
                 <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {roll.weight ?? '—'}
@@ -221,24 +279,42 @@ export function RollProductionPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{roll.producedByName}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-ink-muted">
-                  {new Date(roll.producedAt).toLocaleString('en-GB', {
-                    day: '2-digit',
-                    month: '2-digit',
+                  {/* The time only; the date is kept behind it (section 19.12). */}
+                  {new Date(roll.producedAt).toLocaleTimeString('en-GB', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}
                 </td>
-                {canCorrect && (
-                  <td className="px-4 py-3 text-end">
-                    <button
-                      type="button"
-                      className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
-                      onClick={() => {
-                        setCorrecting(roll);
-                      }}
-                    >
-                      {t('action.edit')}
-                    </button>
+                {(canCorrect || canMeasure) && (
+                  <td className="px-4 py-3 text-end whitespace-nowrap">
+                    {canMeasure &&
+                      (roll.status === 'NeedsTest' || roll.status === 'Available') && (
+                        <button
+                          type="button"
+                          className={[
+                            'me-2 min-h-9 rounded-control border px-3 text-sm font-medium whitespace-nowrap transition-colors',
+                            roll.needsMeasure
+                              ? 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+                              : 'border-line text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700',
+                          ].join(' ')}
+                          onClick={() => {
+                            setMeasuring(roll);
+                          }}
+                        >
+                          {t('rolls.measure')}
+                        </button>
+                      )}
+                    {canCorrect && (
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                        onClick={() => {
+                          setCorrecting(roll);
+                        }}
+                      >
+                        {t('action.edit')}
+                      </button>
+                    )}
                   </td>
                 )}
               </tr>
@@ -268,6 +344,25 @@ export function RollProductionPage(): ReactElement {
         />
       )}
 
+      {measuring !== null && (
+        <MeasureRollDialog
+          roll={measuring}
+          onClose={() => {
+            setMeasuring(null);
+          }}
+          onSaved={invalidate}
+        />
+      )}
+
+      {confirm !== null && (
+        <ConfirmDialog
+          request={confirm}
+          onCancel={() => {
+            setConfirm(null);
+          }}
+        />
+      )}
+
       {correcting !== null && (
         <EditRollDialog
           roll={correcting}
@@ -276,8 +371,8 @@ export function RollProductionPage(): ReactElement {
           }}
           onSaved={(roll, codeChanged) => {
             invalidate();
-            // The label shows the code, so a new code needs a new label. The barcode on
-            // the old one still scans to the same roll.
+            // The label shows the code, and for a roll logged since 19.12 the barcode is
+            // the code, so a new code needs a new label.
             if (codeChanged) {
               setPrinting({
                 barcodes: [roll.barcode],
