@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { labelForRole, roleLabels, RoleNames, type RoleName } from './roles';
 
 /**
- * The nine roles, and the words for them.
+ * The ten roles, and the words for them.
  *
  * The names themselves have to match the server exactly. A typo would not throw
  * anything — it would quietly hide a menu item and refuse a screen, with nothing in the
@@ -10,7 +10,7 @@ import { labelForRole, roleLabels, RoleNames, type RoleName } from './roles';
  */
 
 describe('the role names', () => {
-  it('are the nine the specification lists', () => {
+  it('are the ten the specification lists', () => {
     // Section 3: two testing stages, so two testing roles, and packaging is its own job
     // even though one man does it alongside the thermo today.
     expect(Object.values(RoleNames).sort()).toEqual(
@@ -21,6 +21,7 @@ describe('the role names', () => {
         'InventoryManager',
         'PackagingOperator',
         'RecyclerOperator',
+        'LabelPrinter',
         'Supervisor',
         'ThermoOperator',
         'ThermoTestPerson',
@@ -68,6 +69,6 @@ describe('RoleName', () => {
   it('is the type of every value in the list', () => {
     // A compile-time check written as a test so it is not deleted as unused.
     const everyRole: RoleName[] = Object.values(RoleNames);
-    expect(everyRole).toHaveLength(9);
+    expect(everyRole).toHaveLength(10);
   });
 });

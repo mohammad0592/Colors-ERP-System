@@ -77,6 +77,8 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
 
     // Barcodes — specification section 12. One table for rolls, bags and pallets.
     public DbSet<Barcode> Barcodes => Set<Barcode>();
+
+    public DbSet<PrintJob> PrintJobs => Set<PrintJob>();
     public DbSet<ProductType> ProductTypes => Set<ProductType>();
 
     // Recipes — specification section 5.

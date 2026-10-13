@@ -1,7 +1,7 @@
 namespace Colors.Domain.Constants;
 
 /// <summary>
-/// The nine roles from specification section 3.
+/// The ten roles from specification section 3.
 ///
 /// These names are written into the database, into every JWT, and into every
 /// <c>[Authorize(Roles = ...)]</c> attribute. A typo in a literal string would make an
@@ -42,6 +42,12 @@ public static class RoleNames
     /// <summary>Line 3 — records scrap weight and recycled output.</summary>
     public const string RecyclerOperator = "RecyclerOperator";
 
+    /// <summary>
+    /// The computer the label printer hangs off — it prints the labels the tablets send
+    /// (specification section 19.13). Sees the print queue and nothing else.
+    /// </summary>
+    public const string LabelPrinter = "LabelPrinter";
+
     /// <summary>Every role, in the order they appear in the specification. Used to seed the database.</summary>
     public static readonly IReadOnlyList<string> All =
     [
@@ -54,5 +60,6 @@ public static class RoleNames
         ThermoTestPerson,
         PackagingOperator,
         RecyclerOperator,
+        LabelPrinter,
     ];
 }

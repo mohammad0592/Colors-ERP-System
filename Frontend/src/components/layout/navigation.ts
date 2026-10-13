@@ -42,6 +42,7 @@ const layout: { heading: TranslationKey; items: Omit<NavItem, 'roles'>[] }[] = [
     items: [
       { label: 'nav.inventory', path: '/inventory', icon: 'inventory' },
       { label: 'nav.trace', path: '/trace', icon: 'search' },
+      { label: 'nav.printQueue', path: '/print-queue', icon: 'print' },
       { label: 'nav.receive', path: '/inventory/receive', icon: 'receive' },
       { label: 'nav.issue', path: '/inventory/issue', icon: 'issue' },
     ],

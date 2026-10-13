@@ -151,6 +151,27 @@ After this the screens and the API are **one address**. The API serves the built
 
 > Changing an environment variable does not reach a service that is already running. After setting one, `Restart-Service ColorsErp`.
 
+### The computer with the label printer
+
+The tablets have no printer; they send labels to a queue, and one computer prints them
+(specification section 19.13). Set that computer up once:
+
+1. Install the label printer's driver and make it the **default printer** in Windows, with
+   the paper size set to **4 × 4 in** and scaling at 100%.
+2. In the system, create a user for this computer with the **Label Printer** role.
+3. Make a Chrome shortcut that opens the queue with kiosk printing, so it prints without
+   asking. Put it in the Startup folder (`shell:startup`) so it opens with Windows:
+
+   ```bash
+   "C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk-printing http://<server-address>/print-queue
+   ```
+
+4. Sign in with the Label Printer user and switch **Auto-print** on. Labels sent from a
+   tablet now print by themselves within a few seconds. The page shows the same steps.
+
+Chrome must be fully closed before the shortcut is used, or the flag is ignored by the
+window that is already open.
+
 ---
 
 ## The cloud trial

@@ -1,7 +1,7 @@
 import { wordFor } from './words';
 
 /**
- * The nine roles, mirroring Colors.Domain.Constants.RoleNames on the server.
+ * The ten roles, mirroring Colors.Domain.Constants.RoleNames on the server.
  *
  * Written as constants, never as loose strings: a typo in a role name would hide a
  * menu item with no error and nothing to search for. The `as const` makes any typo
@@ -17,6 +17,8 @@ export const RoleNames = {
   ThermoTestPerson: 'ThermoTestPerson',
   PackagingOperator: 'PackagingOperator',
   RecyclerOperator: 'RecyclerOperator',
+  /** The computer with the label printer (section 19.13). */
+  LabelPrinter: 'LabelPrinter',
 } as const;
 
 export type RoleName = (typeof RoleNames)[keyof typeof RoleNames];
@@ -32,6 +34,7 @@ export const roleLabels: Record<RoleName, string> = {
   ThermoTestPerson: 'Thermo Test Person',
   PackagingOperator: 'Packaging Operator',
   RecyclerOperator: 'Recycler Operator',
+  LabelPrinter: 'Label Printer',
 };
 
 /**

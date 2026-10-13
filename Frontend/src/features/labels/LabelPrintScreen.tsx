@@ -1,9 +1,11 @@
 ﻿import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '../../hooks/useTranslation';
 import QRCode from 'qrcode';
-import { useEffect, useState, type ReactElement } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { Icon } from '../../components/ui/Icon';
+import { ApiError } from '../../lib/apiClient';
+import { printJobsApi } from '../printing/api';
 import { producedStockApi, type BarcodeLabelDto } from './api';
 
 interface LabelPrintScreenProps {
@@ -12,15 +14,28 @@ interface LabelPrintScreenProps {
   /** Shown above the sheet when the thing was only just made. */
   headline?: string;
   onClose: () => void;
+  /**
+   * Print on this device's own printer rather than sending to the queue. The Print Queue
+   * screen on the computer uses it; a tablet only when somebody chooses "Print here".
+   */
+  direct?: boolean;
+  /** With `direct`: print the moment the labels are drawn, without a button. */
+  autoPrint?: boolean;
+  /** With `direct`: told once the print has been sent to the printer. */
+  onPrinted?: () => void;
 }
 
 /**
- * The screen for printing labels (specification section 12).
+ * The screen for printing labels (specification sections 12 and 19.13).
  *
  * It opens by itself the moment something is produced, because that is when the label
  * is needed — a worker who has just logged a roll should not have to go and find it in
  * a list of five hundred to print the sticker for it. A thermo run makes a dozen or
  * more bags at once, so the sheet holds all of them and prints as one job.
+ *
+ * <b>The tablets have no printer.</b> The label printer hangs off one computer, so the
+ * main button sends the labels to its queue, and the computer's Print Queue screen prints
+ * them. "Print here instead" stays for a device that does have a printer.
  *
  * <b>Rendered straight into the document body</b>, not nested inside the page like a
  * dialog. That is what makes the print rule <i>hide every child of body except this
@@ -37,12 +52,80 @@ export function LabelPrintScreen({
   barcodes,
   headline,
   onClose,
+  direct = false,
+  autoPrint = false,
+  onPrinted,
 }: LabelPrintScreenProps): ReactElement {
   const { t } = useTranslation();
   const labels = useQuery({
     queryKey: ['labels', barcodes],
     queryFn: () => producedStockApi.labels(barcodes),
   });
+
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Every QR drawn, so nothing goes to the printer with an empty square on it.
+  const [ready, setReady] = useState<ReadonlySet<string>>(() => new Set());
+  // Stable, so a label does not draw its QR again every time this screen re-renders.
+  const markReady = useCallback((barcode: string) => {
+    setReady((current) =>
+      current.has(barcode) ? current : new Set(current).add(barcode),
+    );
+  }, []);
+  const allReady =
+    labels.data !== undefined &&
+    labels.data.length > 0 &&
+    labels.data.every((label) => ready.has(label.barcode));
+
+  function printHere(): void {
+    // Blocks until the printer has the job (or the dialog is closed), so what follows
+    // happens after the print, not before it.
+    window.print();
+    onPrinted?.();
+  }
+
+  // The latest callback, kept aside: the queue page re-renders every few seconds and
+  // hands a new one each time, which must not restart (and so cancel) a print under way.
+  const onPrintedRef = useRef(onPrinted);
+  useEffect(() => {
+    onPrintedRef.current = onPrinted;
+  }, [onPrinted]);
+
+  // The computer's queue in automatic mode: print once, as soon as every label is drawn.
+  const printedOnce = useRef(false);
+  useEffect(() => {
+    if (!direct || !autoPrint || !allReady || printedOnce.current) {
+      return;
+    }
+
+    printedOnce.current = true;
+    // One frame, so the drawn QR codes are on the page before it goes to the printer.
+    window.requestAnimationFrame(() => {
+      window.print();
+      onPrintedRef.current?.();
+    });
+  }, [direct, autoPrint, allReady]);
+
+  async function sendToPrinter(): Promise<void> {
+    setError(null);
+    setSending(true);
+    try {
+      await printJobsApi.queue({
+        barcodes,
+        headline: headline ?? null,
+        source: window.location.pathname,
+      });
+      setSent(true);
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
+      );
+    } finally {
+      setSending(false);
+    }
+  }
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent): void {
@@ -110,21 +193,60 @@ export function LabelPrintScreen({
           <>
             <div className="label-sheets">
               {labels.data.map((label) => (
-                <LabelSheet key={label.barcode} label={label} />
+                <LabelSheet key={label.barcode} label={label} onReady={markReady} />
               ))}
             </div>
 
-            <button
-              type="button"
-              className="no-print btn-primary"
-              onClick={() => {
-                window.print();
-              }}
-            >
-              {many
-                ? `Print all ${String(labels.data.length)} labels`
-                : t('labels.printThis')}
-            </button>
+            {error !== null && (
+              <p
+                role="alert"
+                className="no-print mb-4 rounded-control border border-s-4 border-bad/30 border-s-bad bg-bad-soft px-4 py-3 text-sm font-medium text-bad"
+              >
+                {error}
+              </p>
+            )}
+
+            {direct ? (
+              <button
+                type="button"
+                className="no-print btn-primary"
+                disabled={!allReady}
+                onClick={printHere}
+              >
+                {many
+                  ? `Print all ${String(labels.data.length)} labels`
+                  : t('labels.printThis')}
+              </button>
+            ) : sent ? (
+              <div className="no-print">
+                <p className="mb-3 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+                  {t('print.sent')}
+                </p>
+                <button type="button" className="btn-primary" onClick={onClose}>
+                  {t('common.close')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="no-print btn-primary"
+                  disabled={sending}
+                  onClick={() => {
+                    void sendToPrinter();
+                  }}
+                >
+                  {sending ? t('print.sending') : t('print.sendToPrinter')}
+                </button>
+                <button
+                  type="button"
+                  className="no-print mt-3 w-full text-center text-sm font-medium text-brand-700 hover:underline"
+                  onClick={printHere}
+                >
+                  {t('print.printHere')}
+                </button>
+              </>
+            )}
             <p className="no-print mt-2 text-xs text-ink-muted">
               4 × 4 in (102 × 102 mm), one to a page. Reprinting is allowed.
             </p>
@@ -136,7 +258,14 @@ export function LabelPrintScreen({
   );
 }
 
-function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
+function LabelSheet({
+  label,
+  onReady,
+}: {
+  label: BarcodeLabelDto;
+  /** Told once the QR is drawn, or has failed to be — either way it is final. */
+  onReady: (barcode: string) => void;
+}): ReactElement {
   const { t } = useTranslation();
   const [qr, setQr] = useState<string | null>(null);
 
@@ -153,11 +282,13 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
       (svg) => {
         if (!cancelled) {
           setQr(svg);
+          onReady(label.barcode);
         }
       },
       () => {
         if (!cancelled) {
           setQr(null);
+          onReady(label.barcode);
         }
       },
     );
@@ -165,7 +296,7 @@ function LabelSheet({ label }: { label: BarcodeLabelDto }): ReactElement {
     return () => {
       cancelled = true;
     };
-  }, [label.barcode]);
+  }, [label.barcode, onReady]);
 
   const made = new Date(label.createdAt);
 

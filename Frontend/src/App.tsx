@@ -16,6 +16,7 @@ import { MasterDataPage } from './features/master-data/MasterDataPage';
 import { PackagingPage } from './features/packaging/PackagingPage';
 import { PalletsPage } from './features/pallets/PalletsPage';
 import { RecipesPage } from './features/recipes/RecipesPage';
+import { PrintQueuePage } from './features/printing/PrintQueuePage';
 import { RecyclerPage } from './features/recycler/RecyclerPage';
 import { ReportsPage } from './features/reports/ReportsPage';
 import { ShiftConfigurationsPage } from './features/shifts/ShiftConfigurationsPage';
@@ -54,6 +55,7 @@ const screens: { path: ScreenPath; element: ReactElement }[] = [
   { path: '/', element: <DashboardPage /> },
   { path: '/inventory', element: <InventoryPage /> },
   { path: '/trace', element: <TracePage /> },
+  { path: '/print-queue', element: <PrintQueuePage /> },
   { path: '/inventory/receive', element: <ReceiveMaterialsPage /> },
   { path: '/inventory/issue', element: <MaterialIssuePage /> },
   { path: '/production/rolls', element: <RollProductionPage /> },

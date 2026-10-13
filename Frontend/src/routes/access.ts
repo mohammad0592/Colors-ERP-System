@@ -34,6 +34,7 @@ const { Administrator, Supervisor, InventoryManager } = RoleNames;
 const { ExtruderOperator, ExtruderTestPerson } = RoleNames;
 const { ThermoOperator, ThermoTestPerson } = RoleNames;
 const { PackagingOperator, RecyclerOperator } = RoleNames;
+const { LabelPrinter } = RoleNames;
 
 export const screenAccess = {
   '/': undefined,
@@ -46,6 +47,11 @@ export const screenAccess = {
   // Where did this label come from. Open to anyone signed in: it writes nothing, and
   // whoever is holding a label may need to know what is behind it (section 13).
   '/trace': undefined,
+
+  // The label printer's queue, on the computer it hangs off. The tablets have no printer
+  // and send their labels here (section 19.13). The supervisor and administrator may open
+  // it to see what is waiting.
+  '/print-queue': [Administrator, Supervisor, LabelPrinter],
 
   '/inventory/receive': [Administrator, InventoryManager],
 

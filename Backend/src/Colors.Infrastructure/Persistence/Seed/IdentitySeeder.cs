@@ -28,6 +28,7 @@ public static class IdentitySeeder
         [RoleNames.ThermoTestPerson] = "Line 2 — records thermo test reports: plate weight, absorbent percentage.",
         [RoleNames.PackagingOperator] = "Line 2 — creates pallets, scans bags onto them, records packaging materials.",
         [RoleNames.RecyclerOperator] = "Line 3 — records scrap weight and recycled output.",
+        [RoleNames.LabelPrinter] = "The computer with the label printer — prints the labels the tablets send.",
     };
 
     public static async Task SeedAsync(IServiceProvider services, CancellationToken cancellationToken = default)

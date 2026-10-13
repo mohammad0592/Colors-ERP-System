@@ -361,6 +361,7 @@ There are **two testing stages** in the factory — one at the extruder and one 
 | **Thermo Test Person** | Records **thermo test reports** — plate weight after forming, absorbent percentage | 2 |
 | **Packaging Operator** | Creates pallets, scans bags onto them, completes pallets, records packaging materials | 2 |
 | Recycler Operator | Records scrap and recycled output | 3 |
+| **Label Printer** | The computer the label printer hangs off — prints the labels the tablets send. Sees the Print Queue and nothing else (19.13) | — |
 
 *(Both test roles were called "Quality Control" in the old documents. That name is wrong — they do not approve or reject anything. They record measurements, and production continues either way.)*
 
@@ -1779,7 +1780,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twelve changes, from watching the factory use the system. They are written here rather
+Thirteen changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2152,6 +2153,36 @@ Five changes to logging and testing rolls, asked for together.
   may be corrected until it goes into the thermo; the test is still taken once. Existing
   rolls kept their figures: the migration copied each test's weight and length onto its
   roll before dropping them from the test.
+
+### 19.13 The tablets send labels to the computer with the printer
+
+The system runs on tablets, and none of them has a printer. The label printer is plugged
+into one computer.
+
+**Decided, and built:**
+
+- **A print queue.** On a tablet, the label window's main button is now **Send to the
+  label printer**: the labels go into `PrintJobs` on the server — named by barcode, so each
+  label is drawn from the object when it is printed — with who sent them, from which
+  screen, and when. **Print here instead** stays, for a device that has its own printer.
+- **A Label Printer role and a Print Queue screen**, under Operations, for the computer.
+  It asks for waiting jobs every three seconds, oldest first, and lists them with where
+  they came from. The administrator and the supervisor may open it too.
+- **Printing by itself.** With **Auto-print** on, the screen prints each new job as it
+  arrives and marks it printed. For that to happen with no dialog, the computer opens the
+  page from a Chrome shortcut with `--kiosk-printing` and the label printer set as the
+  Windows default, at 4 × 4 in. Without kiosk printing, Chrome asks once per job.
+  **Print all** prints what is waiting and stops; **Print** does one job by hand.
+- **A history.** Printed and removed jobs stay, with who did it and when, and can be
+  printed again — a label torn the next day is found there rather than made again.
+  Printing a job again changes nothing on record. A job sent by mistake is **removed**
+  rather than printed.
+- Only labels the system issued and still uses are queued: an unknown or replaced label is
+  refused at the tablet, not discovered at the printer.
+
+**What it does not do:** it cannot tell whether a page actually came out of the printer —
+a browser does not say. A job counts as printed once the computer has sent it; if a label
+comes out wrong, **Print again** from the history.
 
 ---
 
