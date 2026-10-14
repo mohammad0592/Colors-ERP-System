@@ -9,6 +9,7 @@ import { reportsApi } from './api';
 import { ConsumptionReport } from './ConsumptionReport';
 import { dayFromNow, type DateRange } from './dateRange';
 import { DateRangePicker } from './DateRangePicker';
+import { ExtruderShiftReport } from './ExtruderShiftReport';
 import { MaterialWasteReport } from './MaterialWasteReport';
 import { PalletProductionReport } from './PalletProductionReport';
 import { RecycledMaterialReport } from './RecycledMaterialReport';
@@ -25,12 +26,14 @@ import { ThermoShiftReport } from './ThermoShiftReport';
  * stretch of days and share a date range. Whichever the chosen report needs is the one
  * shown, and both keep their value while the reader moves between reports.
  */
-type ReportName = 'waste' | 'summary' | 'thermo' | 'consumption' | 'pallets' | 'recycled';
+type ReportName =
+  'waste' | 'summary' | 'extruder' | 'thermo' | 'consumption' | 'pallets' | 'recycled';
 
 /** True for the reports that read a stretch of days rather than one shift. */
 const readsARange: Record<ReportName, boolean> = {
   waste: false,
   summary: false,
+  extruder: false,
   thermo: false,
   consumption: true,
   pallets: true,
@@ -64,6 +67,14 @@ export function ReportsPage(): ReactElement {
     enabled: chosen !== null && report === 'waste',
   });
 
+  const extruder = useQuery({
+    queryKey: ['report-extruder', chosen],
+    queryFn: () => reportsApi.extruderShift(chosen ?? 0),
+    enabled: chosen !== null && report === 'extruder',
+    // A shift the extruder did not run on is answered in words, not retried.
+    retry: false,
+  });
+
   const thermo = useQuery({
     queryKey: ['report-thermo', chosen],
     queryFn: () => reportsApi.thermoShift(chosen ?? 0),
@@ -95,6 +106,13 @@ export function ReportsPage(): ReactElement {
           active={report === 'summary'}
           onClick={() => {
             setReport('summary');
+          }}
+        />
+        <Chip
+          label={t('reports.extruderShift')}
+          active={report === 'extruder'}
+          onClick={() => {
+            setReport('extruder');
           }}
         />
         <Chip
@@ -166,6 +184,22 @@ export function ReportsPage(): ReactElement {
           {waste.isPending && <p className="p-6 text-ink-muted">{t('common.loading')}</p>}
           {waste.isError && <p className="p-6 text-bad">{t('msg.reportFailed')}</p>}
           {waste.data !== undefined && <MaterialWasteReport report={waste.data} />}
+        </>
+      )}
+
+      {report === 'extruder' && chosen !== null && (
+        <>
+          {extruder.isPending && (
+            <p className="p-6 text-ink-muted">{t('common.loading')}</p>
+          )}
+          {extruder.isError && (
+            <p className="p-6 text-bad">
+              {extruder.error instanceof ApiError
+                ? extruder.error.message
+                : t('msg.reportFailed')}
+            </p>
+          )}
+          {extruder.data !== undefined && <ExtruderShiftReport report={extruder.data} />}
         </>
       )}
 

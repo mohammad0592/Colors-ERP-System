@@ -17,7 +17,9 @@ namespace Colors.Api.Controllers;
 public class ReportsController(
     IReportsService reports,
     IThermoShiftReportService thermoReports,
-    IThermoShiftReportExcel thermoExcel) : ApiControllerBase
+    IThermoShiftReportExcel thermoExcel,
+    IExtruderShiftReportService extruderReports,
+    IExtruderShiftReportExcel extruderExcel) : ApiControllerBase
 {
     private const string CanRead =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.InventoryManager}";
@@ -59,6 +61,42 @@ public class ReportsController(
 
         return File(
             thermoExcel.Build(shift),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            name);
+    }
+
+    /// <summary>The extruder's report for one shift: every roll made on it.</summary>
+    [HttpGet("extruder-shift/{shiftReportId:int}")]
+    public async Task<IActionResult> GetExtruderShift(
+        int shiftReportId,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await extruderReports.GetAsync(shiftReportId, cancellationToken));
+    }
+
+    /// <summary>
+    /// The same report as an Excel file. <c>utcOffsetMinutes</c> is the browser's own, so
+    /// the out times read as the factory's clock: the server knows no time zone.
+    /// </summary>
+    [HttpGet("extruder-shift/{shiftReportId:int}/excel")]
+    public async Task<IActionResult> GetExtruderShiftExcel(
+        int shiftReportId,
+        CancellationToken cancellationToken,
+        [FromQuery] int utcOffsetMinutes = 0)
+    {
+        var report = await extruderReports.GetAsync(shiftReportId, cancellationToken);
+        if (!report.IsSuccess)
+        {
+            return ToResponse(report);
+        }
+
+        // No clock on earth is more than fourteen hours from UTC.
+        var offset = TimeSpan.FromMinutes(Math.Clamp(utcOffsetMinutes, -14 * 60, 14 * 60));
+        var shift = report.Value!;
+        var name = $"Extruder report {shift.ProductionDate:yyyy-MM-dd} shift {shift.ShiftName}.xlsx";
+
+        return File(
+            extruderExcel.Build(shift, offset),
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             name);
     }

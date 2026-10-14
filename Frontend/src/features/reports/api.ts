@@ -1,4 +1,5 @@
 import { apiDownload, apiRequest } from '../../lib/apiClient';
+import type { RollStatus } from '../production/api';
 
 /**
  * Reports, mirroring Colors.Application.Features.Reports.
@@ -215,6 +216,85 @@ export interface ThermoReportPackagingDto {
 }
 
 /** The thermoforming line's report for one shift (specification section 13). */
+/** One roll made on the shift, with everything recorded against it (section 13.1). */
+export interface ExtruderReportRollDto {
+  rollNumber: number;
+  rollCode: string;
+  /** The out time, as a moment; shown in the tablet's own time. */
+  producedAt: string;
+  batchNumber: number;
+  recipeNumber: number;
+  recipeFamilyName: string;
+  isAbsorbent: boolean;
+  productName: string | null;
+  colorName: string;
+  status: RollStatus;
+  /** Each null until it is taken. */
+  weight: number | null;
+  length: number | null;
+  plateWeight: number | null;
+  thicknessRs: number | null;
+  thicknessRm: number | null;
+  thicknessLm: number | null;
+  thicknessLs: number | null;
+  averageThickness: number | null;
+  minThickness: number | null;
+  maxThickness: number | null;
+  /** The verdict kept when it was tested. Null where the product has no range. */
+  thicknessInSpec: boolean | null;
+  absorbencyDryWeight: number | null;
+  absorbencyWetWeight: number | null;
+  absorbencyPercentage: number | null;
+  testComplete: boolean;
+  producedByName: string;
+  measuredByName: string | null;
+  testedByName: string | null;
+  /** The thermo shift that formed it, once it has gone in. */
+  formedOnDate: string | null;
+  formedOnShiftName: string | null;
+  notes: string | null;
+  testNotes: string | null;
+}
+
+export interface ExtruderReportProductDto {
+  productName: string;
+  rollCount: number;
+  /** Measured rolls only. */
+  totalWeight: number;
+  totalLength: number;
+  averageThickness: number | null;
+  outOfSpecCount: number;
+}
+
+/** The extruder's report for one shift: every roll made on it (section 13.1). */
+export interface ExtruderShiftReportDto {
+  shiftReportId: number;
+  productionDate: string;
+  shiftName: string;
+  status: string;
+  lineName: string;
+  operatorName: string | null;
+  operatorEmployeeNumber: string | null;
+  productionStartTime: string | null;
+  productionEndTime: string | null;
+  downtimeHours: number | null;
+  actualProductionHours: number | null;
+  workers: string[];
+  trainees: string[];
+  notes: string | null;
+  batchNumbers: number[];
+  rolls: ExtruderReportRollDto[];
+  rollCount: number;
+  measuredCount: number;
+  testedCount: number;
+  /** Measured and tested: free for the thermo, or already in it. */
+  readyCount: number;
+  outOfSpecCount: number;
+  totalWeight: number;
+  totalLength: number;
+  products: ExtruderReportProductDto[];
+}
+
 export interface ThermoShiftReportDto {
   shiftReportId: number;
   productionDate: string;
@@ -262,6 +342,22 @@ export const reportsApi = {
     apiDownload(
       `/api/reports/thermo-shift/${String(report.shiftReportId)}/excel`,
       `Thermo report ${report.productionDate} shift ${report.shiftName}.xlsx`,
+    ),
+
+  extruderShift: (shiftReportId: number): Promise<ExtruderShiftReportDto> =>
+    apiRequest<ExtruderShiftReportDto>(
+      `/api/reports/extruder-shift/${String(shiftReportId)}`,
+    ),
+
+  /**
+   * The same report as an Excel file. The browser's own offset goes with it, so the out
+   * times in the file read as the factory's clock — the server knows no time zone.
+   */
+  extruderShiftExcel: (report: ExtruderShiftReportDto): Promise<void> =>
+    apiDownload(
+      `/api/reports/extruder-shift/${String(report.shiftReportId)}/excel` +
+        `?utcOffsetMinutes=${String(-new Date().getTimezoneOffset())}`,
+      `Extruder report ${report.productionDate} shift ${report.shiftName}.xlsx`,
     ),
 
   shiftSummary: (shiftReportId: number): Promise<ShiftSummaryReportDto> =>

@@ -1482,6 +1482,7 @@ nothing and unlocks nothing. It exists so a supervisor can see who types a lot.
 | **Current stock** | with materials below minimum highlighted |
 | **Rolls in stock** | by colour, recipe and age — rolls sit for weeks |
 | Shift production summary | per product (NOR500 / AB500), matching the paper form |
+| Extruder shift report | every roll made on the shift, with everything recorded against it (13.1) |
 | Thermoforming waste | roll weight less the plates it made, per run and per shift |
 | Consumption by recipe | works because tickets link to batches |
 | Consumption by shift | |
@@ -1514,6 +1515,31 @@ Roll    →  every bag it made, and where each one went
 The paper form's summary block — loss %, loss weight, roll weight used, plate count, per product — is **entirely calculable** from records the system already holds. It is built as a view, so it can never disagree with the data underneath it.
 
 The one number to watch: loss uses **each roll's own measured plate weight**, not a single shared figure. On the July form every roll was 9 g so it made no difference; the Roll Log shows 9.1, 8.7 and 9.2, so it will.
+
+### 13.1 The extruder shift report
+
+One per shift, on the Reports screen and as an Excel file. The factory has no paper form for
+the extruder — the nearest is the Roll Log's export — so the layout is the system's own,
+with headings in English and Arabic.
+
+- **The shift:** date, shift, line, status, the batch it ran, the operator, crew and
+  trainees, the production hours and downtime, and the line's notes.
+- **Every roll logged on the shift's extruder line**, in the order they came off, whatever
+  has happened to them since: number, code, out time, batch, recipe, product, colour,
+  status; weight and length; plate weight, the four thickness readings, their average,
+  the product's range and the in-spec verdict kept when it was tested; on absorbent rolls
+  the dry and wet weights and the absorbency; who logged, measured and tested it; the
+  thermo shift that formed it, once it has gone in; and the roll's and the test's notes.
+  A roll still waiting for its weight or its test is listed with the gaps showing, not
+  left off.
+- **Totals:** rolls made, measured, tested, ready for the thermo, out of spec, and the
+  total weight and length of the measured ones.
+- **By product:** rolls, weight, length, average thickness and out-of-spec count.
+
+In the Excel file the average thickness, the absorbency and the totals are formulas, so a
+reading corrected in Excel carries through — the choice the thermo form makes. Out times
+are printed in the clock of the browser that asked for the file, since the server knows no
+time zone and the time must read as the man at the machine wrote it.
 
 ---
 
