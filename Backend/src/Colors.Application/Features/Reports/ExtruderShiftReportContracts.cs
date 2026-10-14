@@ -104,6 +104,7 @@ public interface IExtruderShiftReportService
 /// </summary>
 public interface IExtruderShiftReportExcel
 {
+    /// <param name="report">The report to write, as the screen shows it.</param>
     /// <param name="utcOffset">The factory's clock against UTC, from the browser that
     /// asked: the server knows no time zone, and the out times must read as the man at the
     /// machine wrote them.</param>
