@@ -1780,7 +1780,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Thirteen changes, from watching the factory use the system. They are written here rather
+Fourteen changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2183,6 +2183,37 @@ into one computer.
 **What it does not do:** it cannot tell whether a page actually came out of the printer —
 a browser does not say. A job counts as printed once the computer has sent it; if a label
 comes out wrong, **Print again** from the history.
+
+### 19.14 More colours, and the absorbency of absorbent rolls
+
+**More colours.** Rolls can now be logged in Blue, Red, Orange, Pink, Purple, Brown and
+Grey, besides White, Green, Yellow and Black. Each colour's letter goes into a bag's
+product code and must be unique; B was already Black's, so the new letters are Blue **U**,
+Red **R**, Orange **O**, Pink **P**, Purple **V**, Brown **N**, Grey **E**. They can be
+renamed, or switched off, in Master Data → Colours. An existing database gains them through
+the migration; a new one gets them from the seeder.
+
+**Absorbency.** An absorbent roll is tested for how much water it takes up. A piece of the
+roll is weighed, left in water for ten minutes, and weighed again. The roll test records
+both weights, in grams, and works out:
+
+```
+absorbency % = (weight after water − weight before) ÷ weight before × 100
+```
+
+10 g dry and 13.5 g wet is 35%. The percentage is calculated, never typed or stored — the
+two weights are kept on the test, so it cannot disagree with them.
+
+- On an absorbent roll the two weights are **required**: the test is not saved without
+  them.
+- On any other roll they are **refused** — a figure there means the wrong roll was picked.
+- A piece lighter after the water than before is refused, as the two weights swapped. The
+  database holds the same rule (`ck_roll_tests_absorbency`).
+
+> **To confirm with the factory:** the factory described the figure as "the difference
+> between the weight before and after, × 100%". It is taken here as a share of the dry
+> weight, the usual water-absorption figure. If the factory divides by something else, or
+> has a pass mark, only `RollTestReport.AbsorbencyPercentage` changes.
 
 ---
 

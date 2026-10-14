@@ -135,7 +135,9 @@ public class ProductionService(
                 r.Product?.Name,
                 r.Product?.MinThickness,
                 r.Product?.MaxThickness,
-                r.TestReport?.ThicknessInSpec))
+                r.TestReport?.ThicknessInSpec,
+                r.RecipeVersion.Family.IsAbsorbent,
+                r.TestReport?.AbsorbencyPercentage))
             .ToList();
     }
 
@@ -479,6 +481,14 @@ public class ProductionService(
             return InvalidRoll(error);
         }
 
+        // An absorbent roll is tested for how much water it takes up; every other roll is
+        // not, and a figure on it would be somebody filling in the wrong roll.
+        var absorbencyError = AbsorbencyError(request, roll.RecipeVersion.Family.IsAbsorbent);
+        if (absorbencyError is not null)
+        {
+            return absorbencyError;
+        }
+
         var report = new RollTestReport
         {
             RollId = roll.Id,
@@ -487,6 +497,8 @@ public class ProductionService(
             ThicknessRm = request.ThicknessRm,
             ThicknessLm = request.ThicknessLm,
             ThicknessLs = request.ThicknessLs,
+            AbsorbencyDryWeight = request.AbsorbencyDryWeight,
+            AbsorbencyWetWeight = request.AbsorbencyWetWeight,
             TestedByUserId = userId,
             TestedAt = timeProvider.GetUtcNow(),
             Notes = Trimmed(request.Notes),
@@ -633,6 +645,33 @@ public class ProductionService(
             .ToListAsync(cancellationToken);
 
         return taken[0];
+    }
+
+    private static Result<RollDto>? AbsorbencyError(SaveRollTestRequest request, bool isAbsorbent)
+    {
+        var dry = request.AbsorbencyDryWeight;
+        var wet = request.AbsorbencyWetWeight;
+
+        if (!isAbsorbent)
+        {
+            return dry is null && wet is null
+                ? null
+                : InvalidRoll("This roll is not absorbent. Leave the absorbency empty.", "roll.notAbsorbent");
+        }
+
+        if (dry is null or <= 0 || wet is null or <= 0)
+        {
+            return InvalidRoll(
+                "An absorbent roll needs its absorbency: the piece's weight dry, and after ten minutes in water.",
+                "roll.absorbencyMissing");
+        }
+
+        // Soaked, it can only have taken water on. Lighter means the two were swapped.
+        return wet < dry
+            ? InvalidRoll(
+                "The weight after the water is less than before. Check the two weights are not swapped.",
+                "roll.absorbencyBackwards")
+            : null;
     }
 
     private static string? Validate(SaveRollTestRequest request)
@@ -785,6 +824,9 @@ public class ProductionService(
                     roll.TestReport.ThicknessLs,
                     roll.TestReport.AverageThickness,
                     roll.TestReport.ThicknessInSpec,
+                    roll.TestReport.AbsorbencyDryWeight,
+                    roll.TestReport.AbsorbencyWetWeight,
+                    roll.TestReport.AbsorbencyPercentage,
                     names.GetValueOrDefault(roll.TestReport.TestedByUserId, "—"),
                     roll.TestReport.TestedAt,
                     roll.TestReport.Notes));

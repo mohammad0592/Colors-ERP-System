@@ -34,6 +34,10 @@ export function RollTestDialog({
   const [lm, setLm] = useState('');
   const [ls, setLs] = useState('');
   const [notes, setNotes] = useState('');
+  // Absorbent rolls only (section 19.14): a piece weighed dry, then after ten minutes in
+  // water. The percentage is shown as he types, never typed.
+  const [dry, setDry] = useState('');
+  const [wet, setWet] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -46,7 +50,18 @@ export function RollTestDialog({
     ? Math.round((readings.reduce((sum, v) => sum + v, 0) / 4) * 1000) / 1000
     : null;
 
-  const complete = Number(plateWeight) > 0 && allReadings;
+  const dryNumber = Number(dry);
+  const wetNumber = Number(wet);
+  const absorbencyTyped = dryNumber > 0 && wetNumber > 0;
+  const absorbencyBackwards = absorbencyTyped && wetNumber < dryNumber;
+  const absorbency = absorbencyTyped
+    ? Math.round(((wetNumber - dryNumber) / dryNumber) * 100 * 100) / 100
+    : null;
+
+  const complete =
+    Number(plateWeight) > 0 &&
+    allReadings &&
+    (!roll.isAbsorbent || (absorbencyTyped && !absorbencyBackwards));
 
   async function save(): Promise<void> {
     setError(null);
@@ -59,6 +74,9 @@ export function RollTestDialog({
         thicknessLm: readings[2] ?? 0,
         thicknessLs: readings[3] ?? 0,
         notes: notes.trim() === '' ? null : notes.trim(),
+        ...(roll.isAbsorbent
+          ? { absorbencyDryWeight: dryNumber, absorbencyWetWeight: wetNumber }
+          : {}),
       });
       onSaved(saved);
       onClose();
@@ -143,6 +161,64 @@ export function RollTestDialog({
           </div>
           <p className="mt-1 text-xs text-ink-muted">{t('rolls.meanOfFour')}</p>
         </div>
+
+        {roll.isAbsorbent && (
+          <>
+            <p className="field-label">{t('rolls.absorbencyTitle')}</p>
+            <div className="mb-4 grid gap-3 sm:grid-cols-2">
+              <Field label={t('rolls.absorbencyDry')} htmlFor="test-dry">
+                <input
+                  id="test-dry"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.001"
+                  min="0"
+                  className="field-input"
+                  value={dry}
+                  disabled={isSaving}
+                  onChange={(event) => {
+                    setDry(event.target.value);
+                  }}
+                />
+              </Field>
+              <Field label={t('rolls.absorbencyWet')} htmlFor="test-wet">
+                <input
+                  id="test-wet"
+                  type="number"
+                  inputMode="decimal"
+                  step="0.001"
+                  min="0"
+                  className="field-input"
+                  value={wet}
+                  disabled={isSaving}
+                  onChange={(event) => {
+                    setWet(event.target.value);
+                  }}
+                />
+              </Field>
+            </div>
+
+            {absorbencyBackwards && (
+              <p className="mb-4 rounded-control border border-s-4 border-warn/30 border-s-warn bg-warn-soft px-4 py-3 text-sm font-medium text-warn">
+                {t('rolls.absorbencyBackwards')}
+              </p>
+            )}
+
+            <div className="mb-4 rounded-control bg-canvas px-4 py-3">
+              <div className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-medium text-ink-soft">
+                  {t('rolls.absorbencyPercent')}
+                </span>
+                <span className="text-lg font-bold text-ink">
+                  {absorbency === null || absorbencyBackwards
+                    ? '—'
+                    : `${String(absorbency)}%`}
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-ink-muted">{t('rolls.absorbencyNote')}</p>
+            </div>
+          </>
+        )}
 
         <div className="mb-4">
           <label className="field-label" htmlFor="test-notes">

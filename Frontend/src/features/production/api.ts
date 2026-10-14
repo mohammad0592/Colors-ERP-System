@@ -39,6 +39,11 @@ export interface RollTestReportDto {
    * failure and must never be shown as one.
    */
   thicknessInSpec: boolean | null;
+  /** Absorbent rolls only: the sample dry and after ten minutes in water, grams. */
+  absorbencyDryWeight: number | null;
+  absorbencyWetWeight: number | null;
+  /** (wet − dry) ÷ dry × 100, worked out on the server. */
+  absorbencyPercentage: number | null;
   testedByName: string;
   testedAt: string;
   notes: string | null;
@@ -76,11 +81,14 @@ export interface RollSummaryDto {
   maxThickness: number | null;
   /** Null until measured, and null for a product with no range. */
   thicknessInSpec: boolean | null;
+  /** Its recipe is absorbent, so the test asks for the absorbency (section 19.14). */
+  isAbsorbent: boolean;
+  absorbencyPercentage: number | null;
 }
 
 export interface RollDto extends Omit<
   RollSummaryDto,
-  'averageThickness' | 'thicknessInSpec'
+  'averageThickness' | 'thicknessInSpec' | 'isAbsorbent' | 'absorbencyPercentage'
 > {
   measuredByName: string | null;
   measuredAt: string | null;
@@ -183,6 +191,9 @@ export const productionApi = {
       thicknessLm: number;
       thicknessLs: number;
       notes: string | null;
+      /** Absorbent rolls only; left out for every other. */
+      absorbencyDryWeight?: number | null;
+      absorbencyWetWeight?: number | null;
     },
   ): Promise<RollDto> =>
     apiRequest<RollDto>(`/api/production/rolls/${String(rollId)}/test`, {

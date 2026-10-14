@@ -54,6 +54,26 @@ public class RollTestReport
     /// </summary>
     public bool? ThicknessInSpec { get; set; }
 
+    // ---- absorbency, absorbent rolls only (specification section 19.14) ---------------
+    // A piece of the roll is weighed dry, left in water for ten minutes, and weighed
+    // again. Both weights are kept, in grams; the percentage is worked out from them.
+
+    /// <summary>The sample's weight before the water. Null on a roll that is not absorbent.</summary>
+    public decimal? AbsorbencyDryWeight { get; set; }
+
+    /// <summary>The same sample after ten minutes in water.</summary>
+    public decimal? AbsorbencyWetWeight { get; set; }
+
+    /// <summary>
+    /// The water it took up, as a share of its dry weight:
+    /// (wet − dry) ÷ dry × 100. Calculated, never stored — the two weights are frozen on
+    /// this row, so the percentage can never disagree with them.
+    /// </summary>
+    public decimal? AbsorbencyPercentage =>
+        AbsorbencyDryWeight is > 0 && AbsorbencyWetWeight is not null
+            ? Math.Round((AbsorbencyWetWeight.Value - AbsorbencyDryWeight.Value) / AbsorbencyDryWeight.Value * 100m, 2)
+            : null;
+
     public int TestedByUserId { get; set; }
 
     public DateTimeOffset TestedAt { get; set; }

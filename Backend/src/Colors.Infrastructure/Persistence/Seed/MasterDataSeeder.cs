@@ -123,12 +123,21 @@ public static class MasterDataSeeder
 
         // --- Colours, with the letters used inside roll codes ------------------
         // Any colour may be made on any recipe, black included (specification section 5).
+        // The letter is unique and goes into the bag's product code; B was Black's first,
+        // so Blue is U.
         var colors = new (string Name, string Code)[]
         {
             ("White", "W"),
             ("Green", "G"),
             ("Yellow", "Y"),
             ("Black", "B"),
+            ("Blue", "U"),
+            ("Red", "R"),
+            ("Orange", "O"),
+            ("Pink", "P"),
+            ("Purple", "V"),
+            ("Brown", "N"),
+            ("Grey", "E"),
         };
         if (!await db.Colors.AnyAsync(cancellationToken))
         {

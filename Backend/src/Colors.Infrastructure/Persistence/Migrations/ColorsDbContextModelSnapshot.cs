@@ -1141,6 +1141,14 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal?>("AbsorbencyDryWeight")
+                        .HasPrecision(9, 3)
+                        .HasColumnType("numeric(9,3)");
+
+                    b.Property<decimal?>("AbsorbencyWetWeight")
+                        .HasPrecision(9, 3)
+                        .HasColumnType("numeric(9,3)");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
@@ -1187,6 +1195,8 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.ToTable("RollTestReports", null, t =>
                         {
+                            t.HasCheckConstraint("ck_roll_tests_absorbency", "(\"AbsorbencyDryWeight\" IS NULL AND \"AbsorbencyWetWeight\" IS NULL) OR (\"AbsorbencyDryWeight\" > 0 AND \"AbsorbencyWetWeight\" >= \"AbsorbencyDryWeight\")");
+
                             t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" > 0");
                         });
                 });

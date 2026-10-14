@@ -115,7 +115,14 @@ public class RollTestReportConfiguration : IEntityTypeConfiguration<RollTestRepo
     public void Configure(EntityTypeBuilder<RollTestReport> builder)
     {
         builder.ToTable("RollTestReports", t =>
-            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" > 0"));
+        {
+            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" > 0");
+            // Both weights or neither, and a soaked piece is never lighter than a dry one.
+            t.HasCheckConstraint(
+                "ck_roll_tests_absorbency",
+                "(\"AbsorbencyDryWeight\" IS NULL AND \"AbsorbencyWetWeight\" IS NULL) OR "
+                + "(\"AbsorbencyDryWeight\" > 0 AND \"AbsorbencyWetWeight\" >= \"AbsorbencyDryWeight\")");
+        });
 
         builder.Property(e => e.PlateWeight).HasPrecision(9, 3);
         builder.Property(e => e.ThicknessRs).HasPrecision(9, 3);
@@ -124,8 +131,12 @@ public class RollTestReportConfiguration : IEntityTypeConfiguration<RollTestRepo
         builder.Property(e => e.ThicknessLs).HasPrecision(9, 3);
         builder.Property(e => e.Notes).HasMaxLength(500);
 
-        // The mean of the four readings, worked out on the entity.
+        builder.Property(e => e.AbsorbencyDryWeight).HasPrecision(9, 3);
+        builder.Property(e => e.AbsorbencyWetWeight).HasPrecision(9, 3);
+
+        // The mean of the four readings, and the absorbency, worked out on the entity.
         builder.Ignore(e => e.AverageThickness);
+        builder.Ignore(e => e.AbsorbencyPercentage);
 
         // One report per roll. The measurement happens once, as it leaves the machine.
         builder.HasIndex(e => e.RollId)

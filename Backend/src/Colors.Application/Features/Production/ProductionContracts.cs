@@ -52,7 +52,11 @@ public sealed record RollSummaryDto(
     decimal? MaxThickness,
     // Decided when it was measured and kept (specification section 19.1). Null until
     // measured, and null for a product with no range.
-    bool? ThicknessInSpec);
+    bool? ThicknessInSpec,
+    // Whether its recipe is absorbent, so the test asks for the absorbency (19.14), and
+    // the percentage once tested.
+    bool IsAbsorbent,
+    decimal? AbsorbencyPercentage);
 
 public sealed record RollTestReportDto(
     int Id,
@@ -66,6 +70,10 @@ public sealed record RollTestReportDto(
     // Whether that mean fell inside the product's range when it was measured. Null where
     // the product had no range to be inside.
     bool? ThicknessInSpec,
+    // Absorbent rolls only: the two weights, and (wet − dry) ÷ dry × 100 worked out.
+    decimal? AbsorbencyDryWeight,
+    decimal? AbsorbencyWetWeight,
+    decimal? AbsorbencyPercentage,
     string TestedByName,
     DateTimeOffset TestedAt,
     string? Notes);
@@ -154,7 +162,11 @@ public sealed record SaveRollTestRequest(
     decimal ThicknessRm,
     decimal ThicknessLm,
     decimal ThicknessLs,
-    string? Notes);
+    string? Notes,
+    // Absorbent rolls only, and required for them: a piece weighed dry, then after ten
+    // minutes in water. Grams. Left empty for every other roll (section 19.14).
+    decimal? AbsorbencyDryWeight = null,
+    decimal? AbsorbencyWetWeight = null);
 
 /// <summary>
 /// Line 1 — the mixer and the extruder (specification section 8).

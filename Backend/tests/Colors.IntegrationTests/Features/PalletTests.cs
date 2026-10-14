@@ -79,7 +79,10 @@ public class PalletTests(DatabaseFixture fixture)
         await production.MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
         await production.SaveTestReportAsync(
             roll.Value!.Id,
-            new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null),
+            new SaveRollTestRequest(
+                9m, 1.2m, 1.2m, 1.2m, 1.2m, null,
+                family.IsAbsorbent ? 10m : null,
+                family.IsAbsorbent ? 13.5m : null),
             ids.UserId);
 
         var run = await thermo.StartRunAsync(

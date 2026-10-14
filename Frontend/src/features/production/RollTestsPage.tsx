@@ -89,17 +89,20 @@ export function RollTestsPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
-              <th className="px-4 py-3 text-end font-semibold">{t('rolls.avgThickness')}</th>
+              <th className="px-4 py-3 text-end font-semibold">
+                {t('rolls.avgThickness')}
+              </th>
+              <th className="px-4 py-3 text-end font-semibold">
+                {t('rolls.absorbencyShort')}
+              </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
             {rolls.data.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
-                  {waitingOnly
-                    ? t('rolls.allMeasured')
-                    : t('rolls.noneMade')}
+                <td colSpan={9} className="px-4 py-8 text-center text-ink-muted">
+                  {waitingOnly ? t('rolls.allMeasured') : t('rolls.noneMade')}
                 </td>
               </tr>
             )}
@@ -130,6 +133,11 @@ export function RollTestsPage(): ReactElement {
                 <td className="px-4 py-3 text-end tabular-nums whitespace-nowrap text-ink-soft">
                   {roll.averageThickness ?? '—'}
                   <ThicknessVerdict inSpec={roll.thicknessInSpec} />
+                </td>
+                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
+                  {roll.absorbencyPercentage === null
+                    ? '—'
+                    : `${String(roll.absorbencyPercentage)}%`}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end">
