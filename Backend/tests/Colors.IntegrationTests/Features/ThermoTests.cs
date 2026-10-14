@@ -71,13 +71,7 @@ public class ThermoTests(DatabaseFixture fixture)
         Assert.True(roll.IsSuccess, roll.Message);
 
         await production.MeasureRollAsync(roll.Value!.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);
-        var measured = await production.SaveTestReportAsync(
-            roll.Value!.Id,
-            new SaveRollTestRequest(
-                9m, 1.2m, 1.2m, 1.2m, 1.2m, null,
-                family.IsAbsorbent ? 10m : null,
-                family.IsAbsorbent ? 13.5m : null),
-            ids.UserId);
+        var measured = await RollTesting.TestFullyAsync(db, roll.Value!.Id, ids.UserId, family.IsAbsorbent);
         Assert.True(measured.IsSuccess, measured.Message);
 
         return measured.Value!;

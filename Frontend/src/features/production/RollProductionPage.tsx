@@ -50,14 +50,15 @@ export function RollProductionPage(): ReactElement {
     RoleNames.ExtruderTestPerson,
   );
   const canReset = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
-  const [measuring, setMeasuring] = useState<RollSummaryDto | null>(null);
+  const [measuring, setMeasuring] = useState<RollDto | RollSummaryDto | null>(null);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const [logging, setLogging] = useState<StartableLine | null>(null);
   const [justLogged, setJustLogged] = useState<RollDto | null>(null);
 
-  // The labels to print. Set the moment a roll is logged, so the sticker comes up by
-  // itself — nobody should have to go and find a roll in a list to label it.
+  // The labels to print. Set the moment a roll is weighed and measured, so the sticker
+  // comes up by itself with the weight and length on it (section 19.15) — nobody should
+  // have to go and find a roll in a list to label it.
   const [printing, setPrinting] = useState<{
     barcodes: string[];
     headline?: string;
@@ -121,6 +122,8 @@ export function RollProductionPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: ['rolls'] });
     void queryClient.invalidateQueries({ queryKey: ['batches'] });
     void queryClient.invalidateQueries({ queryKey: ['roll-number'] });
+    // The single roll the edit and test windows open with.
+    void queryClient.invalidateQueries({ queryKey: ['roll'] });
   }
 
   if (rolls.isPending || recipes.isPending || colors.isPending || products.isPending) {
@@ -197,18 +200,22 @@ export function RollProductionPage(): ReactElement {
       )}
 
       {justLogged !== null && (
-        <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
-          {t('term.roll')} <strong className="font-mono">{justLogged.rollCode}</strong>{' '}
-          logged.{' '}
-          <button
-            type="button"
-            className="font-semibold underline"
-            onClick={() => {
-              setPrinting({ barcodes: [justLogged.barcode] });
-            }}
-          >
-            {t('rolls.printAgain')}
-          </button>
+        <p className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+          <span>
+            {t('term.roll')} <strong className="font-mono">{justLogged.rollCode}</strong>{' '}
+            {t('rolls.loggedMeasureNext')}
+          </span>
+          {canMeasure && (
+            <button
+              type="button"
+              className="min-h-9 rounded-control border border-brand-600 bg-brand-600 px-3 text-sm font-semibold text-white hover:bg-brand-700"
+              onClick={() => {
+                setMeasuring(justLogged);
+              }}
+            >
+              {t('rolls.measure')}
+            </button>
+          )}
         </p>
       )}
 
@@ -225,7 +232,7 @@ export function RollProductionPage(): ReactElement {
               <th className="px-4 py-3 text-end font-semibold">{t('field.length')}</th>
               <th className="px-4 py-3 font-semibold">{t('rolls.madeBy')}</th>
               <th className="px-4 py-3 font-semibold">{t('rolls.outAt')}</th>
-              {(canCorrect || canMeasure) && <th className="px-4 py-3" />}
+              <th className="px-4 py-3" />
             </tr>
           </thead>
           <tbody>
@@ -285,38 +292,47 @@ export function RollProductionPage(): ReactElement {
                     minute: '2-digit',
                   })}
                 </td>
-                {(canCorrect || canMeasure) && (
-                  <td className="px-4 py-3 text-end whitespace-nowrap">
-                    {canMeasure &&
-                      (roll.status === 'NeedsTest' || roll.status === 'Available') && (
-                        <button
-                          type="button"
-                          className={[
-                            'me-2 min-h-9 rounded-control border px-3 text-sm font-medium whitespace-nowrap transition-colors',
-                            roll.needsMeasure
-                              ? 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
-                              : 'border-line text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700',
-                          ].join(' ')}
-                          onClick={() => {
-                            setMeasuring(roll);
-                          }}
-                        >
-                          {t('rolls.measure')}
-                        </button>
-                      )}
-                    {canCorrect && (
+                <td className="px-4 py-3 text-end whitespace-nowrap">
+                  {/* The label, whenever it is wanted — torn, lost, or printed before
+                      the weight was in (section 19.15). */}
+                  <button
+                    type="button"
+                    className="me-2 min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                    onClick={() => {
+                      setPrinting({ barcodes: [roll.barcode] });
+                    }}
+                  >
+                    {t('rolls.label')}
+                  </button>
+                  {canMeasure &&
+                    (roll.status === 'NeedsTest' || roll.status === 'Available') && (
                       <button
                         type="button"
-                        className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                        className={[
+                          'me-2 min-h-9 rounded-control border px-3 text-sm font-medium whitespace-nowrap transition-colors',
+                          roll.needsMeasure
+                            ? 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+                            : 'border-line text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700',
+                        ].join(' ')}
                         onClick={() => {
-                          setCorrecting(roll);
+                          setMeasuring(roll);
                         }}
                       >
-                        {t('action.edit')}
+                        {t('rolls.measure')}
                       </button>
                     )}
-                  </td>
-                )}
+                  {canCorrect && (
+                    <button
+                      type="button"
+                      className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                      onClick={() => {
+                        setCorrecting(roll);
+                      }}
+                    >
+                      {t('action.edit')}
+                    </button>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -334,11 +350,8 @@ export function RollProductionPage(): ReactElement {
             setLogging(null);
           }}
           onCreated={(roll) => {
+            // No label yet: it carries the weight and length, which come next.
             setJustLogged(roll);
-            setPrinting({
-              barcodes: [roll.barcode],
-              headline: `Roll ${roll.rollCode} logged. Print this and stick it on the roll.`,
-            });
             invalidate();
           }}
         />
@@ -350,7 +363,19 @@ export function RollProductionPage(): ReactElement {
           onClose={() => {
             setMeasuring(null);
           }}
-          onSaved={invalidate}
+          onSaved={(roll) => {
+            // Weighed and measured: now the label has everything to print. Measured
+            // again, the old label shows the old figures and is replaced.
+            const again = measuring.weight !== null;
+            setJustLogged(null);
+            setPrinting({
+              barcodes: [roll.barcode],
+              headline: `${t('term.roll')} ${roll.rollCode} — ${t(
+                again ? 'rolls.remeasuredPrint' : 'rolls.measuredPrint',
+              )}`,
+            });
+            invalidate();
+          }}
         />
       )}
 
@@ -366,17 +391,20 @@ export function RollProductionPage(): ReactElement {
       {correcting !== null && (
         <EditRollDialog
           roll={correcting}
+          recipes={usableRecipes}
+          colors={colors.data}
+          products={products.data}
           onClose={() => {
             setCorrecting(null);
           }}
-          onSaved={(roll, codeChanged) => {
+          onSaved={(roll, labelChanged) => {
             invalidate();
-            // The label shows the code, and for a roll logged since 19.12 the barcode is
-            // the code, so a new code needs a new label.
-            if (codeChanged) {
+            // The label shows the code, the colour and the product, and for a roll logged
+            // since 19.12 the barcode is the code — so any of them changing needs a new label.
+            if (labelChanged) {
               setPrinting({
                 barcodes: [roll.barcode],
-                headline: `Roll ${roll.rollCode} changed. Print a new label and replace the old one.`,
+                headline: `${t('term.roll')} ${roll.rollCode} — ${t('rolls.changedPrint')}`,
               });
             }
           }}

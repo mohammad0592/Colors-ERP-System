@@ -116,12 +116,15 @@ public class RollTestReportConfiguration : IEntityTypeConfiguration<RollTestRepo
     {
         builder.ToTable("RollTestReports", t =>
         {
-            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" > 0");
-            // Both weights or neither, and a soaked piece is never lighter than a dry one.
+            // Readings arrive one at a time (section 19.15), so each may be missing — but a
+            // reading that is there is a real one.
+            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" IS NULL OR \"PlateWeight\" > 0");
+            // The dry weight comes first and the wet one ten minutes later, so the dry may
+            // stand alone; the wet never does, and a soaked piece is never lighter.
             t.HasCheckConstraint(
                 "ck_roll_tests_absorbency",
-                "(\"AbsorbencyDryWeight\" IS NULL AND \"AbsorbencyWetWeight\" IS NULL) OR "
-                + "(\"AbsorbencyDryWeight\" > 0 AND \"AbsorbencyWetWeight\" >= \"AbsorbencyDryWeight\")");
+                "(\"AbsorbencyDryWeight\" IS NULL OR \"AbsorbencyDryWeight\" > 0) AND "
+                + "(\"AbsorbencyWetWeight\" IS NULL OR \"AbsorbencyWetWeight\" >= \"AbsorbencyDryWeight\")");
         });
 
         builder.Property(e => e.PlateWeight).HasPrecision(9, 3);
@@ -138,7 +141,7 @@ public class RollTestReportConfiguration : IEntityTypeConfiguration<RollTestRepo
         builder.Ignore(e => e.AverageThickness);
         builder.Ignore(e => e.AbsorbencyPercentage);
 
-        // One report per roll. The measurement happens once, as it leaves the machine.
+        // One report per roll, filled in and corrected in place.
         builder.HasIndex(e => e.RollId)
             .IsUnique()
             .HasDatabaseName("ux_roll_tests_roll");

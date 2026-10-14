@@ -472,8 +472,8 @@ public class ThermoService(
     private static string StatusRefusal(Roll roll) => roll.Status switch
     {
         RollStatus.NeedsTest =>
-            $"Roll {roll.RollCode} has not been measured yet. Once it is formed there is "
-            + "nothing left to measure, so it must be done first.",
+            $"Roll {roll.RollCode} has not been measured and tested yet. Once it is formed "
+            + "there is nothing left to measure, so it must be done first.",
         RollStatus.InThermo => $"Roll {roll.RollCode} is already in the machine.",
         RollStatus.Processed => $"Roll {roll.RollCode} has already been formed.",
         RollStatus.Scrapped => $"Roll {roll.RollCode} was scrapped.",
@@ -579,13 +579,9 @@ public class ThermoService(
             run.TotalTimeMinutes,
             run.Notes,
             // Read-only, pulled from the roll rather than typed again here.
-            run.Roll.TestReport is null || run.Roll.Weight is null || run.Roll.Length is null
-                ? null
-                : new RollReadingsDto(
-                    run.Roll.Weight.Value,
-                    run.Roll.Length.Value,
-                    run.Roll.TestReport.PlateWeight,
-                    run.Roll.TestReport.AverageThickness),
+            run.Roll is { Weight: { } weight, Length: { } length, TestReport: { PlateWeight: { } plate, AverageThickness: { } thickness } }
+                ? new RollReadingsDto(weight, length, plate, thickness)
+                : null,
             run.TestReport is null
                 ? null
                 : new ThermoTestReportDto(

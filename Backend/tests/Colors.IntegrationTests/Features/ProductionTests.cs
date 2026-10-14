@@ -249,7 +249,7 @@ public class ProductionTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task A_roll_is_tested_once_but_its_weight_may_be_corrected()
+    public async Task A_roll_test_and_its_weight_may_both_be_corrected()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PRD6");
@@ -258,11 +258,14 @@ public class ProductionTests(DatabaseFixture fixture)
 
         var roll = await service.CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null), ids.UserId);
-        var request = new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null);
 
-        await service.SaveTestReportAsync(roll.Value!.Id, request, ids.UserId);
-        var again = await service.SaveTestReportAsync(roll.Value.Id, request, ids.UserId);
-        Assert.False(again.IsSuccess);
+        // A reading written down wrong is put right in place (section 19.15).
+        await service.SaveTestReportAsync(
+            roll.Value!.Id, new SaveRollTestRequest(9m, 1.2m, 1.2m, 1.2m, 1.2m, null), ids.UserId);
+        var again = await service.SaveTestReportAsync(
+            roll.Value.Id, new SaveRollTestRequest(9m, 1.4m, 1.4m, 1.4m, 1.4m, null), ids.UserId);
+        Assert.True(again.IsSuccess, again.Message);
+        Assert.Equal(1.4m, again.Value!.TestReport!.AverageThickness);
 
         // A weight written down wrong is put right while the roll is still in stock.
         await service.MeasureRollAsync(roll.Value.Id, new MeasureRollRequest(95m, 1200m), ids.UserId);

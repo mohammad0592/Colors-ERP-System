@@ -2,7 +2,9 @@
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Production;
 using Colors.Domain.Common;
+using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Production;
+using Colors.Domain.Entities.Recipes;
 using Colors.Domain.Entities.Shifts;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
@@ -94,9 +96,17 @@ public class ProductionService(
     {
         var rolls = await RollQuery()
             .Where(r => batchId == null || r.BatchId == batchId)
-            // Rolls still waiting for their test. Measured or not: the two are separate
-            // jobs, done in either order (specification section 19.12).
-            .Where(r => !needsTestOnly || (r.TestReport == null && r.Status == RollStatus.NeedsTest))
+            // Rolls whose test is not finished — not started, or saved part-way (19.15).
+            // Measured or not: the two are separate jobs, done in either order (19.12).
+            .Where(r => !needsTestOnly
+                        || (r.Status == RollStatus.NeedsTest
+                            && (r.TestReport == null
+                                || r.TestReport.PlateWeight == null
+                                || r.TestReport.ThicknessRs == null
+                                || r.TestReport.ThicknessRm == null
+                                || r.TestReport.ThicknessLm == null
+                                || r.TestReport.ThicknessLs == null
+                                || (r.RecipeVersion.Family.IsAbsorbent && r.TestReport.AbsorbencyWetWeight == null))))
             // The open shift, of which there is exactly one -- a partial unique index
             // in the database says so (specification section 2), so this needs no
             // second thought about which shift is meant.
@@ -124,7 +134,7 @@ public class ProductionService(
                 r.ColorId,
                 r.Color.Name,
                 r.Status.ToString(),
-                r.TestReport is null,
+                !TestComplete(r),
                 r.Weight is null,
                 names.GetValueOrDefault(r.ProducedByUserId, "—"),
                 r.ProducedAt,
@@ -137,7 +147,8 @@ public class ProductionService(
                 r.Product?.MaxThickness,
                 r.TestReport?.ThicknessInSpec,
                 r.RecipeVersion.Family.IsAbsorbent,
-                r.TestReport?.AbsorbencyPercentage))
+                r.TestReport?.AbsorbencyPercentage,
+                WetDueAt(r.TestReport)))
             .ToList();
     }
 
@@ -180,88 +191,14 @@ public class ProductionService(
             return InvalidRoll(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
-        var recipe = await db.RecipeVersions
-            .Include(v => v.Family)
-            .FirstOrDefaultAsync(v => v.Id == request.RecipeVersionId, cancellationToken);
-
-        if (recipe is null)
+        var (choiceError, choices) = await ChoicesAsync(
+            request.RecipeVersionId, request.ColorId, request.ProductId, current: null, cancellationToken);
+        if (choiceError is not null)
         {
-            return InvalidRoll("Choose the recipe this roll was made to.");
+            return choiceError;
         }
 
-        // A draft is a formula somebody is still writing. Rolls made to it could never
-        // be reproduced, because a draft may still change.
-        if (recipe.Status == RecipeVersionStatus.Draft)
-        {
-            return InvalidRoll(
-                $"Recipe {recipe.RecipeNumber} is still a draft. Put it into production first.");
-        }
-
-        // The old Black families were retired when black became an ordinary colour
-        // (specification section 5). Their recipes stay for the rolls already made, but
-        // nothing new is made to them.
-        if (!recipe.Family.IsActive)
-        {
-            return InvalidRoll(
-                $"{recipe.Family.Name} is no longer used. Choose one of the main recipes.",
-                "roll.recipeRetired",
-                recipe.Family.Name);
-        }
-
-        var colour = await db.Colors
-            .FirstOrDefaultAsync(c => c.Id == request.ColorId && c.IsActive, cancellationToken);
-
-        if (colour is null)
-        {
-            return InvalidRoll("Choose an active colour.");
-        }
-
-        if (string.IsNullOrWhiteSpace(recipe.Family.Code))
-        {
-            return InvalidRoll(
-                $"{recipe.Family.Name} has no code for the roll code. Set one in Master Data.");
-        }
-
-        // What the roll is being made for (specification section 19.1). Declared, because
-        // the thickness cannot be trusted to say it: the first rolls of a run are the
-        // wrong thickness while the machine is being set, and are still for this product.
-        if (request.ProductId is null)
-        {
-            return InvalidRoll("Say which product this roll is for.", "roll.chooseProduct");
-        }
-
-        var product = await db.Products
-            .FirstOrDefaultAsync(p => p.Id == request.ProductId && p.IsActive, cancellationToken);
-
-        if (product is null)
-        {
-            return InvalidRoll("Choose an active product.", "roll.chooseActiveProduct");
-        }
-
-        // Each product is made from one main recipe — Normal plates from Normal, lunch
-        // and burger boxes from Lunch Box. Caught here, at the extruder: the bags formed
-        // from the roll will be this product, and nothing later checks it again.
-        if (product.RecipeFamilyId is not null && product.RecipeFamilyId != recipe.RecipeFamilyId)
-        {
-            return InvalidRoll(
-                $"{product.Name} is not made from {recipe.Family.Name}. Choose a product this recipe makes.",
-                "roll.productWrongRecipe",
-                product.Name,
-                recipe.Family.Name);
-        }
-
-        // A product not yet given a main recipe can only be checked the old way, on
-        // absorbency, which both the product and the recipe still say.
-        if (product.IsAbsorbent != recipe.Family.IsAbsorbent)
-        {
-            return InvalidRoll(
-                product.IsAbsorbent
-                    ? $"{product.Name} is absorbent, but recipe {recipe.RecipeNumber} is not."
-                    : $"{product.Name} is not absorbent, but recipe {recipe.RecipeNumber} is.",
-                product.IsAbsorbent ? "roll.productAbsorbentRecipeNot" : "roll.productNotAbsorbentRecipeIs",
-                product.Name,
-                recipe.RecipeNumber.ToString());
-        }
+        var (recipe, colour, product) = choices!;
 
         var productionDate = shiftLine.ShiftReport.ProductionDate;
 
@@ -306,7 +243,7 @@ public class ProductionService(
             Batch = batch,
             RecipeVersionId = recipe.Id,
             ColorId = colour.Id,
-            ProductId = product.Id,
+            ProductId = product!.Id,
             ProducedByUserId = userId,
             // Stored as a moment; the offset it arrived with has done its work in the code.
             ProducedAt = producedAt.ToUniversalTime(),
@@ -333,27 +270,37 @@ public class ProductionService(
     }
 
     public async Task<Result<string>> SuggestRollCodeAsync(
-        int shiftLineId,
+        int? shiftLineId,
         int recipeVersionId,
         int colorId,
         DateTimeOffset? outAt,
+        int? forRollId = null,
         CancellationToken cancellationToken = default)
     {
-        var shiftLine = await db.ShiftLines
-            .Include(l => l.ShiftReport).ThenInclude(r => r.Shift)
-            .FirstOrDefaultAsync(l => l.Id == shiftLineId, cancellationToken);
+        var lineKnown = forRollId is not null
+                        || await db.ShiftLines.AnyAsync(l => l.Id == shiftLineId, cancellationToken);
         var recipe = await db.RecipeVersions
             .Include(v => v.Family)
             .FirstOrDefaultAsync(v => v.Id == recipeVersionId, cancellationToken);
         var colour = await db.Colors.FirstOrDefaultAsync(c => c.Id == colorId, cancellationToken);
 
-        if (shiftLine is null || recipe is null || colour is null)
+        if (!lineKnown || recipe is null || colour is null)
         {
             return Result<string>.Failure(
                 ErrorCode.ValidationFailed, "Choose the line, the recipe and the colour first.", "roll.chooseForCode");
         }
 
-        var number = (await GetRollNumberAsync(cancellationToken)).NextNumber;
+        // A roll being corrected keeps its own number; a new one would take the next.
+        int? ownNumber = forRollId is null
+            ? null
+            : await db.Rolls.Where(r => r.Id == forRollId).Select(r => (int?)r.RollNumber)
+                .FirstOrDefaultAsync(cancellationToken);
+        if (forRollId is not null && ownNumber is null)
+        {
+            return Result<string>.Failure(ErrorCode.NotFound, "This roll does not exist.", "roll.notFound");
+        }
+
+        var number = ownNumber ?? (await GetRollNumberAsync(cancellationToken)).NextNumber;
 
         return Result<string>.Success(RollCode.For(
             number,
@@ -369,6 +316,10 @@ public class ProductionService(
     {
         var roll = await db.Rolls
             .Include(r => r.Batch).ThenInclude(b => b.ShiftLine).ThenInclude(l => l.ShiftReport)
+            .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
+            .Include(r => r.Color)
+            .Include(r => r.Product)
+            .Include(r => r.TestReport)
             .FirstOrDefaultAsync(r => r.Id == rollId, cancellationToken);
 
         if (roll is null)
@@ -386,16 +337,42 @@ public class ProductionService(
                 roll.RollCode);
         }
 
-        var code = request.RollCode?.Trim() ?? string.Empty;
-        var codeError = await RollCodeErrorAsync(code, roll.Id, cancellationToken);
-        if (codeError is not null)
+        // Once formed, its bags carry its product and its colour, and changing the roll
+        // would make them disagree with what they were made from.
+        var whatItIsChanges = request.RecipeVersionId != roll.RecipeVersionId
+                              || request.ColorId != roll.ColorId
+                              || request.ProductId != roll.ProductId;
+        if (whatItIsChanges && roll.Status is not (RollStatus.NeedsTest or RollStatus.Available))
         {
-            return codeError;
+            return InvalidRoll(
+                $"Roll {roll.RollCode} has gone into the thermo. What it was made of is part of that run now.",
+                "roll.choicesAlreadyFormed",
+                roll.RollCode);
         }
+
+        var (choiceError, choices) = await ChoicesAsync(
+            request.RecipeVersionId, request.ColorId, request.ProductId, roll, cancellationToken);
+        if (choiceError is not null)
+        {
+            return choiceError;
+        }
+
+        var (recipe, colour, product) = choices!;
 
         if (request.ProducedAt > timeProvider.GetUtcNow().AddMinutes(5))
         {
             return InvalidRoll("A roll cannot come off the extruder in the future. Check the out time.", "roll.outAtInFuture");
+        }
+
+        // No code given: worked out again from the roll's own number and the corrected
+        // recipe, time and colour, as it was when the roll was logged (section 19.15).
+        var code = request.RollCode is null
+            ? RollCode.For(roll.RollNumber, recipe.Family.Code, request.ProducedAt, colour.Name)
+            : request.RollCode.Trim();
+        var codeError = await RollCodeErrorAsync(code, roll.Id, cancellationToken);
+        if (codeError is not null)
+        {
+            return codeError;
         }
 
         // A roll whose barcode is its code takes the new code into its barcode too — one
@@ -412,6 +389,32 @@ public class ProductionService(
 
         roll.RollCode = code;
         roll.ProducedAt = request.ProducedAt.ToUniversalTime();
+        roll.RecipeVersionId = recipe.Id;
+        roll.RecipeVersion = recipe;
+        roll.ColorId = colour.Id;
+        roll.Color = colour;
+        roll.ProductId = product?.Id;
+        roll.Product = product;
+        roll.Notes = Trimmed(request.Notes);
+
+        if (roll.TestReport is { } report)
+        {
+            // Not absorbent any more: the absorbency belonged to the recipe it was not.
+            if (!recipe.Family.IsAbsorbent)
+            {
+                report.AbsorbencyDryWeight = null;
+                report.AbsorbencyWetWeight = null;
+                report.AbsorbencyDryWeighedAt = null;
+            }
+
+            // Judged again against the product it is now for.
+            report.ThicknessInSpec = report.AverageThickness is { } average
+                ? product?.ThicknessInSpec(average)
+                : null;
+        }
+
+        // An absorbent recipe asks for one more reading, so a finished test may not be.
+        UpdateReadiness(roll);
         await db.SaveChangesAsync(cancellationToken);
 
         return await LoadRollAsync(roll.Id, cancellationToken);
@@ -463,62 +466,69 @@ public class ProductionService(
             return RollNotFound();
         }
 
-        if (roll.TestReport is not null)
+        // Corrected freely until it goes into the thermo; after that the run was made
+        // from these figures.
+        if (roll.Status is not (RollStatus.NeedsTest or RollStatus.Available))
         {
             return InvalidRoll(
-                $"Roll {roll.RollCode} has already been tested. An administrator corrects a "
-                + "reading that was written down wrong.");
-        }
-
-        if (roll.Status is RollStatus.Processed or RollStatus.Scrapped)
-        {
-            return InvalidRoll($"Roll {roll.RollCode} is {roll.Status.ToString().ToLowerInvariant()}.");
+                $"Roll {roll.RollCode} has gone into the thermo. Its test is part of that run now.",
+                "roll.testAlreadyFormed",
+                roll.RollCode);
         }
 
         var error = Validate(request);
         if (error is not null)
         {
-            return InvalidRoll(error);
+            return error;
         }
+
+        var report = roll.TestReport;
+        var now = timeProvider.GetUtcNow();
 
         // An absorbent roll is tested for how much water it takes up; every other roll is
         // not, and a figure on it would be somebody filling in the wrong roll.
-        var absorbencyError = AbsorbencyError(request, roll.RecipeVersion.Family.IsAbsorbent);
+        var absorbencyError = AbsorbencyError(request, roll.RecipeVersion.Family.IsAbsorbent, report, now);
         if (absorbencyError is not null)
         {
             return absorbencyError;
         }
 
-        var report = new RollTestReport
+        if (report is null)
         {
-            RollId = roll.Id,
-            PlateWeight = request.PlateWeight,
-            ThicknessRs = request.ThicknessRs,
-            ThicknessRm = request.ThicknessRm,
-            ThicknessLm = request.ThicknessLm,
-            ThicknessLs = request.ThicknessLs,
-            AbsorbencyDryWeight = request.AbsorbencyDryWeight,
-            AbsorbencyWetWeight = request.AbsorbencyWetWeight,
-            TestedByUserId = userId,
-            TestedAt = timeProvider.GetUtcNow(),
-            Notes = Trimmed(request.Notes),
-        };
+            report = new RollTestReport { RollId = roll.Id };
+            roll.TestReport = report;
+            db.RollTestReports.Add(report);
+        }
+
+        report.PlateWeight = request.PlateWeight;
+        report.ThicknessRs = request.ThicknessRs;
+        report.ThicknessRm = request.ThicknessRm;
+        report.ThicknessLm = request.ThicknessLm;
+        report.ThicknessLs = request.ThicknessLs;
+
+        // The clock starts when the dry weight is first saved, and is not started again
+        // by correcting it: it is the same piece, already in the water.
+        report.AbsorbencyDryWeighedAt = request.AbsorbencyDryWeight is null
+            ? null
+            : report.AbsorbencyDryWeighedAt ?? now;
+        report.AbsorbencyDryWeight = request.AbsorbencyDryWeight;
+        report.AbsorbencyWetWeight = request.AbsorbencyWetWeight;
+        report.TestedByUserId = userId;
+        report.TestedAt = now;
+        report.Notes = Trimmed(request.Notes);
 
         // Judged now against the range as it stands today, and kept: the range is master
         // data and will be edited, and last year's rolls must not change their verdict
         // when it is (specification section 19.1). The average is the report's own, so
         // the figure judged is the figure shown.
-        report.ThicknessInSpec = roll.Product?.ThicknessInSpec(report.AverageThickness);
+        report.ThicknessInSpec = report.AverageThickness is { } average
+            ? roll.Product?.ThicknessInSpec(average)
+            : null;
 
-        db.RollTestReports.Add(report);
-
-        // Tested, and if it has been weighed too it may now go to the thermo -- whatever
+        // Finished, and if it has been weighed too it may now go to the thermo -- whatever
         // the verdict. An out-of-spec roll is still a roll for its product and is still
         // used; the verdict records what it was, it does not decide what happens to it.
-        if (roll.Weight is not null)
-        {
-            roll.Status = RollStatus.Available;
-        }
+        UpdateReadiness(roll);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -569,11 +579,8 @@ public class ProductionService(
         roll.MeasuredByUserId = userId;
         roll.MeasuredAt = timeProvider.GetUtcNow();
 
-        // Weighed, and if it has been tested too it is ready for the thermo.
-        if (roll.TestReport is not null && roll.Status == RollStatus.NeedsTest)
-        {
-            roll.Status = RollStatus.Available;
-        }
+        // Weighed, and if its test is finished too it is ready for the thermo.
+        UpdateReadiness(roll);
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -647,7 +654,11 @@ public class ProductionService(
         return taken[0];
     }
 
-    private static Result<RollDto>? AbsorbencyError(SaveRollTestRequest request, bool isAbsorbent)
+    private static Result<RollDto>? AbsorbencyError(
+        SaveRollTestRequest request,
+        bool isAbsorbent,
+        RollTestReport? saved,
+        DateTimeOffset now)
     {
         var dry = request.AbsorbencyDryWeight;
         var wet = request.AbsorbencyWetWeight;
@@ -659,34 +670,200 @@ public class ProductionService(
                 : InvalidRoll("This roll is not absorbent. Leave the absorbency empty.", "roll.notAbsorbent");
         }
 
-        if (dry is null or <= 0 || wet is null or <= 0)
+        if (wet is null)
+        {
+            return null;
+        }
+
+        // The piece is weighed dry and saved before it goes into the water, so the clock
+        // has something to count from.
+        if (dry is null || saved?.AbsorbencyDryWeighedAt is null)
         {
             return InvalidRoll(
-                "An absorbent roll needs its absorbency: the piece's weight dry, and after ten minutes in water.",
-                "roll.absorbencyMissing");
+                "Save the piece's dry weight first, then weigh it again after ten minutes in water.",
+                "roll.absorbencyDryFirst");
         }
 
         // Soaked, it can only have taken water on. Lighter means the two were swapped.
-        return wet < dry
-            ? InvalidRoll(
+        if (wet < dry)
+        {
+            return InvalidRoll(
                 "The weight after the water is less than before. Check the two weights are not swapped.",
-                "roll.absorbencyBackwards")
+                "roll.absorbencyBackwards");
+        }
+
+        // A first wet weight is the one taken out of the water, and before ten minutes it
+        // was not soaked for the test's ten. Correcting one already saved is not held up.
+        var due = saved.AbsorbencyDryWeighedAt.Value + RollTestReport.SoakTime;
+        if (saved.AbsorbencyWetWeight is null && now < due)
+        {
+            var minutes = (int)Math.Ceiling((due - now).TotalMinutes);
+            return InvalidRoll(
+                $"The piece has been in the water less than ten minutes. Weigh it again in {minutes} min.",
+                "roll.absorbencySoaking",
+                minutes.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Why the readings cannot be saved, or null. Any of them may still be missing — the
+    /// test is saved as it goes — but one that is there must be a real reading.
+    /// </summary>
+    private static Result<RollDto>? Validate(SaveRollTestRequest request)
+    {
+        decimal?[] readings =
+        [
+            request.PlateWeight, request.ThicknessRs, request.ThicknessRm, request.ThicknessLm,
+            request.ThicknessLs, request.AbsorbencyDryWeight, request.AbsorbencyWetWeight,
+        ];
+
+        if (readings.All(r => r is null))
+        {
+            return InvalidRoll("Type at least one reading before saving.", "roll.testEmpty");
+        }
+
+        return readings.Any(r => r is <= 0)
+            ? InvalidRoll("A reading must be more than zero. Leave a box empty if it is not taken yet.", "roll.readingNotPositive")
             : null;
     }
 
-    private static string? Validate(SaveRollTestRequest request)
+    /// <summary>
+    /// Needs Test until it is both measured and fully tested, in either order; Available
+    /// after that. Goes back if a correction leaves either unfinished. A roll already in the
+    /// thermo or beyond is not touched.
+    /// </summary>
+    private static void UpdateReadiness(Roll roll)
     {
-        if (request.PlateWeight <= 0)
+        if (roll.Status is RollStatus.NeedsTest or RollStatus.Available)
         {
-            return "The sample plate's weight is missing.";
+            roll.Status = roll.Weight is not null && TestComplete(roll)
+                ? RollStatus.Available
+                : RollStatus.NeedsTest;
+        }
+    }
+
+    private static bool TestComplete(Roll roll) =>
+        roll.TestReport?.IsComplete(roll.RecipeVersion.Family.IsAbsorbent) == true;
+
+    /// <summary>While the absorbency sample is soaking, when it may be weighed again.</summary>
+    private static DateTimeOffset? WetDueAt(RollTestReport? report) =>
+        report is { AbsorbencyDryWeighedAt: { } dryAt, AbsorbencyWetWeight: null }
+            ? dryAt + RollTestReport.SoakTime
+            : null;
+
+    /// <summary>What a roll is made to: its recipe, its colour, and the product it is for.</summary>
+    private sealed record RollChoices(RecipeVersion Recipe, Color Colour, Product? Product);
+
+    /// <summary>
+    /// The recipe, colour and product a roll is logged or corrected to, checked against one
+    /// another — or why they cannot be used. <paramref name="current"/> is the roll being
+    /// corrected, or null for a new one.
+    /// </summary>
+    private async Task<(Result<RollDto>? Error, RollChoices? Choices)> ChoicesAsync(
+        int recipeVersionId,
+        int colorId,
+        int? productId,
+        Roll? current,
+        CancellationToken cancellationToken)
+    {
+        var recipe = await db.RecipeVersions
+            .Include(v => v.Family)
+            .FirstOrDefaultAsync(v => v.Id == recipeVersionId, cancellationToken);
+
+        if (recipe is null)
+        {
+            return (InvalidRoll("Choose the recipe this roll was made to."), null);
         }
 
-        decimal[] readings =
-            [request.ThicknessRs, request.ThicknessRm, request.ThicknessLm, request.ThicknessLs];
+        // What the roll already has may stay, even retired or switched off since: the roll
+        // was made to it. Only a change has to be to something still in use.
+        var recipeChanged = current is null || current.RecipeVersionId != recipe.Id;
 
-        return readings.Any(r => r <= 0)
-            ? "All four thickness readings are needed — RS, RM, LM and LS."
-            : null;
+        // A draft is a formula somebody is still writing. Rolls made to it could never
+        // be reproduced, because a draft may still change.
+        if (recipeChanged && recipe.Status == RecipeVersionStatus.Draft)
+        {
+            return (InvalidRoll(
+                $"Recipe {recipe.RecipeNumber} is still a draft. Put it into production first."), null);
+        }
+
+        // The old Black families were retired when black became an ordinary colour
+        // (specification section 5). Their recipes stay for the rolls already made, but
+        // nothing new is made to them.
+        if (recipeChanged && !recipe.Family.IsActive)
+        {
+            return (InvalidRoll(
+                $"{recipe.Family.Name} is no longer used. Choose one of the main recipes.",
+                "roll.recipeRetired",
+                recipe.Family.Name), null);
+        }
+
+        var colour = await db.Colors
+            .FirstOrDefaultAsync(
+                c => c.Id == colorId && (c.IsActive || (current != null && current.ColorId == colorId)),
+                cancellationToken);
+
+        if (colour is null)
+        {
+            return (InvalidRoll("Choose an active colour."), null);
+        }
+
+        if (string.IsNullOrWhiteSpace(recipe.Family.Code))
+        {
+            return (InvalidRoll(
+                $"{recipe.Family.Name} has no code for the roll code. Set one in Master Data."), null);
+        }
+
+        // What the roll is being made for (specification section 19.1). Declared, because
+        // the thickness cannot be trusted to say it: the first rolls of a run are the
+        // wrong thickness while the machine is being set, and are still for this product.
+        if (productId is null)
+        {
+            // A roll made before products were declared may be corrected without one; any
+            // other roll must say what it is for.
+            return current is { ProductId: null }
+                ? (null, new RollChoices(recipe, colour, null))
+                : (InvalidRoll("Say which product this roll is for.", "roll.chooseProduct"), null);
+        }
+
+        var product = await db.Products
+            .FirstOrDefaultAsync(
+                p => p.Id == productId && (p.IsActive || (current != null && current.ProductId == productId)),
+                cancellationToken);
+
+        if (product is null)
+        {
+            return (InvalidRoll("Choose an active product.", "roll.chooseActiveProduct"), null);
+        }
+
+        // Each product is made from one main recipe — Normal plates from Normal, lunch
+        // and burger boxes from Lunch Box. Caught here, at the extruder: the bags formed
+        // from the roll will be this product, and nothing later checks it again.
+        if (product.RecipeFamilyId is not null && product.RecipeFamilyId != recipe.RecipeFamilyId)
+        {
+            return (InvalidRoll(
+                $"{product.Name} is not made from {recipe.Family.Name}. Choose a product this recipe makes.",
+                "roll.productWrongRecipe",
+                product.Name,
+                recipe.Family.Name), null);
+        }
+
+        // A product not yet given a main recipe can only be checked the old way, on
+        // absorbency, which both the product and the recipe still say.
+        if (product.IsAbsorbent != recipe.Family.IsAbsorbent)
+        {
+            return (InvalidRoll(
+                product.IsAbsorbent
+                    ? $"{product.Name} is absorbent, but recipe {recipe.RecipeNumber} is not."
+                    : $"{product.Name} is not absorbent, but recipe {recipe.RecipeNumber} is.",
+                product.IsAbsorbent ? "roll.productAbsorbentRecipeNot" : "roll.productNotAbsorbentRecipeIs",
+                product.Name,
+                recipe.RecipeNumber.ToString()), null);
+        }
+
+        return (null, new RollChoices(recipe, colour, product));
     }
 
     private async Task<int> NextNumberAsync(string sequence, CancellationToken cancellationToken)
@@ -804,7 +981,7 @@ public class ProductionService(
             roll.Product?.MinThickness,
             roll.Product?.MaxThickness,
             roll.Status.ToString(),
-            roll.TestReport is null,
+            !TestComplete(roll),
             roll.Weight is null,
             names.GetValueOrDefault(roll.ProducedByUserId, "—"),
             roll.ProducedAt,
@@ -827,6 +1004,9 @@ public class ProductionService(
                     roll.TestReport.AbsorbencyDryWeight,
                     roll.TestReport.AbsorbencyWetWeight,
                     roll.TestReport.AbsorbencyPercentage,
+                    roll.TestReport.AbsorbencyDryWeighedAt,
+                    WetDueAt(roll.TestReport),
+                    TestComplete(roll),
                     names.GetValueOrDefault(roll.TestReport.TestedByUserId, "—"),
                     roll.TestReport.TestedAt,
                     roll.TestReport.Notes));

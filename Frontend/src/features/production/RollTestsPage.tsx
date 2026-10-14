@@ -1,5 +1,5 @@
 ﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
@@ -9,12 +9,15 @@ import { productionApi, type RollDto, type RollSummaryDto } from './api';
 import { RollStatusBadge } from './RollStatusBadge';
 import { ThicknessVerdict } from './ThicknessVerdict';
 import { RollTestDialog } from './RollTestDialog';
+import { beep, formatCountdown, useNow } from './soakTimer';
 
 /**
- * Roll measurements (specification section 8).
+ * Roll tests (specification section 8).
  *
- * Rolls waiting to be measured lead, because until they are the thermo cannot touch
- * them — and once a roll is formed into plates there is nothing left to measure.
+ * Rolls whose test is not finished lead, because until it is the thermo cannot touch
+ * them — and once a roll is formed into plates there is nothing left to measure. A test
+ * saved part-way stays here until every reading is in (section 19.15), and an absorbency
+ * sample in the water counts down on its row and beeps when it is due out.
  */
 export function RollTestsPage(): ReactElement {
   const { t } = useTranslation();
@@ -35,7 +38,30 @@ export function RollTestsPage(): ReactElement {
   function invalidate(): void {
     void queryClient.invalidateQueries({ queryKey: ['rolls'] });
     void queryClient.invalidateQueries({ queryKey: ['batches'] });
+    void queryClient.invalidateQueries({ queryKey: ['roll'] });
   }
+
+  // Ticks while any sample is in the water, so its row counts down.
+  const now = useNow(rolls.data?.some((r) => r.absorbencyWetDueAt !== null) ?? false);
+
+  // A beep the moment a sample's ten minutes are up — once, and only for one seen
+  // soaking while this screen was open, not for every overdue row when it is opened.
+  const soakingIds = useRef(new Set<number>());
+  useEffect(() => {
+    const due = (r: RollSummaryDto): number | null =>
+      r.absorbencyWetDueAt === null ? null : Date.parse(r.absorbencyWetDueAt);
+    const rows = rolls.data ?? [];
+    const stillSoaking = new Set(
+      rows.filter((r) => (due(r) ?? 0) > now).map((r) => r.id),
+    );
+    const cameOut = [...soakingIds.current].some(
+      (id) => !stillSoaking.has(id) && rows.some((r) => r.id === id && due(r) !== null),
+    );
+    if (cameOut) {
+      beep();
+    }
+    soakingIds.current = stillSoaking;
+  }, [now, rolls.data]);
 
   if (rolls.isPending) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
@@ -74,8 +100,16 @@ export function RollTestsPage(): ReactElement {
       {justSaved !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           {t('term.roll')} <strong className="font-mono">{justSaved.rollCode}</strong> —{' '}
-          {justSaved.testReport?.averageThickness} mm
-          <ThicknessVerdict inSpec={justSaved.testReport?.thicknessInSpec ?? null} />
+          {justSaved.testReport?.isComplete === true ? (
+            <>
+              {t('rolls.testFinished')} {justSaved.testReport.averageThickness} mm
+              <ThicknessVerdict inSpec={justSaved.testReport.thicknessInSpec} />
+            </>
+          ) : justSaved.testReport?.absorbencyWetDueAt != null ? (
+            t('rolls.testSavedSoaking')
+          ) : (
+            t('rolls.testSavedPartly')
+          )}
         </p>
       )}
 
@@ -134,24 +168,30 @@ export function RollTestsPage(): ReactElement {
                   {roll.averageThickness ?? '—'}
                   <ThicknessVerdict inSpec={roll.thicknessInSpec} />
                 </td>
-                <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
-                  {roll.absorbencyPercentage === null
-                    ? '—'
-                    : `${String(roll.absorbencyPercentage)}%`}
+                <td className="px-4 py-3 text-end tabular-nums whitespace-nowrap text-ink-soft">
+                  <Absorbency roll={roll} now={now} />
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end">
-                    {roll.needsTest && canTest && (
-                      <button
-                        type="button"
-                        className="min-h-9 rounded-control border border-brand-600 bg-brand-600 px-3 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-brand-700"
-                        onClick={() => {
-                          setMeasuring(roll);
-                        }}
-                      >
-                        {t('rolls.test')}
-                      </button>
-                    )}
+                    {/* Started, finished or not yet begun, the test is open to correct until
+                        the roll goes into the thermo (section 19.15). */}
+                    {canTest &&
+                      (roll.status === 'NeedsTest' || roll.status === 'Available') && (
+                        <button
+                          type="button"
+                          className={[
+                            'min-h-9 rounded-control border px-3 text-sm font-medium whitespace-nowrap transition-colors',
+                            roll.needsTest
+                              ? 'border-brand-600 bg-brand-600 text-white hover:bg-brand-700'
+                              : 'border-line text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700',
+                          ].join(' ')}
+                          onClick={() => {
+                            setMeasuring(roll);
+                          }}
+                        >
+                          {roll.needsTest ? t('rolls.test') : t('action.edit')}
+                        </button>
+                      )}
                   </div>
                 </td>
               </tr>
@@ -172,6 +212,33 @@ export function RollTestsPage(): ReactElement {
           }}
         />
       )}
+    </>
+  );
+}
+
+/**
+ * The absorbency column: the percentage once both weights are in, the time left while the
+ * sample is in the water, and a call to weigh it when the time is up.
+ */
+function Absorbency({ roll, now }: { roll: RollSummaryDto; now: number }): ReactElement {
+  const { t } = useTranslation();
+
+  if (roll.absorbencyWetDueAt !== null) {
+    const left = Date.parse(roll.absorbencyWetDueAt) - now;
+    return left > 0 ? (
+      <span role="timer" className="font-mono font-semibold text-brand-700">
+        {formatCountdown(left)}
+      </span>
+    ) : (
+      <span className="rounded-full bg-ok-soft px-2.5 py-0.5 text-xs font-semibold text-ok">
+        {t('rolls.weighNow')}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      {roll.absorbencyPercentage === null ? '—' : `${String(roll.absorbencyPercentage)}%`}
     </>
   );
 }

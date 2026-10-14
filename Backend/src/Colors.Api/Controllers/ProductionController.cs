@@ -73,17 +73,27 @@ public class ProductionController(IProductionService production) : ApiController
     /// The code the next roll would get, shown before it is saved. <paramref name="at"/> is
     /// the out time with the tablet's own offset, so the time in the code is the factory's.
     /// </summary>
+    /// <remarks>
+    /// With <c>rollId</c>, the code that roll would have with these choices — the edit
+    /// screen's preview, which the supervisor uses too.
+    ///
+    /// JSON, not plain text: a bare string is otherwise written out as text, and the
+    /// screens read every answer as JSON — the suggestion failed to read and the code box
+    /// stayed empty.
+    /// </remarks>
     [HttpGet("rolls/next-code")]
-    [Authorize(Roles = CanProduce)]
+    [Authorize(Roles = CanCorrect)]
+    [Produces("application/json")]
     public async Task<IActionResult> SuggestRollCode(
-        [FromQuery] int shiftLineId,
+        [FromQuery] int? shiftLineId,
         [FromQuery] int recipeVersionId,
         [FromQuery] int colorId,
         [FromQuery] DateTimeOffset? at,
+        [FromQuery] int? rollId,
         CancellationToken cancellationToken)
     {
         return ToResponse(
-            await production.SuggestRollCodeAsync(shiftLineId, recipeVersionId, colorId, at, cancellationToken));
+            await production.SuggestRollCodeAsync(shiftLineId, recipeVersionId, colorId, at, rollId, cancellationToken));
     }
 
     /// <summary>The roll's weight and length, taken on the production screen.</summary>
@@ -116,8 +126,8 @@ public class ProductionController(IProductionService production) : ApiController
     }
 
     /// <summary>
-    /// Corrects a roll's code or out time. The supervisor too, because correcting the
-    /// shift's record is his job.
+    /// Corrects what was chosen when the roll was logged. The supervisor too, because
+    /// correcting the shift's record is his job.
     /// </summary>
     [HttpPut("rolls/{id:int}")]
     [Authorize(Roles = CanCorrect)]
@@ -139,7 +149,10 @@ public class ProductionController(IProductionService production) : ApiController
         return ToResponse(await production.CreateRollAsync(request, CurrentUserId(), cancellationToken));
     }
 
-    /// <summary>The measurements. Saving them is what makes the roll usable.</summary>
+    /// <summary>
+    /// The test as it stands, saved as it goes. Finished, with the roll measured, it is
+    /// what makes the roll usable.
+    /// </summary>
     [HttpPost("rolls/{id:int}/test")]
     [Authorize(Roles = CanTest)]
     public async Task<IActionResult> SaveTest(

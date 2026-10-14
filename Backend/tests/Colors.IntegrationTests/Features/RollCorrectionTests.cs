@@ -47,6 +47,10 @@ public class RollCorrectionTests(DatabaseFixture fixture)
         return (colour.Id, family.Versions[0].Id);
     }
 
+    /// <summary>A correction of the code and time only, the rest as the roll has it.</summary>
+    private static UpdateRollRequest Unchanged(RollDto roll, string? code, DateTimeOffset producedAt) =>
+        new(code, producedAt, roll.RecipeVersionId, roll.ColorId, roll.ProductId, roll.Notes);
+
     private static CreateRollRequest Roll(FactoryData.Ids ids, int recipeId, int colourId, string? code = null, DateTimeOffset? outAt = null) =>
         new(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, outAt, null, code);
 
@@ -96,7 +100,7 @@ public class RollCorrectionTests(DatabaseFixture fixture)
         var second = await service.CreateRollAsync(Roll(ids, recipeId, colourId, "DUP-RCC3"), ids.UserId);
         var other = await service.CreateRollAsync(Roll(ids, recipeId, colourId), ids.UserId);
         var renamed = await service.UpdateRollAsync(
-            other.Value!.Id, new UpdateRollRequest("DUP-RCC3", other.Value.ProducedAt));
+            other.Value!.Id, Unchanged(other.Value, "DUP-RCC3", other.Value.ProducedAt));
 
         Assert.True(first.IsSuccess, first.Message);
         Assert.Equal("roll.codeTaken", second.MessageCode);
@@ -113,7 +117,7 @@ public class RollCorrectionTests(DatabaseFixture fixture)
         var roll = (await service.CreateRollAsync(Roll(ids, recipeId, colourId), ids.UserId)).Value!;
         var earlier = roll.ProducedAt.AddMinutes(-25);
 
-        var corrected = await service.UpdateRollAsync(roll.Id, new UpdateRollRequest("FIX-RCC4", earlier));
+        var corrected = await service.UpdateRollAsync(roll.Id, Unchanged(roll, "FIX-RCC4", earlier));
 
         Assert.True(corrected.IsSuccess, corrected.Message);
         Assert.Equal("FIX-RCC4", corrected.Value!.RollCode);
@@ -149,7 +153,7 @@ public class RollCorrectionTests(DatabaseFixture fixture)
         report.Status = ShiftReportStatus.Closed;
         await db.SaveChangesAsync();
 
-        var corrected = await service.UpdateRollAsync(roll.Id, new UpdateRollRequest("LATE-RCC6", roll.ProducedAt));
+        var corrected = await service.UpdateRollAsync(roll.Id, Unchanged(roll, "LATE-RCC6", roll.ProducedAt));
 
         Assert.Equal("roll.shiftClosed", corrected.MessageCode);
     }

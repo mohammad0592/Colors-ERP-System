@@ -1141,6 +1141,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTimeOffset?>("AbsorbencyDryWeighedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<decimal?>("AbsorbencyDryWeight")
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
@@ -1153,7 +1156,7 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<decimal>("PlateWeight")
+                    b.Property<decimal?>("PlateWeight")
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
 
@@ -1169,19 +1172,19 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<bool?>("ThicknessInSpec")
                         .HasColumnType("boolean");
 
-                    b.Property<decimal>("ThicknessLm")
+                    b.Property<decimal?>("ThicknessLm")
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
 
-                    b.Property<decimal>("ThicknessLs")
+                    b.Property<decimal?>("ThicknessLs")
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
 
-                    b.Property<decimal>("ThicknessRm")
+                    b.Property<decimal?>("ThicknessRm")
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
 
-                    b.Property<decimal>("ThicknessRs")
+                    b.Property<decimal?>("ThicknessRs")
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
 
@@ -1195,9 +1198,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.ToTable("RollTestReports", null, t =>
                         {
-                            t.HasCheckConstraint("ck_roll_tests_absorbency", "(\"AbsorbencyDryWeight\" IS NULL AND \"AbsorbencyWetWeight\" IS NULL) OR (\"AbsorbencyDryWeight\" > 0 AND \"AbsorbencyWetWeight\" >= \"AbsorbencyDryWeight\")");
+                            t.HasCheckConstraint("ck_roll_tests_absorbency", "(\"AbsorbencyDryWeight\" IS NULL OR \"AbsorbencyDryWeight\" > 0) AND (\"AbsorbencyWetWeight\" IS NULL OR \"AbsorbencyWetWeight\" >= \"AbsorbencyDryWeight\")");
 
-                            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" > 0");
+                            t.HasCheckConstraint("ck_roll_tests_positive", "\"PlateWeight\" IS NULL OR \"PlateWeight\" > 0");
                         });
                 });
 

@@ -1780,7 +1780,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Fourteen changes, from watching the factory use the system. They are written here rather
+Fifteen changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2210,10 +2210,48 @@ two weights are kept on the test, so it cannot disagree with them.
 - A piece lighter after the water than before is refused, as the two weights swapped. The
   database holds the same rule (`ck_roll_tests_absorbency`).
 
-> **To confirm with the factory:** the factory described the figure as "the difference
-> between the weight before and after, × 100%". It is taken here as a share of the dry
-> weight, the usual water-absorption figure. If the factory divides by something else, or
-> has a pass mark, only `RollTestReport.AbsorbencyPercentage` changes.
+> **Confirmed by the factory:** ((weight after − weight before) ÷ weight before) × 100%.
+> There is no pass mark yet; if one is set, the formula stays in
+> `RollTestReport.AbsorbencyPercentage` and the mark goes beside it.
+
+### 19.15 Rolls: the label after measuring, everything editable, the test saved as it goes
+
+**Decided, and built:**
+
+- **The label comes up after the roll is weighed and measured**, not when it is logged —
+  the label prints the weight and length, so printed earlier it was printed blank. Logging
+  a roll now says to measure it next, with the Measure button right there. Measured again,
+  the label comes up again, since the old one shows the old figures.
+- **A Label button on every roll** on the Roll Production screen, for a label torn, lost,
+  or wanted again at any time.
+- **Everything chosen when a roll is logged can be edited**: the recipe, the product, the
+  colour, the out time, the code and the note, by the operator, the supervisor or the
+  administrator. The code follows the corrections — it is worked out again from the roll's
+  own number with the new recipe, time and colour, and shown before saving — unless
+  somebody types one. The same checks apply as when logging: a product the recipe does not
+  make is refused. What the roll already has may stay even if it has since been switched
+  off; only a change has to be to something in use. A changed code, colour or product
+  brings up a new label. Weight and length are corrected with Measure, as before.
+- **The roll test is saved as it goes.** Any reading may be saved on its own and the rest
+  added later; every box opens filled with what was saved. The roll stays at **Needs
+  test** — and on the Roll Tests list — until every reading is in: the plate, the four
+  thicknesses, and on an absorbent roll both absorbency weights. A finished test can be
+  opened again and corrected. Clearing a reading puts a ready roll back to Needs test
+  rather than sending the thermo a roll with a gap in its test.
+- **The absorbency is two visits, ten minutes apart.** The piece is weighed and the dry
+  weight saved; that moment is kept on the server (`AbsorbencyDryWeighedAt`) and starts a
+  ten-minute countdown. The countdown shows in the test window and on the roll's row in
+  the Roll Tests list, so a tablet put down and picked up again, or a second tablet, counts
+  to the same moment. When it reaches zero the row says **Weigh now** and the tablet beeps
+  if the screen is open. The after-water box opens only then, and the server refuses a
+  first wet weight sooner, saying how many minutes are left. Correcting the dry weight does
+  not restart the clock — it is the same piece, already in the water.
+- **Corrections stop at the thermo.** Once the roll has gone in, its recipe, product,
+  colour and test are part of that run and are refused; the code and the time can still be
+  put right while the shift is open, as before.
+
+**What it does not do:** the beep needs the Roll Tests screen open on some tablet — a
+browser cannot sound an alarm from a closed page.
 
 ---
 

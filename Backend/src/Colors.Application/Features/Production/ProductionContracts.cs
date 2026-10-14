@@ -34,7 +34,8 @@ public sealed record RollSummaryDto(
     string ColorName,
     string Status,
     // What is still to be done before the thermo may take it: the test (plate and
-    // thickness) and the measuring (weight and length), in either order.
+    // thickness) and the measuring (weight and length), in either order. A test saved
+    // part-way still needs finishing (section 19.15).
     bool NeedsTest,
     bool NeedsMeasure,
     string ProducedByName,
@@ -56,17 +57,21 @@ public sealed record RollSummaryDto(
     // Whether its recipe is absorbent, so the test asks for the absorbency (19.14), and
     // the percentage once tested.
     bool IsAbsorbent,
-    decimal? AbsorbencyPercentage);
+    decimal? AbsorbencyPercentage,
+    // While the absorbency sample is in the water: when it may be weighed again. Null
+    // before the dry weight is saved and after the wet one is (section 19.15).
+    DateTimeOffset? AbsorbencyWetDueAt);
 
 public sealed record RollTestReportDto(
     int Id,
-    decimal PlateWeight,
-    decimal ThicknessRs,
-    decimal ThicknessRm,
-    decimal ThicknessLm,
-    decimal ThicknessLs,
-    // The mean of the four. Calculated on the server, never stored.
-    decimal AverageThickness,
+    // Each null until it is taken: the test is saved a reading at a time (section 19.15).
+    decimal? PlateWeight,
+    decimal? ThicknessRs,
+    decimal? ThicknessRm,
+    decimal? ThicknessLm,
+    decimal? ThicknessLs,
+    // The mean of the four, once all four are in. Calculated on the server, never stored.
+    decimal? AverageThickness,
     // Whether that mean fell inside the product's range when it was measured. Null where
     // the product had no range to be inside.
     bool? ThicknessInSpec,
@@ -74,6 +79,10 @@ public sealed record RollTestReportDto(
     decimal? AbsorbencyDryWeight,
     decimal? AbsorbencyWetWeight,
     decimal? AbsorbencyPercentage,
+    DateTimeOffset? AbsorbencyDryWeighedAt,
+    DateTimeOffset? AbsorbencyWetDueAt,
+    // Every reading the roll asks for is in.
+    bool IsComplete,
     string TestedByName,
     DateTimeOffset TestedAt,
     string? Notes);
@@ -137,7 +146,8 @@ public sealed record CreateRollRequest(
 
 /// <summary>
 /// The roll's weight and length, taken on the production screen as it comes off. May be
-/// given again to correct it, until the roll goes into the thermo.
+/// given again to correct it, until the roll goes into the thermo. The label is printed
+/// after this, because it carries both (section 19.15).
 /// </summary>
 public sealed record MeasureRollRequest(decimal Weight, decimal Length);
 
@@ -145,26 +155,39 @@ public sealed record MeasureRollRequest(decimal Weight, decimal Length);
 public sealed record RollNumberDto(int NextNumber, DateTimeOffset? LastResetAt, string? LastResetByName);
 
 /// <summary>
-/// Corrects a roll's code or out time after it was logged — a code mistyped on the
-/// label, a roll logged late and stamped with the wrong time.
+/// Corrects anything the operator chose when he logged the roll (section 19.15) — the
+/// recipe, the product, the colour, the out time, the code and the note — until the roll
+/// goes into the thermo.
 /// </summary>
-public sealed record UpdateRollRequest(string RollCode, DateTimeOffset ProducedAt);
+public sealed record UpdateRollRequest(
+    // Null means the code worked out again from the roll's number and the corrected
+    // recipe, time and colour — what the screen sends unless somebody typed one.
+    string? RollCode,
+    DateTimeOffset ProducedAt,
+    int RecipeVersionId,
+    int ColorId,
+    // Required, except on a roll made before products were declared that never had one.
+    int? ProductId,
+    string? Notes);
 
 /// <summary>
-/// The roll test: the sample plate and the four thickness readings, taken once.
+/// The roll test: the sample plate and the four thickness readings, and on an absorbent
+/// roll the absorbency.
 ///
-/// With the roll's weight and length (<see cref="MeasureRollRequest"/>) it moves the roll
-/// from <c>Needs Test</c> to <c>Available</c> — whichever of the two comes second.
+/// The whole test as it stands, sent every time it is saved: a null is a reading not yet
+/// taken, or one cleared (section 19.15). Once every reading is in, it moves the roll from
+/// <c>Needs Test</c> to <c>Available</c> with the roll's weight and length
+/// (<see cref="MeasureRollRequest"/>) — whichever is finished second.
 /// </summary>
 public sealed record SaveRollTestRequest(
-    decimal PlateWeight,
-    decimal ThicknessRs,
-    decimal ThicknessRm,
-    decimal ThicknessLm,
-    decimal ThicknessLs,
+    decimal? PlateWeight,
+    decimal? ThicknessRs,
+    decimal? ThicknessRm,
+    decimal? ThicknessLm,
+    decimal? ThicknessLs,
     string? Notes,
-    // Absorbent rolls only, and required for them: a piece weighed dry, then after ten
-    // minutes in water. Grams. Left empty for every other roll (section 19.14).
+    // Absorbent rolls only: a piece weighed dry, then after ten minutes in water. Grams.
+    // The wet weight is refused until the dry one has been saved that long (19.15).
     decimal? AbsorbencyDryWeight = null,
     decimal? AbsorbencyWetWeight = null);
 
@@ -205,12 +228,16 @@ public interface IProductionService
     /// <summary>
     /// The code the next roll would get, so the screen can show it before it is saved.
     /// A suggestion only: another roll logged first takes the number.
+    ///
+    /// With <paramref name="forRollId"/>, the code that roll would have with these choices,
+    /// keeping its own number — for the edit screen.
     /// </summary>
     Task<Result<string>> SuggestRollCodeAsync(
-        int shiftLineId,
+        int? shiftLineId,
         int recipeVersionId,
         int colorId,
         DateTimeOffset? outAt,
+        int? forRollId = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>Records or corrects a roll's weight and length.</summary>
@@ -225,7 +252,7 @@ public interface IProductionService
     /// <summary>Puts the running roll number back to 1. The supervisor's decision.</summary>
     Task<RollNumberDto> ResetRollNumberAsync(int userId, CancellationToken cancellationToken = default);
 
-    /// <summary>Corrects a roll's code and out time while its shift is still open.</summary>
+    /// <summary>Corrects what was chosen when the roll was logged, while its shift is open.</summary>
     Task<Result<RollDto>> UpdateRollAsync(
         int rollId,
         UpdateRollRequest request,
@@ -237,7 +264,10 @@ public interface IProductionService
         int userId,
         CancellationToken cancellationToken = default);
 
-    /// <summary>Records the measurements and makes the roll available to the thermo.</summary>
+    /// <summary>
+    /// Saves the test as it stands, complete or not. Complete and measured, the roll is
+    /// available to the thermo.
+    /// </summary>
     Task<Result<RollDto>> SaveTestReportAsync(
         int rollId,
         SaveRollTestRequest request,

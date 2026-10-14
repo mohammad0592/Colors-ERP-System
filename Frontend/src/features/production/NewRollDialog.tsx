@@ -8,6 +8,7 @@ import type { RecipeVersionSummaryDto } from '../recipes/api';
 import { productionApi, type RollDto } from './api';
 import { fromTimeField, toOffsetIso, toTimeField } from './outTime';
 import { readRollChoices, saveRollChoices } from './rollChoices';
+import { productsFor, thicknessRange } from './rollOptions';
 
 interface NewRollDialogProps {
   /** The extruder's part of the open shift. The mix underneath is created by the
@@ -39,20 +40,6 @@ interface NewRollDialogProps {
  * It can still be typed over, for a roll labelled by hand before it was logged. The
  * barcode is never asked for: it names the roll, whatever code is written on it.
  */
-/** " — 2.8–3.0 mm", " — 3.0 mm or more", or nothing when no range is set. */
-function thicknessRange(min: number | null, max: number | null): string {
-  if (min !== null && max !== null) {
-    return ` — ${String(min)}–${String(max)} mm`;
-  }
-  if (min !== null) {
-    return ` — ≥ ${String(min)} mm`;
-  }
-  if (max !== null) {
-    return ` — ≤ ${String(max)} mm`;
-  }
-  return '';
-}
-
 export function NewRollDialog({
   shiftLine,
   recipes,
@@ -82,16 +69,10 @@ export function NewRollDialog({
       : (lastProductId ?? 0),
   );
 
-  // Each product is made from one main recipe and a roll for any other is refused, so
-  // only the products this recipe makes are offered at all. A product not yet given a
-  // main recipe falls back to matching on absorbency, as the server does.
-  const recipe = recipes.find((r) => r.id === recipeVersionId);
-  const fitting = products.filter((p) =>
-    recipe === undefined
-      ? true
-      : p.recipeFamilyId === null
-        ? p.isAbsorbent === recipe.isAbsorbent
-        : p.recipeFamilyId === recipe.recipeFamilyId,
+  // Only the products this recipe makes are offered; a roll for any other is refused.
+  const fitting = productsFor(
+    products,
+    recipes.find((r) => r.id === recipeVersionId),
   );
   const chosen = fitting.some((p) => p.id === productId) ? productId : 0;
   const [notes, setNotes] = useState('');
@@ -114,7 +95,7 @@ export function NewRollDialog({
     ],
     queryFn: () =>
       productionApi.nextRollCode(
-        shiftLine.shiftLineId,
+        { shiftLineId: shiftLine.shiftLineId },
         recipeVersionId,
         colorId,
         outAtIso ?? toOffsetIso(new Date()),

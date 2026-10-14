@@ -9,7 +9,11 @@ const MinWeight = 50;
 const MaxWeight = 150;
 
 interface MeasureRollDialogProps {
-  roll: RollSummaryDto;
+  /** From the list, or the roll just logged. */
+  roll: Pick<
+    RollSummaryDto,
+    'id' | 'rollCode' | 'colorName' | 'recipeFamilyName' | 'weight' | 'length'
+  >;
   onClose: () => void;
   onSaved: (roll: RollDto) => void;
 }
@@ -21,6 +25,9 @@ interface MeasureRollDialogProps {
  * Moved here from the roll test, which is now the plate and the thickness. The roll goes
  * to the thermo once it has both, in either order. Opening it again on a roll already
  * measured corrects the figures, until the roll goes into the thermo.
+ *
+ * The label is printed after this, not when the roll is logged: it carries the weight and
+ * length (section 19.15).
  */
 export function MeasureRollDialog({
   roll,

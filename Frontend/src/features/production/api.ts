@@ -26,13 +26,14 @@ export interface BatchSummaryDto {
 
 export interface RollTestReportDto {
   id: number;
-  plateWeight: number;
-  thicknessRs: number;
-  thicknessRm: number;
-  thicknessLm: number;
-  thicknessLs: number;
-  /** The mean of the four. Worked out on the server, never stored. */
-  averageThickness: number;
+  /** Each null until taken: the test is saved a reading at a time (section 19.15). */
+  plateWeight: number | null;
+  thicknessRs: number | null;
+  thicknessRm: number | null;
+  thicknessLm: number | null;
+  thicknessLs: number | null;
+  /** The mean of the four, once all four are in. Worked out on the server, never stored. */
+  averageThickness: number | null;
   /**
    * Whether that average fell inside the product's range when it was measured, and kept
    * (specification section 19.1). Null where the product had no range — which is not a
@@ -44,6 +45,12 @@ export interface RollTestReportDto {
   absorbencyWetWeight: number | null;
   /** (wet − dry) ÷ dry × 100, worked out on the server. */
   absorbencyPercentage: number | null;
+  /** When the dry weight was saved — the piece went into the water then. */
+  absorbencyDryWeighedAt: string | null;
+  /** While it soaks: when it may be weighed again. */
+  absorbencyWetDueAt: string | null;
+  /** Every reading the roll asks for is in. */
+  isComplete: boolean;
   testedByName: string;
   testedAt: string;
   notes: string | null;
@@ -84,11 +91,20 @@ export interface RollSummaryDto {
   /** Its recipe is absorbent, so the test asks for the absorbency (section 19.14). */
   isAbsorbent: boolean;
   absorbencyPercentage: number | null;
+  /**
+   * While the absorbency sample is in the water: when it may be weighed again. Null
+   * before the dry weight is saved and after the wet one is (section 19.15).
+   */
+  absorbencyWetDueAt: string | null;
 }
 
 export interface RollDto extends Omit<
   RollSummaryDto,
-  'averageThickness' | 'thicknessInSpec' | 'isAbsorbent' | 'absorbencyPercentage'
+  | 'averageThickness'
+  | 'thicknessInSpec'
+  | 'isAbsorbent'
+  | 'absorbencyPercentage'
+  | 'absorbencyWetDueAt'
 > {
   measuredByName: string | null;
   measuredAt: string | null;
@@ -142,19 +158,30 @@ export const productionApi = {
   }): Promise<RollDto> =>
     apiRequest<RollDto>('/api/production/rolls', { method: 'POST', body }),
 
-  /** The code the next roll would get. A suggestion: another roll logged first takes it. */
+  /**
+   * The code the next roll would get. A suggestion: another roll logged first takes it.
+   * Given a roll instead of a line, the code that roll would have with these choices,
+   * keeping its own number — the edit screen's preview.
+   */
   nextRollCode: (
-    shiftLineId: number,
+    where: { shiftLineId: number } | { rollId: number },
     recipeVersionId: number,
     colorId: number,
     /** The out time with the tablet's offset — the code carries the factory's clock. */
     at: string,
-  ): Promise<string> =>
-    apiRequest<string>(
-      `/api/production/rolls/next-code?shiftLineId=${String(shiftLineId)}` +
-        `&recipeVersionId=${String(recipeVersionId)}&colorId=${String(colorId)}` +
-        `&at=${encodeURIComponent(at)}`,
-    ),
+  ): Promise<string> => {
+    const query = new URLSearchParams({
+      recipeVersionId: String(recipeVersionId),
+      colorId: String(colorId),
+      at,
+    });
+    if ('rollId' in where) {
+      query.set('rollId', String(where.rollId));
+    } else {
+      query.set('shiftLineId', String(where.shiftLineId));
+    }
+    return apiRequest<string>(`/api/production/rolls/next-code?${query.toString()}`);
+  },
 
   /** The roll's weight and length, taken on the production screen (section 19.12). */
   measureRoll: (id: number, body: { weight: number; length: number }): Promise<RollDto> =>
@@ -174,22 +201,33 @@ export const productionApi = {
       body: {},
     }),
 
-  /** Corrects a roll's code or out time while its shift is still open. */
+  /** Corrects what was chosen when the roll was logged, while its shift is open (19.15). */
   updateRoll: (
     id: number,
-    body: { rollCode: string; producedAt: string },
+    body: {
+      /** Null for the code worked out again from the corrected choices. */
+      rollCode: string | null;
+      producedAt: string;
+      recipeVersionId: number;
+      colorId: number;
+      productId: number | null;
+      notes: string | null;
+    },
   ): Promise<RollDto> =>
     apiRequest<RollDto>(`/api/production/rolls/${String(id)}`, { method: 'PUT', body }),
 
-  /** Saving the measurements is what makes the roll usable by the thermo. */
+  /**
+   * The test as it stands, saved as it goes: null for a reading not yet taken (19.15).
+   * Finished, with the roll measured, it is what makes the roll usable by the thermo.
+   */
   saveTest: (
     rollId: number,
     body: {
-      plateWeight: number;
-      thicknessRs: number;
-      thicknessRm: number;
-      thicknessLm: number;
-      thicknessLs: number;
+      plateWeight: number | null;
+      thicknessRs: number | null;
+      thicknessRm: number | null;
+      thicknessLm: number | null;
+      thicknessLs: number | null;
       notes: string | null;
       /** Absorbent rolls only; left out for every other. */
       absorbencyDryWeight?: number | null;
