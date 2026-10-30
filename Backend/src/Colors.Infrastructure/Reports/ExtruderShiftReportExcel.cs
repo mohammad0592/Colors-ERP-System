@@ -9,7 +9,7 @@ namespace Colors.Infrastructure.Reports;
 ///
 /// The factory has no paper form for the extruder, so this is laid out from scratch: the
 /// shift at the top, one row per roll with everything recorded against it, the totals, and
-/// the shift's rolls by product. Headings are in English and Arabic, as the people reading
+/// the shift's rolls by recipe. Headings are in English and Arabic, as the people reading
 /// it are both.
 ///
 /// The averages, the absorbency and the totals are formulas rather than numbers, so
@@ -33,7 +33,7 @@ public class ExtruderShiftReportExcel : IExtruderShiftReportExcel
         ("C", "Out at", "وقت الخروج", 9),
         ("D", "Batch", "الخلطة", 8),
         ("E", "Recipe", "الوصفة", 16),
-        ("F", "Made for", "المنتج", 22),
+        ("F", "Formed into", "شُكّل إلى", 22),
         ("G", "Colour", "اللون", 10),
         ("H", "Status", "الحالة", 13),
         ("I", "Weight (kg)", "الوزن", 10),
@@ -120,14 +120,14 @@ public class ExtruderShiftReportExcel : IExtruderShiftReportExcel
         sheet.Range($"K{first}:P{totals}").Style.NumberFormat.Format = "0.###";
         sheet.Range($"S{first}:U{totals}").Style.NumberFormat.Format = "0.###";
 
-        // ---- by product --------------------------------------------------------------
+        // ---- by recipe ---------------------------------------------------------------
         var summaryRow = totals + 2;
-        WriteProducts(sheet, summaryRow, report);
+        WriteRecipes(sheet, summaryRow, report);
 
         // ---- notes -------------------------------------------------------------------
         if (!string.IsNullOrWhiteSpace(report.Notes))
         {
-            var notesRow = summaryRow + report.Products.Count + 3;
+            var notesRow = summaryRow + report.Recipes.Count + 3;
             sheet.Cell($"A{notesRow}").Value = "Notes · ملاحظات";
             sheet.Cell($"A{notesRow}").Style.Font.Bold = true;
             sheet.Cell($"A{notesRow + 1}").Value = report.Notes;
@@ -257,15 +257,15 @@ public class ExtruderShiftReportExcel : IExtruderShiftReportExcel
             .Where(n => !string.IsNullOrWhiteSpace(n)));
     }
 
-    private static void WriteProducts(IXLWorksheet sheet, int row, ExtruderShiftReportDto report)
+    private static void WriteRecipes(IXLWorksheet sheet, int row, ExtruderShiftReportDto report)
     {
-        sheet.Cell($"A{row}").Value = "By product · حسب المنتج";
+        sheet.Cell($"A{row}").Value = "By recipe · حسب الوصفة";
         sheet.Cell($"A{row}").Style.Font.Bold = true;
 
         var head = row + 1;
         string[] captions =
         [
-            "Product\nالمنتج", "", "Rolls\nالرولات", "Weight (kg)\nالوزن", "Length\nالطول",
+            "Recipe\nالوصفة", "", "Rolls\nالرولات", "Weight (kg)\nالوزن", "Length\nالطول",
             "Avg thickness\nمتوسط السماكة", "Out of spec\nخارج المواصفة",
         ];
         string[] letters = ["B", "C", "D", "E", "F", "G", "H"];
@@ -282,15 +282,15 @@ public class ExtruderShiftReportExcel : IExtruderShiftReportExcel
         sheet.Row(head).Height = 32;
 
         var line = head + 1;
-        foreach (var product in report.Products)
+        foreach (var recipe in report.Recipes)
         {
-            sheet.Cell($"B{line}").Value = product.ProductName;
+            sheet.Cell($"B{line}").Value = recipe.RecipeName;
             sheet.Range($"B{line}:C{line}").Merge();
-            sheet.Cell($"D{line}").Value = product.RollCount;
-            sheet.Cell($"E{line}").Value = product.TotalWeight;
-            sheet.Cell($"F{line}").Value = product.TotalLength;
-            Put(sheet.Cell($"G{line}"), product.AverageThickness);
-            sheet.Cell($"H{line}").Value = product.OutOfSpecCount;
+            sheet.Cell($"D{line}").Value = recipe.RollCount;
+            sheet.Cell($"E{line}").Value = recipe.TotalWeight;
+            sheet.Cell($"F{line}").Value = recipe.TotalLength;
+            Put(sheet.Cell($"G{line}"), recipe.AverageThickness);
+            sheet.Cell($"H{line}").Value = recipe.OutOfSpecCount;
             line++;
         }
 

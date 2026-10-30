@@ -116,9 +116,14 @@ export interface AvailableRollDto {
   productionDate: string;
   weight: number | null;
   length: number | null;
-  /** Null only on a roll made before rolls said what they were for. */
+  /**
+   * What it is formed into. Null until it goes in, and the start dialog asks; set only on
+   * rolls logged when the extruder still asked (section 19.17).
+   */
   productId: number | null;
   productName: string | null;
+  /** So the start dialog offers only the products this recipe makes. */
+  recipeFamilyId: number;
 }
 
 export const thermoApi = {

@@ -115,7 +115,8 @@ public class ThermoService(
                 r.Weight,
                 r.Length,
                 r.ProductId,
-                r.Product?.Name))
+                r.Product?.Name,
+                r.RecipeVersion.RecipeFamilyId))
             .ToList();
     }
 
@@ -162,8 +163,10 @@ public class ThermoService(
         // (specification section 19.9). Nothing on the line says what is in the machine:
         // the mould is the product, and the roll already named it at the extruder.
         //
-        // A roll made before rolls said has no product, so it is asked for here, once,
-        // and written onto the roll — from then on it is like any other.
+        // The product is named here, when the roll goes in: the extruder names only the
+        // recipe (section 19.17). Written onto the roll, so the bags and every report after
+        // read it from there. A roll that already has one — logged when the extruder still
+        // asked — keeps it.
         if (found.ProductId is null)
         {
             var refusal = await DeclareProductAsync(found, request.ProductId, cancellationToken);
@@ -376,8 +379,8 @@ public class ThermoService(
     /// for the office picking off the list.
     /// </summary>
     /// <summary>
-    /// Gives a roll made before rolls named their product the one it is being formed into.
-    /// The same rules as at the extruder: an active product, made from the roll's recipe.
+    /// Gives a roll the product it is being formed into: an active product, made from the
+    /// roll's recipe.
     /// </summary>
     private async Task<Result<ThermoRunDto>?> DeclareProductAsync(
         Roll roll,
@@ -387,8 +390,7 @@ public class ThermoService(
         if (productId is null)
         {
             return InvalidRun(
-                $"Roll {roll.RollCode} was made before rolls said what they were for. "
-                + "Choose the product it is being formed into.",
+                $"Choose the product roll {roll.RollCode} is being formed into.",
                 "thermo.chooseProduct",
                 roll.RollCode);
         }

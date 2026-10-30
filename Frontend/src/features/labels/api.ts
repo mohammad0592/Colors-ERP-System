@@ -49,6 +49,8 @@ export interface BarcodeLabelDto {
    */
   minThickness: number | null;
   maxThickness: number | null;
+  /** A roll only: its recipe, "3 — Absorbent" — the roll's type (section 19.17). */
+  recipeName: string | null;
 }
 
 export const producedStockApi = {

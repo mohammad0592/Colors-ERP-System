@@ -226,6 +226,7 @@ export interface ExtruderReportRollDto {
   recipeNumber: number;
   recipeFamilyName: string;
   isAbsorbent: boolean;
+  /** What it was formed into, once the thermo has named it (section 19.17). */
   productName: string | null;
   colorName: string;
   status: RollStatus;
@@ -256,8 +257,9 @@ export interface ExtruderReportRollDto {
   testNotes: string | null;
 }
 
-export interface ExtruderReportProductDto {
-  productName: string;
+export interface ExtruderReportRecipeDto {
+  /** "3 — Absorbent": the roll's type (section 19.17). */
+  recipeName: string;
   rollCount: number;
   /** Measured rolls only. */
   totalWeight: number;
@@ -292,7 +294,7 @@ export interface ExtruderShiftReportDto {
   outOfSpecCount: number;
   totalWeight: number;
   totalLength: number;
-  products: ExtruderReportProductDto[];
+  recipes: ExtruderReportRecipeDto[];
 }
 
 export interface ThermoShiftReportDto {

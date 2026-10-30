@@ -127,12 +127,13 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
             })
             .ToList();
 
-        var products = rows
-            .GroupBy(r => r.ProductName ?? "—")
+        // By recipe — the roll's type. The product is only named later, at the thermo.
+        var recipes = rows
+            .GroupBy(r => $"{r.RecipeNumber} — {r.RecipeFamilyName}")
             .Select(g =>
             {
                 var tested = g.Where(r => r.AverageThickness is not null).ToList();
-                return new ExtruderReportProductDto(
+                return new ExtruderReportRecipeDto(
                     g.Key,
                     g.Count(),
                     g.Sum(r => r.Weight ?? 0m),
@@ -140,7 +141,7 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
                     tested.Count == 0 ? null : Math.Round(tested.Average(r => r.AverageThickness!.Value), 3),
                     g.Count(r => r.ThicknessInSpec == false));
             })
-            .OrderBy(p => p.ProductName)
+            .OrderBy(p => p.RecipeName)
             .ToList();
 
         var operatorPerson = line.OperatorUserId is null
@@ -171,7 +172,7 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
             rows.Count(r => r.ThicknessInSpec == false),
             rows.Sum(r => r.Weight ?? 0m),
             rows.Sum(r => r.Length ?? 0m),
-            products));
+            recipes));
     }
 
     private static string? Format(TimeOnly? time) =>

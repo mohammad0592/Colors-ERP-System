@@ -51,7 +51,10 @@ public sealed record BarcodeLabelDto(
     // see what it was meant to be (specification section 19.1). Null on bags and pallets,
     // and wherever the range has not been set.
     decimal? MinThickness,
-    decimal? MaxThickness);
+    decimal? MaxThickness,
+    // A roll only: its recipe, "3 — Absorbent" — the roll's type, printed where a bag
+    // prints its product (specification section 19.17).
+    string? RecipeName = null);
 
 /// <summary>
 /// Produced stock and the labels that go on it.

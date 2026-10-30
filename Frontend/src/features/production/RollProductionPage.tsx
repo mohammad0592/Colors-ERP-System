@@ -9,7 +9,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
 import { LabelPrintScreen } from '../labels/LabelPrintScreen';
-import { colorsApi, productsApi } from '../master-data/api';
+import { colorsApi } from '../master-data/api';
 import { recipesApi } from '../recipes/api';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
@@ -18,7 +18,6 @@ import { EditRollDialog } from './EditRollDialog';
 import { MeasureRollDialog } from './MeasureRollDialog';
 import { NewRollDialog } from './NewRollDialog';
 import { RollStatusBadge } from './RollStatusBadge';
-import { ThicknessVerdict } from './ThicknessVerdict';
 
 /**
  * Line 1 — the mixer and the extruder (specification section 8).
@@ -78,11 +77,6 @@ export function RollProductionPage(): ReactElement {
     queryFn: () => colorsApi.list(false),
   });
 
-  const products = useQuery({
-    queryKey: ['products', 'active'],
-    queryFn: () => productsApi.list(false),
-  });
-
   // The factory's running roll number. It goes back to 01 only when a shift is opened
   // as the extruder's starting shift (section 19.16) — not from this screen.
   const rollNumber = useQuery({
@@ -116,21 +110,17 @@ export function RollProductionPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: ['roll'] });
   }
 
-  if (rolls.isPending || recipes.isPending || colors.isPending || products.isPending) {
+  if (rolls.isPending || recipes.isPending || colors.isPending) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
-  if (rolls.isError || recipes.isError || colors.isError || products.isError) {
+  if (rolls.isError || recipes.isError || colors.isError) {
     return <p className="p-6 text-bad">{t('rolls.loadFailed1')}</p>;
   }
 
   // A draft may still change, so a roll could never be reproduced from it.
   const usableRecipes = recipes.data.filter((r) => r.status !== 'Draft');
 
-  // The list is this shift's rolls, newest first (section 19.6), so the product the
-  // operator last used is simply the first roll's. No second request, and it follows
-  // the shift: the first roll of a new shift has nothing before it and asks.
-  const lastProductId = rolls.data.find((r) => r.productId !== null)?.productId ?? null;
   const lines = openLines.data ?? [];
 
   return (
@@ -196,7 +186,6 @@ export function RollProductionPage(): ReactElement {
             <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
               <th className="px-4 py-3 font-semibold">{t('term.rollCode')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.recipe')}</th>
-              <th className="px-4 py-3 font-semibold">{t('rolls.madeFor')}</th>
               <th className="px-4 py-3 font-semibold">{t('term.colour')}</th>
               <th className="px-4 py-3 font-semibold">{t('field.status')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.weight')}</th>
@@ -236,10 +225,6 @@ export function RollProductionPage(): ReactElement {
                   <span className="ms-2 text-xs text-ink-muted">
                     {roll.recipeFamilyName}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {roll.productName ?? '—'}
-                  <ThicknessVerdict inSpec={roll.thicknessInSpec} />
                 </td>
                 <td className="px-4 py-3 text-ink-soft">{roll.colorName}</td>
                 <td className="px-4 py-3">
@@ -315,8 +300,6 @@ export function RollProductionPage(): ReactElement {
           shiftLine={logging}
           recipes={usableRecipes}
           colors={colors.data}
-          products={products.data}
-          lastProductId={lastProductId}
           onClose={() => {
             setLogging(null);
           }}
@@ -355,7 +338,6 @@ export function RollProductionPage(): ReactElement {
           roll={correcting}
           recipes={usableRecipes}
           colors={colors.data}
-          products={products.data}
           onClose={() => {
             setCorrecting(null);
           }}

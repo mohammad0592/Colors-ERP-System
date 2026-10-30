@@ -1,8 +1,8 @@
 /**
- * The recipe, product and colour last chosen when logging a roll, remembered on this
- * tablet (specification section 19.12).
+ * The recipe and colour last chosen when logging a roll, remembered on this tablet
+ * (specification section 19.12).
  *
- * The extruder runs the same recipe, product and colour for hours, so each new roll opens
+ * The extruder runs the same recipe and colour for hours, so each new roll opens
  * already set to what the last one was — across shifts too, since the machine does not
  * stop at a shift change. Kept on the tablet rather than the server because it is a
  * convenience, not a record: a tablet that cannot store it simply asks again.
@@ -12,7 +12,6 @@ const key = 'colors.lastRollChoices';
 
 export interface RollChoices {
   recipeVersionId?: number;
-  productId?: number;
   colorId?: number;
 }
 

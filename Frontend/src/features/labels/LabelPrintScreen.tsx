@@ -319,6 +319,10 @@ function LabelSheet({
           {label.productName !== null && (
             <Field label={t('term.product')} value={label.productName} />
           )}
+          {/* A roll's type is its recipe; its product is named at the thermo (19.17). */}
+          {label.recipeName !== null && (
+            <Field label={t('term.recipe')} value={label.recipeName} />
+          )}
           {label.colorName !== null && (
             <Field label={t('term.colour')} value={label.colorName} />
           )}

@@ -107,10 +107,12 @@ public class ExtruderShiftReportTests(DatabaseFixture fixture)
         Assert.Equal(2300m, report.TotalLength);
         Assert.Single(report.BatchNumbers);
 
-        var product = Assert.Single(report.Products);
-        Assert.Equal(3, product.RollCount);
-        Assert.Equal(185m, product.TotalWeight);
-        Assert.Equal(1.25m, product.AverageThickness);
+        // By recipe, the roll's type (section 19.17).
+        var recipe = Assert.Single(report.Recipes);
+        Assert.EndsWith("Family ESR1", recipe.RecipeName, StringComparison.Ordinal);
+        Assert.Equal(3, recipe.RollCount);
+        Assert.Equal(185m, recipe.TotalWeight);
+        Assert.Equal(1.25m, recipe.AverageThickness);
     }
 
     [Fact]

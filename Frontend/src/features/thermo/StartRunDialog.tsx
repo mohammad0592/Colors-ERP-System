@@ -6,6 +6,7 @@ import { ScanField } from '../../components/ui/ScanField';
 import { ApiError } from '../../lib/apiClient';
 import { cleanCode, type EntryMethod } from '../../lib/barcodeScanner';
 import { productsApi } from '../master-data/api';
+import { productsFor } from '../production/rollOptions';
 import { formatDate } from '../shifts/shiftFormat';
 import { thermoApi, type AvailableRollDto, type ThermoRunDto } from './api';
 
@@ -27,10 +28,29 @@ interface StartRunDialogProps {
  * there for the office, and for a label too torn to read — both in the one box, which is
  * `ScanField` and behaves the same wherever a code is asked for.
  *
- * Nothing else is asked for. The recipe, the colour and the product all come from the
- * roll, so there is nothing here to get wrong — except for a roll made before rolls
- * named their product, which is asked for its product here, once.
+ * The recipe and the colour come from the roll. The product is chosen here — the mould on
+ * the machine is the product, and the extruder names only the recipe (section 19.17). It
+ * is chosen above the scan box and remembered on this tablet, because the thermo runs the
+ * same mould for hours: a scan then goes straight through. A roll logged when the
+ * extruder still named the product keeps that one.
  */
+const lastProductKey = 'colors.lastThermoProduct';
+
+function readLastProduct(): number {
+  try {
+    return Number(window.localStorage.getItem(lastProductKey) ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveLastProduct(productId: number): void {
+  try {
+    window.localStorage.setItem(lastProductKey, String(productId));
+  } catch {
+    // Private browsing or a full store: the next roll asks again, nothing is lost.
+  }
+}
 export function StartRunDialog({
   line,
   rolls,
@@ -45,26 +65,30 @@ export function StartRunDialog({
   // The list offers barcodes, so scanning and picking end at the same value and there is
   // no second piece of state that can disagree with the box.
   const chosen = rolls.find((r) => r.barcode === cleanCode(barcode)) ?? null;
-  const needsProduct = chosen !== null && chosen.productId === null;
-  const [productId, setProductId] = useState(0);
+  // Every roll asks, unless it was logged when the extruder still named its product.
+  const needsProduct = (chosen?.productId ?? null) === null;
+  const [picked, setPicked] = useState(readLastProduct);
 
-  // Only fetched for an old roll, which is the one case that asks.
   const products = useQuery({
     queryKey: ['products', 'active'],
     queryFn: () => productsApi.list(false),
-    enabled: needsProduct,
   });
-  const fitting = (products.data ?? []).filter(
-    (p) => chosen === null || p.isAbsorbent === chosen.isAbsorbent,
-  );
+  // Narrowed to the chosen roll's recipe once there is one; the server checks it anyway.
+  const fitting =
+    chosen === null ? (products.data ?? []) : productsFor(products.data ?? [], chosen);
+  const productId = fitting.some((p) => p.id === picked) ? picked : 0;
 
   async function start(code: string, entry: EntryMethod): Promise<void> {
     if (code === '') {
       return;
     }
 
-    if (needsProduct && productId === 0) {
-      setError(t('thermo.oldRollProduct'));
+    // The roll a scan names may not be the one on screen yet, so the product is checked
+    // against the roll the code belongs to.
+    const scanned = rolls.find((r) => r.barcode === cleanCode(code)) ?? null;
+    const asks = (scanned?.productId ?? null) === null;
+    if (asks && productId === 0) {
+      setError(t('thermo.productBeingFormed'));
       return;
     }
 
@@ -78,10 +102,13 @@ export function StartRunDialog({
           shiftLineId: line.shiftLineId,
           startedAt: null,
           notes: null,
-          productId: needsProduct ? productId : null,
+          productId: asks ? productId : null,
         },
         entry,
       );
+      if (asks) {
+        saveLastProduct(productId);
+      }
       onStarted(run);
       onClose();
     } catch (caught) {
@@ -101,6 +128,33 @@ export function StartRunDialog({
             {line.lineName} — {line.shiftLabel}
           </p>
         </div>
+
+        {needsProduct && (
+          <div className="mb-4">
+            <label className="field-label" htmlFor="thermo-product">
+              {t('term.product')}
+            </label>
+            <select
+              id="thermo-product"
+              className="field-input"
+              value={productId}
+              disabled={isSaving}
+              onChange={(event) => {
+                setPicked(Number(event.target.value));
+              }}
+            >
+              <option value={0}>{t('action.choose')}</option>
+              {fitting.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-ink-muted">
+              {t('thermo.productBeingFormed')}
+            </p>
+          </div>
+        )}
 
         <div className="mb-4">
           <ScanField
@@ -139,31 +193,6 @@ export function StartRunDialog({
               </span>
             )}
           </p>
-        )}
-
-        {needsProduct && (
-          <div className="mb-4">
-            <label className="field-label" htmlFor="old-roll-product">
-              {t('term.product')}
-            </label>
-            <select
-              id="old-roll-product"
-              className="field-input"
-              value={productId}
-              disabled={isSaving}
-              onChange={(event) => {
-                setProductId(Number(event.target.value));
-              }}
-            >
-              <option value={0}>{t('action.choose')}</option>
-              {fitting.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name}
-                </option>
-              ))}
-            </select>
-            <p className="mt-1 text-xs text-ink-muted">{t('thermo.oldRollProduct')}</p>
-          </div>
         )}
 
         {rolls.length === 0 && (

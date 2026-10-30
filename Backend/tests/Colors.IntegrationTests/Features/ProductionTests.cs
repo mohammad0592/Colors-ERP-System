@@ -434,18 +434,25 @@ public class ProductionTests(DatabaseFixture fixture)
         new(9m, thickness, thickness, thickness, thickness, null);
 
     [Fact]
-    public async Task A_roll_must_say_what_it_was_made_for()
+    public async Task A_roll_is_logged_by_its_recipe_and_its_label_says_so()
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PROD1");
         var (colourId, recipeId) = await RecipeAndColourAsync(db, "PROD1", ids.UserId);
 
+        // No product: the extruder names the recipe, the thermo the product (19.17).
         var roll = await NewService(db).CreateRollAsync(
             new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, null, null, null),
             ids.UserId);
 
-        Assert.False(roll.IsSuccess);
-        Assert.Equal("roll.chooseProduct", roll.MessageCode);
+        Assert.True(roll.IsSuccess, roll.Message);
+        Assert.Null(roll.Value!.ProductId);
+
+        var label = await new Colors.Infrastructure.Services.Inventory.ProducedStockService(db)
+            .GetLabelAsync(roll.Value.Barcode);
+        Assert.True(label.IsSuccess, label.Message);
+        Assert.Null(label.Value!.ProductName);
+        Assert.Equal($"{roll.Value.RecipeNumber} — {roll.Value.RecipeFamilyName}", label.Value.RecipeName);
     }
 
     [Fact]

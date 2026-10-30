@@ -2,7 +2,8 @@ import type { ProductDto } from '../master-data/api';
 import type { RecipeVersionSummaryDto } from '../recipes/api';
 
 /**
- * The products a recipe can make, for the roll dialogs (specification section 19.1).
+ * The products a recipe can make — offered when a roll goes into the thermo, where its
+ * product is named (specification section 19.17).
  *
  * Each product is made from one main recipe and a roll for any other is refused, so only
  * these are offered at all. A product not yet given a main recipe falls back to matching
@@ -19,18 +20,4 @@ export function productsFor(
         ? p.isAbsorbent === recipe.isAbsorbent
         : p.recipeFamilyId === recipe.recipeFamilyId,
   );
-}
-
-/** " — 2.8–3.0 mm", " — ≥ 3.0 mm", or nothing when no range is set. */
-export function thicknessRange(min: number | null, max: number | null): string {
-  if (min !== null && max !== null) {
-    return ` — ${String(min)}–${String(max)} mm`;
-  }
-  if (min !== null) {
-    return ` — ≥ ${String(min)} mm`;
-  }
-  if (max !== null) {
-    return ` — ≤ ${String(max)} mm`;
-  }
-  return '';
 }

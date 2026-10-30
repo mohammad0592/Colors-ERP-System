@@ -266,7 +266,6 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             .Include(r => r.Color)
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(r => r.TestReport)
-            .Include(r => r.Product)
             .Include(r => r.Batch).ThenInclude(b => b.ShiftLine).ThenInclude(l => l.ShiftReport)
                 .ThenInclude(s => s.Shift)
             .FirstOrDefaultAsync(r => r.Id == rollId, cancellationToken);
@@ -279,9 +278,9 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 roll.RollCode,
                 null,
                 null,
-                // What it was made for. A roll from before products were declared falls
-                // back to its recipe family, which is what its label always said.
-                roll.Product?.Name ?? roll.RecipeVersion.Family.Name,
+                // No product on a roll's label: its type is its recipe, printed below
+                // (section 19.17), and the product is only named at the thermo.
+                null,
                 roll.Color.Name,
                 null,
                 roll.Weight,
@@ -289,8 +288,9 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 roll.Batch.ShiftLine.ShiftReport.Shift.Name,
                 roll.ProductionDate,
                 roll.ProducedAt,
-                roll.Product?.MinThickness,
-                roll.Product?.MaxThickness));
+                null,
+                null,
+                $"{roll.RecipeVersion.RecipeNumber} — {roll.RecipeVersion.Family.Name}"));
     }
 
     private async Task<Result<BarcodeLabelDto>> BagLabelAsync(

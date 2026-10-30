@@ -112,10 +112,12 @@ public sealed record AvailableRollDto(
     DateOnly ProductionDate,
     decimal? Weight,
     decimal? Length,
-    // What it was made for. Null only on a roll made before rolls said, and then the
-    // start dialog asks.
+    // What it is formed into. Null until it goes into the thermo, and the start dialog asks
+    // (section 19.17); set only on rolls logged when the extruder still asked.
     int? ProductId,
-    string? ProductName);
+    string? ProductName,
+    // So the start dialog offers only the products this recipe makes.
+    int RecipeFamilyId);
 
 /// <summary>
 /// Puts a roll into the thermo. The operator scans the barcode — he never types the

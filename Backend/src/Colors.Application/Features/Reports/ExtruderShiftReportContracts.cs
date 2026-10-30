@@ -18,6 +18,7 @@ public sealed record ExtruderReportRollDto(
     int RecipeNumber,
     string RecipeFamilyName,
     bool IsAbsorbent,
+    // The product it was formed into, once the thermo has named it (section 19.17).
     string? ProductName,
     string ColorName,
     string Status,
@@ -50,9 +51,10 @@ public sealed record ExtruderReportRollDto(
     string? Notes,
     string? TestNotes);
 
-/// <summary>The shift's rolls for one product: how many, how heavy, how thick.</summary>
-public sealed record ExtruderReportProductDto(
-    string ProductName,
+/// <summary>The shift's rolls of one recipe: how many, how heavy, how thick.</summary>
+public sealed record ExtruderReportRecipeDto(
+    // "3 — Absorbent": the roll's type (section 19.17).
+    string RecipeName,
     int RollCount,
     // Measured rolls only — the rest have no weight yet.
     decimal TotalWeight,
@@ -88,7 +90,7 @@ public sealed record ExtruderShiftReportDto(
     int OutOfSpecCount,
     decimal TotalWeight,
     decimal TotalLength,
-    IReadOnlyList<ExtruderReportProductDto> Products);
+    IReadOnlyList<ExtruderReportRecipeDto> Recipes);
 
 /// <summary>The extruder's report for one shift.</summary>
 public interface IExtruderShiftReportService

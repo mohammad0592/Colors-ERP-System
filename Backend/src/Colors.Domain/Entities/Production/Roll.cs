@@ -54,17 +54,15 @@ public class Roll
     public Color Color { get; set; } = null!;
 
     /// <summary>
-    /// What the operator made this roll for (specification section 19.1).
+    /// The product this roll is formed into — what the bags made from it are
+    /// (specification section 19.9).
     ///
-    /// Declared, because the thickness cannot be trusted to say it. It is also what the
-    /// bags formed from this roll are: the mould is the product, and nothing at the thermo
-    /// names it a second time (specification section 19.9).
+    /// Named at the thermo, when the roll goes into the machine: the mould is the product,
+    /// and the mould is on the thermo. The extruder names only the recipe (section 19.17);
+    /// rolls logged between 19.1 and 19.17 were given their product there instead, and
+    /// keep it.
     ///
-    /// On the roll and not the batch, because the batch is the whole shift and the
-    /// factory changes product mid-shift. The screen remembers the last one used so the
-    /// operator picks it once, not on every roll.
-    ///
-    /// Null only on rolls made before this existed.
+    /// Null until the roll goes into the thermo.
     /// </summary>
     public int? ProductId { get; set; }
 

@@ -8,10 +8,10 @@ import { reportsApi, type ExtruderShiftReportDto } from './api';
 
 /**
  * The extruder's report for one shift (specification section 13.1): every roll made on it,
- * with everything recorded against each — what it was made to and for, its weight and
+ * with everything recorded against each — its recipe, what it was formed into, its weight and
  * length, its test, who did what, and where it went.
  *
- * Figures first, then the rolls, then the shift's rolls by product. The Excel export has
+ * Figures first, then the rolls, then the shift's rolls by recipe. The Excel export has
  * the same rows, laid out to print.
  */
 export function ExtruderShiftReport({
@@ -112,7 +112,7 @@ export function ExtruderShiftReport({
                 <Th>{t('term.rollCode')}</Th>
                 <Th>{t('rolls.outAt')}</Th>
                 <Th>{t('term.recipe')}</Th>
-                <Th>{t('rolls.madeFor')}</Th>
+                <Th>{t('extruderRpt.formedInto')}</Th>
                 <Th>{t('term.colour')}</Th>
                 <Th>{t('field.status')}</Th>
                 <Th end>{t('thermoRpt.weight')}</Th>
@@ -233,12 +233,12 @@ export function ExtruderShiftReport({
         )}
       </Block>
 
-      {report.products.length > 0 && (
-        <Block title={t('extruderRpt.byProduct')}>
+      {report.recipes.length > 0 && (
+        <Block title={t('extruderRpt.byRecipe')}>
           <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
-                <Th>{t('term.product')}</Th>
+                <Th>{t('term.recipe')}</Th>
                 <Th end>{t('extruderRpt.rollsColumn')}</Th>
                 <Th end>{t('thermoRpt.weight')}</Th>
                 <Th end>{t('thermoRpt.length')}</Th>
@@ -247,19 +247,17 @@ export function ExtruderShiftReport({
               </tr>
             </thead>
             <tbody>
-              {report.products.map((product) => (
+              {report.recipes.map((recipe) => (
                 <tr
-                  key={product.productName}
+                  key={recipe.recipeName}
                   className="border-b border-line last:border-0"
                 >
-                  <td className="px-3 py-2 font-medium text-ink">
-                    {product.productName}
-                  </td>
-                  <Num value={product.rollCount} />
-                  <Num value={product.totalWeight} />
-                  <Num value={product.totalLength} />
-                  <Num value={product.averageThickness} />
-                  <Num value={product.outOfSpecCount} />
+                  <td className="px-3 py-2 font-medium text-ink">{recipe.recipeName}</td>
+                  <Num value={recipe.rollCount} />
+                  <Num value={recipe.totalWeight} />
+                  <Num value={recipe.totalLength} />
+                  <Num value={recipe.averageThickness} />
+                  <Num value={recipe.outOfSpecCount} />
                 </tr>
               ))}
             </tbody>

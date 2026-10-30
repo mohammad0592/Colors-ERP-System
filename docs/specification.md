@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Sixteen changes, from watching the factory use the system. They are written here rather
+Seventeen changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2299,6 +2299,35 @@ extruder — the shift the factory begins a new run of roll numbers on.
 - A starting shift without the extruder is refused: there would be nothing to start again.
 - It is decided when the shift is opened, not afterwards. Ticking it later would put the
   count back in the middle of a shift whose rolls are already numbered.
+
+### 19.17 A roll is its recipe; the product is named at the thermo
+
+The factory cares about a roll's **type**, which is its recipe, not the product it will
+become. This reverses part of 19.1.
+
+**Decided, and built:**
+
+- **No "Made for" at the extruder.** Logging and editing a roll ask for the recipe, colour
+  and out time; the roll production screen has no product column. A product sent anyway
+  is still checked against the recipe, but the screens send none.
+- **The roll label prints the recipe** — "3 — Absorbent" — where it printed the product,
+  and no longer prints the product's thickness range.
+- **The product is named at the thermo**, when the roll goes into the machine — the mould
+  is the product, and the mould is on the thermo. The start window asks for it above the
+  scan box, offers only the products the roll's recipe makes, and remembers the last one
+  on the tablet, since the thermo runs the same mould for hours: a scan then goes straight
+  through. It is written onto the roll then, so the bags and every report read it from
+  there as before (19.9). A roll logged while the extruder still asked keeps its product
+  and is not asked again.
+- **The extruder report** groups the shift's rolls **by recipe**, and its product column
+  is now *Formed into* — filled once the thermo has named it.
+
+**What goes with it:** the in-spec verdict on a roll's thickness was judged against its
+product's range when it was tested (19.1). With no product at the extruder there is no
+range to judge against, so new rolls are tested without a verdict. If the factory wants
+the check back, the range belongs on the recipe, and the verdict follows from there.
+
+---
 ---
 
 2.1 adds section 19: seven changes the factory asked for after using the

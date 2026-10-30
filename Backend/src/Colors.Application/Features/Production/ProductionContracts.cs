@@ -131,8 +131,9 @@ public sealed record CreateRollRequest(
     int ShiftLineId,
     int RecipeVersionId,
     int ColorId,
-    // What the roll is being made for (specification section 19.1). Required: nullable
-    // here only so a missing one is answered in words rather than as a malformed request.
+    // No longer asked at the extruder: the roll's type is its recipe, and the product is
+    // named at the thermo (specification section 19.17). Accepted if sent, and checked
+    // against the recipe; the screens send null.
     int? ProductId,
     // The "out time" the operator knows, sent with the tablet's own UTC offset: the
     // date and time in the roll code are the factory's clock, and the server knows no
@@ -166,7 +167,7 @@ public sealed record UpdateRollRequest(
     DateTimeOffset ProducedAt,
     int RecipeVersionId,
     int ColorId,
-    // Required, except on a roll made before products were declared that never had one.
+    // Null leaves the roll without a product, for the thermo to name (section 19.17).
     int? ProductId,
     string? Notes);
 

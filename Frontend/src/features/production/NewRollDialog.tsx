@@ -3,12 +3,11 @@ import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { Modal } from '../../components/ui/Modal';
 import { ApiError } from '../../lib/apiClient';
-import type { ColorDto, ProductDto } from '../master-data/api';
+import type { ColorDto } from '../master-data/api';
 import type { RecipeVersionSummaryDto } from '../recipes/api';
 import { productionApi, type RollDto } from './api';
 import { fromTimeField, toOffsetIso, toTimeField } from './outTime';
 import { readRollChoices, saveRollChoices } from './rollChoices';
-import { productsFor, thicknessRange } from './rollOptions';
 
 interface NewRollDialogProps {
   /** The extruder's part of the open shift. The mix underneath is created by the
@@ -17,14 +16,6 @@ interface NewRollDialogProps {
   /** Only recipes in production — a draft may still change. */
   recipes: RecipeVersionSummaryDto[];
   colors: ColorDto[];
-  /** Active products. Narrowed here to the ones the chosen recipe can make. */
-  products: ProductDto[];
-  /**
-   * The product of the last roll logged on this shift, or null if this is the first.
-   * The operator picks the product once and then only when it changes — so the
-   * first roll of a shift asks, and every roll after it is already filled in.
-   */
-  lastProductId: number | null;
   onClose: () => void;
   onCreated: (roll: RollDto) => void;
 }
@@ -36,6 +27,9 @@ interface NewRollDialogProps {
  * both change while a mix is still running: the colouring agent is fed separately at
  * the extruder, so the operator switches colour without stopping.
  *
+ * Not the product: the roll's type is its recipe, and the product is named at the thermo,
+ * where the mould is (section 19.17).
+ *
  * The roll code is worked out and shown already filled in, so nobody has to type it.
  * It can still be typed over, for a roll labelled by hand before it was logged. The
  * barcode is never asked for: it names the roll, whatever code is written on it.
@@ -44,8 +38,6 @@ export function NewRollDialog({
   shiftLine,
   recipes,
   colors,
-  products,
-  lastProductId,
   onClose,
   onCreated,
 }: NewRollDialogProps): ReactElement {
@@ -63,18 +55,6 @@ export function NewRollDialog({
       ? (remembered.colorId ?? 0)
       : (colors[0]?.id ?? 0),
   );
-  const [productId, setProductId] = useState(() =>
-    products.some((p) => p.id === remembered.productId)
-      ? (remembered.productId ?? 0)
-      : (lastProductId ?? 0),
-  );
-
-  // Only the products this recipe makes are offered; a roll for any other is refused.
-  const fitting = productsFor(
-    products,
-    recipes.find((r) => r.id === recipeVersionId),
-  );
-  const chosen = fitting.some((p) => p.id === productId) ? productId : 0;
   const [notes, setNotes] = useState('');
 
   // The time only, now unless he changes it; the date is today behind it, or yesterday
@@ -121,7 +101,8 @@ export function NewRollDialog({
         shiftLineId: shiftLine.shiftLineId,
         recipeVersionId,
         colorId,
-        productId: chosen === 0 ? null : chosen,
+        // Named at the thermo (section 19.17).
+        productId: null,
         // Always sent, with the tablet's offset: the code is built from it.
         producedAt: outAtIso,
         notes: notes.trim() === '' ? null : notes.trim(),
@@ -132,7 +113,7 @@ export function NewRollDialog({
             ? typedCode.trim()
             : null,
       });
-      saveRollChoices({ recipeVersionId, productId: chosen, colorId });
+      saveRollChoices({ recipeVersionId, colorId });
       onCreated(roll);
       onClose();
     } catch (caught) {
@@ -179,32 +160,6 @@ export function NewRollDialog({
             Asked per roll, not once for the shift: the recipe can change while the same
             mix is running.
           </p>
-        </div>
-
-        <div className="mb-4">
-          <label className="field-label" htmlFor="roll-product">
-            {t('rolls.madeFor')}
-          </label>
-          <select
-            id="roll-product"
-            className="field-input"
-            value={chosen}
-            disabled={isSaving}
-            onChange={(event) => {
-              setProductId(Number(event.target.value));
-            }}
-          >
-            <option value={0}>{t('action.choose')}</option>
-            {fitting.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name}
-                {thicknessRange(product.minThickness, product.maxThickness)}
-              </option>
-            ))}
-          </select>
-          {lastProductId !== null && chosen === lastProductId && (
-            <p className="mt-1 text-xs text-ink-muted">{t('rolls.sameAsLast')}</p>
-          )}
         </div>
 
         <div className="mb-4">
@@ -294,7 +249,7 @@ export function NewRollDialog({
         <button
           type="submit"
           className="btn-primary"
-          disabled={isSaving || recipeVersionId === 0 || colorId === 0 || chosen === 0}
+          disabled={isSaving || recipeVersionId === 0 || colorId === 0}
         >
           {isSaving ? 'Logging…' : t('rolls.logTheRoll')}
         </button>

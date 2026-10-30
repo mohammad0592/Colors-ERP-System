@@ -243,7 +243,7 @@ public class ProductionService(
             Batch = batch,
             RecipeVersionId = recipe.Id,
             ColorId = colour.Id,
-            ProductId = product!.Id,
+            ProductId = product?.Id,
             ProducedByUserId = userId,
             // Stored as a moment; the offset it arrived with has done its work in the code.
             ProducedAt = producedAt.ToUniversalTime(),
@@ -799,16 +799,11 @@ public class ProductionService(
                 $"{recipe.Family.Name} has no code for the roll code. Set one in Master Data."), null);
         }
 
-        // What the roll is being made for (specification section 19.1). Declared, because
-        // the thickness cannot be trusted to say it: the first rolls of a run are the
-        // wrong thickness while the machine is being set, and are still for this product.
+        // The extruder names the recipe; the product is named at the thermo, where the mould
+        // is (specification section 19.17). One sent anyway is still checked below.
         if (productId is null)
         {
-            // A roll made before products were declared may be corrected without one; any
-            // other roll must say what it is for.
-            return current is { ProductId: null }
-                ? (null, new RollChoices(recipe, colour, null))
-                : (InvalidRoll("Say which product this roll is for.", "roll.chooseProduct"), null);
+            return (null, new RollChoices(recipe, colour, null));
         }
 
         var product = await db.Products
