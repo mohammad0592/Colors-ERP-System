@@ -153,7 +153,7 @@ describe('who may open what', () => {
       '/production/thermo-tests',
       '/production/pallets',
       '/production/packaging',
-      '/production/shift-config',
+      '/production/shift-config/thermo',
     ] as const;
     const notHis = [
       '/inventory/receive',
@@ -162,6 +162,8 @@ describe('who may open what', () => {
       '/production/roll-tests',
       '/production/dispatch',
       '/production/recycler',
+      '/production/shift-config/extruder',
+      '/production/shift-config/recycler',
     ] as const;
 
     for (const path of his) {
@@ -173,5 +175,74 @@ describe('who may open what', () => {
 
     // Inventory, but only its rolls, bags and pallets: never the raw or packing material.
     expect((materialStockRoles as readonly string[]).includes(thermo)).toBe(false);
+  });
+});
+
+describe('the shift configuration, one screen per line', () => {
+  const configs = {
+    extruder: '/production/shift-config/extruder',
+    thermo: '/production/shift-config/thermo',
+    recycler: '/production/shift-config/recycler',
+  } as const;
+
+  it("opens to each line's operator only his own line's screen", () => {
+    // Section 19.18: each operator fills in his own line, so that is the one he sees.
+    const own: [RoleName, keyof typeof configs][] = [
+      [RoleNames.ExtruderOperator, 'extruder'],
+      [RoleNames.ThermoOperator, 'thermo'],
+      [RoleNames.RecyclerOperator, 'recycler'],
+    ];
+
+    for (const [role, line] of own) {
+      for (const [other, path] of Object.entries(configs)) {
+        expect(guardAllows(path, role)).toBe(other === line);
+      }
+    }
+  });
+
+  it('opens all three to the supervisor and the administrator', () => {
+    // They answer for every line, and the meter heads all three screens.
+    for (const path of Object.values(configs)) {
+      expect(guardAllows(path, RoleNames.Supervisor)).toBe(true);
+      expect(guardAllows(path, RoleNames.Administrator)).toBe(true);
+    }
+  });
+});
+
+describe('the menu', () => {
+  const production = navigation.find((group) => group.heading === 'nav.production');
+
+  it("splits Production into the three lines, in the factory's order", () => {
+    expect(production?.sections.map((section) => section.heading)).toEqual([
+      'nav.extruder',
+      'nav.thermoforming',
+      'nav.recycle',
+    ]);
+    expect(
+      production?.sections.map((section) => section.items.map((item) => item.path)),
+    ).toEqual([
+      [
+        '/production/rolls',
+        '/production/roll-tests',
+        '/production/shift-config/extruder',
+      ],
+      [
+        '/production/thermo',
+        '/production/thermo-tests',
+        '/production/pallets',
+        '/production/packaging',
+        '/production/shift-config/thermo',
+      ],
+      ['/production/recycler', '/production/shift-config/recycler'],
+    ]);
+  });
+
+  it('puts Dispatch under Operations', () => {
+    const operations = navigation.find((group) => group.heading === 'nav.operations');
+
+    expect(operations?.items.map((item) => item.path)).toContain('/production/dispatch');
+    expect(production?.items.map((item) => item.path)).not.toContain(
+      '/production/dispatch',
+    );
   });
 });

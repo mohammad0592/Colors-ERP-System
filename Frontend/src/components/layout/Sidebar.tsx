@@ -65,8 +65,12 @@ export function Sidebar({
 
         <nav className="flex-1 overflow-y-auto px-3 pb-4">
           {navigation.map((group) => {
-            const visible = group.items.filter(canSee);
-            if (visible.length === 0) {
+            // A sub-section with nothing this man may open is left out, heading and all,
+            // and so is a group left with none.
+            const sections = group.sections
+              .map((section) => ({ ...section, items: section.items.filter(canSee) }))
+              .filter((section) => section.items.length > 0);
+            if (sections.length === 0) {
               return null;
             }
 
@@ -78,30 +82,56 @@ export function Sidebar({
                   </p>
                 )}
 
-                <ul className="space-y-1">
-                  {visible.map((item) => (
-                    <li key={item.path}>
-                      <NavLink
-                        to={item.path}
-                        end={item.path === '/'}
-                        onClick={onCloseMobile}
-                        title={isCollapsed ? t(item.label) : undefined}
-                        className={({ isActive }) =>
-                          [
-                            'flex min-h-touch items-center gap-3 rounded-control px-3 text-sm font-medium transition-colors',
-                            isCollapsed ? 'justify-center' : '',
-                            isActive
-                              ? 'bg-brand-600 text-white'
-                              : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
-                          ].join(' ')
-                        }
-                      >
-                        <Icon name={item.icon} className="size-5 shrink-0" />
-                        {!isCollapsed && <span className="truncate">{t(item.label)}</span>}
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
+                {sections.map((section, index) => (
+                  <div
+                    key={section.heading ?? 'items'}
+                    className={index > 0 ? 'mt-3' : undefined}
+                  >
+                    {section.heading !== null &&
+                      (isCollapsed ? (
+                        // Narrow: no room for words, so a rule marks where a line starts.
+                        index > 0 && <hr className="mx-3 mb-2 border-sidebar-hover" />
+                      ) : (
+                        <p className="mb-1 flex items-center gap-2 px-3 text-xs font-semibold text-sidebar-text">
+                          <span className="size-1.5 rounded-full bg-brand-500" />
+                          {t(section.heading)}
+                        </p>
+                      ))}
+
+                    <ul className="space-y-1">
+                      {section.items.map((item) => (
+                        <li key={item.path}>
+                          <NavLink
+                            to={item.path}
+                            end={item.path === '/'}
+                            onClick={onCloseMobile}
+                            title={isCollapsed ? t(item.label) : undefined}
+                            className={({ isActive }) =>
+                              [
+                                'flex min-h-touch items-center gap-3 rounded-control px-3 text-sm font-medium transition-colors',
+                                isCollapsed ? 'justify-center' : '',
+                                // Indented under its line's heading.
+                                section.heading !== null && !isCollapsed ? 'ps-5' : '',
+                                isActive
+                                  ? 'bg-brand-600 text-white'
+                                  : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
+                              ].join(' ')
+                            }
+                          >
+                            <Icon name={item.icon} className="size-5 shrink-0" />
+                            {!isCollapsed && (
+                              // Wraps rather than cutting off: "Thermoforming Shift
+                              // Configuration" is long, and half of it is no name at all.
+                              <span className="min-w-0 py-1.5 leading-tight">
+                                {t(item.label)}
+                              </span>
+                            )}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </div>
             );
           })}

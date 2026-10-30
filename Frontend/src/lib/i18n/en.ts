@@ -14,6 +14,9 @@ export const en = {
   'nav.main': 'Main',
   'nav.operations': 'Operations',
   'nav.production': 'Production',
+  'nav.extruder': 'Extruder',
+  'nav.thermoforming': 'Thermoforming',
+  'nav.recycle': 'Recycle',
   'nav.analytics': 'Analytics',
   'nav.management': 'Management',
 
@@ -59,8 +62,6 @@ export const en = {
   'nav.packaging': 'Packaging',
   'nav.dispatch': 'Dispatch',
   'nav.recycler': 'Recycler',
-  'nav.shiftConfig': 'Shift Configurations',
-  'page.shiftConfig.title': 'Shift Configurations',
   'shiftCfg.extruder': 'Extruder Shift Configuration',
   'shiftCfg.thermo': 'Thermoforming Shift Configuration',
   'shiftCfg.recycler': 'Recycle Shift Configuration',

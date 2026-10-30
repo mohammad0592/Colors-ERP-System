@@ -26,13 +26,32 @@ export interface NavItem {
   /** Filled in from `routes/access.ts` — never written here. */
   roles: ScreenRoles;
 }
-export interface NavGroup {
-  heading: TranslationKey;
+/** A run of items under a sub-heading — a line, inside Production (section 19.18). */
+export interface NavSection {
+  /** Null for a group that has no sub-headings. */
+  heading: TranslationKey | null;
   items: NavItem[];
 }
 
-/** The menu as it is written: wording, order and icons only. */
-const layout: { heading: TranslationKey; items: Omit<NavItem, 'roles'>[] }[] = [
+export interface NavGroup {
+  heading: TranslationKey;
+  /** What the sidebar draws: the items in their sub-sections. */
+  sections: NavSection[];
+  /** Every item of the group in one list, for whoever only needs to find one. */
+  items: NavItem[];
+}
+
+type Item = Omit<NavItem, 'roles'>;
+
+/**
+ * The menu as it is written: wording, order and icons only. A group is either a plain
+ * list of items or a list of sub-sections, each under its own heading.
+ */
+const layout: {
+  heading: TranslationKey;
+  items?: Item[];
+  sections?: { heading: TranslationKey; items: Item[] }[];
+}[] = [
   {
     heading: 'nav.main',
     items: [{ label: 'nav.dashboard', path: '/', icon: 'dashboard' }],
@@ -45,20 +64,52 @@ const layout: { heading: TranslationKey; items: Omit<NavItem, 'roles'>[] }[] = [
       { label: 'nav.printQueue', path: '/print-queue', icon: 'print' },
       { label: 'nav.receive', path: '/inventory/receive', icon: 'receive' },
       { label: 'nav.issue', path: '/inventory/issue', icon: 'issue' },
+      // Sending a pallet out of the factory is a stock movement, not line work.
+      { label: 'nav.dispatch', path: '/production/dispatch', icon: 'pallet' },
     ],
   },
   {
+    // One sub-section per line, in the order the material goes through the factory,
+    // each ending with that line's shift configuration (section 19.18).
     heading: 'nav.production',
-    items: [
-      { label: 'nav.rolls', path: '/production/rolls', icon: 'roll' },
-      { label: 'nav.rollTests', path: '/production/roll-tests', icon: 'test' },
-      { label: 'nav.thermo', path: '/production/thermo', icon: 'thermo' },
-      { label: 'nav.thermoTests', path: '/production/thermo-tests', icon: 'test' },
-      { label: 'nav.pallets', path: '/production/pallets', icon: 'pallet' },
-      { label: 'nav.packaging', path: '/production/packaging', icon: 'packaging' },
-      { label: 'nav.dispatch', path: '/production/dispatch', icon: 'pallet' },
-      { label: 'nav.recycler', path: '/production/recycler', icon: 'recycler' },
-      { label: 'nav.shiftConfig', path: '/production/shift-config', icon: 'shift' },
+    sections: [
+      {
+        heading: 'nav.extruder',
+        items: [
+          { label: 'nav.rolls', path: '/production/rolls', icon: 'roll' },
+          { label: 'nav.rollTests', path: '/production/roll-tests', icon: 'test' },
+          {
+            label: 'shiftCfg.extruder',
+            path: '/production/shift-config/extruder',
+            icon: 'shift',
+          },
+        ],
+      },
+      {
+        heading: 'nav.thermoforming',
+        items: [
+          { label: 'nav.thermo', path: '/production/thermo', icon: 'thermo' },
+          { label: 'nav.thermoTests', path: '/production/thermo-tests', icon: 'test' },
+          { label: 'nav.pallets', path: '/production/pallets', icon: 'pallet' },
+          { label: 'nav.packaging', path: '/production/packaging', icon: 'packaging' },
+          {
+            label: 'shiftCfg.thermo',
+            path: '/production/shift-config/thermo',
+            icon: 'shift',
+          },
+        ],
+      },
+      {
+        heading: 'nav.recycle',
+        items: [
+          { label: 'nav.recycler', path: '/production/recycler', icon: 'recycler' },
+          {
+            label: 'shiftCfg.recycler',
+            path: '/production/shift-config/recycler',
+            icon: 'shift',
+          },
+        ],
+      },
     ],
   },
   {
@@ -84,7 +135,20 @@ const layout: { heading: TranslationKey; items: Omit<NavItem, 'roles'>[] }[] = [
  *
  * Done here rather than by hand on every row so the two can never disagree again.
  */
-export const navigation: NavGroup[] = layout.map((group) => ({
-  heading: group.heading,
-  items: group.items.map((item) => ({ ...item, roles: rolesFor(item.path) })),
-}));
+const withRoles = (item: Item): NavItem => ({ ...item, roles: rolesFor(item.path) });
+
+export const navigation: NavGroup[] = layout.map((group) => {
+  const sections: NavSection[] =
+    group.sections === undefined
+      ? [{ heading: null, items: (group.items ?? []).map(withRoles) }]
+      : group.sections.map((section) => ({
+          heading: section.heading,
+          items: section.items.map(withRoles),
+        }));
+
+  return {
+    heading: group.heading,
+    sections,
+    items: sections.flatMap((section) => section.items),
+  };
+});

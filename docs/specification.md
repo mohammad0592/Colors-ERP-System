@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Seventeen changes, from watching the factory use the system. They are written here rather
+Eighteen changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2327,6 +2327,40 @@ product's range when it was tested (19.1). With no product at the extruder there
 range to judge against, so new rolls are tested without a verdict. If the factory wants
 the check back, the range belongs on the recipe, and the verdict follows from there.
 
+
+### 19.18 The menu by line, and a shift configuration for each
+
+**Decided, and built:**
+
+- **Production is split by line**, in the order the material goes through the factory,
+  each under its own heading:
+
+  | Extruder | Thermoforming | Recycle |
+  |---|---|---|
+  | Roll Production | Thermoforming | Recycler |
+  | Roll Tests | Thermo Tests | Recycle Shift Configuration |
+  | Extruder Shift Configuration | Pallets | |
+  | | Packaging | |
+  | | Thermoforming Shift Configuration | |
+
+- **Dispatch moved to Operations.** Sending a pallet out of the factory is a stock
+  movement, not line work; who may open it is unchanged (administrator and supervisor).
+- **Shift Configuration is three screens**, one per line, each in its line's part of the
+  menu: the line's times, crew, notes and, on the thermo, machine settings. Each line's
+  operator opens only his own line's screen; the supervisor and the administrator open
+  all three and move between them on the same shift with the links under the meter.
+- **The electricity meter heads all three.** It is the factory's one meter (section 2), so
+  a reading entered on any line's screen is the same reading on the others, with who
+  entered it, and each screen picks up a new reading within half a minute.
+- A role sees a line's heading only when it may open something under it, so an operator
+  sees his own line and nothing of the others. The menu and the route guard still read
+  the one list in `routes/access.ts`, and the server still lets each operator change only
+  the line he was put on.
+- The old address, `/production/shift-config`, still works: it opens the first of the
+  three the person may see — an operator's own line — so a tablet's bookmark keeps
+  working.
+
+---
 ---
 ---
 

@@ -35,6 +35,9 @@ export const ar: Record<TranslationKey, string> = {
   'nav.main': 'الرئيسية',
   'nav.operations': 'العمليات',
   'nav.production': 'الإنتاج',
+  'nav.extruder': 'البثق',
+  'nav.thermoforming': 'التشكيل',
+  'nav.recycle': 'إعادة التدوير',
   'nav.analytics': 'التحليلات',
   'nav.management': 'الإدارة',
 
@@ -80,8 +83,6 @@ export const ar: Record<TranslationKey, string> = {
   'nav.packaging': 'التغليف',
   'nav.dispatch': 'الشحن',
   'nav.recycler': 'إعادة التدوير',
-  'nav.shiftConfig': 'إعدادات الوردية',
-  'page.shiftConfig.title': 'إعدادات الوردية',
   'shiftCfg.extruder': 'إعدادات وردية البثق',
   'shiftCfg.thermo': 'إعدادات وردية التشكيل الحراري',
   'shiftCfg.recycler': 'إعدادات وردية إعادة التدوير',

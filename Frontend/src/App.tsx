@@ -19,7 +19,10 @@ import { RecipesPage } from './features/recipes/RecipesPage';
 import { PrintQueuePage } from './features/printing/PrintQueuePage';
 import { RecyclerPage } from './features/recycler/RecyclerPage';
 import { ReportsPage } from './features/reports/ReportsPage';
-import { ShiftConfigurationsPage } from './features/shifts/ShiftConfigurationsPage';
+import {
+  ShiftConfigurationRedirect,
+  ShiftConfigurationsPage,
+} from './features/shifts/ShiftConfigurationsPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
 import { UsersPage } from './features/users/UsersPage';
 import { TracePage } from './features/trace/TracePage';
@@ -66,7 +69,18 @@ const screens: { path: ScreenPath; element: ReactElement }[] = [
   { path: '/production/packaging', element: <PackagingPage /> },
   { path: '/production/dispatch', element: <DispatchPage /> },
   { path: '/production/recycler', element: <RecyclerPage /> },
-  { path: '/production/shift-config', element: <ShiftConfigurationsPage /> },
+  {
+    path: '/production/shift-config/extruder',
+    element: <ShiftConfigurationsPage kind="extruder" />,
+  },
+  {
+    path: '/production/shift-config/thermo',
+    element: <ShiftConfigurationsPage kind="thermo" />,
+  },
+  {
+    path: '/production/shift-config/recycler',
+    element: <ShiftConfigurationsPage kind="recycler" />,
+  },
   { path: '/reports', element: <ReportsPage /> },
   { path: '/audit', element: <AuditPage /> },
   { path: '/recipes', element: <RecipesPage /> },
@@ -92,6 +106,13 @@ export default function App(): ReactElement {
                       <Route path={path} element={element} />
                     </Route>
                   ))}
+
+                  {/* The one screen it used to be, kept so a tablet's bookmark still
+                      lands on the operator's own line (section 19.18). */}
+                  <Route
+                    path="/production/shift-config"
+                    element={<ShiftConfigurationRedirect />}
+                  />
 
                   {plannedRoutes.map(({ path, element }) => (
                     <Route key={path} path={path} element={element} />

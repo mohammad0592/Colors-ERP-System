@@ -1,43 +1,90 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, NavLink, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../lib/apiClient';
 import type { TranslationKey } from '../../lib/i18n/en';
 import { RoleNames } from '../../lib/roles';
+import { rolesFor, type ScreenPath } from '../../routes/access';
 import { peopleApi } from '../people/api';
 import { shiftReportsApi, type ShiftLineDto, type ShiftReportDto } from './api';
 import { ShiftLineForm } from './ShiftLineForm';
 import { formatDate, orDash, toField, toNumberOrNull } from './shiftFormat';
 
-type Kind = 'extruder' | 'thermo' | 'recycler';
+export type ShiftConfigKind = 'extruder' | 'thermo' | 'recycler';
 
-// Which line each tab is, read off what the line does — never its name, so a renamed
-// line still lands under the right tab (specification section 4).
+// Which line each screen is, read off what the line does — never its name, so a renamed
+// line still lands on the right screen (specification section 4).
 const kinds: {
-  key: Kind;
+  key: ShiftConfigKind;
   label: TranslationKey;
+  path: ScreenPath;
   matches: (line: ShiftLineDto) => boolean;
 }[] = [
-  { key: 'extruder', label: 'shiftCfg.extruder', matches: (line) => line.makesRolls },
-  { key: 'thermo', label: 'shiftCfg.thermo', matches: (line) => line.formsBags },
-  { key: 'recycler', label: 'shiftCfg.recycler', matches: (line) => line.recycles },
+  {
+    key: 'extruder',
+    label: 'shiftCfg.extruder',
+    path: '/production/shift-config/extruder',
+    matches: (line) => line.makesRolls,
+  },
+  {
+    key: 'thermo',
+    label: 'shiftCfg.thermo',
+    path: '/production/shift-config/thermo',
+    matches: (line) => line.formsBags,
+  },
+  {
+    key: 'recycler',
+    label: 'shiftCfg.recycler',
+    path: '/production/shift-config/recycler',
+    matches: (line) => line.recycles,
+  },
 ];
 
 /**
- * What each line records for the shift — its times, its crew, its notes, and on the
+ * The address the three screens used to share. A bookmark to it lands on the first of
+ * the three this man may open — for an operator, his own line's — with the shift it
+ * named, if any.
+ */
+export function ShiftConfigurationRedirect(): ReactElement {
+  const { hasRole } = useAuth();
+  const [params] = useSearchParams();
+  const allowed = kinds.find((kind) => {
+    const roles = rolesFor(kind.path);
+    return roles === undefined || hasRole(...roles);
+  });
+  const query = params.toString();
+
+  return (
+    <Navigate
+      to={
+        allowed === undefined ? '/' : `${allowed.path}${query === '' ? '' : `?${query}`}`
+      }
+      replace
+    />
+  );
+}
+
+/**
+ * What one line records for the shift — its times, its crew, its notes, and on the
  * thermo the machine settings (specification section 2).
  *
- * Filled in by the line's own operator, whom the supervisor chose when the shift began.
- * The meter is the whole factory's, so it sits above the tabs and every operator sees
- * the same reading and who entered it.
+ * One screen per line, each in its line's part of the menu and opened by that line's
+ * operator (section 19.18). The meter is the whole factory's, so it heads all three and
+ * every operator sees the same reading and who entered it — polled, so a reading entered
+ * on another line's screen shows up here too.
  *
  * The open shift by default. A closed or corrected shift is reached from the Shifts
- * screen, which links here with its id.
+ * screen, which links here with its id; the supervisor moves between the three lines of
+ * that shift with the links under the meter.
  */
-export function ShiftConfigurationsPage(): ReactElement {
+export function ShiftConfigurationsPage({
+  kind: active,
+}: {
+  kind: ShiftConfigKind;
+}): ReactElement {
   const { t } = useTranslation();
   const { user, hasRole } = useAuth();
   const queryClient = useQueryClient();
@@ -64,7 +111,13 @@ export function ShiftConfigurationsPage(): ReactElement {
   const people = useQuery({ queryKey: ['people'], queryFn: () => peopleApi.list(false) });
   const roles = useQuery({ queryKey: ['roles'], queryFn: () => peopleApi.roles() });
 
-  const [chosen, setChosen] = useState<Kind | null>(null);
+  const kind = kinds.find((k) => k.key === active) ?? kinds[0];
+  // The other lines' screens this man may open, for moving between them on the same
+  // shift. An operator has only his own, and sees no links.
+  const reachable = kinds.filter((k) => {
+    const allowed = rolesFor(k.path);
+    return allowed === undefined || hasRole(...allowed);
+  });
 
   function saved(fresh: ShiftReportDto): void {
     queryClient.setQueryData(['shift-report', fresh.id], fresh);
@@ -82,7 +135,7 @@ export function ShiftConfigurationsPage(): ReactElement {
   if (shiftId === undefined) {
     return (
       <>
-        <PageHeader title={t('page.shiftConfig.title')} />
+        <PageHeader title={t(kind?.label ?? 'shiftCfg.extruder')} />
         <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
           {t('shiftCfg.noOpenShift')}
         </p>
@@ -95,12 +148,6 @@ export function ShiftConfigurationsPage(): ReactElement {
   }
 
   const shift = report.data;
-  const myKind = kinds.find((kind) =>
-    shift.lines.some((line) => kind.matches(line) && line.operatorUserId === user?.id),
-  )?.key;
-  // The tab of the line the operator runs, unless he has picked another.
-  const active = chosen ?? myKind ?? 'extruder';
-  const kind = kinds.find((k) => k.key === active) ?? kinds[0];
   const line = shift.lines.find((l) => kind?.matches(l) === true);
   const canEditLine =
     line !== undefined && (isManager || line.operatorUserId === user?.id);
@@ -109,7 +156,7 @@ export function ShiftConfigurationsPage(): ReactElement {
   return (
     <>
       <PageHeader
-        title={t('page.shiftConfig.title')}
+        title={t(kind?.label ?? 'shiftCfg.extruder')}
         subtitle={`${t('term.shift')} ${shift.shiftName} — ${formatDate(shift.productionDate)}`}
       />
 
@@ -126,25 +173,25 @@ export function ShiftConfigurationsPage(): ReactElement {
         onSaved={saved}
       />
 
-      <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
-        {kinds.map((k) => (
-          <button
-            key={k.key}
-            type="button"
-            onClick={() => {
-              setChosen(k.key);
-            }}
-            className={[
-              '-mb-px border-b-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors',
-              active === k.key
-                ? 'border-brand-600 text-brand-700'
-                : 'border-transparent text-ink-muted hover:text-ink-soft',
-            ].join(' ')}
-          >
-            {t(k.label)}
-          </button>
-        ))}
-      </nav>
+      {reachable.length > 1 && (
+        <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
+          {reachable.map((k) => (
+            <NavLink
+              key={k.key}
+              // The same shift on the other line's screen.
+              to={`${k.path}${requested > 0 ? `?shift=${String(requested)}` : ''}`}
+              className={[
+                '-mb-px border-b-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors',
+                active === k.key
+                  ? 'border-brand-600 text-brand-700'
+                  : 'border-transparent text-ink-muted hover:text-ink-soft',
+              ].join(' ')}
+            >
+              {t(k.label)}
+            </NavLink>
+          ))}
+        </nav>
+      )}
 
       {line === undefined ? (
         <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">

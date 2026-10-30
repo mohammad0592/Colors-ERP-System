@@ -191,7 +191,7 @@ export function ShiftReportDialog({
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Link
-          to={`/production/shift-config?shift=${String(report.id)}`}
+          to={`/production/shift-config/extruder?shift=${String(report.id)}`}
           className="btn-primary grid w-auto place-items-center px-6"
         >
           {t('shifts.openConfig')}
