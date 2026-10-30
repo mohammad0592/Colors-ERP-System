@@ -793,7 +793,7 @@ public class ShiftReportService(
         // A system user or a staff member with no account — one, not both (section 19.19).
         if (workers.Any(w => (w.UserId is null) == (w.StaffMemberId is null)))
         {
-            return "Each person on the staff is either a system user or a staff member, not both.";
+            return "Each person is either staff with an account or a worker without one, not both.";
         }
 
         var userIds = workers.Where(w => w.UserId is not null).Select(w => w.UserId!.Value).ToList();
@@ -815,7 +815,7 @@ public class ShiftReportService(
 
         if (activeUsers != userIds.Count || activeStaff != staffIds.Count)
         {
-            return "Every person on the staff must still work here.";
+            return "Everyone listed must still work here.";
         }
 
         // Listing a job twice for one man says nothing the first entry did not, and it

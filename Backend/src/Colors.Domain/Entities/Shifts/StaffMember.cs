@@ -1,9 +1,11 @@
 namespace Colors.Domain.Entities.Shifts;
 
 /// <summary>
-/// Somebody who works on the floor but does not use the system — no account, no
-/// password, no role (specification section 19.19). Kept only so a shift can say they
-/// worked it.
+/// A <b>worker</b>: somebody who works on the floor but does not use the system — no
+/// account, no password, no role (specification section 19.19). Kept only so a shift can
+/// say they worked it. The screens call him a worker and call the system's users, who
+/// have accounts, staff; the class kept the name it was built with, as renaming it would
+/// rename a table and its keys for nothing a reader can see.
 ///
 /// Apart from the system's users on purpose. A user is an account: he signs in, holds
 /// roles and answers for what he records. Most of the floor never touches a tablet, and

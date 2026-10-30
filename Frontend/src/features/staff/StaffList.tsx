@@ -6,8 +6,8 @@ import { ApiError } from '../../lib/apiClient';
 import { staffApi, type StaffMemberDto } from './api';
 
 /**
- * Staff without an account, on the Users screen (specification section 19.19): add one,
- * correct a name or number, or record that he has left.
+ * Workers — people with no account — on the Users screen (specification section 19.19):
+ * add one, correct a name or number, or record that he has left.
  *
  * Nobody is deleted — the shifts he worked go on naming him. Most are added from a
  * line's shift configuration by whoever fills it in; this is where the list is kept tidy.

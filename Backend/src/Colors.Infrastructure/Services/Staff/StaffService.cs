@@ -60,7 +60,7 @@ public class StaffService(ColorsDbContext db, TimeProvider timeProvider) : IStaf
         if (member is null)
         {
             return Result<StaffMemberDto>.Failure(
-                ErrorCode.NotFound, "This staff member does not exist.", "staff.notFound");
+                ErrorCode.NotFound, "This worker does not exist.", "staff.notFound");
         }
 
         var (name, number) = (Trimmed(request.FullName), Trimmed(request.EmployeeNumber));
@@ -87,7 +87,7 @@ public class StaffService(ColorsDbContext db, TimeProvider timeProvider) : IStaf
     {
         if (name is null)
         {
-            return Invalid("Type the staff member's name.", "staff.nameRequired");
+            return Invalid("Type the worker's name.", "staff.nameRequired");
         }
 
         if (name.Length > MaxNameLength || number?.Length > MaxNumberLength)
@@ -107,7 +107,7 @@ public class StaffService(ColorsDbContext db, TimeProvider timeProvider) : IStaf
         if (await db.Users.AnyAsync(u => u.EmployeeNumber == number, cancellationToken))
         {
             return Invalid(
-                $"{number} belongs to a system user. Choose him from the list instead.",
+                $"{number} belongs to a staff member with an account. Choose him from the list instead.",
                 "staff.numberIsUser",
                 number);
         }
@@ -115,7 +115,7 @@ public class StaffService(ColorsDbContext db, TimeProvider timeProvider) : IStaf
         return await db.StaffMembers.AnyAsync(
                 s => s.EmployeeNumber == number && (exceptId == null || s.Id != exceptId),
                 cancellationToken)
-            ? Invalid($"Another staff member already has the number {number}.", "staff.numberTaken", number)
+            ? Invalid($"Another worker already has the number {number}.", "staff.numberTaken", number)
             : null;
     }
 

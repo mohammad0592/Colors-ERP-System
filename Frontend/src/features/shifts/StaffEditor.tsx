@@ -23,12 +23,12 @@ function keyOf(worker: Pick<SaveShiftWorker, 'userId' | 'staffMemberId'>): strin
 }
 
 /**
- * Who worked the line this shift — its staff (specification section 19.19).
+ * Who worked the line this shift — its staff and workers (specification section 19.19).
  *
- * Two kinds of people, picked from one list: the system's users, and staff who have no
- * account and are only recorded. Somebody missing from the list is added here, with a
- * name and, if he has one, a number — a new man on the floor tonight should not wait
- * for the administrator.
+ * Two kinds of people, picked from one list: **staff**, the system's users with an
+ * account, and **workers**, who have no account and are only recorded. A worker missing
+ * from the list is added here, with a name and, if he has one, a number — a new man on
+ * the floor tonight should not wait for the administrator.
  *
  * The jobs are asked for separately from the person's own roles on purpose: the same
  * man is both extruder operator and extruder test person, so what he *did* on this
@@ -212,7 +212,7 @@ export function StaffEditor({
         <>
           <div className="flex flex-wrap gap-2">
             <select
-              aria-label={t('action.addWorker')}
+              aria-label={t('shifts.addWorkerEllipsis')}
               className="field-input h-touch w-auto min-w-56 py-0"
               value={toAdd}
               onChange={(event) => {

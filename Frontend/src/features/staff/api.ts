@@ -1,8 +1,9 @@
 import { apiRequest } from '../../lib/apiClient';
 
 /**
- * Staff who work the floor without using the system — no account, no password, no role
- * (specification section 19.19). Mirrors Colors.Application.Features.Staff.
+ * Workers: people who work the floor without using the system — no account, no
+ * password, no role (specification section 19.19). Staff are the ones with an account.
+ * Mirrors Colors.Application.Features.Staff, which keeps its older name for them.
  */
 
 export interface StaffMemberDto {
