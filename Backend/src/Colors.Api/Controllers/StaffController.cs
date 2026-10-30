@@ -7,21 +7,18 @@ using Microsoft.AspNetCore.Mvc;
 namespace Colors.Api.Controllers;
 
 /// <summary>
-/// Staff who work the floor without using the system (specification section 19.19).
+/// Workers — people who work the floor without an account (specification section 19.19).
+/// Read by anyone who fills in a shift; added and changed by the administrator only.
 /// </summary>
 [ApiController]
 [Route("api/staff")]
 [Authorize]
 public class StaffController(IStaffService staff) : ApiControllerBase
 {
-    // Whoever fills in a line's staff may add somebody missing from the list — a new man
-    // on the floor tonight should not wait for the administrator.
-    private const string CanAdd =
-        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator},"
-        + $"{RoleNames.ThermoOperator},{RoleNames.RecyclerOperator}";
-
-    // Renaming or switching somebody off changes every shift that names him.
-    private const string CanCorrect = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
+    // The people the factory has — staff with accounts and workers without — are the
+    // administrator's alone to add and change (section 19.19), the same as the users. The
+    // shift configuration only chooses from them.
+    private const string CanManage = RoleNames.Administrator;
 
     /// <summary>For the pickers. Names only, like the paper forms on the wall.</summary>
     [HttpGet]
@@ -33,7 +30,7 @@ public class StaffController(IStaffService staff) : ApiControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = CanAdd)]
+    [Authorize(Roles = CanManage)]
     public async Task<IActionResult> Create(
         [FromBody] SaveStaffMemberRequest request,
         CancellationToken cancellationToken)
@@ -42,7 +39,7 @@ public class StaffController(IStaffService staff) : ApiControllerBase
     }
 
     [HttpPut("{id:int}")]
-    [Authorize(Roles = CanCorrect)]
+    [Authorize(Roles = CanManage)]
     public async Task<IActionResult> Update(
         int id,
         [FromBody] SaveStaffMemberRequest request,

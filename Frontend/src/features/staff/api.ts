@@ -25,11 +25,11 @@ export const staffApi = {
   list: (includeInactive = false): Promise<StaffMemberDto[]> =>
     apiRequest<StaffMemberDto[]>(`/api/staff?includeInactive=${String(includeInactive)}`),
 
-  /** Whoever fills in a line's staff may add somebody missing from the list. */
+  /** The administrator only, on the Users screen (section 19.19). */
   create: (body: SaveStaffMember): Promise<StaffMemberDto> =>
     apiRequest<StaffMemberDto>('/api/staff', { method: 'POST', body }),
 
-  /** The supervisor and the administrator. */
+  /** The administrator only. */
   update: (id: number, body: SaveStaffMember): Promise<StaffMemberDto> =>
     apiRequest<StaffMemberDto>(`/api/staff/${String(id)}`, { method: 'PUT', body }),
 };

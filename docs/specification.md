@@ -2385,14 +2385,13 @@ tablet, and an account each would fill the user list with logins nobody uses.
   belongs to a staff member is refused — he is already on the list to choose from.
 - **Putting them on a shift.** A line's list in its shift configuration offers both, under
   *Staff (with an account)* and *Workers (no account)*, and tags each worker as such.
-  Either may be a trainee and may have the jobs he did ticked. A worker missing from the
-  list is added right there with a name and an optional number, by whoever fills in the
-  line — its operator, the supervisor or the administrator — and goes straight onto the
-  shift.
-- **Keeping the list.** The Users screen lists the staff, and below them a *Workers*
-  section where the administrator adds, renames and records that somebody has left.
-  Nobody is deleted: the shifts he worked go on naming him. The supervisor may correct the
-  list too, through the same API.
+  Either may be a trainee and may have the jobs he did ticked. The shift configuration
+  only **chooses** from the people the factory already has; it adds nobody. Somebody
+  missing is added by the administrator first.
+- **Keeping the list — the administrator's alone.** The Users screen lists the staff, and
+  below them a *Workers* section where the administrator adds, renames and records that
+  somebody has left — the same as for staff accounts. The server refuses anybody else,
+  supervisor included. Nobody is deleted: the shifts he worked go on naming him.
 - **In the data.** A shift's row of people (`ShiftWorkers`) names either a staff member's
   account or a worker — exactly one, which the database holds as a check constraint — and
   the same person cannot be listed twice on one line. The shift reports name workers

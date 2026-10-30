@@ -1,7 +1,6 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
-import { ApiError } from '../../lib/apiClient';
 import type { PersonDto, RoleDto } from '../people/api';
 import { staffApi } from '../staff/api';
 import type { SaveShiftWorker } from './api';
@@ -26,9 +25,9 @@ function keyOf(worker: Pick<SaveShiftWorker, 'userId' | 'staffMemberId'>): strin
  * Who worked the line this shift — its staff and workers (specification section 19.19).
  *
  * Two kinds of people, picked from one list: **staff**, the system's users with an
- * account, and **workers**, who have no account and are only recorded. A worker missing
- * from the list is added here, with a name and, if he has one, a number — a new man on
- * the floor tonight should not wait for the administrator.
+ * account, and **workers**, who have no account and are only recorded. Only chosen here —
+ * adding somebody to the factory's people, either kind, is the administrator's, on the
+ * Users screen.
  *
  * The jobs are asked for separately from the person's own roles on purpose: the same
  * man is both extruder operator and extruder test person, so what he *did* on this
@@ -42,7 +41,6 @@ export function StaffEditor({
   onChange,
 }: StaffEditorProps): ReactElement {
   const { t } = useTranslation();
-  const queryClient = useQueryClient();
   const [toAdd, setToAdd] = useState<string>('');
 
   // Everyone, those who have left too, so a past shift still names them.
@@ -50,11 +48,6 @@ export function StaffEditor({
     queryKey: ['staff', 'all'],
     queryFn: () => staffApi.list(true),
   });
-
-  const [newName, setNewName] = useState('');
-  const [newNumber, setNewNumber] = useState('');
-  const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const users = new Map(people.map((person) => [person.id, person]));
   const staffById = new Map((staff.data ?? []).map((member) => [member.id, member]));
@@ -80,29 +73,6 @@ export function StaffEditor({
         ? { userId: id, staffMemberId: null, roleInShiftIds: [], isTrainee: false }
         : { userId: null, staffMemberId: id, roleInShiftIds: [], isTrainee: false },
     ]);
-  }
-
-  async function createAndAdd(): Promise<void> {
-    setError(null);
-    setCreating(true);
-    try {
-      const created = await staffApi.create({
-        fullName: newName.trim(),
-        employeeNumber: newNumber.trim() === '' ? null : newNumber.trim(),
-        isActive: true,
-      });
-      queryClient.setQueryData(['staff', 'all'], [...(staff.data ?? []), created]);
-      void queryClient.invalidateQueries({ queryKey: ['staff'] });
-      add(`s${String(created.id)}`);
-      setNewName('');
-      setNewNumber('');
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
-      );
-    } finally {
-      setCreating(false);
-    }
   }
 
   return (
@@ -249,52 +219,9 @@ export function StaffEditor({
             </button>
           </div>
 
-          {/* Not on the list: added here and put on the shift in one go. */}
-          <div className="mt-3 rounded-control border border-dashed border-line p-3">
-            <p className="mb-2 text-xs font-semibold text-ink-soft">
-              {t('staff.newTitle')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <input
-                aria-label={t('field.name')}
-                placeholder={t('field.name')}
-                className="field-input h-touch w-auto min-w-48 flex-1"
-                maxLength={100}
-                value={newName}
-                disabled={creating}
-                onChange={(event) => {
-                  setNewName(event.target.value);
-                }}
-              />
-              <input
-                aria-label={t('staff.numberOptional')}
-                placeholder={t('staff.numberOptional')}
-                className="field-input h-touch w-40"
-                maxLength={20}
-                value={newNumber}
-                disabled={creating}
-                onChange={(event) => {
-                  setNewNumber(event.target.value);
-                }}
-              />
-              <button
-                type="button"
-                className="min-h-touch rounded-control border border-line px-4 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700 disabled:opacity-50"
-                disabled={creating || newName.trim() === ''}
-                onClick={() => {
-                  void createAndAdd();
-                }}
-              >
-                {creating ? t('common.saving') : t('staff.addNew')}
-              </button>
-            </div>
-            <p className="mt-1.5 text-xs text-ink-muted">{t('staff.newNote')}</p>
-            {error !== null && (
-              <p role="alert" className="mt-2 text-sm font-medium text-bad">
-                {error}
-              </p>
-            )}
-          </div>
+          {/* Nobody is added to the factory's people here: that is the administrator's,
+              on the Users screen (section 19.19). This list only chooses from them. */}
+          <p className="mt-1.5 text-xs text-ink-muted">{t('staff.addedByAdmin')}</p>
         </>
       )}
     </div>
