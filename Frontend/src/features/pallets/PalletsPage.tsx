@@ -228,10 +228,12 @@ export function PalletsPage(): ReactElement {
                 Pallet {open.palletNumber} · {open.productionLineName}, shift{' '}
                 {open.shiftName}
               </p>
-              <div className="mb-5 flex flex-wrap items-center gap-4">
+              {/* One button under another, full width: pressed on a tablet with a
+                  glove, and a text link that size is too easy to miss. */}
+              <div className="mb-5 flex flex-col gap-2">
                 <button
                   type="button"
-                  className="text-sm font-medium text-brand-700 hover:underline"
+                  className="min-h-touch w-full rounded-control border px-4 text-sm font-semibold transition-colors disabled:opacity-50 border-line text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
                   onClick={() => {
                     setLabelFor(open.barcode);
                   }}
@@ -244,7 +246,7 @@ export function PalletsPage(): ReactElement {
                 {canPack && open.status === 'Empty' && (
                   <button
                     type="button"
-                    className="text-sm font-medium text-ink-soft hover:text-bad hover:underline"
+                    className="min-h-touch w-full rounded-control border px-4 text-sm font-semibold transition-colors disabled:opacity-50 border-line text-ink-soft hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
                     onClick={() => {
                       setCancelling({ id: open.id, number: open.palletNumber });
                     }}
@@ -258,7 +260,7 @@ export function PalletsPage(): ReactElement {
                 {canPack && open.status === 'Opened' && (
                   <button
                     type="button"
-                    className="text-sm font-medium text-ink-soft hover:text-warn hover:underline"
+                    className="min-h-touch w-full rounded-control border px-4 text-sm font-semibold transition-colors disabled:opacity-50 border-warn/40 text-warn hover:bg-warn-soft"
                     disabled={closeOrReopen.isPending}
                     onClick={() => {
                       setConfirm({
@@ -277,7 +279,7 @@ export function PalletsPage(): ReactElement {
                 {canPack && open.status === 'ClosedNotFull' && (
                   <button
                     type="button"
-                    className="text-sm font-medium text-brand-700 hover:underline"
+                    className="min-h-touch w-full rounded-control border px-4 text-sm font-semibold transition-colors disabled:opacity-50 border-brand-600 bg-brand-600 text-white hover:bg-brand-700"
                     disabled={closeOrReopen.isPending}
                     onClick={() => {
                       closeOrReopen.mutate({ id: open.id, action: 'reopen' });
