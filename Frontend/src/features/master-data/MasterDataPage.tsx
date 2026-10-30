@@ -15,7 +15,8 @@ import { MaterialsTab } from './MaterialsTab';
 import { ProductsTab } from './ProductsTab';
 
 type TabId =
-  | 'materials'
+  | 'rawMaterials'
+  | 'packagingMaterials'
   | 'units'
   | 'categories'
   | 'colors'
@@ -25,7 +26,10 @@ type TabId =
   | 'shifts';
 
 const tabs: { id: TabId; label: TranslationKey }[] = [
-  { id: 'materials', label: 'term.materials' },
+  // Two tabs, not one: raw material goes out weighed on issue tickets, packaging is
+  // counted. Which tab a material is on follows its category (section 19.22).
+  { id: 'rawMaterials', label: 'md.rawMaterials' },
+  { id: 'packagingMaterials', label: 'md.packagingMaterials' },
   { id: 'units', label: 'md.units' },
   { id: 'categories', label: 'md.categories' },
   { id: 'colors', label: 'md.colours' },
@@ -43,7 +47,7 @@ const tabs: { id: TabId; label: TranslationKey }[] = [
  */
 export function MasterDataPage(): ReactElement {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<TabId>('materials');
+  const [tab, setTab] = useState<TabId>('rawMaterials');
 
   return (
     <>
@@ -71,7 +75,8 @@ export function MasterDataPage(): ReactElement {
         ))}
       </div>
 
-      {tab === 'materials' && <MaterialsTab />}
+      {tab === 'rawMaterials' && <MaterialsTab key="raw" raw />}
+      {tab === 'packagingMaterials' && <MaterialsTab key="packaging" raw={false} />}
 
       {tab === 'units' && (
         <LookupTab

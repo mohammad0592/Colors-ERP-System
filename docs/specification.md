@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-one changes, from watching the factory use the system. They are written here rather
+Twenty-two changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2432,6 +2432,19 @@ beside Empty, Being built, Full, Shipped and Cancelled.
   never both full and closed, nor closed and cancelled (`ck_pallets_closed_together`).
 - **Reports.** The pallet production report counts closed pallets on their own; they are
   not counted under a product, which totals full pallets.
+
+### 19.22 Raw Material and Packaging Material in Master Data
+
+Master Data's single *Materials* tab is now two: **Raw Material** and **Packaging
+Material**, each listing its own and adding its own (*Add raw material*, *Add packaging
+material*). The materials and the way they are kept are unchanged.
+
+Which tab a material is on follows its category's **Goes on an issue ticket** setting —
+on for raw material, off for packaging — the fact the store already runs on (section 7),
+rather than the category's name, which can be rewritten. A category added later lands
+on the right tab by that setting, and turning it on or off moves its materials across.
+Adding a material offers only the categories of that tab's kind, already chosen when
+there is just one.
 ---
 ---
 ---

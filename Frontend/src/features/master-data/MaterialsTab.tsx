@@ -16,8 +16,13 @@ import { RowButton, StatusBadge } from './LookupTab';
 /**
  * Materials, with their pack sizes edited in place — the storekeeper's
  * "1 pallet = 750 kg" lives on the material itself (specification section 4).
+ *
+ * Shown as two tabs, raw material and packaging material (section 19.22). Which one a
+ * material is on is read off its category's "goes on an issue ticket", the same fact the
+ * store already runs on — raw material leaves weighed on a ticket, packaging does not —
+ * rather than off the category's name, which can be rewritten.
  */
-export function MaterialsTab(): ReactElement {
+export function MaterialsTab({ raw }: { raw: boolean }): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<MaterialDto | 'new' | null>(null);
@@ -29,10 +34,10 @@ export function MaterialsTab(): ReactElement {
     queryFn: () => materialsApi.list(true),
   });
 
-  // Pickers offer active rows only; an inactive category cannot gain new materials.
+  // Every category, switched-off ones too: a material in one still has to land on a tab.
   const categories = useQuery({
-    queryKey: ['material-categories', 'active'],
-    queryFn: () => materialCategoriesApi.list(false),
+    queryKey: ['material-categories', 'all'],
+    queryFn: () => materialCategoriesApi.list(true),
   });
   const units = useQuery({
     queryKey: ['units', 'active'],
@@ -53,7 +58,9 @@ export function MaterialsTab(): ReactElement {
       setActionError(null);
     },
     onError: (caught) => {
-      setActionError(caught instanceof ApiError ? caught.message : t('common.deleteFailed'));
+      setActionError(
+        caught instanceof ApiError ? caught.message : t('common.deleteFailed'),
+      );
     },
     onSettled: invalidate,
   });
@@ -66,10 +73,17 @@ export function MaterialsTab(): ReactElement {
     return <p className="p-6 text-bad">{t('md.materialsFailed')}</p>;
   }
 
+  // This tab's kind of category, and the materials in them.
+  const ofThisKind = categories.data.filter((c) => c.issuedOnTickets === raw);
+  const kindIds = new Set(ofThisKind.map((c) => c.id));
+  const shown = materials.data.filter((m) => kindIds.has(m.categoryId));
+  // The picker offers active rows only; an inactive category cannot gain new materials.
+  const pickable = ofThisKind.filter((c) => c.isActive);
+
   return (
     <div>
       <div className="mb-4 flex items-center justify-between gap-3">
-        <p className="text-sm text-ink-muted">{materials.data.length} materials</p>
+        <p className="text-sm text-ink-muted">{shown.length} materials</p>
         <button
           type="button"
           className="btn-primary h-touch w-auto px-5 text-base"
@@ -77,7 +91,7 @@ export function MaterialsTab(): ReactElement {
             setEditing('new');
           }}
         >
-          {t('md.addMaterial')}
+          {t(raw ? 'md.addRawMaterial' : 'md.addPackagingMaterial')}
         </button>
       </div>
 
@@ -105,7 +119,14 @@ export function MaterialsTab(): ReactElement {
             </tr>
           </thead>
           <tbody>
-            {materials.data.map((material) => (
+            {shown.length === 0 && (
+              <tr>
+                <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
+                  {t('md.noMaterialsOfKind')}
+                </td>
+              </tr>
+            )}
+            {shown.map((material) => (
               <tr key={material.id} className="border-b border-line last:border-0">
                 <td className="px-4 py-3 font-mono text-xs font-semibold text-ink-soft">
                   {material.code}
@@ -138,7 +159,9 @@ export function MaterialsTab(): ReactElement {
                       }}
                     />
                     <RowButton
-                      label={material.isActive ? t('common.deactivate') : t('common.activate')}
+                      label={
+                        material.isActive ? t('common.deactivate') : t('common.activate')
+                      }
                       onClick={() => {
                         setActive.mutate({
                           id: material.id,
@@ -191,7 +214,7 @@ export function MaterialsTab(): ReactElement {
       {editing !== null && (
         <MaterialDialog
           material={editing === 'new' ? null : editing}
-          categories={categories.data}
+          categories={pickable}
           units={units.data}
           onClose={() => {
             setEditing(null);
@@ -222,12 +245,16 @@ interface MaterialForm {
   packagings: PackRow[];
 }
 
-function formFrom(material: MaterialDto | null): MaterialForm {
+function formFrom(
+  material: MaterialDto | null,
+  categories: { id: number }[],
+): MaterialForm {
   if (material === null) {
     return {
       code: '',
       name: '',
-      categoryId: '',
+      // The tab already says which kind; with one category of it, nothing to choose.
+      categoryId: categories.length === 1 ? String(categories[0]?.id ?? '') : '',
       baseUnitId: '',
       minQuantity: '0',
       unitWeight: '',
@@ -268,7 +295,7 @@ function MaterialDialog({
   onSaved,
 }: MaterialDialogProps): ReactElement {
   const { t } = useTranslation();
-  const [form, setForm] = useState<MaterialForm>(() => formFrom(material));
+  const [form, setForm] = useState<MaterialForm>(() => formFrom(material, categories));
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -356,7 +383,10 @@ function MaterialDialog({
   }
 
   return (
-    <Modal title={material === null ? t('md.addMaterial') : t('md.editMaterial')} onClose={onClose}>
+    <Modal
+      title={material === null ? t('md.addMaterial') : t('md.editMaterial')}
+      onClose={onClose}
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -442,9 +472,7 @@ function MaterialDialog({
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-ink-muted">
-              {t('md.countedInUnit')}
-            </p>
+            <p className="mt-1 text-xs text-ink-muted">{t('md.countedInUnit')}</p>
           </div>
         </div>
 
@@ -484,9 +512,7 @@ function MaterialDialog({
               }}
               disabled={isSaving}
             />
-            <p className="mt-1 text-xs text-ink-muted">
-              {t('md.pieceWeightNote')}
-            </p>
+            <p className="mt-1 text-xs text-ink-muted">{t('md.pieceWeightNote')}</p>
           </div>
         </div>
 
@@ -507,10 +533,10 @@ function MaterialDialog({
         </div>
 
         <fieldset className="mb-4 rounded-control border border-line p-4">
-          <legend className="px-1 text-sm font-semibold text-ink-soft">{t('field.packSizes')}</legend>
-          <p className="mb-3 text-xs text-ink-muted">
-            {t('md.howItArrives')}
-          </p>
+          <legend className="px-1 text-sm font-semibold text-ink-soft">
+            {t('field.packSizes')}
+          </legend>
+          <p className="mb-3 text-xs text-ink-muted">{t('md.howItArrives')}</p>
 
           {form.packagings.map((row, index) => (
             <div key={`pack-${String(index)}`} className="mb-2 flex items-center gap-2">
