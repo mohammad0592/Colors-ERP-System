@@ -333,7 +333,9 @@ function LabelSheet({
           {label.pieceCount !== null && (
             <Field label="Pieces · العدد" value={String(label.pieceCount)} />
           )}
-          {label.weight !== null && (
+          {/* Not on a bag's label: the factory does not print it there. The weight is
+              still recorded against the bag, and rolls and pallets print theirs. */}
+          {label.weight !== null && label.kind !== 'Bag' && (
             <Field label={t('field.weight')} value={`${String(label.weight)} kg`} />
           )}
           {label.length !== null && (
