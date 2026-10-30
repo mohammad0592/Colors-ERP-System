@@ -87,8 +87,9 @@ export function PalletScanBox({
 
       {full && (
         <p className="mt-3 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
-          This pallet is {pallet.status === 'Shipped' ? 'gone' : 'full'}. Start a new one
-          for the next bag.
+          {pallet.status === 'ClosedNotFull'
+            ? t('pallets.closedReopenToAdd')
+            : `This pallet is ${pallet.status === 'Shipped' ? 'gone' : 'full'}. Start a new one for the next bag.`}
         </p>
       )}
 

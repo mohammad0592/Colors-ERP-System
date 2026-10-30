@@ -135,6 +135,8 @@ export interface PalletProductionReportDto {
   palletsCancelled: number;
   /** Started and still being filled — no product until the first bag lands. */
   palletsStillOpen: number;
+  /** Closed with bags but not full, stored as they are (section 19.21). */
+  palletsClosedNotFull: number;
   products: PalletProductLineDto[];
 }
 

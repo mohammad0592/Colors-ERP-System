@@ -11,13 +11,21 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
     {
         builder.ToTable("WoodenPallets", t =>
         {
-            // A pallet cannot be shipped before it was finished, or finished before it
-            // was started.
+            // A pallet cannot be shipped before it was finished — full, or closed not full
+            // (section 19.21) — or finished before it was started.
             t.HasCheckConstraint(
                 "ck_pallets_dates_in_order",
                 "(\"CompletedAt\" IS NULL OR \"CompletedAt\" >= \"CreatedAt\") "
-                + "AND (\"ShippedAt\" IS NULL OR \"CompletedAt\" IS NOT NULL) "
-                + "AND (\"ShippedAt\" IS NULL OR \"ShippedAt\" >= \"CompletedAt\")");
+                + "AND (\"ClosedAt\" IS NULL OR \"ClosedAt\" >= \"CreatedAt\") "
+                + "AND (\"ShippedAt\" IS NULL OR \"CompletedAt\" IS NOT NULL OR \"ClosedAt\" IS NOT NULL) "
+                + "AND (\"ShippedAt\" IS NULL OR \"ShippedAt\" >= COALESCE(\"CompletedAt\", \"ClosedAt\"))");
+
+            // Closing is a date and a person, both or neither. A pallet is full or closed,
+            // never both, and one that was cancelled never held a bag to close.
+            t.HasCheckConstraint(
+                "ck_pallets_closed_together",
+                "(\"ClosedAt\" IS NULL) = (\"ClosedByUserId\" IS NULL) "
+                + "AND (\"ClosedAt\" IS NULL OR (\"CompletedAt\" IS NULL AND \"CancelledAt\" IS NULL))");
 
             // The two travel together: an empty pallet has neither, a pallet that has
             // taken its first bag has both. One without the other is a half-set pallet
@@ -99,6 +107,11 @@ public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
         builder.HasOne<ApplicationUser>()
             .WithMany()
             .HasForeignKey(e => e.ShippingReversedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.ClosedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Property(e => e.ShippingReversalReason).HasMaxLength(500);

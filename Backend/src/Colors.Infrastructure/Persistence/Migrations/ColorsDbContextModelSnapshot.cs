@@ -812,6 +812,12 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int?>("CancelledByUserId")
                         .HasColumnType("integer");
 
+                    b.Property<DateTimeOffset?>("ClosedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ClosedByUserId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ColorId")
                         .HasColumnType("integer");
 
@@ -857,6 +863,8 @@ namespace Colors.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("CancelledByUserId");
 
+                    b.HasIndex("ClosedByUserId");
+
                     b.HasIndex("ColorId");
 
                     b.HasIndex("CreatedByUserId");
@@ -878,9 +886,11 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         {
                             t.HasCheckConstraint("ck_pallets_cancelled_together", "(\"CancelledAt\" IS NULL) = (\"CancelledByUserId\" IS NULL) AND (\"CancelledAt\" IS NULL) = (\"CancellationReason\" IS NULL) AND (\"CancelledAt\" IS NULL OR (\"CompletedAt\" IS NULL AND \"ShippedAt\" IS NULL))");
 
+                            t.HasCheckConstraint("ck_pallets_closed_together", "(\"ClosedAt\" IS NULL) = (\"ClosedByUserId\" IS NULL) AND (\"ClosedAt\" IS NULL OR (\"CompletedAt\" IS NULL AND \"CancelledAt\" IS NULL))");
+
                             t.HasCheckConstraint("ck_pallets_colour_and_product_together", "(\"ColorId\" IS NULL) = (\"ProductId\" IS NULL)");
 
-                            t.HasCheckConstraint("ck_pallets_dates_in_order", "(\"CompletedAt\" IS NULL OR \"CompletedAt\" >= \"CreatedAt\") AND (\"ShippedAt\" IS NULL OR \"CompletedAt\" IS NOT NULL) AND (\"ShippedAt\" IS NULL OR \"ShippedAt\" >= \"CompletedAt\")");
+                            t.HasCheckConstraint("ck_pallets_dates_in_order", "(\"CompletedAt\" IS NULL OR \"CompletedAt\" >= \"CreatedAt\") AND (\"ClosedAt\" IS NULL OR \"ClosedAt\" >= \"CreatedAt\") AND (\"ShippedAt\" IS NULL OR \"CompletedAt\" IS NOT NULL OR \"ClosedAt\" IS NOT NULL) AND (\"ShippedAt\" IS NULL OR \"ShippedAt\" >= COALESCE(\"CompletedAt\", \"ClosedAt\"))");
 
                             t.HasCheckConstraint("ck_pallets_shipped_together", "(\"ShippedAt\" IS NULL) = (\"ShippedByUserId\" IS NULL)");
 
@@ -2206,6 +2216,11 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("CancelledByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ClosedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Colors.Domain.Entities.MasterData.Color", "Color")

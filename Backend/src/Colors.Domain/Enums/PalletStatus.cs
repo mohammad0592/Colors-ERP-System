@@ -24,4 +24,11 @@ public enum PalletStatus
     /// because a pallet that never held a bag used no wood.
     /// </summary>
     Cancelled = 5,
+
+    /// <summary>
+    /// Holding bags but not full, and closed — put away in the warehouse as it is
+    /// (specification section 19.21). No more bags go on unless it is reopened; it may be
+    /// dispatched like a full one.
+    /// </summary>
+    ClosedNotFull = 6,
 }

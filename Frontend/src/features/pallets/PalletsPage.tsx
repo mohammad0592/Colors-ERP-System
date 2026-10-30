@@ -10,6 +10,7 @@ import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { palletsApi } from './api';
+import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { CancelPalletDialog } from './CancelPalletDialog';
 import { PalletCard } from './PalletCard';
 import { PalletScanBox } from './PalletScanBox';
@@ -46,6 +47,7 @@ export function PalletsPage(): ReactElement {
     null,
   );
   const [labelFor, setLabelFor] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const pallets = useQuery({
@@ -94,6 +96,21 @@ export function PalletsPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: ['inventory'] });
     void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
   }
+
+  // Closing a pallet that is not full to store it, and opening it again (section 19.21).
+  const closeOrReopen = useMutation({
+    mutationFn: ({ id, action }: { id: number; action: 'close' | 'reopen' }) =>
+      action === 'close' ? palletsApi.close(id) : palletsApi.reopen(id),
+    onSuccess: () => {
+      setActionError(null);
+      invalidate();
+    },
+    onError: (caught: unknown) => {
+      setActionError(
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
+      );
+    },
+  });
 
   const startPallet = useMutation({
     mutationFn: (shiftLineId: number) => palletsApi.start(shiftLineId, null),
@@ -235,7 +252,54 @@ export function PalletsPage(): ReactElement {
                     {t('pallets.cancelThis')}
                   </button>
                 )}
+
+                {/* Holding bags but not going to be filled now: closed and put away in
+                    the warehouse as it is, and reopened if it is to be filled later. */}
+                {canPack && open.status === 'Opened' && (
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-ink-soft hover:text-warn hover:underline"
+                    disabled={closeOrReopen.isPending}
+                    onClick={() => {
+                      setConfirm({
+                        title: `${t('pallets.closeNotFull')} — ${open.barcode}`,
+                        message: t('pallets.closeConfirm'),
+                        confirmLabel: t('pallets.closeNotFull'),
+                        onConfirm: () => {
+                          closeOrReopen.mutate({ id: open.id, action: 'close' });
+                        },
+                      });
+                    }}
+                  >
+                    {t('pallets.closeNotFull')}
+                  </button>
+                )}
+                {canPack && open.status === 'ClosedNotFull' && (
+                  <button
+                    type="button"
+                    className="text-sm font-medium text-brand-700 hover:underline"
+                    disabled={closeOrReopen.isPending}
+                    onClick={() => {
+                      closeOrReopen.mutate({ id: open.id, action: 'reopen' });
+                    }}
+                  >
+                    {t('pallets.reopen')}
+                  </button>
+                )}
               </div>
+
+              {open.status === 'ClosedNotFull' && open.closedAt !== null && (
+                <p className="mb-5 rounded-control border border-s-4 border-warn/30 border-s-warn bg-warn-soft px-4 py-3 text-sm text-warn">
+                  {t('pallets.closedBy')} <strong>{open.closedByName}</strong> ·{' '}
+                  {new Date(open.closedAt).toLocaleString('en-GB', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                  . {t('pallets.closedNote')}
+                </p>
+              )}
 
               {open.cancelledAt !== null && (
                 <p className="mb-5 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
@@ -369,6 +433,15 @@ export function PalletsPage(): ReactElement {
           barcodes={[labelFor]}
           onClose={() => {
             setLabelFor(null);
+          }}
+        />
+      )}
+
+      {confirm !== null && (
+        <ConfirmDialog
+          request={confirm}
+          onCancel={() => {
+            setConfirm(null);
           }}
         />
       )}

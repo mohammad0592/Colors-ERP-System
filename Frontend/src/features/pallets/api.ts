@@ -6,7 +6,9 @@ import type { EntryMethod } from '../../lib/barcodeScanner';
  * Specification section 10.
  */
 
-export type PalletStatus = 'Empty' | 'Opened' | 'Completed' | 'Shipped' | 'Cancelled';
+/** ClosedNotFull: holding bags, not full, put away in the warehouse (section 19.21). */
+export type PalletStatus =
+  'Empty' | 'Opened' | 'Completed' | 'ClosedNotFull' | 'Shipped' | 'Cancelled';
 
 export interface PalletSummaryDto {
   id: number;
@@ -32,6 +34,8 @@ export interface PalletSummaryDto {
   createdByName: string;
   createdAt: string;
   completedAt: string | null;
+  /** Set while it stands closed, not full, in the warehouse (section 19.21). */
+  closedAt: string | null;
   shippedAt: string | null;
 }
 
@@ -61,6 +65,7 @@ export interface PalletDto extends PalletSummaryDto {
   cancelledAt: string | null;
   cancelledByName: string | null;
   cancellationReason: string | null;
+  closedByName: string | null;
   notes: string | null;
   bags: PalletBagDto[];
 }
@@ -99,6 +104,20 @@ export const palletsApi = {
     }),
 
   /** Cancels an empty pallet and sends its wooden pallet back to the store. */
+  /** Closes a pallet that is not full, to store it as it is (section 19.21). */
+  close: (palletId: number): Promise<PalletDto> =>
+    apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/close`, {
+      method: 'POST',
+      body: {},
+    }),
+
+  /** Opens a closed pallet again, to take more bags. */
+  reopen: (palletId: number): Promise<PalletDto> =>
+    apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/reopen`, {
+      method: 'POST',
+      body: {},
+    }),
+
   cancel: (palletId: number, reason: string): Promise<PalletDto> =>
     apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/cancel`, {
       method: 'POST',

@@ -243,7 +243,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                     p.Product is null
                         ? "Nothing on it yet"
                         : $"{p.Product.Name} · {p.Color?.Name}",
-                    p.Status.ToString(),
+                    // Spaced like the rolls and bags: "Closed not full", not "ClosedNotFull".
+                    Spaced(p.Status.ToString()),
                     p.Status is PalletStatus.Empty or PalletStatus.Opened,
                     $"{live.Count} bag{(live.Count == 1 ? "" : "s")} · {p.ShiftLine.ProductionLine.Name}",
                     live.Sum(a => a.ProducedBag.Weight),

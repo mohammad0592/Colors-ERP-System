@@ -141,7 +141,7 @@ public class DashboardService(ColorsDbContext db, IReportsService reports) : IDa
 
         var building = await db.WoodenPallets
             .CountAsync(
-                p => p.CompletedAt == null && p.ShippedAt == null && p.CancelledAt == null,
+                p => p.CompletedAt == null && p.ClosedAt == null && p.ShippedAt == null && p.CancelledAt == null,
                 cancellationToken);
 
         Add("pallet-open", "pallet being built", "pallets being built", building,

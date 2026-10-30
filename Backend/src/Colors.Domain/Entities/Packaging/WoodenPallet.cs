@@ -51,9 +51,20 @@ public class WoodenPallet
     public DateTimeOffset? CompletedAt { get; set; }
 
     /// <summary>
-    /// Also an event: the pallet left the factory. Only a finished pallet can, which the
-    /// database itself enforces — <c>ck_pallets_dates_in_order</c> refuses a shipping
-    /// date without a completion date, or one that comes before it.
+    /// Set when a pallet that is not full is closed and put away in the warehouse
+    /// (specification section 19.21) — an event, like completing, so a date. Cleared when
+    /// it is reopened to take more bags. Never set on a full pallet: a full one is
+    /// completed, not closed.
+    /// </summary>
+    public DateTimeOffset? ClosedAt { get; set; }
+
+    /// <summary>Who closed it. Travels with <see cref="ClosedAt"/>, never alone.</summary>
+    public int? ClosedByUserId { get; set; }
+
+    /// <summary>
+    /// Also an event: the pallet left the factory. Only a full or a closed pallet can,
+    /// which the database itself enforces — <c>ck_pallets_dates_in_order</c> refuses a
+    /// shipping date with neither, or one that comes before it.
     /// </summary>
     public DateTimeOffset? ShippedAt { get; set; }
 
@@ -118,6 +129,11 @@ public class WoodenPallet
             if (CompletedAt is not null)
             {
                 return PalletStatus.Completed;
+            }
+
+            if (ClosedAt is not null)
+            {
+                return PalletStatus.ClosedNotFull;
             }
 
             return Assignments.Any(a => a.ReversedAt is null)

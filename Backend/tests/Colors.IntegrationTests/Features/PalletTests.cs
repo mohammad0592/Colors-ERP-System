@@ -740,7 +740,7 @@ public class PalletTests(DatabaseFixture fixture)
             new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
 
         Assert.False(shipped.IsSuccess);
-        Assert.Contains("not finished", shipped.Message!, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("pallet.notFinished", shipped.MessageCode);
     }
 
     [Fact]
@@ -925,5 +925,135 @@ public class PalletTests(DatabaseFixture fixture)
 
         Assert.False(shipped.IsSuccess);
         Assert.Contains("scan", shipped.Message!, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ---------- closed, not full (section 19.21) ----------
+
+    /// <summary>A pallet holding some bags of a run, not full.</summary>
+    private static async Task<(PalletDto Pallet, IReadOnlyList<ProducedBagDto> Bags)> PartPalletAsync(
+        ColorsDbContext db,
+        FactoryData.Ids ids,
+        string suffix,
+        int bagsMade,
+        int bagsOn)
+    {
+        var bags = await BagsAsync(db, ids, suffix, bagsMade);
+        var pallet = await PalletAsync(db, ids);
+        var service = NewService(db);
+
+        PalletDto latest = pallet;
+        foreach (var bag in bags.Take(bagsOn))
+        {
+            var scanned = await service.ScanBagAsync(pallet.Id, new ScanBagRequest(bag.Barcode, null), ids.UserId);
+            Assert.True(scanned.IsSuccess, scanned.Message);
+            latest = scanned.Value!;
+        }
+
+        return (latest, bags);
+    }
+
+    [Fact]
+    public async Task A_pallet_that_is_not_full_can_be_closed_and_takes_no_more_bags()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCL1");
+        var (pallet, bags) = await PartPalletAsync(db, ids, "PCL1", 4, 3);
+        var service = NewService(db);
+
+        var closed = await service.ClosePalletAsync(pallet.Id, ids.UserId);
+
+        Assert.True(closed.IsSuccess, closed.Message);
+        Assert.Equal(PalletStatus.ClosedNotFull.ToString(), closed.Value!.Status);
+        Assert.False(closed.Value.IsOpen);
+        Assert.NotNull(closed.Value.ClosedAt);
+        Assert.NotNull(closed.Value.ClosedByName);
+        Assert.Equal(3, closed.Value.BagCount);
+
+        var another = await service.ScanBagAsync(pallet.Id, new ScanBagRequest(bags[3].Barcode, null), ids.UserId);
+        Assert.Equal("pallet.closedReopenFirst", another.MessageCode);
+
+        // Off the list of pallets being built, onto the list of stock that can leave.
+        Assert.DoesNotContain(await service.GetPalletsAsync(openOnly: true), p => p.Id == pallet.Id);
+        Assert.Contains(await service.GetPalletsInStockAsync(), p => p.Id == pallet.Id);
+    }
+
+    [Fact]
+    public async Task Only_a_pallet_being_built_with_bags_on_it_is_closed()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCL2");
+        var service = NewService(db);
+        var empty = await PalletAsync(db, ids);
+
+        // An empty one is cancelled instead, and its wood goes back.
+        var closedEmpty = await service.ClosePalletAsync(empty.Id, ids.UserId);
+        Assert.Equal("pallet.closeEmpty", closedEmpty.MessageCode);
+
+        var (pallet, _) = await PartPalletAsync(db, ids, "PCL2", 2, 2);
+        await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        var twice = await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        Assert.Equal("pallet.closeNotBuilding", twice.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_closed_pallet_can_be_reopened_and_filled()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCL3");
+        var (pallet, bags) = await PartPalletAsync(db, ids, "PCL3", 3, 2);
+        var service = NewService(db);
+        await service.ClosePalletAsync(pallet.Id, ids.UserId);
+
+        var reopened = await service.ReopenPalletAsync(pallet.Id);
+        Assert.True(reopened.IsSuccess, reopened.Message);
+        Assert.Equal(PalletStatus.Opened.ToString(), reopened.Value!.Status);
+        Assert.Null(reopened.Value.ClosedAt);
+
+        var more = await service.ScanBagAsync(pallet.Id, new ScanBagRequest(bags[2].Barcode, null), ids.UserId);
+        Assert.True(more.IsSuccess, more.Message);
+        Assert.Equal(3, more.Value!.BagCount);
+
+        var notClosed = await service.ReopenPalletAsync(pallet.Id);
+        Assert.Equal("pallet.reopenNotClosed", notClosed.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_closed_pallet_can_be_dispatched_and_comes_back_closed()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCL4");
+        var (pallet, _) = await PartPalletAsync(db, ids, "PCL4", 2, 2);
+        var service = NewService(db);
+
+        // Still being built: it may not leave.
+        var early = await service.ShipPalletAsync(new ShipPalletRequest(null, pallet.Id), ids.UserId);
+        Assert.Equal("pallet.notFinished", early.MessageCode);
+
+        await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        var shipped = await service.ShipPalletAsync(new ShipPalletRequest(null, pallet.Id), ids.UserId);
+        Assert.True(shipped.IsSuccess, shipped.Message);
+        Assert.Equal(PalletStatus.Shipped.ToString(), shipped.Value!.Status);
+
+        // A wrong dispatch undone puts it back where it stood: closed, not full.
+        var back = await service.ReverseShipmentAsync(pallet.Id, new ReverseShipmentRequest("Wrong lorry"), ids.UserId);
+        Assert.True(back.IsSuccess, back.Message);
+        Assert.Equal(PalletStatus.ClosedNotFull.ToString(), back.Value!.Status);
+    }
+
+    [Fact]
+    public async Task Taking_a_bag_off_a_closed_pallet_opens_it_again()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCL5");
+        var (pallet, _) = await PartPalletAsync(db, ids, "PCL5", 2, 2);
+        var service = NewService(db);
+        var closed = await service.ClosePalletAsync(pallet.Id, ids.UserId);
+
+        var reversed = await service.ReverseAssignmentAsync(
+            closed.Value!.Bags[0].AssignmentId, new ReverseAssignmentRequest("Torn bag"), ids.UserId);
+
+        Assert.True(reversed.IsSuccess, reversed.Message);
+        Assert.Equal(PalletStatus.Opened.ToString(), reversed.Value!.Status);
+        Assert.Null(reversed.Value.ClosedAt);
     }
 }

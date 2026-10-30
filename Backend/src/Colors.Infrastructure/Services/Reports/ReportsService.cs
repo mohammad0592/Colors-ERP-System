@@ -338,6 +338,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 ProductName = p.Product == null ? null : p.Product.Name,
                 BagsPerPallet = p.Product == null ? 0 : p.Product.BagsPerPallet,
                 Completed = p.CompletedAt != null,
+                Closed = p.ClosedAt != null,
                 Cancelled = p.CancelledAt != null,
                 Bags = p.Assignments.Count(a => a.ReversedAt == null),
                 Pieces = p.Assignments
@@ -372,7 +373,8 @@ public class ReportsService(ColorsDbContext db) : IReportsService
             pallets.Count,
             pallets.Count(p => p.Completed && !p.Cancelled),
             pallets.Count(p => p.Cancelled),
-            pallets.Count(p => !p.Completed && !p.Cancelled),
+            pallets.Count(p => !p.Completed && !p.Closed && !p.Cancelled),
+            pallets.Count(p => p.Closed),
             products));
     }
 

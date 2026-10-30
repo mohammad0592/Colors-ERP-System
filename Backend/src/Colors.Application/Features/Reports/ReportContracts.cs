@@ -163,6 +163,9 @@ public sealed record PalletProductionReportDto(
     // their first bag lands, so they cannot be counted under one — shown on their own
     // rather than left out silently.
     int PalletsStillOpen,
+    // Closed with bags but not full, and stored as they are (section 19.21). Not counted
+    // under a product, which totals full pallets.
+    int PalletsClosedNotFull,
     IReadOnlyList<PalletProductLineDto> Products);
 
 // ---------- recycled material ----------

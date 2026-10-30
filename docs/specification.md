@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty changes, from watching the factory use the system. They are written here rather
+Twenty-one changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2406,6 +2406,32 @@ a trainee, and can be taken off the list; nothing more.
 The data underneath is unchanged (`ShiftWorkerRoles`). Jobs already recorded on earlier
 shifts stay as they were: a person loaded with jobs is saved back with the same ones, so
 correcting a past shift does not quietly wipe them.
+
+### 19.21 Closed – not full
+
+A pallet holding bags that will not be filled now — the run ended, the product changed —
+is stored in the warehouse as it is. That is a state of its own, **Closed – not full**,
+beside Empty, Being built, Full, Shipped and Cancelled.
+
+**Decided, and built:**
+
+- **Closing.** A pallet being built, with at least one bag on it, can be closed from the
+  pallet panel (*Close – not full*, after a confirmation) by whoever builds pallets. It is
+  recorded like the other events — a date and who did it (`ClosedAt`, `ClosedByUserId`) —
+  and the status is still worked out from the dates, never stored. An empty pallet is
+  cancelled instead, so its wood goes back; a full one is already finished.
+- **Closed means no more bags.** A bag scanned onto it is refused, saying to reopen it.
+  It leaves the list of pallets being built and the dashboard's count of them.
+- **Reopening.** *Reopen to add bags* puts it back to being built, and it fills and
+  completes as any other. Taking a bag off a closed pallet reopens it too, the same as
+  taking one off a full pallet.
+- **Dispatch.** A closed pallet is stock that can leave, like a full one: it is offered on
+  the Dispatch screen, oldest first, and ships the same way. Undoing a dispatch puts it
+  back to Closed – not full. The database holds the rule: a shipping date needs a
+  completion or a closing date before it (`ck_pallets_dates_in_order`), and a pallet is
+  never both full and closed, nor closed and cancelled (`ck_pallets_closed_together`).
+- **Reports.** The pallet production report counts closed pallets on their own; they are
+  not counted under a product, which totals full pallets.
 ---
 ---
 ---

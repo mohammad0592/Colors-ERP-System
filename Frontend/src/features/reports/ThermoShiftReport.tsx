@@ -1,6 +1,8 @@
 import { useState, type ReactElement, type ReactNode } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../lib/apiClient';
+import { PalletStatusBadge } from '../pallets/PalletStatusBadge';
+import type { PalletStatus } from '../pallets/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { reportsApi, type ThermoShiftReportDto } from './api';
 
@@ -240,7 +242,10 @@ export function ThermoShiftReport({
                 <td className="px-3 py-2 text-ink-soft">{pallet.colorName ?? '—'}</td>
                 <Num value={pallet.bagCount} />
                 <Num value={pallet.pieceCount} />
-                <td className="px-3 py-2 text-ink-soft">{pallet.status}</td>
+                <td className="px-3 py-2">
+                  {/* The server sends the pallet's own status name, one of these. */}
+                  <PalletStatusBadge status={pallet.status as PalletStatus} />
+                </td>
                 <td className="px-3 py-2 font-mono text-xs text-ink-muted">
                   {pallet.rollCodes.join(', ') || '—'}
                 </td>

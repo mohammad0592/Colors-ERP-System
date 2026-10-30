@@ -29,7 +29,9 @@ public sealed record PalletSummaryDto(
     string CreatedByName,
     DateTimeOffset CreatedAt,
     DateTimeOffset? CompletedAt,
-    DateTimeOffset? ShippedAt);
+    DateTimeOffset? ShippedAt,
+    // Set while it stands closed, not full, in the warehouse (section 19.21).
+    DateTimeOffset? ClosedAt);
 
 public sealed record PalletBagDto(
     int AssignmentId,
@@ -77,6 +79,9 @@ public sealed record PalletDto(
     DateTimeOffset? CancelledAt,
     string? CancelledByName,
     string? CancellationReason,
+    // Set only while it stands closed, not full, in the warehouse (section 19.21).
+    DateTimeOffset? ClosedAt,
+    string? ClosedByName,
     string? Notes,
     IReadOnlyList<PalletBagDto> Bags);
 
@@ -167,6 +172,20 @@ public interface IPalletService
         int palletId,
         CancelPalletRequest request,
         int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Closes a pallet that has bags but is not full, to store it in the warehouse as it
+    /// is (section 19.21).
+    /// </summary>
+    Task<Result<PalletDto>> ClosePalletAsync(
+        int palletId,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Opens a closed pallet again, to take more bags.</summary>
+    Task<Result<PalletDto>> ReopenPalletAsync(
+        int palletId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

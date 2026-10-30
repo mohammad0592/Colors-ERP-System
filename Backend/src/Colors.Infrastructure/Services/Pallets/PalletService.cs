@@ -36,7 +36,8 @@ public class PalletService(
         var pallets = await PalletQuery()
             .Where(p => shiftLineId == null || p.ShiftLineId == shiftLineId)
             .Where(p => !openOnly
-                        || (p.CompletedAt == null && p.ShippedAt == null && p.CancelledAt == null))
+                        || (p.CompletedAt == null && p.ClosedAt == null
+                            && p.ShippedAt == null && p.CancelledAt == null))
             .OrderByDescending(p => p.PalletNumber)
             .Take(300)
             .ToListAsync(cancellationToken);
@@ -293,6 +294,68 @@ public class PalletService(
         db.Materials.FirstOrDefaultAsync(
             m => m.CountedAs == CountedPackaging.WoodenPallet && m.IsActive, cancellationToken);
 
+    public async Task<Result<PalletDto>> ClosePalletAsync(
+        int palletId,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
+        if (pallet is null)
+        {
+            return PalletNotFound();
+        }
+
+        // Only one being built and holding bags. An empty one is cancelled, not closed —
+        // its wood goes back — and a full one is already finished.
+        switch (pallet.Status)
+        {
+            case PalletStatus.Empty:
+                return Invalid(
+                    $"Pallet {pallet.PalletNumber} has nothing on it. Cancel it instead, and its wooden pallet goes back to the store.",
+                    "pallet.closeEmpty",
+                    pallet.PalletNumber.ToString());
+            case PalletStatus.Opened:
+                break;
+            default:
+                return Invalid(
+                    $"Pallet {pallet.PalletNumber} is not being built, so there is nothing to close.",
+                    "pallet.closeNotBuilding",
+                    pallet.PalletNumber.ToString());
+        }
+
+        pallet.ClosedAt = timeProvider.GetUtcNow();
+        pallet.ClosedByUserId = userId;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadAsync(palletId, cancellationToken);
+    }
+
+    public async Task<Result<PalletDto>> ReopenPalletAsync(
+        int palletId,
+        CancellationToken cancellationToken = default)
+    {
+        var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
+        if (pallet is null)
+        {
+            return PalletNotFound();
+        }
+
+        // A shipped pallet is not in the factory to take bags; its shipping is undone first.
+        if (pallet.Status != PalletStatus.ClosedNotFull)
+        {
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} is not closed, so it cannot be reopened.",
+                "pallet.reopenNotClosed",
+                pallet.PalletNumber.ToString());
+        }
+
+        pallet.ClosedAt = null;
+        pallet.ClosedByUserId = null;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadAsync(palletId, cancellationToken);
+    }
+
     public async Task<Result<PalletDto>> ScanBagAsync(
         int palletId,
         ScanBagRequest request,
@@ -327,6 +390,15 @@ public class PalletService(
             return Invalid(
                 $"Pallet {pallet.PalletNumber} is full. Start a new one for the next bag.",
                 "pallet.isFull",
+                pallet.PalletNumber.ToString());
+        }
+
+        // Put away as it was. More bags go on only once somebody reopens it on purpose.
+        if (pallet.ClosedAt is not null)
+        {
+            return Invalid(
+                $"Pallet {pallet.PalletNumber} is closed. Reopen it to add more bags.",
+                "pallet.closedReopenFirst",
                 pallet.PalletNumber.ToString());
         }
 
@@ -440,8 +512,12 @@ public class PalletService(
         // it be scanned again precisely because this row is now reversed.
         assignment.ProducedBag.Status = ProducedBagStatus.Available;
 
-        // A pallet that was full is not full any more.
+        // A pallet that was full is not full any more, and one that was closed is open
+        // again — the same as a full one — so it is not left closed with a gap, or with
+        // nothing on it at all.
         assignment.WoodenPallet.CompletedAt = null;
+        assignment.WoodenPallet.ClosedAt = null;
+        assignment.WoodenPallet.ClosedByUserId = null;
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -454,13 +530,15 @@ public class PalletService(
         CancellationToken cancellationToken = default)
     {
         var pallets = await PalletQuery()
-            .Where(p => p.CompletedAt != null
+            // Full, or closed not full and put away (section 19.21): both are stock that
+            // can leave.
+            .Where(p => (p.CompletedAt != null || p.ClosedAt != null)
                         && p.ShippedAt == null
                         && p.CancelledAt == null)
             // Oldest first. A pallet that has stood in the factory since March should go
             // before one finished this morning, and the man loading the lorry has no
             // other way of knowing which is which.
-            .OrderBy(p => p.CompletedAt)
+            .OrderBy(p => p.CompletedAt ?? p.ClosedAt)
             .ToListAsync(cancellationToken);
 
         var names = await UserNamesAsync(pallets.Select(p => p.CreatedByUserId), cancellationToken);
@@ -500,13 +578,13 @@ public class PalletService(
                 pallet.PalletNumber.ToString());
         }
 
-        if (pallet.CompletedAt is null)
+        if (pallet.CompletedAt is null && pallet.ClosedAt is null)
         {
             // The database would refuse this anyway - ck_pallets_dates_in_order will not
-            // take a shipping date without a completion date. Said here in words the man
-            // on the floor can act on, rather than as a constraint violation.
+            // take a shipping date without a completion or closing date. Said here in
+            // words the man on the floor can act on, rather than as a constraint violation.
             return Invalid(
-                $"Pallet {pallet.PalletNumber} is not finished yet. Only a full pallet leaves.",
+                $"Pallet {pallet.PalletNumber} is still being built. Only a full or a closed pallet leaves.",
                 "pallet.notFinished",
                 pallet.PalletNumber.ToString());
         }
@@ -755,7 +833,8 @@ public class PalletService(
             names.GetValueOrDefault(pallet.CreatedByUserId, "—"),
             pallet.CreatedAt,
             pallet.CompletedAt,
-            pallet.ShippedAt);
+            pallet.ShippedAt,
+            pallet.ClosedAt);
     }
 
     private async Task<PalletDto> ToDtoAsync(
@@ -776,6 +855,11 @@ public class PalletService(
         if (pallet.ShippingReversedByUserId is not null)
         {
             userIds.Add(pallet.ShippingReversedByUserId.Value);
+        }
+
+        if (pallet.ClosedByUserId is not null)
+        {
+            userIds.Add(pallet.ClosedByUserId.Value);
         }
 
         userIds.AddRange(pallet.Assignments.Select(a => a.AssignedByUserId));
@@ -828,6 +912,10 @@ public class PalletService(
                 ? null
                 : names.GetValueOrDefault(pallet.CancelledByUserId.Value, "—"),
             pallet.CancellationReason,
+            pallet.ClosedAt,
+            pallet.ClosedByUserId is null
+                ? null
+                : names.GetValueOrDefault(pallet.ClosedByUserId.Value, "—"),
             pallet.Notes,
             pallet.Assignments
                 // Newest first: the scan just made is the one being checked.

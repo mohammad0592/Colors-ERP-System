@@ -96,6 +96,25 @@ public class PalletsController(IPalletService pallets) : ApiControllerBase
             await pallets.CancelPalletAsync(id, request, CurrentUserId(), cancellationToken));
     }
 
+    /// <summary>
+    /// Closes a pallet that is not full, to store it in the warehouse as it is (section
+    /// 19.21). Floor work, the same as building it.
+    /// </summary>
+    [HttpPost("{id:int}/close")]
+    [Authorize(Roles = CanPack)]
+    public async Task<IActionResult> ClosePallet(int id, CancellationToken cancellationToken)
+    {
+        return ToResponse(await pallets.ClosePalletAsync(id, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>Opens a closed pallet again, to take more bags.</summary>
+    [HttpPost("{id:int}/reopen")]
+    [Authorize(Roles = CanPack)]
+    public async Task<IActionResult> ReopenPallet(int id, CancellationToken cancellationToken)
+    {
+        return ToResponse(await pallets.ReopenPalletAsync(id, cancellationToken));
+    }
+
     /// <summary>Takes a bag back off. The scan stays in the history with its reason.</summary>
     [HttpPost("assignments/{assignmentId:int}/reverse")]
     [Authorize(Roles = CanReverse)]

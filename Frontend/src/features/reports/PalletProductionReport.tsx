@@ -30,17 +30,26 @@ export function PalletProductionReport({ range }: { range: DateRange }): ReactEl
 
   return (
     <>
-      <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Figure label={t('state.finished')} value={String(data.palletsCompleted)}>
           full and ready to ship
         </Figure>
         <Figure label={t('reports.stillFilling')} value={String(data.palletsStillOpen)}>
           no product until the first bag
         </Figure>
+        <Figure
+          label={t('status.pallet.closedNotFull')}
+          value={String(data.palletsClosedNotFull)}
+        >
+          {t('reports.closedNotFullNote')}
+        </Figure>
         <Figure label={t('reports.cancelled')} value={String(data.palletsCancelled)}>
           their wood went back to the store
         </Figure>
-        <Figure label={t('reports.startedAltogether')} value={String(data.palletsStarted)}>
+        <Figure
+          label={t('reports.startedAltogether')}
+          value={String(data.palletsStarted)}
+        >
           one wooden pallet each
         </Figure>
       </section>
