@@ -25,7 +25,7 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
         var report = await db.ShiftReports
             .Include(r => r.Shift)
             .Include(r => r.Lines).ThenInclude(l => l.ProductionLine)
-            .Include(r => r.Lines).ThenInclude(l => l.Workers)
+            .Include(r => r.Lines).ThenInclude(l => l.Workers).ThenInclude(w => w.StaffMember)
             .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == shiftReportId, cancellationToken);
 
@@ -74,7 +74,7 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
 
         var userIds = rolls
             .SelectMany(r => new int?[] { r.ProducedByUserId, r.MeasuredByUserId, r.TestReport?.TestedByUserId })
-            .Concat(line.Workers.Select(w => (int?)w.UserId))
+            .Concat(line.Workers.Select(w => w.UserId))
             .Append(line.OperatorUserId)
             .OfType<int>()
             .Distinct()
@@ -160,8 +160,9 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
             Format(line.ProductionEndTime),
             line.DowntimeHours,
             line.ActualProductionHours,
-            line.Workers.Where(w => !w.IsTrainee).Select(w => NameOf(w.UserId)).Order().ToList(),
-            line.Workers.Where(w => w.IsTrainee).Select(w => NameOf(w.UserId)).Order().ToList(),
+            // A staff member with no account brings his own name (section 19.19).
+            line.Workers.Where(w => !w.IsTrainee).Select(w => w.StaffMember?.FullName ?? NameOf(w.UserId ?? 0)).Order().ToList(),
+            line.Workers.Where(w => w.IsTrainee).Select(w => w.StaffMember?.FullName ?? NameOf(w.UserId ?? 0)).Order().ToList(),
             line.Notes,
             rolls.Select(r => r.Batch.BatchNumber).Distinct().Order().ToList(),
             rows,

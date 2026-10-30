@@ -25,7 +25,7 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
         var report = await db.ShiftReports
             .Include(r => r.Shift)
             .Include(r => r.Lines).ThenInclude(l => l.ProductionLine)
-            .Include(r => r.Lines).ThenInclude(l => l.Workers)
+            .Include(r => r.Lines).ThenInclude(l => l.Workers).ThenInclude(w => w.StaffMember)
             .AsSplitQuery()
             .FirstOrDefaultAsync(r => r.Id == shiftReportId, cancellationToken);
 
@@ -96,7 +96,7 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
         var pallets = await PalletsAsync(line.Id, cancellationToken);
         var (recorded, packaging) = await PackagingAsync(line.Id, cancellationToken);
 
-        var userIds = line.Workers.Select(w => w.UserId)
+        var userIds = line.Workers.Where(w => w.UserId is not null).Select(w => w.UserId!.Value)
             .Concat(line.OperatorUserId is null ? [] : [line.OperatorUserId.Value])
             .Distinct()
             .ToList();
@@ -128,8 +128,9 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             Format(line.ProductionEndTime),
             line.DowntimeHours,
             line.ActualProductionHours,
-            line.Workers.Where(w => !w.IsTrainee).Select(w => NameOf(w.UserId)).Order().ToList(),
-            line.Workers.Where(w => w.IsTrainee).Select(w => NameOf(w.UserId)).Order().ToList(),
+            // A staff member with no account brings his own name (section 19.19).
+            line.Workers.Where(w => !w.IsTrainee).Select(w => w.StaffMember?.FullName ?? NameOf(w.UserId ?? 0)).Order().ToList(),
+            line.Workers.Where(w => w.IsTrainee).Select(w => w.StaffMember?.FullName ?? NameOf(w.UserId ?? 0)).Order().ToList(),
             line.Notes,
             rolls,
             // Every roll that went in, as the form's own total adds them; the yield block

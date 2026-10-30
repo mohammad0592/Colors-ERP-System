@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Eighteen changes, from watching the factory use the system. They are written here rather
+Nineteen changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2362,6 +2362,36 @@ the check back, the range belongs on the recipe, and the verdict follows from th
   three the person may see — an operator's own line — so a tablet's bookmark keeps
   working.
 
+
+### 19.19 Staff — and staff who have no account
+
+**Decided, and built:**
+
+- **"Crew" is now "Staff"** wherever the screens and the extruder report name the people
+  who worked a line. (The thermo report keeps the factory's own form as it is.)
+- **Two kinds of staff.** The system's users, each with an account and roles, as before;
+  and **staff with no account** — no password, no role, nothing to sign in with — who are
+  only recorded on the shifts they work. Most of the floor never touches a tablet, and an
+  account each would fill the user list with logins nobody uses.
+- They are kept apart from the users, in `StaffMembers`: a name, a number if the factory
+  gives them one, and whether they still work here. A number is unique, and one that
+  belongs to a system user is refused — he is already on the list to choose from.
+- **Putting them on a shift.** A line's staff list in its shift configuration offers both
+  kinds, under separate headings, and marks staff with no account as such. Each may be a
+  trainee and may have the jobs he did ticked, the same as a user. Somebody missing from
+  the list is added right there with a name and an optional number, by whoever fills in
+  the line — its operator, the supervisor or the administrator — and goes straight onto
+  the shift.
+- **Keeping the list.** The Users screen has a *Staff without an account* section where
+  the administrator adds, renames and records that somebody has left. Nobody is deleted:
+  the shifts he worked go on naming him. The supervisor may correct the list too, through
+  the same API.
+- **In the data.** A shift's staff row (`ShiftWorkers`) names either a user or a staff
+  member — exactly one, which the database holds as a check constraint — and the same
+  person cannot be listed twice on one line. The shift reports name staff with no account
+  alongside everyone else.
+
+---
 ---
 ---
 ---

@@ -1578,18 +1578,30 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int>("ShiftLineId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("UserId")
+                    b.Property<int?>("StaffMemberId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("UserId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("StaffMemberId");
+
                     b.HasIndex("UserId");
+
+                    b.HasIndex("ShiftLineId", "StaffMemberId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_shift_workers_line_staff");
 
                     b.HasIndex("ShiftLineId", "UserId")
                         .IsUnique()
                         .HasDatabaseName("ux_shift_workers_line_user");
 
-                    b.ToTable("ShiftWorkers", (string)null);
+                    b.ToTable("ShiftWorkers", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_shift_workers_one_person", "(\"UserId\" IS NULL) <> (\"StaffMemberId\" IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftWorkerRole", b =>
@@ -1615,6 +1627,43 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_shift_worker_roles_worker_role");
 
                     b.ToTable("ShiftWorkerRoles", (string)null);
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.Shifts.StaffMember", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EmployeeNumber")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("EmployeeNumber")
+                        .IsUnique()
+                        .HasDatabaseName("ux_staff_members_employee_number");
+
+                    b.ToTable("StaffMembers", (string)null);
                 });
 
             modelBuilder.Entity("Colors.Domain.Entities.System.AuditEntry", b =>
@@ -2482,11 +2531,17 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Colors.Domain.Entities.Shifts.StaffMember", "StaffMember")
+                        .WithMany()
+                        .HasForeignKey("StaffMemberId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("StaffMember");
                 });
 
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftWorkerRole", b =>
@@ -2501,6 +2556,15 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .WithMany("Roles")
                         .HasForeignKey("ShiftWorkerId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.Shifts.StaffMember", b =>
+                {
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 

@@ -15,7 +15,10 @@
 export type ShiftReportStatus = 'Open' | 'Closed' | 'Correcting';
 
 export interface ShiftWorkerDto {
-  userId: number;
+  /** One of the two: a system user, or a staff member with no account (section 19.19). */
+  userId: number | null;
+  staffMemberId: number | null;
+  /** Empty for a staff member who has no number. */
   employeeNumber: string;
   fullName: string;
   /**
@@ -28,7 +31,9 @@ export interface ShiftWorkerDto {
 }
 
 export interface SaveShiftWorker {
-  userId: number;
+  /** One of the two: a system user, or a staff member with no account (section 19.19). */
+  userId: number | null;
+  staffMemberId: number | null;
   roleInShiftIds: number[];
   isTrainee: boolean;
 }

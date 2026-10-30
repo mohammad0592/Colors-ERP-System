@@ -92,6 +92,8 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<ShiftWorker> ShiftWorkers => Set<ShiftWorker>();
     public DbSet<ShiftWorkerRole> ShiftWorkerRoles => Set<ShiftWorkerRole>();
 
+    public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
+
     /// <summary>
     /// Hands out the recipe numbers the factory says out loud — "recipe 8".
     ///

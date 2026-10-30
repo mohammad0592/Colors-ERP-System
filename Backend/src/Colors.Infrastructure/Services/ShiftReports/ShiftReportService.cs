@@ -353,6 +353,7 @@ public class ShiftReportService(
             .Select(w => new ShiftWorker
             {
                 UserId = w.UserId,
+                StaffMemberId = w.StaffMemberId,
                 IsTrainee = w.IsTrainee,
                 Roles = w.RoleInShiftIds
                     .Distinct()
@@ -773,7 +774,8 @@ public class ShiftReportService(
         db.Set<ShiftReport>()
             .Include(r => r.Shift)
             .Include(r => r.Lines).ThenInclude(l => l.ProductionLine)
-            .Include(r => r.Lines).ThenInclude(l => l.Workers).ThenInclude(w => w.Roles);
+            .Include(r => r.Lines).ThenInclude(l => l.Workers).ThenInclude(w => w.Roles)
+            .Include(r => r.Lines).ThenInclude(l => l.Workers).ThenInclude(w => w.StaffMember);
 
     /// <summary>Lines always read in the same order, so the screen never reshuffles.</summary>
     private static IEnumerable<ShiftLine> OrderedLines(ShiftReport report) =>
@@ -783,23 +785,37 @@ public class ShiftReportService(
         IReadOnlyList<SaveShiftWorkerRequest> workers,
         CancellationToken cancellationToken)
     {
-        if (workers.Select(w => w.UserId).Distinct().Count() != workers.Count)
-        {
-            return "Each person may be listed once on a line.";
-        }
-
         if (workers.Count == 0)
         {
             return null;
         }
 
-        var userIds = workers.Select(w => w.UserId).ToList();
-        var active = await db.Set<ApplicationUser>()
-            .CountAsync(u => userIds.Contains(u.Id) && u.IsActive, cancellationToken);
-
-        if (active != userIds.Count)
+        // A system user or a staff member with no account — one, not both (section 19.19).
+        if (workers.Any(w => (w.UserId is null) == (w.StaffMemberId is null)))
         {
-            return "Every person on the shift must be an active user.";
+            return "Each person on the staff is either a system user or a staff member, not both.";
+        }
+
+        var userIds = workers.Where(w => w.UserId is not null).Select(w => w.UserId!.Value).ToList();
+        var staffIds = workers.Where(w => w.StaffMemberId is not null).Select(w => w.StaffMemberId!.Value).ToList();
+
+        if (userIds.Distinct().Count() != userIds.Count || staffIds.Distinct().Count() != staffIds.Count)
+        {
+            return "Each person may be listed once on a line.";
+        }
+
+        var activeUsers = userIds.Count == 0
+            ? 0
+            : await db.Set<ApplicationUser>()
+                .CountAsync(u => userIds.Contains(u.Id) && u.IsActive, cancellationToken);
+        var activeStaff = staffIds.Count == 0
+            ? 0
+            : await db.StaffMembers
+                .CountAsync(s => staffIds.Contains(s.Id) && s.IsActive, cancellationToken);
+
+        if (activeUsers != userIds.Count || activeStaff != staffIds.Count)
+        {
+            return "Every person on the staff must still work here.";
         }
 
         // Listing a job twice for one man says nothing the first entry did not, and it
@@ -851,9 +867,9 @@ public class ShiftReportService(
             yield return line.OperatorUserId!.Value;
         }
 
-        foreach (var worker in report.Lines.SelectMany(l => l.Workers))
+        foreach (var worker in report.Lines.SelectMany(l => l.Workers).Where(w => w.UserId is not null))
         {
-            yield return worker.UserId;
+            yield return worker.UserId!.Value;
         }
     }
 
@@ -887,7 +903,7 @@ public class ShiftReportService(
         var names = await UserNamesAsync(UserIdsOf(report), cancellationToken);
 
         var workers = report.Lines.SelectMany(l => l.Workers).ToList();
-        var workerIds = workers.Select(w => w.UserId).Distinct().ToList();
+        var workerIds = workers.Where(w => w.UserId is not null).Select(w => w.UserId!.Value).Distinct().ToList();
 
         var employeeNumbers = await db.Set<ApplicationUser>()
             .Where(u => workerIds.Contains(u.Id))
@@ -946,8 +962,13 @@ public class ShiftReportService(
                     line.Workers
                         .Select(w => new ShiftWorkerDto(
                             w.UserId,
-                            employeeNumbers.GetValueOrDefault(w.UserId, string.Empty),
-                            names.GetValueOrDefault(w.UserId, "—"),
+                            w.StaffMemberId,
+                            // A staff member brings his own name and number; a user's are
+                            // looked up, as Identity is not part of the model.
+                            w.StaffMember is { } staff
+                                ? staff.EmployeeNumber ?? string.Empty
+                                : employeeNumbers.GetValueOrDefault(w.UserId ?? 0, string.Empty),
+                            w.StaffMember?.FullName ?? names.GetValueOrDefault(w.UserId ?? 0, "—"),
                             w.Roles.Select(r => r.RoleId).ToList(),
                             w.Roles
                                 .Select(r => roleNames.GetValueOrDefault(r.RoleId, string.Empty))

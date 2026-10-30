@@ -105,13 +105,26 @@ public class ShiftWorkerConfiguration : IEntityTypeConfiguration<ShiftWorker>
 {
     public void Configure(EntityTypeBuilder<ShiftWorker> builder)
     {
-        builder.ToTable("ShiftWorkers");
+        // A system user or a staff member with no account — exactly one (section 19.19).
+        builder.ToTable("ShiftWorkers", t => t.HasCheckConstraint(
+            "ck_shift_workers_one_person",
+            "(\"UserId\" IS NULL) <> (\"StaffMemberId\" IS NULL)"));
 
         // One row per person per line — the same worker cannot be listed twice on the
-        // same line, though he may legitimately appear on two lines in one shift.
+        // same line, though he may legitimately appear on two lines in one shift. The
+        // empty column of the other kind of person does not count: nulls never clash.
         builder.HasIndex(e => new { e.ShiftLineId, e.UserId })
             .IsUnique()
             .HasDatabaseName("ux_shift_workers_line_user");
+
+        builder.HasIndex(e => new { e.ShiftLineId, e.StaffMemberId })
+            .IsUnique()
+            .HasDatabaseName("ux_shift_workers_line_staff");
+
+        builder.HasOne(e => e.StaffMember)
+            .WithMany()
+            .HasForeignKey(e => e.StaffMemberId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<ShiftLine>()
             .WithMany(l => l.Workers)
@@ -144,6 +157,27 @@ public class ShiftWorkerRoleConfiguration : IEntityTypeConfiguration<ShiftWorker
         builder.HasOne<ApplicationRole>()
             .WithMany()
             .HasForeignKey(e => e.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMember>
+{
+    public void Configure(EntityTypeBuilder<StaffMember> builder)
+    {
+        builder.ToTable("StaffMembers");
+
+        builder.Property(e => e.FullName).HasMaxLength(100);
+        builder.Property(e => e.EmployeeNumber).HasMaxLength(20);
+
+        // A number names one person; most staff have none, and nulls never clash.
+        builder.HasIndex(e => e.EmployeeNumber)
+            .IsUnique()
+            .HasDatabaseName("ux_staff_members_employee_number");
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.CreatedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

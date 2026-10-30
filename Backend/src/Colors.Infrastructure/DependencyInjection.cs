@@ -179,6 +179,7 @@ public static class DependencyInjection
         services.AddScoped<IReportsService, ReportsService>();
         services.AddScoped<IThermoShiftReportService, ThermoShiftReportService>();
         services.AddScoped<IExtruderShiftReportService, ExtruderShiftReportService>();
+        services.AddScoped<Colors.Application.Features.Staff.IStaffService, Colors.Infrastructure.Services.Staff.StaffService>();
         services.AddScoped<Colors.Application.Features.Printing.IPrintQueueService, Colors.Infrastructure.Services.Printing.PrintQueueService>();
         services.AddSingleton<IThermoShiftReportExcel, Colors.Infrastructure.Reports.ThermoShiftReportExcel>();
         services.AddSingleton<IExtruderShiftReportExcel, Colors.Infrastructure.Reports.ExtruderShiftReportExcel>();

@@ -4,6 +4,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { ApiError } from '../../lib/apiClient';
 import { labelForRole } from '../../lib/roles';
+import { StaffList } from '../staff/StaffList';
 import { usersApi, type UserDto } from './api';
 import { ResetPasswordDialog } from './ResetPasswordDialog';
 import { UserDialog } from './UserDialog';
@@ -185,6 +186,9 @@ export function UsersPage(): ReactElement {
           onSaved={invalidate}
         />
       )}
+
+      {/* Staff who work the floor without an account (section 19.19). */}
+      <StaffList />
 
       {resetting !== null && (
         <ResetPasswordDialog

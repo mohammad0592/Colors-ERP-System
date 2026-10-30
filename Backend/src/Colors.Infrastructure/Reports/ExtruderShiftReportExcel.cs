@@ -177,7 +177,7 @@ public class ExtruderShiftReportExcel : IExtruderShiftReportExcel
             ? "—"
             : string.Join(", ", report.BatchNumbers));
 
-        Label(sheet, "K3", "Crew · الطاقم", report.Workers.Count == 0 ? "—" : string.Join(", ", report.Workers));
+        Label(sheet, "K3", "Staff · الموظفون", report.Workers.Count == 0 ? "—" : string.Join(", ", report.Workers));
         Label(sheet, "K4", "Trainees · المتدربون", report.Trainees.Count == 0 ? "—" : string.Join(", ", report.Trainees));
         Label(sheet, "K5", "Status · الحالة", report.Status);
 

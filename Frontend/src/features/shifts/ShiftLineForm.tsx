@@ -8,7 +8,7 @@ import {
   type ShiftLineDto,
   type ShiftReportDto,
 } from './api';
-import { CrewEditor } from './CrewEditor';
+import { StaffEditor } from './StaffEditor';
 import { orDash, toField, toNumberOrNull } from './shiftFormat';
 
 interface ShiftLineFormProps {
@@ -47,6 +47,7 @@ export function ShiftLineForm({
   const [workers, setWorkers] = useState<SaveShiftWorker[]>(() =>
     line.workers.map((worker) => ({
       userId: worker.userId,
+      staffMemberId: worker.staffMemberId,
       roleInShiftIds: worker.roleInShiftIds,
       isTrainee: worker.isTrainee,
     })),
@@ -196,7 +197,7 @@ export function ShiftLineForm({
       <Section title={t('term.crew')} />
 
       <div className="mb-4">
-        <CrewEditor
+        <StaffEditor
           workers={workers}
           people={people}
           roles={roles}

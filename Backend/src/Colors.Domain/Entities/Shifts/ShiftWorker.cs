@@ -1,9 +1,12 @@
 namespace Colors.Domain.Entities.Shifts;
 
 /// <summary>
-/// Somebody who worked a line during a shift. The paper form lists workers and
-/// trainees on separate lines, so a trainee is recorded but is not answerable for
-/// production.
+/// Somebody who worked a line during a shift — the line's staff. The paper form lists
+/// workers and trainees on separate lines, so a trainee is recorded but is not
+/// answerable for production.
+///
+/// Either a system user or a staff member with no account (specification section 19.19),
+/// never both and never neither: the database holds that rule too.
 /// </summary>
 public class ShiftWorker
 {
@@ -11,7 +14,13 @@ public class ShiftWorker
 
     public int ShiftLineId { get; set; }
 
-    public int UserId { get; set; }
+    /// <summary>A system user. Null when this is a staff member with no account.</summary>
+    public int? UserId { get; set; }
+
+    /// <summary>Somebody with no account, only recorded. Null for a system user.</summary>
+    public int? StaffMemberId { get; set; }
+
+    public StaffMember? StaffMember { get; set; }
 
     /// <summary>
     /// One fact about this man on this shift, which is why it lives here and not on

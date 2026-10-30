@@ -12,7 +12,10 @@ namespace Colors.Application.Features.ShiftReports;
 /// tonight, and only the shift can say which.
 /// </summary>
 public sealed record ShiftWorkerDto(
-    int UserId,
+    // One of the two: a system user, or a staff member with no account (section 19.19).
+    int? UserId,
+    int? StaffMemberId,
+    // Empty for a staff member who has no number.
     string EmployeeNumber,
     string FullName,
     IReadOnlyList<int> RoleInShiftIds,
@@ -20,9 +23,11 @@ public sealed record ShiftWorkerDto(
     bool IsTrainee);
 
 public sealed record SaveShiftWorkerRequest(
-    int UserId,
+    // One of the two: a system user, or a staff member with no account (section 19.19).
+    int? UserId,
     IReadOnlyList<int> RoleInShiftIds,
-    bool IsTrainee);
+    bool IsTrainee,
+    int? StaffMemberId = null);
 
 /// <summary>One line's part of a shift — its hours, its meter, its machine, its crew.</summary>
 public sealed record ShiftLineDto(
