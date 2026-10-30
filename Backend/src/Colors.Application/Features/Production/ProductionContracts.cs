@@ -249,9 +249,6 @@ public interface IProductionService
 
     Task<RollNumberDto> GetRollNumberAsync(CancellationToken cancellationToken = default);
 
-    /// <summary>Puts the running roll number back to 1. The supervisor's decision.</summary>
-    Task<RollNumberDto> ResetRollNumberAsync(int userId, CancellationToken cancellationToken = default);
-
     /// <summary>Corrects what was chosen when the roll was logged, while its shift is open.</summary>
     Task<Result<RollDto>> UpdateRollAsync(
         int rollId,

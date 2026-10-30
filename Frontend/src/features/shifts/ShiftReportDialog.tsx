@@ -102,6 +102,12 @@ export function ShiftReportDialog({
             <div className="min-w-48 flex-1">
               <label className="field-label" htmlFor={`operator-${String(line.id)}`}>
                 {line.productionLineName}
+                {/* Why the roll numbers start again at 01 on this shift (19.16). */}
+                {line.isStartingShift && (
+                  <span className="ms-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">
+                    {t('shifts.startingShiftBadge')}
+                  </span>
+                )}
               </label>
               <select
                 id={`operator-${String(line.id)}`}

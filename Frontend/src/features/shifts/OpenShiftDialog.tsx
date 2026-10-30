@@ -21,6 +21,10 @@ interface OpenShiftDialogProps {
  * One shift for the whole factory, with the lines that are running ticked. That is how
  * the floor talks about it — "shift A on 4 August" — and it means the electricity is
  * asked for once, not once per line. A line that starts late can be added afterwards.
+ *
+ * Under the extruder, a "starting shift" box: ticked, opening the shift puts the roll
+ * numbers back to 01 (specification section 19.16). Off by default, because most shifts
+ * carry on counting from the one before.
  */
 export function OpenShiftDialog({
   lines,
@@ -35,6 +39,11 @@ export function OpenShiftDialog({
   const [supervisorUserId, setSupervisorUserId] = useState<number | null>(null);
   // Most days everything runs, so everything starts ticked.
   const [lineIds, setLineIds] = useState<number[]>(() => lines.map((line) => line.id));
+  const [startingShift, setStartingShift] = useState(false);
+  // Only counts while the extruder is one of the lines: it is its roll numbers.
+  const extruderChosen = lines.some(
+    (line) => line.makesRolls && lineIds.includes(line.id),
+  );
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -55,6 +64,7 @@ export function OpenShiftDialog({
         shiftId,
         supervisorUserId,
         productionLineIds: lineIds,
+        extruderStartingShift: startingShift && extruderChosen,
       });
       onOpened(report);
       onClose();
@@ -90,9 +100,7 @@ export function OpenShiftDialog({
               setProductionDate(event.target.value);
             }}
           />
-          <p className="mt-1 text-xs text-ink-muted">
-            {t('shifts.dateNote')}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">{t('shifts.dateNote')}</p>
         </div>
 
         <div className="mb-4">
@@ -120,30 +128,47 @@ export function OpenShiftDialog({
           <legend className="field-label">{t('shifts.whichLines')}</legend>
           <div className="space-y-2">
             {lines.map((line) => (
-              <label
-                key={line.id}
-                className="flex min-h-touch items-center gap-3 rounded-control border border-line px-3 text-sm font-medium text-ink"
-              >
-                <input
-                  type="checkbox"
-                  className="size-5"
-                  checked={lineIds.includes(line.id)}
-                  disabled={isSaving}
-                  onChange={(event) => {
-                    setLineIds((current) =>
-                      event.target.checked
-                        ? [...current, line.id]
-                        : current.filter((id) => id !== line.id),
-                    );
-                  }}
-                />
-                {line.name}
-              </label>
+              <div key={line.id} className="rounded-control border border-line">
+                <label className="flex min-h-touch items-center gap-3 px-3 text-sm font-medium text-ink">
+                  <input
+                    type="checkbox"
+                    className="size-5"
+                    checked={lineIds.includes(line.id)}
+                    disabled={isSaving}
+                    onChange={(event) => {
+                      setLineIds((current) =>
+                        event.target.checked
+                          ? [...current, line.id]
+                          : current.filter((id) => id !== line.id),
+                      );
+                    }}
+                  />
+                  {line.name}
+                </label>
+
+                {line.makesRolls && lineIds.includes(line.id) && (
+                  <label className="flex items-start gap-3 border-t border-line bg-canvas px-3 py-2.5 text-sm text-ink">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 size-5 shrink-0"
+                      checked={startingShift}
+                      disabled={isSaving}
+                      onChange={(event) => {
+                        setStartingShift(event.target.checked);
+                      }}
+                    />
+                    <span>
+                      <span className="font-medium">{t('shifts.startingShift')}</span>
+                      <span className="mt-0.5 block text-xs text-ink-muted">
+                        {t('shifts.startingShiftNote')}
+                      </span>
+                    </span>
+                  </label>
+                )}
+              </div>
             ))}
           </div>
-          <p className="mt-1 text-xs text-ink-muted">
-            {t('shifts.lineLater')}
-          </p>
+          <p className="mt-1 text-xs text-ink-muted">{t('shifts.lineLater')}</p>
         </fieldset>
 
         <div className="mb-4">

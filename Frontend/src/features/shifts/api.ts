@@ -69,6 +69,8 @@ export interface ShiftLineDto {
   cycleTimeSeconds: number | null;
   /** The operator's own notes for this line. */
   notes: string | null;
+  /** The extruder only: this shift started the roll numbers again at 01 (19.16). */
+  isStartingShift: boolean;
   workers: ShiftWorkerDto[];
 }
 
@@ -141,6 +143,8 @@ export interface OpenShiftReport {
   shiftId: number;
   supervisorUserId: number | null;
   productionLineIds: number[];
+  /** The extruder's starting shift: opening it puts the roll numbers back to 01. */
+  extruderStartingShift: boolean;
 }
 
 export const shiftReportsApi = {

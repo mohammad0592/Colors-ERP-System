@@ -833,7 +833,7 @@ Either way the roll never lies about its own recipe, and the batch never lies ab
 | Column | Notes |
 |---|---|
 | Id | |
-| **RollNumber** | the factory's running count — goes back to 1 only when a supervisor resets it (19.12) |
+| **RollNumber** | the factory's running count — goes back to 1 only when a shift opens as the extruder's starting shift (19.16) |
 | **RollCode** | `04N2309260844-White` — see below. Also the barcode (19.12) |
 | Weight, Length | measured on the roll production screen; null until then (19.12) |
 | MeasuredByUserId · MeasuredAt | who weighed it, and when |
@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Fifteen changes, from watching the factory use the system. They are written here rather
+Sixteen changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2169,9 +2169,9 @@ Five changes to logging and testing rolls, asked for together.
   be reprinted.
 - **The roll number is a running count**, not reset each day: one counter row
   (`RollNumberCounters`), taken in the same transaction as the roll so two tablets cannot
-  share a number. The roll production screen shows the next number, and a **Reset roll
-  number** button puts it back to 01 — supervisor and administrator only, with a
-  confirmation. The number now repeats after a reset, so the database no longer insists
+  share a number. The roll production screen shows the next number. It was put back to 01
+  by a **Reset roll number** button; since 19.16 that happens when a shift is opened as
+  the extruder's starting shift instead. The number now repeats after a reset, so the database no longer insists
   it is unique within a day; the code still is unique, since it is the barcode.
 - **Weight and length moved to the roll production screen**, behind a **Measure** button
   on each roll; the roll test is the sample plate and the four thickness readings. A roll
@@ -2279,6 +2279,26 @@ two weights are kept on the test, so it cannot disagree with them.
 **What it does not do:** the beep needs the Roll Tests screen open on some tablet — a
 browser cannot sound an alarm from a closed page.
 
+
+### 19.16 The roll numbers start again with the extruder's starting shift
+
+The **Reset roll number** button on the roll production screen is gone. The numbers start
+again at 01 when the supervisor opens a shift and ticks **Starting shift** under the
+extruder — the shift the factory begins a new run of roll numbers on.
+
+- The box appears in the **Open shift** window under the extruder, only while the extruder
+  is one of the lines ticked, and is **off by default**: most shifts carry on counting from
+  the one before.
+- Opening the shift and putting the count back to 01 are saved together, so a shift that
+  fails to open leaves the count where it was. No roll can be logged in between, since
+  rolls need an open shift and only one may be open.
+- The extruder's line keeps the mark (`ShiftLines.IsStartingShift`), and the shift window
+  shows **Starting shift** beside it, so a roll 01 in the middle of the week can be traced
+  to the shift that started it. The counter still records when it was put back and by
+  whom — the person who opened the shift.
+- A starting shift without the extruder is refused: there would be nothing to start again.
+- It is decided when the shift is opened, not afterwards. Ticking it later would put the
+  count back in the middle of a shift whose rolls are already numbered.
 ---
 
 2.1 adds section 19: seven changes the factory asked for after using the

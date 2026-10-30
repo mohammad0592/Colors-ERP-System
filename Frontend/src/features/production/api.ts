@@ -194,13 +194,6 @@ export const productionApi = {
   rollNumber: (): Promise<RollNumberDto> =>
     apiRequest<RollNumberDto>('/api/production/roll-number'),
 
-  /** Supervisor and administrator only. */
-  resetRollNumber: (): Promise<RollNumberDto> =>
-    apiRequest<RollNumberDto>('/api/production/roll-number/reset', {
-      method: 'POST',
-      body: {},
-    }),
-
   /** Corrects what was chosen when the roll was logged, while its shift is open (19.15). */
   updateRoll: (
     id: number,

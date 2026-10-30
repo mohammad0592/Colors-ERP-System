@@ -1446,6 +1446,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int?>("FeedDistanceMm")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsStartingShift")
+                        .HasColumnType("boolean");
+
                     b.Property<int?>("MachineSpeed")
                         .HasColumnType("integer");
 

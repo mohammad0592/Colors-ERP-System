@@ -1,7 +1,6 @@
-﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
-import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { PageHeader } from '../../components/ui/PageHeader';
 import {
   StartOnLineButton,
@@ -49,9 +48,7 @@ export function RollProductionPage(): ReactElement {
     RoleNames.ExtruderOperator,
     RoleNames.ExtruderTestPerson,
   );
-  const canReset = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
   const [measuring, setMeasuring] = useState<RollDto | RollSummaryDto | null>(null);
-  const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
 
   const [logging, setLogging] = useState<StartableLine | null>(null);
   const [justLogged, setJustLogged] = useState<RollDto | null>(null);
@@ -86,18 +83,11 @@ export function RollProductionPage(): ReactElement {
     queryFn: () => productsApi.list(false),
   });
 
-  // The factory's running roll number, which goes back to 01 only when reset.
+  // The factory's running roll number. It goes back to 01 only when a shift is opened
+  // as the extruder's starting shift (section 19.16) — not from this screen.
   const rollNumber = useQuery({
     queryKey: ['roll-number'],
     queryFn: () => productionApi.rollNumber(),
-  });
-
-  const reset = useMutation({
-    mutationFn: () => productionApi.resetRollNumber(),
-    onSuccess: (fresh) => {
-      queryClient.setQueryData(['roll-number'], fresh);
-      void queryClient.invalidateQueries({ queryKey: ['next-roll-code'] });
-    },
   });
 
   // Lines of the open shift that actually mix (specification section 4).
@@ -151,31 +141,12 @@ export function RollProductionPage(): ReactElement {
         actions={
           <div className="flex flex-wrap items-center gap-3">
             {rollNumber.data !== undefined && (
-              <span className="text-sm text-ink-muted">
+              <span className="text-sm text-ink-muted" title={t('rolls.nextNumberHint')}>
                 {t('rolls.nextNumber')}{' '}
                 <strong className="font-mono text-base text-ink">
                   {String(rollNumber.data.nextNumber).padStart(2, '0')}
                 </strong>
               </span>
-            )}
-            {canReset && (
-              <button
-                type="button"
-                className="h-touch rounded-control border border-line px-4 text-sm font-semibold text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
-                disabled={reset.isPending}
-                onClick={() => {
-                  setConfirm({
-                    title: t('rolls.resetTitle'),
-                    message: t('rolls.resetMessage'),
-                    confirmLabel: t('rolls.resetNumber'),
-                    onConfirm: () => {
-                      reset.mutate();
-                    },
-                  });
-                }}
-              >
-                {t('rolls.resetNumber')}
-              </button>
             )}
             {canProduce && (
               <StartOnLineButton
@@ -375,15 +346,6 @@ export function RollProductionPage(): ReactElement {
               )}`,
             });
             invalidate();
-          }}
-        />
-      )}
-
-      {confirm !== null && (
-        <ConfirmDialog
-          request={confirm}
-          onCancel={() => {
-            setConfirm(null);
           }}
         />
       )}

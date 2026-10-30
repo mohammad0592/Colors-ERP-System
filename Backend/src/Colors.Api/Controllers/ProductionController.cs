@@ -28,7 +28,6 @@ public class ProductionController(IProductionService production) : ApiController
     // the man logging rolls and the man testing them may do it.
     private const string CanMeasure =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator},{RoleNames.ExtruderTestPerson}";
-    private const string CanReset = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
     private const string CanCorrect =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator}";
 
@@ -112,17 +111,6 @@ public class ProductionController(IProductionService production) : ApiController
     public async Task<IActionResult> GetRollNumber(CancellationToken cancellationToken)
     {
         return Ok(await production.GetRollNumberAsync(cancellationToken));
-    }
-
-    /// <summary>
-    /// Puts the roll number back to 1. The supervisor's decision, because every roll code
-    /// after it changes with it.
-    /// </summary>
-    [HttpPost("roll-number/reset")]
-    [Authorize(Roles = CanReset)]
-    public async Task<IActionResult> ResetRollNumber(CancellationToken cancellationToken)
-    {
-        return Ok(await production.ResetRollNumberAsync(CurrentUserId(), cancellationToken));
     }
 
     /// <summary>

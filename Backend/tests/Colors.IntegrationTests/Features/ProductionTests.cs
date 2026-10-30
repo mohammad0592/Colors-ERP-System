@@ -275,38 +275,6 @@ public class ProductionTests(DatabaseFixture fixture)
     }
 
     [Fact]
-    public async Task Resetting_the_roll_number_starts_the_count_again_at_one()
-    {
-        await using var db = fixture.CreateContext();
-        var ids = await FactoryData.CreateAsync(db, "PRD7");
-        var (colourId, recipeId) = await RecipeAndColourAsync(db, "PRD7", ids.UserId);
-        var service = NewService(db);
-        var before = (await service.GetRollNumberAsync()).NextNumber;
-
-        try
-        {
-            var reset = await service.ResetRollNumberAsync(ids.UserId);
-            Assert.Equal(1, reset.NextNumber);
-            Assert.NotNull(reset.LastResetAt);
-            Assert.NotNull(reset.LastResetByName);
-
-            var roll = await service.CreateRollAsync(
-                new CreateRollRequest(ids.ShiftLineId, recipeId, colourId, ids.NormalProductId, null, null),
-                ids.UserId);
-            Assert.Equal(1, roll.Value!.RollNumber);
-            Assert.StartsWith("01", roll.Value.RollCode, StringComparison.Ordinal);
-        }
-        finally
-        {
-            // The suite shares one database and one counter. Put it back where it was, so
-            // no later test is handed a number an earlier one already used this minute.
-            var counter = await db.RollNumberCounters.SingleAsync(c => c.Id == 1);
-            counter.NextNumber = before + 1000;
-            await db.SaveChangesAsync();
-        }
-    }
-
-    [Fact]
     public async Task A_draft_recipe_cannot_make_a_roll()
     {
         await using var db = fixture.CreateContext();

@@ -54,6 +54,8 @@ public sealed record ShiftLineDto(
     int? FeedDistanceMm,
     decimal? CycleTimeSeconds,
     string? Notes,
+    // The extruder only: this shift started the roll numbers again at 01 (19.16).
+    bool IsStartingShift,
     IReadOnlyList<ShiftWorkerDto> Workers);
 
 /// <summary>Everything recorded for one line while the shift runs. Times are "HH:mm".</summary>
@@ -142,7 +144,10 @@ public sealed record OpenShiftReportRequest(
     DateOnly ProductionDate,
     int ShiftId,
     int? SupervisorUserId,
-    IReadOnlyList<int> ProductionLineIds);
+    IReadOnlyList<int> ProductionLineIds,
+    // The extruder's starting shift: opening it puts the roll numbers back to 01
+    // (specification section 19.16). Off unless the supervisor ticks it.
+    bool ExtruderStartingShift = false);
 
 /// <summary>The shift's own details. Each line is updated through its own endpoint.</summary>
 public sealed record UpdateShiftReportRequest(

@@ -607,23 +607,6 @@ public class ProductionService(
             counter.LastResetByUserId is null ? null : names.GetValueOrDefault(counter.LastResetByUserId.Value));
     }
 
-    public async Task<RollNumberDto> ResetRollNumberAsync(int userId, CancellationToken cancellationToken = default)
-    {
-        var counter = await db.RollNumberCounters.FirstOrDefaultAsync(c => c.Id == 1, cancellationToken);
-        if (counter is null)
-        {
-            counter = new RollNumberCounter { Id = 1 };
-            db.RollNumberCounters.Add(counter);
-        }
-
-        counter.NextNumber = 1;
-        counter.LastResetAt = timeProvider.GetUtcNow();
-        counter.LastResetByUserId = userId;
-        await db.SaveChangesAsync(cancellationToken);
-
-        return await GetRollNumberAsync(cancellationToken);
-    }
-
     // ---------- helpers ----------
 
     /// <summary>

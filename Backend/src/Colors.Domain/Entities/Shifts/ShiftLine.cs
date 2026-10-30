@@ -44,6 +44,16 @@ public class ShiftLine
     /// <summary>The operator's own notes for this line, apart from the other lines'.</summary>
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// The extruder only: this shift starts a new run of roll numbers, and opening it put
+    /// the count back to 01 (specification section 19.16). Ticked by the supervisor when he
+    /// opens the shift, off unless he does — most shifts carry on from the one before.
+    ///
+    /// Kept on the line, not just acted on, so the record says why the numbers start again
+    /// here: a roll 01 in the middle of the week is otherwise a question nobody can answer.
+    /// </summary>
+    public bool IsStartingShift { get; set; }
+
     // No electricity here: the factory has one meter for the whole building, so the
     // reading belongs to the shift (specification section 2).
 

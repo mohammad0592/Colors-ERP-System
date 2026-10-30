@@ -3,6 +3,7 @@ using Colors.Application.Common.Models;
 using Colors.Application.Features.ShiftReports;
 using Colors.Domain.Constants;
 using Colors.Domain.Entities.MasterData;
+using Colors.Domain.Entities.Production;
 using Colors.Domain.Entities.Shifts;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
@@ -87,12 +88,22 @@ public class ShiftReportService(
             return Invalid("Choose at least one line that is running this shift.", "shift.chooseALine");
         }
 
-        var activeLines = await db.ProductionLines
-            .CountAsync(l => lineIds.Contains(l.Id) && l.IsActive, cancellationToken);
+        var chosenLines = await db.ProductionLines
+            .Where(l => lineIds.Contains(l.Id) && l.IsActive)
+            .ToListAsync(cancellationToken);
 
-        if (activeLines != lineIds.Count)
+        if (chosenLines.Count != lineIds.Count)
         {
             return Invalid("Every line must be an active production line.", "shift.activeLine");
+        }
+
+        // A starting shift is the extruder's: it is the roll numbers that start again.
+        var extruder = chosenLines.FirstOrDefault(l => l.MakesRolls);
+        if (request.ExtruderStartingShift && extruder is null)
+        {
+            return Invalid(
+                "A starting shift starts the extruder's roll numbers again, so the extruder must be one of the lines.",
+                "shift.startingNeedsExtruder");
         }
 
         var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
@@ -133,10 +144,35 @@ public class ShiftReportService(
             SupervisorUserId = request.SupervisorUserId,
             OpenedByUserId = userId,
             OpenedAt = timeProvider.GetUtcNow(),
-            Lines = lineIds.Select(lineId => new ShiftLine { ProductionLineId = lineId }).ToList(),
+            Lines = lineIds
+                .Select(lineId => new ShiftLine
+                {
+                    ProductionLineId = lineId,
+                    IsStartingShift = request.ExtruderStartingShift && lineId == extruder?.Id,
+                })
+                .ToList(),
         };
 
         db.Set<ShiftReport>().Add(report);
+
+        // The extruder's starting shift: the roll numbers start again at 01 (section
+        // 19.16). Saved with the shift, so the two cannot come apart — a shift that fails
+        // to open leaves the count where it was. No roll can be logged meanwhile, since
+        // rolls need an open shift and this is refused while another is open.
+        if (request.ExtruderStartingShift)
+        {
+            var counter = await db.RollNumberCounters.FirstOrDefaultAsync(c => c.Id == 1, cancellationToken);
+            if (counter is null)
+            {
+                counter = new RollNumberCounter { Id = 1 };
+                db.RollNumberCounters.Add(counter);
+            }
+
+            counter.NextNumber = 1;
+            counter.LastResetAt = report.OpenedAt;
+            counter.LastResetByUserId = userId;
+        }
+
         await db.SaveChangesAsync(cancellationToken);
 
         return await LoadAsync(report.Id, cancellationToken);
@@ -906,6 +942,7 @@ public class ShiftReportService(
                     line.FeedDistanceMm,
                     line.CycleTimeSeconds,
                     line.Notes,
+                    line.IsStartingShift,
                     line.Workers
                         .Select(w => new ShiftWorkerDto(
                             w.UserId,

@@ -5,9 +5,10 @@ namespace Colors.Domain.Entities.Production;
 /// (specification section 8).
 ///
 /// One row for the whole factory. It counts on across shifts and days and goes back to 1
-/// only when a supervisor presses Reset: the factory restarts the count when it chooses,
-/// not when the calendar turns. A row rather than "the largest number so far plus one",
-/// because after a reset the largest number so far is no longer the one to follow.
+/// only when a shift is opened as the extruder's starting shift (specification section
+/// 19.16): the factory restarts the count when it chooses, not when the calendar turns. A
+/// row rather than "the largest number so far plus one", because after a reset the
+/// largest number so far is no longer the one to follow.
 /// </summary>
 public class RollNumberCounter
 {
@@ -17,7 +18,10 @@ public class RollNumberCounter
     /// <summary>The number the next roll will be given.</summary>
     public int NextNumber { get; set; } = 1;
 
-    /// <summary>When it was last put back to 1, and by whom. Null before the first reset.</summary>
+    /// <summary>
+    /// When it was last put back to 1, and by whom — the person who opened the starting
+    /// shift. Null before the first reset.
+    /// </summary>
     public DateTimeOffset? LastResetAt { get; set; }
 
     public int? LastResetByUserId { get; set; }
