@@ -1,7 +1,7 @@
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../lib/apiClient';
-import type { PersonDto, RoleDto } from '../people/api';
+import type { PersonDto } from '../people/api';
 import {
   shiftReportsApi,
   type SaveShiftWorker,
@@ -15,7 +15,6 @@ interface ShiftLineFormProps {
   reportId: number;
   line: ShiftLineDto;
   people: PersonDto[];
-  roles: RoleDto[];
   locked: boolean;
   onSaved: (report: ShiftReportDto) => void;
 }
@@ -32,7 +31,6 @@ export function ShiftLineForm({
   reportId,
   line,
   people,
-  roles,
   locked,
   onSaved,
 }: ShiftLineFormProps): ReactElement {
@@ -200,7 +198,6 @@ export function ShiftLineForm({
         <StaffEditor
           workers={workers}
           people={people}
-          roles={roles}
           disabled={disabled}
           onChange={setWorkers}
         />

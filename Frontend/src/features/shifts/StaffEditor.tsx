@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
-import type { PersonDto, RoleDto } from '../people/api';
+import type { PersonDto } from '../people/api';
 import { staffApi } from '../staff/api';
 import type { SaveShiftWorker } from './api';
 
@@ -9,7 +9,6 @@ interface StaffEditorProps {
   workers: SaveShiftWorker[];
   /** The system's users. */
   people: PersonDto[];
-  roles: RoleDto[];
   disabled: boolean;
   onChange: (workers: SaveShiftWorker[]) => void;
 }
@@ -29,14 +28,13 @@ function keyOf(worker: Pick<SaveShiftWorker, 'userId' | 'staffMemberId'>): strin
  * adding somebody to the factory's people, either kind, is the administrator's, on the
  * Users screen.
  *
- * The jobs are asked for separately from the person's own roles on purpose: the same
- * man is both extruder operator and extruder test person, so what he *did* on this
- * shift is a fact about the shift, not about him.
+ * Each person is recorded with whether he was a trainee, and nothing more: the jobs he
+ * did are no longer asked (section 19.20). Those recorded on earlier shifts are kept as
+ * they were — a person loaded with jobs is saved back with the same ones.
  */
 export function StaffEditor({
   workers,
   people,
-  roles,
   disabled,
   onChange,
 }: StaffEditorProps): ReactElement {
@@ -137,42 +135,6 @@ export function StaffEditor({
                   </button>
                 )}
               </div>
-
-              {/* Jobs, not job. The same man usually runs the extruder and takes its
-                  measurements, so making him pick one would lose half of what he did. */}
-              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5 border-t border-line pt-2">
-                {roles.map((role) => {
-                  const ticked = worker.roleInShiftIds.includes(role.id);
-                  return (
-                    <label
-                      key={role.id}
-                      className={[
-                        'flex items-center gap-1.5 text-xs',
-                        ticked ? 'font-semibold text-brand-700' : 'text-ink-muted',
-                      ].join(' ')}
-                    >
-                      <input
-                        type="checkbox"
-                        className="size-3.5"
-                        checked={ticked}
-                        disabled={disabled}
-                        onChange={(event) => {
-                          replace(index, {
-                            roleInShiftIds: event.target.checked
-                              ? [...worker.roleInShiftIds, role.id]
-                              : worker.roleInShiftIds.filter((id) => id !== role.id),
-                          });
-                        }}
-                      />
-                      {role.name}
-                    </label>
-                  );
-                })}
-              </div>
-
-              {worker.roleInShiftIds.length === 0 && (
-                <p className="mt-1.5 text-xs text-ink-muted">{t('shifts.noJob')}</p>
-              )}
             </div>
           );
         })}

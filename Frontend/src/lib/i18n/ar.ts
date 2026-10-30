@@ -492,7 +492,6 @@ export const ar: Record<TranslationKey, string> = {
   'shifts.nobodyYet': 'لم يُضف أحد بعد.',
   'shifts.trainee': 'متدرب',
   'shifts.remove': 'إزالة',
-  'shifts.noJob': 'لا وظيفة مسجلة.',
   'shifts.addWorkerEllipsis': 'إضافة موظف أو عامل…',
   'shifts.add': 'إضافة',
   'shifts.productionDate': 'تاريخ الإنتاج',

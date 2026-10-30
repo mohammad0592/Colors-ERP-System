@@ -471,7 +471,6 @@ export const en = {
   'shifts.nobodyYet': 'Nobody added yet.',
   'shifts.trainee': 'Trainee',
   'shifts.remove': 'Remove',
-  'shifts.noJob': 'No job recorded.',
   'shifts.addWorkerEllipsis': 'Add staff or a worker…',
   'shifts.add': 'Add',
   'shifts.productionDate': 'Production date',

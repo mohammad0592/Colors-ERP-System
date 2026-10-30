@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Nineteen changes, from watching the factory use the system. They are written here rather
+Twenty changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2396,6 +2396,16 @@ tablet, and an account each would fill the user list with logins nobody uses.
   account or a worker — exactly one, which the database holds as a check constraint — and
   the same person cannot be listed twice on one line. The shift reports name workers
   alongside staff.
+
+### 19.20 No jobs on a shift's staff and workers
+
+The jobs each person did on the shift — the tick boxes under every name in a line's
+*Staff & workers* list — are no longer asked. Each person is recorded with whether he was
+a trainee, and can be taken off the list; nothing more.
+
+The data underneath is unchanged (`ShiftWorkerRoles`). Jobs already recorded on earlier
+shifts stay as they were: a person loaded with jobs is saved back with the same ones, so
+correcting a past shift does not quietly wipe them.
 ---
 ---
 ---

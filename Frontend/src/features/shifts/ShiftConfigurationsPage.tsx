@@ -79,7 +79,6 @@ export function ShiftConfigurationsPage({
   });
 
   const people = useQuery({ queryKey: ['people'], queryFn: () => peopleApi.list(false) });
-  const roles = useQuery({ queryKey: ['roles'], queryFn: () => peopleApi.roles() });
 
   const kind = kinds.find((k) => k.key === active) ?? kinds[0];
 
@@ -88,7 +87,7 @@ export function ShiftConfigurationsPage({
     void queryClient.invalidateQueries({ queryKey: ['shift-reports'] });
   }
 
-  if (open.isError || report.isError || people.isError || roles.isError) {
+  if (open.isError || report.isError || people.isError) {
     return <p className="p-6 text-bad">{t('shifts.loadScreenFailed')}</p>;
   }
 
@@ -107,7 +106,7 @@ export function ShiftConfigurationsPage({
     );
   }
 
-  if (report.isPending || people.isPending || roles.isPending) {
+  if (report.isPending || people.isPending) {
     return <p className="p-6 text-ink-muted">{t('common.loading')}</p>;
   }
 
@@ -168,7 +167,6 @@ export function ShiftConfigurationsPage({
             reportId={shift.id}
             line={line}
             people={people.data}
-            roles={roles.data}
             locked={!shift.canEdit || !canEditLine}
             onSaved={saved}
           />
