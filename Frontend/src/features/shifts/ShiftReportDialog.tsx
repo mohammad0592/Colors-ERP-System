@@ -8,6 +8,7 @@ import type { ProductionLineDto } from '../master-data/api';
 import type { PersonDto } from '../people/api';
 import { shiftReportsApi, type ShiftLineDto, type ShiftReportDto } from './api';
 import { formatDate } from './shiftFormat';
+import { shiftConfigFor } from './shiftConfigLines';
 import { ShiftStatusBadge } from './ShiftStatusBadge';
 
 interface ShiftReportDialogProps {
@@ -190,12 +191,19 @@ export function ShiftReportDialog({
       )}
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <Link
-          to={`/production/shift-config/extruder?shift=${String(report.id)}`}
-          className="btn-primary grid w-auto place-items-center px-6"
-        >
-          {t('shifts.openConfig')}
-        </Link>
+        {/* Each line's own configuration, for this shift (section 19.18). */}
+        {report.lines.map((line) => {
+          const config = shiftConfigFor(line);
+          return config === undefined ? null : (
+            <Link
+              key={line.id}
+              to={`${config.path}?shift=${String(report.id)}`}
+              className="btn-primary grid w-auto place-items-center px-6"
+            >
+              {t(config.label)}
+            </Link>
+          );
+        })}
         <button
           type="button"
           className="min-h-touch rounded-control border border-line px-6 text-sm font-semibold text-ink-soft transition-colors hover:bg-canvas"

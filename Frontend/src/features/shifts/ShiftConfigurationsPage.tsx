@@ -1,47 +1,17 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
-import { Navigate, NavLink, useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ApiError } from '../../lib/apiClient';
-import type { TranslationKey } from '../../lib/i18n/en';
 import { RoleNames } from '../../lib/roles';
-import { rolesFor, type ScreenPath } from '../../routes/access';
+import { rolesFor } from '../../routes/access';
 import { peopleApi } from '../people/api';
-import { shiftReportsApi, type ShiftLineDto, type ShiftReportDto } from './api';
+import { shiftReportsApi, type ShiftReportDto } from './api';
+import { shiftConfigLines as kinds, type ShiftConfigKind } from './shiftConfigLines';
 import { ShiftLineForm } from './ShiftLineForm';
 import { formatDate, orDash, toField, toNumberOrNull } from './shiftFormat';
-
-export type ShiftConfigKind = 'extruder' | 'thermo' | 'recycler';
-
-// Which line each screen is, read off what the line does — never its name, so a renamed
-// line still lands on the right screen (specification section 4).
-const kinds: {
-  key: ShiftConfigKind;
-  label: TranslationKey;
-  path: ScreenPath;
-  matches: (line: ShiftLineDto) => boolean;
-}[] = [
-  {
-    key: 'extruder',
-    label: 'shiftCfg.extruder',
-    path: '/production/shift-config/extruder',
-    matches: (line) => line.makesRolls,
-  },
-  {
-    key: 'thermo',
-    label: 'shiftCfg.thermo',
-    path: '/production/shift-config/thermo',
-    matches: (line) => line.formsBags,
-  },
-  {
-    key: 'recycler',
-    label: 'shiftCfg.recycler',
-    path: '/production/shift-config/recycler',
-    matches: (line) => line.recycles,
-  },
-];
 
 /**
  * The address the three screens used to share. A bookmark to it lands on the first of
@@ -76,9 +46,9 @@ export function ShiftConfigurationRedirect(): ReactElement {
  * every operator sees the same reading and who entered it — polled, so a reading entered
  * on another line's screen shows up here too.
  *
- * The open shift by default. A closed or corrected shift is reached from the Shifts
- * screen, which links here with its id; the supervisor moves between the three lines of
- * that shift with the links under the meter.
+ * This line only — nothing of the other two, for the administrator as for anyone. The
+ * open shift by default; a closed or corrected shift is reached from the Shifts screen,
+ * whose shift window links to each of its lines' screens with the shift's id.
  */
 export function ShiftConfigurationsPage({
   kind: active,
@@ -112,12 +82,6 @@ export function ShiftConfigurationsPage({
   const roles = useQuery({ queryKey: ['roles'], queryFn: () => peopleApi.roles() });
 
   const kind = kinds.find((k) => k.key === active) ?? kinds[0];
-  // The other lines' screens this man may open, for moving between them on the same
-  // shift. An operator has only his own, and sees no links.
-  const reachable = kinds.filter((k) => {
-    const allowed = rolesFor(k.path);
-    return allowed === undefined || hasRole(...allowed);
-  });
 
   function saved(fresh: ShiftReportDto): void {
     queryClient.setQueryData(['shift-report', fresh.id], fresh);
@@ -172,26 +136,6 @@ export function ShiftConfigurationsPage({
         canEnter={shift.canEdit && onShift}
         onSaved={saved}
       />
-
-      {reachable.length > 1 && (
-        <nav className="mb-6 flex gap-1 overflow-x-auto border-b border-line">
-          {reachable.map((k) => (
-            <NavLink
-              key={k.key}
-              // The same shift on the other line's screen.
-              to={`${k.path}${requested > 0 ? `?shift=${String(requested)}` : ''}`}
-              className={[
-                '-mb-px border-b-2 px-4 py-3 text-sm font-semibold whitespace-nowrap transition-colors',
-                active === k.key
-                  ? 'border-brand-600 text-brand-700'
-                  : 'border-transparent text-ink-muted hover:text-ink-soft',
-              ].join(' ')}
-            >
-              {t(k.label)}
-            </NavLink>
-          ))}
-        </nav>
-      )}
 
       {line === undefined ? (
         <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">

@@ -2348,7 +2348,9 @@ the check back, the range belongs on the recipe, and the verdict follows from th
 - **Shift Configuration is three screens**, one per line, each in its line's part of the
   menu: the line's times, crew, notes and, on the thermo, machine settings. Each line's
   operator opens only his own line's screen; the supervisor and the administrator open
-  all three and move between them on the same shift with the links under the meter.
+  all three from the menu. Each screen shows its own line and nothing of the other two,
+  for the administrator too. A closed or corrected shift is reached from its window on
+  the Shifts screen, which has a button for each line that ran on it.
 - **The electricity meter heads all three.** It is the factory's one meter (section 2), so
   a reading entered on any line's screen is the same reading on the others, with who
   entered it, and each screen picks up a new reading within half a minute.
