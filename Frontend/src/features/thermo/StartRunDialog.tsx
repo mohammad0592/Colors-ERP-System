@@ -167,7 +167,9 @@ export function StartRunDialog({
             }}
             options={rolls.map((roll) => ({
               value: roll.barcode,
-              label: `${roll.rollCode} — ${roll.colorName}, ${roll.recipeFamilyName}, ${formatDate(roll.productionDate)}`,
+              label:
+                `${roll.rollCode} — ${roll.colorName}, ${roll.recipeFamilyName}, ${formatDate(roll.productionDate)}` +
+                (roll.notCompleted ? ` (${t('status.roll.notCompleted')})` : ''),
             }))}
             optionsHint="measured rolls in stock, oldest first"
             submitLabel="Start forming"
@@ -186,6 +188,12 @@ export function StartRunDialog({
                 {' '}
                 · <strong className="text-ink">{chosen.productName}</strong>
               </>
+            )}
+            {/* In before and taken out unfinished: it goes in again (section 19.23). */}
+            {chosen.notCompleted && (
+              <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 text-xs font-semibold text-warn">
+                {t('status.roll.notCompleted')}
+              </span>
             )}
             {chosen.isAbsorbent && (
               <span className="ms-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700">

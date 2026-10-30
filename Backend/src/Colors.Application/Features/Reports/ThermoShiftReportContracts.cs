@@ -29,8 +29,15 @@ public sealed record ThermoReportRollDto(
     decimal? RecycledPercentage,
     // The shift the roll was made on at the extruder — often an earlier one.
     string RollShiftName,
-    // Roll weight less the plates it made. Null until counted.
-    decimal? ScrapWeight);
+    // Roll weight less the plates it made. Null until counted. For a roll worked more
+    // than once, said on the run that finishes it, over the plates of every run.
+    decimal? ScrapWeight,
+    // Taken out unfinished, and why (section 19.23). Its weight is not given on this row:
+    // a roll is weighed once, on the run that finishes it.
+    bool LeftUnfinished = false,
+    string? UnfinishedReason = null,
+    // This run finished a roll that had been taken out unfinished before — worked twice.
+    bool WorkedBefore = false);
 
 /// <summary>One product's yield over the shift: what went in, what came out.</summary>
 public sealed record ThermoReportProductDto(

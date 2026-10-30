@@ -5,8 +5,9 @@
  * Colors.Application.Features.Production. Specification section 8.
  */
 
+/** NotCompleted: taken out of the thermo unfinished, back in stock (section 19.23). */
 export type RollStatus =
-  'NeedsTest' | 'Available' | 'InThermo' | 'Processed' | 'Scrapped';
+  'NeedsTest' | 'Available' | 'InThermo' | 'Processed' | 'Scrapped' | 'NotCompleted';
 
 export interface BatchSummaryDto {
   id: number;

@@ -127,6 +127,20 @@ export function ThermoShiftReport({
                 <td className="px-3 py-2 font-mono text-xs whitespace-nowrap text-ink">
                   {roll.rollCode}
                   <span className="ms-2 font-sans text-ink-muted">{roll.colorName}</span>
+                  {/* A roll worked more than once is weighed once (section 19.23). */}
+                  {roll.leftUnfinished && (
+                    <span
+                      title={roll.unfinishedReason ?? undefined}
+                      className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 font-sans text-xs font-semibold text-warn"
+                    >
+                      {t('thermo.notFinished')}
+                    </span>
+                  )}
+                  {roll.workedBefore && (
+                    <span className="ms-2 rounded-full bg-canvas px-2 py-0.5 font-sans text-xs font-semibold text-ink-soft">
+                      {t('thermo.workedTwice')}
+                    </span>
+                  )}
                 </td>
                 <Num value={roll.rollWeight} />
                 <Num value={roll.rollLength} />

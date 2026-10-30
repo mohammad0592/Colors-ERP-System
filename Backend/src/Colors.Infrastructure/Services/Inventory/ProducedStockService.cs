@@ -157,7 +157,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 r.RollCode,
                 $"{r.RecipeVersion.Family.Name} · {r.Color.Name}",
                 Spaced(r.Status.ToString()),
-                r.Status == RollStatus.Available,
+                // A roll taken out of the thermo unfinished is back in stock (section 19.23).
+                r.Status is RollStatus.Available or RollStatus.NotCompleted,
                 // The shift, not the batch. Nobody opens a mix any more, so its number
                 // is not a thing anybody in the factory knows (specification section 8).
                 $"Shift {r.Batch.ShiftLine.ShiftReport.Shift.Name}",

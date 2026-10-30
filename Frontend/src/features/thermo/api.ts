@@ -41,6 +41,9 @@ export interface ThermoRunSummaryDto {
    * recycler's loss, which is a share of the scrap that went into the grinder.
    */
   scrapWeight: number | null;
+  /** Taken out before it was finished, and why (section 19.23). */
+  leftUnfinished: boolean;
+  unfinishedReason: string | null;
 }
 
 export interface ThermoTestReportDto {
@@ -103,6 +106,9 @@ export interface ThermoRunDto {
   /** Roll weight less the weight of the plates it made. Calculated, never stored. */
   scrapWeight: number | null;
   bags: ProducedBagDto[];
+  /** Taken out before it was finished, and why (section 19.23). */
+  leftUnfinished: boolean;
+  unfinishedReason: string | null;
 }
 
 export interface AvailableRollDto {
@@ -124,6 +130,8 @@ export interface AvailableRollDto {
   productName: string | null;
   /** So the start dialog offers only the products this recipe makes. */
   recipeFamilyId: number;
+  /** Taken out of the thermo unfinished before, and going in again (section 19.23). */
+  notCompleted: boolean;
 }
 
 export const thermoApi = {
@@ -157,6 +165,16 @@ export const thermoApi = {
       method: 'POST',
       body,
       ...(entry === undefined ? {} : { entry }),
+    }),
+
+  /**
+   * Takes the roll out before it is finished, with the reason (section 19.23). It goes
+   * back to stock as Not completed; what it made so far is counted next.
+   */
+  leaveUnfinished: (id: number, reason: string): Promise<ThermoRunDto> =>
+    apiRequest<ThermoRunDto>(`/api/thermo/runs/${String(id)}/unfinished`, {
+      method: 'POST',
+      body: { reason },
     }),
 
   finishRun: (id: number, finishedAt: string | null): Promise<ThermoRunDto> =>

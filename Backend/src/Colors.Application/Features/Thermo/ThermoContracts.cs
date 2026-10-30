@@ -31,7 +31,11 @@ public sealed record ThermoRunSummaryDto(
     // of the plates that came out of it. Both calculated, never stored. Null until the
     // roll has been weighed and the run counted (specification section 9).
     decimal? RollWeight,
-    decimal? ScrapWeight);
+    decimal? ScrapWeight,
+    // Taken out before it was finished, and why (section 19.23). The roll went back to
+    // stock as Not completed; its scrap is said on the run that finishes it.
+    bool LeftUnfinished,
+    string? UnfinishedReason);
 
 public sealed record ThermoTestReportDto(
     int Id,
@@ -85,7 +89,9 @@ public sealed record ThermoRunDto(
     // Roll weight less the weight of the plates it made. Calculated, never stored, and
     // null until the roll has been weighed and the run counted.
     decimal? ScrapWeight,
-    IReadOnlyList<ProducedBagDto> Bags);
+    IReadOnlyList<ProducedBagDto> Bags,
+    bool LeftUnfinished = false,
+    string? UnfinishedReason = null);
 
 public sealed record ProducedBagDto(
     int Id,
@@ -117,7 +123,9 @@ public sealed record AvailableRollDto(
     int? ProductId,
     string? ProductName,
     // So the start dialog offers only the products this recipe makes.
-    int RecipeFamilyId);
+    int RecipeFamilyId,
+    // Taken out of the thermo unfinished before, and going in again (section 19.23).
+    bool NotCompleted = false);
 
 /// <summary>
 /// Puts a roll into the thermo. The operator scans the barcode — he never types the
@@ -136,6 +144,13 @@ public sealed record StartThermoRunRequest(
 
 /// <summary>Takes the roll out. The run is over; the counting comes next.</summary>
 public sealed record FinishThermoRunRequest(DateTimeOffset? FinishedAt);
+
+/// <summary>
+/// Takes the roll out before it is finished (specification section 19.23). It goes back
+/// to stock as Not completed and may go in again. The reason is required. What it made
+/// so far is counted next, as for any run.
+/// </summary>
+public sealed record LeaveRunUnfinishedRequest(string Reason, DateTimeOffset? FinishedAt = null);
 
 /// <summary>
 /// What was counted and measured after forming.
@@ -190,6 +205,12 @@ public interface IThermoService
     Task<Result<ThermoRunDto>> FinishRunAsync(
         int runId,
         FinishThermoRunRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Takes the roll out unfinished and sends it back to stock, with the reason.</summary>
+    Task<Result<ThermoRunDto>> LeaveUnfinishedAsync(
+        int runId,
+        LeaveRunUnfinishedRequest request,
         CancellationToken cancellationToken = default);
 
     /// <summary>Records the counts, creates every bag and prints their barcodes — all or nothing.</summary>

@@ -1241,20 +1241,30 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset>("StartedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("UnfinishedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("OperatorUserId");
 
-                    b.HasIndex("RollId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_thermo_productions_roll");
-
                     b.HasIndex("ShiftLineId")
                         .HasDatabaseName("ix_thermo_productions_shift_line");
+
+                    b.HasIndex(new[] { "RollId" }, "ux_thermo_productions_roll")
+                        .IsUnique()
+                        .HasFilter("\"UnfinishedReason\" IS NULL");
+
+                    b.HasIndex(new[] { "RollId" }, "ux_thermo_productions_roll_in_machine")
+                        .IsUnique()
+                        .HasFilter("\"FinishedAt\" IS NULL");
 
                     b.ToTable("ThermoProductions", null, t =>
                         {
                             t.HasCheckConstraint("ck_thermo_finished_after_started", "\"FinishedAt\" IS NULL OR \"FinishedAt\" >= \"StartedAt\"");
+
+                            t.HasCheckConstraint("ck_thermo_unfinished_is_out", "\"UnfinishedReason\" IS NULL OR \"FinishedAt\" IS NOT NULL");
                         });
                 });
 
@@ -2402,8 +2412,8 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .IsRequired();
 
                     b.HasOne("Colors.Domain.Entities.Production.Roll", "Roll")
-                        .WithOne()
-                        .HasForeignKey("Colors.Domain.Entities.Production.ThermoProduction", "RollId")
+                        .WithMany()
+                        .HasForeignKey("RollId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

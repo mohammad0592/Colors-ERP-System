@@ -76,6 +76,20 @@ public class ThermoController(IThermoService thermo) : ApiControllerBase
         return ToResponse(await thermo.FinishRunAsync(id, request, cancellationToken));
     }
 
+    /// <summary>
+    /// Takes the roll out before it is finished, with the reason (section 19.23). It goes
+    /// back to stock as Not completed; what it made so far is counted next.
+    /// </summary>
+    [HttpPost("runs/{id:int}/unfinished")]
+    [Authorize(Roles = CanForm)]
+    public async Task<IActionResult> LeaveUnfinished(
+        int id,
+        [FromBody] LeaveRunUnfinishedRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await thermo.LeaveUnfinishedAsync(id, request, cancellationToken));
+    }
+
     /// <summary>The counts. Saving them creates the bags and prints their labels.</summary>
     [HttpPost("runs/{id:int}/test")]
     [Authorize(Roles = CanTest)]

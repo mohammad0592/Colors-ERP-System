@@ -11,6 +11,8 @@ const styles: Record<RollStatus, string> = {
   InThermo: 'bg-brand-50 text-brand-700',
   Processed: 'bg-line text-ink-muted',
   Scrapped: 'bg-bad-soft text-bad',
+  // Back in stock half used, to go into the thermo again (section 19.23).
+  NotCompleted: 'bg-warn-soft text-warn',
 };
 
 const labels: Record<RollStatus, TranslationKey> = {
@@ -19,6 +21,7 @@ const labels: Record<RollStatus, TranslationKey> = {
   InThermo: 'status.roll.inThermo',
   Processed: 'status.roll.processed',
   Scrapped: 'status.roll.scrapped',
+  NotCompleted: 'status.roll.notCompleted',
 };
 
 /**

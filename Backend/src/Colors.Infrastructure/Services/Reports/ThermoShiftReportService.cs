@@ -4,6 +4,7 @@ using Colors.Application.Features.Reports;
 using Colors.Domain.Common;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.Thermo;
 using Microsoft.EntityFrameworkCore;
 
 namespace Colors.Infrastructure.Services.Reports;
@@ -60,21 +61,28 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             .OrderBy(p => p.StartedAt)
             .ToListAsync(cancellationToken);
 
-        var rolls = runs.Select(ToRollRow).ToList();
+        var earlier = await UnfinishedRuns.ForRollsAsync(db, runs.Select(p => p.RollId), cancellationToken);
+        var rolls = runs.Select(p => ToRollRow(p, earlier[p.RollId])).ToList();
         var counted = runs.Where(p => p.TestReport is not null && p.Roll.Weight is not null).ToList();
 
         // One line per product, as the form's yield block has. Only counted rolls: a roll
         // still in the machine has a weight but no plates yet, and counting it would read
         // as the whole roll lost.
+        //
+        // And only the runs that finished their roll (section 19.23). A roll taken out
+        // unfinished is weighed once, when it is finished, so its yield is said there —
+        // its weight against the plates of every run it went through.
         var products = counted
+            .Where(p => !p.LeftUnfinished)
             .GroupBy(p => p.TestReport!.ProductId)
             .Select(g =>
             {
                 var product = g.First().TestReport!.Product;
                 var rollWeight = g.Sum(p => p.Roll.Weight!.Value);
-                var pieces = g.Sum(p => p.TestReport!.PieceCount);
+                var pieces = g.Sum(p => p.TestReport!.PieceCount + earlier[p.RollId].Pieces);
                 var productWeight = Math.Round(
-                    g.Sum(p => p.TestReport!.PieceCount * p.TestReport.PieceWeight / 1000m), 3);
+                    g.Sum(p => (p.TestReport!.PieceCount * p.TestReport.PieceWeight / 1000m)
+                               + (earlier[p.RollId].PlatesKg ?? 0m)), 3);
                 var scrap = Math.Round(rollWeight - productWeight, 3);
                 var codes = g
                     .Select(p => ProductCode.For(product.IsAbsorbent, product.PiecesPerBag, p.Roll.Color.Code))
@@ -133,9 +141,10 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             line.Workers.Where(w => w.IsTrainee).Select(w => w.StaffMember?.FullName ?? NameOf(w.UserId ?? 0)).Order().ToList(),
             line.Notes,
             rolls,
-            // Every roll that went in, as the form's own total adds them; the yield block
-            // below takes only the counted ones.
-            runs.Sum(p => p.Roll.Weight ?? 0m),
+            // Every roll that went in, as the form's own total adds them — each roll once:
+            // a roll taken out unfinished is weighed on the run that finishes it
+            // (section 19.23). The yield block below takes only the counted ones.
+            runs.Where(p => !p.LeftUnfinished).Sum(p => p.Roll.Weight ?? 0m),
             counted.Sum(p => p.TestReport!.BagCount),
             counted.Sum(p => p.TestReport!.PieceCount),
             products,
@@ -144,7 +153,9 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             packaging));
     }
 
-    private static ThermoReportRollDto ToRollRow(Domain.Entities.Production.ThermoProduction run)
+    private static ThermoReportRollDto ToRollRow(
+        Domain.Entities.Production.ThermoProduction run,
+        UnfinishedRuns.EarlierWork earlier)
     {
         var roll = run.Roll;
         var count = run.TestReport;
@@ -159,7 +170,8 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
         return new ThermoReportRollDto(
             roll.RollCode,
             roll.Color.Name,
-            roll.Weight,
+            // Weighed once, on the run that finishes the roll (section 19.23).
+            run.LeftUnfinished ? null : roll.Weight,
             roll.Length,
             roll.TestReport?.AverageThickness,
             run.TotalTimeMinutes,
@@ -173,7 +185,10 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             count is null || !roll.RecipeVersion.Family.IsAbsorbent ? null : count.AbsorbentPercentage,
             recycled is null or 0 ? null : recycled,
             roll.Batch.ShiftLine.ShiftReport.Shift.Name,
-            ThermoScrap.For(run));
+            ThermoScrap.For(run, earlier.PlatesKg),
+            run.LeftUnfinished,
+            run.UnfinishedReason,
+            !run.LeftUnfinished && earlier.Runs > 0);
     }
 
     /// <summary>The pallets built on the line this shift, cancelled ones left out.</summary>

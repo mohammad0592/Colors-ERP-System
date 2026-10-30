@@ -143,6 +143,12 @@ export function ThermoTestsPage(): ReactElement {
               <tr key={run.id} className="border-b border-line last:border-0">
                 <td className="px-4 py-3 font-mono font-semibold text-ink">
                   {run.rollCode}
+                  {/* Counted the same way; the roll went back to stock (section 19.23). */}
+                  {run.leftUnfinished && (
+                    <span className="ms-2 rounded-full bg-warn-soft px-2 py-0.5 font-sans text-xs font-semibold text-warn">
+                      {t('thermo.notFinished')}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {run.colorName}

@@ -10,6 +10,7 @@ import { RoleNames } from '../../lib/roles';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { thermoApi, type ThermoRunDto } from './api';
+import { LeaveUnfinishedDialog } from './LeaveUnfinishedDialog';
 import { StartRunDialog } from './StartRunDialog';
 
 /**
@@ -34,6 +35,8 @@ export function ThermoProductionPage(): ReactElement {
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [justStarted, setJustStarted] = useState<ThermoRunDto | null>(null);
+  // Taking a roll out before it is finished, which asks why (section 19.23).
+  const [leaving, setLeaving] = useState<{ id: number; rollCode: string } | null>(null);
 
   const runs = useQuery({
     queryKey: ['thermo-runs', openOnly, 'current-shift'],
@@ -75,6 +78,8 @@ export function ThermoProductionPage(): ReactElement {
     mutationFn: (id: number) => thermoApi.finishRun(id, null),
     onSuccess: () => {
       setActionError(null);
+      // The roll is out, so "it is in the machine" no longer holds.
+      setJustStarted(null);
     },
     onError: (caught: unknown) => {
       setActionError(
@@ -181,6 +186,12 @@ export function ThermoProductionPage(): ReactElement {
               <tr key={run.id} className="border-b border-line last:border-0">
                 <td className="px-4 py-3 font-mono font-semibold text-ink">
                   {run.rollCode}
+                  {/* Why it came out unfinished, where the next man will look. */}
+                  {run.unfinishedReason !== null && (
+                    <span className="block font-sans text-xs font-normal text-warn">
+                      {run.unfinishedReason}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {run.colorName}
@@ -202,7 +213,18 @@ export function ThermoProductionPage(): ReactElement {
                   {run.bagCount ?? '—'}
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    {canForm && !run.isFinished && (
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-control border border-warn/40 px-3 text-sm font-medium whitespace-nowrap text-warn transition-colors hover:bg-warn-soft"
+                        onClick={() => {
+                          setLeaving({ id: run.id, rollCode: run.rollCode });
+                        }}
+                      >
+                        {t('thermo.notFinished')}
+                      </button>
+                    )}
                     {canForm && !run.isFinished && (
                       <button
                         type="button"
@@ -249,6 +271,21 @@ export function ThermoProductionPage(): ReactElement {
         />
       )}
 
+      {leaving !== null && (
+        <LeaveUnfinishedDialog
+          runId={leaving.id}
+          rollCode={leaving.rollCode}
+          onClose={() => {
+            setLeaving(null);
+          }}
+          onLeft={() => {
+            // Out of the machine, so "it is in the machine" no longer holds.
+            setJustStarted(null);
+            invalidate();
+          }}
+        />
+      )}
+
       {confirm !== null && (
         <ConfirmDialog
           request={confirm}
@@ -268,13 +305,20 @@ export function ThermoProductionPage(): ReactElement {
 function RunStage({
   run,
 }: {
-  run: { isFinished: boolean; needsTest: boolean };
+  run: { isFinished: boolean; needsTest: boolean; leftUnfinished: boolean };
 }): ReactElement {
+  const { t } = useTranslation();
   const [label, tone] = !run.isFinished
     ? ['In the machine', 'bg-brand-50 text-brand-700']
-    : run.needsTest
-      ? ['Waiting to be counted', 'bg-warn-soft text-warn']
-      : ['Counted', 'bg-ok-soft text-ok'];
+    : run.leftUnfinished
+      ? // Out early: back in stock, and what it made is still counted (section 19.23).
+        [
+          run.needsTest ? t('thermo.notFinishedToCount') : t('thermo.notFinishedCounted'),
+          'bg-warn-soft text-warn',
+        ]
+      : run.needsTest
+        ? ['Waiting to be counted', 'bg-warn-soft text-warn']
+        : ['Counted', 'bg-ok-soft text-ok'];
 
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>

@@ -165,26 +165,44 @@ public class ThermoProductionConfiguration : IEntityTypeConfiguration<ThermoProd
     public void Configure(EntityTypeBuilder<ThermoProduction> builder)
     {
         builder.ToTable("ThermoProductions", t =>
+        {
             // A roll cannot come out before it went in.
             t.HasCheckConstraint(
                 "ck_thermo_finished_after_started",
-                "\"FinishedAt\" IS NULL OR \"FinishedAt\" >= \"StartedAt\""));
+                "\"FinishedAt\" IS NULL OR \"FinishedAt\" >= \"StartedAt\"");
+
+            // Left unfinished means taken out: a run still in the machine has no reason
+            // to have stopped (section 19.23).
+            t.HasCheckConstraint(
+                "ck_thermo_unfinished_is_out",
+                "\"UnfinishedReason\" IS NULL OR \"FinishedAt\" IS NOT NULL");
+        });
 
         builder.Property(e => e.Notes).HasMaxLength(500);
+        builder.Property(e => e.UnfinishedReason).HasMaxLength(500);
 
-        // The total time in the machine, worked out from the two timestamps here.
+        // The total time in the machine, and whether it left its roll unfinished, worked
+        // out from the columns here.
         builder.Ignore(e => e.TotalTimeMinutes);
+        builder.Ignore(e => e.LeftUnfinished);
 
-        // One roll goes in whole and is never split, so it is formed exactly once.
-        builder.HasIndex(e => e.RollId)
+        // A roll is never split, but it can be taken out unfinished and go in again
+        // (section 19.23). So: only one run finishes a roll, and only one is in the
+        // machine at a time. The runs left unfinished are as many as there were.
+        // Named, because two indexes on the same column are otherwise taken for one.
+        builder.HasIndex(e => e.RollId, "ux_thermo_productions_roll")
             .IsUnique()
-            .HasDatabaseName("ux_thermo_productions_roll");
+            .HasFilter("\"UnfinishedReason\" IS NULL");
+
+        builder.HasIndex(e => e.RollId, "ux_thermo_productions_roll_in_machine")
+            .IsUnique()
+            .HasFilter("\"FinishedAt\" IS NULL");
 
         builder.HasIndex(e => e.ShiftLineId).HasDatabaseName("ix_thermo_productions_shift_line");
 
         builder.HasOne(e => e.Roll)
-            .WithOne()
-            .HasForeignKey<ThermoProduction>(e => e.RollId)
+            .WithMany()
+            .HasForeignKey(e => e.RollId)
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(e => e.ShiftLine)

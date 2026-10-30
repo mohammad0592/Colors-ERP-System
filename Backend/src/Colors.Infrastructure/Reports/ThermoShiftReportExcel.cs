@@ -151,7 +151,10 @@ public class ThermoShiftReportExcel : IThermoShiftReportExcel
             var roll = report.Rolls[i];
             var row = first + i;
 
-            sheet.Cell(row, "A").Value = $"{roll.RollCode}-{roll.ColorName}";
+            // Marked on the form too: a roll taken out unfinished, and the run that
+            // finished a roll worked more than once (section 19.23).
+            sheet.Cell(row, "A").Value = $"{roll.RollCode}-{roll.ColorName}"
+                + (roll.LeftUnfinished ? " (not finished)" : roll.WorkedBefore ? " (worked twice)" : "");
             sheet.Cell(row, "B").Value = Number(roll.RollWeight);
             sheet.Cell(row, "C").Value = Number(roll.RollLength);
             sheet.Cell(row, "D").Value = Number(roll.AverageThickness);

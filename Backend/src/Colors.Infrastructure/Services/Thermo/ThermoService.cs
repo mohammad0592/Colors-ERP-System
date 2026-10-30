@@ -45,6 +45,7 @@ public class ThermoService(
         var names = await UserNamesAsync(runs.Select(p => p.OperatorUserId), cancellationToken);
         var codes = await BarcodesForAsync(
             BarcodeObjectType.Roll, runs.Select(p => p.RollId), cancellationToken);
+        var earlier = await UnfinishedRuns.ForRollsAsync(db, runs.Select(p => p.RollId), cancellationToken);
 
         return runs
             .Select(p => new ThermoRunSummaryDto(
@@ -70,7 +71,9 @@ public class ThermoService(
                 p.TestReport?.BagCount,
                 p.TestReport?.PieceCount,
                 p.Roll.Weight,
-                ThermoScrap.For(p)))
+                ThermoScrap.For(p, earlier[p.RollId].PlatesKg),
+                p.LeftUnfinished,
+                p.UnfinishedReason))
             .ToList();
     }
 
@@ -93,7 +96,8 @@ public class ThermoService(
             .Include(r => r.Color)
             .Include(r => r.TestReport)
             .Include(r => r.Product)
-            .Where(r => r.Status == RollStatus.Available)
+            // In stock, or back in stock after being taken out unfinished (section 19.23).
+            .Where(r => r.Status == RollStatus.Available || r.Status == RollStatus.NotCompleted)
             // Oldest first: rolls sit for weeks, and the oldest should move first.
             .OrderBy(r => r.ProducedAt)
             .Take(300)
@@ -116,7 +120,8 @@ public class ThermoService(
                 r.Length,
                 r.ProductId,
                 r.Product?.Name,
-                r.RecipeVersion.RecipeFamilyId))
+                r.RecipeVersion.RecipeFamilyId,
+                r.Status == RollStatus.NotCompleted))
             .ToList();
     }
 
@@ -154,7 +159,8 @@ public class ThermoService(
 
         var found = roll.Value!;
 
-        if (found.Status != RollStatus.Available)
+        // A roll taken out unfinished goes in again like any roll in stock (section 19.23).
+        if (found.Status is not (RollStatus.Available or RollStatus.NotCompleted))
         {
             return InvalidRun(StatusRefusal(found));
         }
@@ -223,6 +229,53 @@ public class ThermoService(
 
         // Formed. What came out of it is counted next, on the test form.
         run.Roll.Status = RollStatus.Processed;
+
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadRunAsync(runId, cancellationToken);
+    }
+
+    public async Task<Result<ThermoRunDto>> LeaveUnfinishedAsync(
+        int runId,
+        LeaveRunUnfinishedRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        // A roll back in stock half used needs the reason with it: whoever picks it up next
+        // has to know what happened (section 19.23).
+        var reason = Trimmed(request.Reason);
+        if (reason is null)
+        {
+            return InvalidRun(
+                "Say why the roll could not be finished.",
+                "thermo.unfinishedReasonRequired");
+        }
+
+        var run = await RunQuery().FirstOrDefaultAsync(p => p.Id == runId, cancellationToken);
+        if (run is null)
+        {
+            return RunNotFound();
+        }
+
+        if (run.FinishedAt is not null)
+        {
+            return InvalidRun(
+                $"Roll {run.Roll.RollCode} is already out of the machine.",
+                "thermo.alreadyOut",
+                run.Roll.RollCode);
+        }
+
+        var finishedAt = request.FinishedAt ?? timeProvider.GetUtcNow();
+        if (finishedAt < run.StartedAt)
+        {
+            return InvalidRun("The roll cannot come out before it went in.");
+        }
+
+        run.FinishedAt = finishedAt;
+        run.UnfinishedReason = reason;
+
+        // Back in stock, half used, and free to go in again. What it made so far is
+        // counted next, as for any run.
+        run.Roll.Status = RollStatus.NotCompleted;
 
         await db.SaveChangesAsync(cancellationToken);
 
@@ -598,7 +651,7 @@ public class ThermoService(
                     names.GetValueOrDefault(run.TestReport.TestedByUserId, "—"),
                     run.TestReport.TestedAt,
                     run.TestReport.Notes),
-            ThermoScrap.For(run),
+            ThermoScrap.For(run, (await UnfinishedRuns.ForRollsAsync(db, [run.RollId], cancellationToken))[run.RollId].PlatesKg),
             run.Bags
                 .OrderBy(b => b.Id)
                 .Select(b => new ProducedBagDto(
@@ -610,7 +663,9 @@ public class ThermoService(
                     b.PieceCount,
                     b.Status.ToString(),
                     b.CreatedAt))
-                .ToList());
+                .ToList(),
+            run.LeftUnfinished,
+            run.UnfinishedReason);
     }
 
     private static string? Trimmed(string? value) =>

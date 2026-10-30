@@ -496,24 +496,35 @@ public class ReportsService(ColorsDbContext db) : IReportsService
                 t.PieceCount,
                 t.PieceWeight,
                 RollWeight = t.ThermoProduction.Roll.Weight,
+                t.ThermoProduction.RollId,
+                Unfinished = t.ThermoProduction.UnfinishedReason != null,
             })
             .ToListAsync(cancellationToken);
+
+        var earlier = await Colors.Infrastructure.Services.Thermo.UnfinishedRuns.ForRollsAsync(
+            db, runs.Select(r => r.RollId), cancellationToken);
 
         var products = runs
             .GroupBy(r => new { r.ProductId, r.ProductName })
             .Select(g =>
             {
-                var rollWeight = g.Sum(r => r.RollWeight ?? 0m);
+                // A roll is weighed once, on the run that finishes it (section 19.23). A
+                // run that left its roll unfinished adds its bags and plates to what the
+                // shift made, but not its roll's weight, and not a loss.
+                var finishing = g.Where(r => !r.Unfinished).ToList();
+                var rollWeight = finishing.Sum(r => r.RollWeight ?? 0m);
 
                 // One shared formula with the thermo's own screen, so the summary can
-                // never quietly disagree with the row the operator read it off.
-                var loss = g.Sum(r =>
-                    ThermoScrap.Between(r.RollWeight ?? 0m, r.PieceCount, r.PieceWeight));
+                // never quietly disagree with the row the operator read it off — on a
+                // roll worked twice, the roll's weight against the plates of every run.
+                var loss = finishing.Sum(r =>
+                    ThermoScrap.Between(r.RollWeight ?? 0m, r.PieceCount, r.PieceWeight)
+                    - (earlier[r.RollId].PlatesKg ?? 0m));
 
                 return new ShiftProductLineDto(
                     g.Key.ProductId,
                     g.Key.ProductName,
-                    g.Count(),
+                    finishing.Count,
                     rollWeight,
                     g.Sum(r => r.BagCount),
                     g.Sum(r => r.PieceCount),

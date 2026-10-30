@@ -65,12 +65,17 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
                 {
                     p.RollId,
                     p.StartedAt,
+                    Finished = p.UnfinishedReason == null,
                     p.ShiftLine.ShiftReport.ProductionDate,
                     ShiftName = p.ShiftLine.ShiftReport.Shift.Name,
                 })
                 .ToListAsync(cancellationToken))
             .GroupBy(p => p.RollId)
-            .ToDictionary(g => g.Key, g => g.OrderBy(p => p.StartedAt).First());
+            // The run that finished it, when one has; a roll taken out unfinished has only
+            // been part-formed so far (section 19.23), and shows its latest run.
+            .ToDictionary(
+                g => g.Key,
+                g => g.OrderByDescending(p => p.Finished).ThenByDescending(p => p.StartedAt).First());
 
         var userIds = rolls
             .SelectMany(r => new int?[] { r.ProducedByUserId, r.MeasuredByUserId, r.TestReport?.TestedByUserId })

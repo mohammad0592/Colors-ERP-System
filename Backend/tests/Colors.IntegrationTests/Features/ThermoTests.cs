@@ -593,4 +593,105 @@ public class ThermoTests(DatabaseFixture fixture)
         db.ChangeTracker.Clear();
         Assert.Equal(ids.NormalProductId, (await db.Rolls.SingleAsync(r => r.Id == roll.Id)).ProductId);
     }
+
+    // ---------- a roll taken out unfinished (section 19.23) ----------
+
+    private static async Task<ThermoRunDto> StartAsync(ThermoService service, FactoryData.Ids ids, RollDto roll)
+    {
+        var started = await service.StartRunAsync(
+            new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null), ids.UserId);
+        Assert.True(started.IsSuccess, started.Message);
+        return started.Value!;
+    }
+
+    [Fact]
+    public async Task A_roll_taken_out_unfinished_needs_a_reason_and_goes_back_to_stock()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "TUN1");
+        var roll = await AvailableRollAsync(db, ids, "TUN1");
+        var service = NewService(db);
+        var run = await StartAsync(service, ids, roll);
+
+        var silent = await service.LeaveUnfinishedAsync(run.Id, new LeaveRunUnfinishedRequest("   "));
+        Assert.Equal("thermo.unfinishedReasonRequired", silent.MessageCode);
+
+        var left = await service.LeaveUnfinishedAsync(run.Id, new LeaveRunUnfinishedRequest("Mould jammed"));
+
+        Assert.True(left.IsSuccess, left.Message);
+        Assert.True(left.Value!.LeftUnfinished);
+        Assert.Equal("Mould jammed", left.Value.UnfinishedReason);
+        Assert.NotNull(left.Value.FinishedAt);
+        Assert.Equal(RollStatus.NotCompleted, (await db.Rolls.AsNoTracking().SingleAsync(r => r.Id == roll.Id)).Status);
+
+        // Back on the list of rolls the thermo can take, marked as not completed.
+        var available = await service.GetAvailableRollsAsync();
+        Assert.True(available.Single(r => r.Id == roll.Id).NotCompleted);
+
+        // Out is out: it cannot be taken out a second time.
+        var again = await service.LeaveUnfinishedAsync(run.Id, new LeaveRunUnfinishedRequest("Twice"));
+        Assert.Equal("thermo.alreadyOut", again.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_roll_worked_twice_is_counted_each_time_and_weighed_once()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "TUN2");
+        var roll = await AvailableRollAsync(db, ids, "TUN2");
+        var service = NewService(db);
+
+        // First time in: stopped part-way, and what it made so far counted.
+        var first = await StartAsync(service, ids, roll);
+        await service.LeaveUnfinishedAsync(first.Id, new LeaveRunUnfinishedRequest("Power cut"));
+        var firstCount = await service.SaveTestReportAsync(
+            first.Id, new SaveThermoTestRequest(2, 4.2m, 10.5m, 0m, null), ids.UserId);
+        Assert.True(firstCount.IsSuccess, firstCount.Message);
+        // Its scrap is not said here: the roll is not finished.
+        Assert.Null(firstCount.Value!.ScrapWeight);
+
+        // Second time in: finished and counted.
+        var second = await StartAsync(service, ids, roll);
+        var finished = await service.FinishRunAsync(second.Id, new FinishThermoRunRequest(second.StartedAt.AddMinutes(30)));
+        Assert.True(finished.IsSuccess, finished.Message);
+        var secondCount = await service.SaveTestReportAsync(
+            second.Id, new SaveThermoTestRequest(3, 4.2m, 10.5m, 0m, null), ids.UserId);
+        Assert.True(secondCount.IsSuccess, secondCount.Message);
+
+        Assert.Equal(RollStatus.Processed, (await db.Rolls.AsNoTracking().SingleAsync(r => r.Id == roll.Id)).Status);
+
+        // The roll's weight against the plates of both runs.
+        var pieces = firstCount.Value.TestReport!.PieceCount + secondCount.Value!.TestReport!.PieceCount;
+        var rollWeight = finished.Value!.RollReadings!.Weight;
+        Assert.Equal(Math.Round(rollWeight - (pieces * 4.2m / 1000m), 3), secondCount.Value.ScrapWeight);
+
+        // In the shift's report the roll weighs once, and the two runs say what they were.
+        var report = (await new Colors.Infrastructure.Services.Reports.ThermoShiftReportService(db)
+            .GetAsync(ids.ShiftReportId)).Value!;
+        Assert.Equal(rollWeight, report.TotalRollWeight);
+        var rows = report.Rolls.Where(r => r.RollCode == roll.RollCode).ToList();
+        Assert.Equal(2, rows.Count);
+        Assert.Contains(rows, r => r.LeftUnfinished && r.RollWeight == null && r.UnfinishedReason == "Power cut");
+        Assert.Contains(rows, r => r.WorkedBefore && r.RollWeight == rollWeight);
+        var product = Assert.Single(report.Products);
+        Assert.Equal(rollWeight, product.RollWeight);
+        Assert.Equal(pieces, product.PieceCount);
+    }
+
+    [Fact]
+    public async Task A_roll_is_finished_by_one_run_only()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "TUN3");
+        var roll = await AvailableRollAsync(db, ids, "TUN3");
+        var service = NewService(db);
+        var run = await StartAsync(service, ids, roll);
+        await service.FinishRunAsync(run.Id, new FinishThermoRunRequest(run.StartedAt.AddMinutes(30)));
+
+        // Formed: it is not back in stock, so it cannot go in again.
+        var again = await service.StartRunAsync(
+            new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null), ids.UserId);
+
+        Assert.False(again.IsSuccess);
+    }
 }

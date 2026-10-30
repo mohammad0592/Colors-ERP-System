@@ -21,4 +21,11 @@ public enum RollStatus
     Processed = 4,
 
     Scrapped = 5,
+
+    /// <summary>
+    /// Taken out of the thermo before it was finished, for a reason somebody gave
+    /// (specification section 19.23). Back in stock, and may go into the machine again —
+    /// so one roll can have several runs, and is counted once.
+    /// </summary>
+    NotCompleted = 6,
 }

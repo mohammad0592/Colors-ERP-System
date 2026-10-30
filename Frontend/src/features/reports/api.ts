@@ -187,6 +187,11 @@ export interface ThermoReportRollDto {
   /** The shift the roll was made on at the extruder. */
   rollShiftName: string;
   scrapWeight: number | null;
+  /** Taken out unfinished, and why. Its weight is given on the run that finishes it. */
+  leftUnfinished: boolean;
+  unfinishedReason: string | null;
+  /** Finished a roll that had been taken out unfinished before — worked twice. */
+  workedBefore: boolean;
 }
 
 export interface ThermoReportProductDto {

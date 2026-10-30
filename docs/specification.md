@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-two changes, from watching the factory use the system. They are written here rather
+Twenty-three changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2445,6 +2445,35 @@ rather than the category's name, which can be rewritten. A category added later 
 on the right tab by that setting, and turning it on or off moves its materials across.
 Adding a material offers only the categories of that tab's kind, already chosen when
 there is just one.
+
+### 19.23 A roll taken out of the thermo unfinished
+
+Some rolls go into the thermo and cannot be finished — a breakdown, a power cut, the mould
+changed. Such a roll comes out, goes back to stock half used, and goes in again later.
+
+**Decided, and built:**
+
+- **Not finished.** Beside *Take it out*, a roll in the machine has **Not finished**. It
+  asks why — a reason is required — and takes the roll out: the run ends, keeping the
+  reason (`ThermoProductions.UnfinishedReason`), and the roll goes back to stock with a
+  new status, **Not completed**. The thermo screen shows the reason under the roll code.
+- **What it made is counted.** The run is counted on Thermo Tests like any other, so the
+  bags made before it stopped get their labels and their place in stock.
+- **It goes in again.** A Not completed roll is offered when putting a roll in, marked as
+  such, and starts a new run the usual way. The run that finishes it sets it to
+  Processed, as before.
+- **One roll, several runs — weighed once.** A roll is never split, but it can now have
+  more than one run: as many left unfinished as there were, and only ever **one that
+  finishes it** and one in the machine at a time, which two partial unique indexes hold.
+  Its weight is counted once, on the run that finishes it. That run's scrap is the roll's
+  weight less the plates of **every** run it went through (`ThermoScrap.For`), and is not
+  said until all of them are counted; a run left unfinished has no scrap of its own.
+- **In the reports.** The thermo shift report and its Excel form mark a run *not
+  finished* (its weight left blank) and the run that finished a roll worked before
+  *worked twice*; the shift's roll weight adds each roll once. The yield by product is
+  said on the run that finishes the roll, against the plates of all its runs, while each
+  run's bags and pieces stay with the shift that made them. The shift summary follows the
+  same rule.
 ---
 ---
 ---

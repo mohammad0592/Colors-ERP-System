@@ -26,18 +26,28 @@ namespace Colors.Domain.Common;
 public static class ThermoScrap
 {
     /// <summary>
-    /// Kilograms thrown away, or null where the run cannot say: an unweighed roll or a
-    /// run that has not been counted yet. Never zero for those — zero would read as a
-    /// run that wasted nothing.
+    /// Kilograms thrown away, or null where the run cannot say: an unweighed roll, a run
+    /// that has not been counted yet, or one that left its roll unfinished. Never zero for
+    /// those — zero would read as a run that wasted nothing.
+    ///
+    /// A roll worked more than once (section 19.23) is weighed once, so its scrap is said
+    /// once: on the run that finishes it, as the roll's weight less the plates of every
+    /// run — <paramref name="earlierPlatesKg"/> being those of the unfinished runs before.
+    /// Null there while one of those is not counted yet.
     /// </summary>
-    public static decimal? For(ThermoProduction run)
+    public static decimal? For(ThermoProduction run, decimal? earlierPlatesKg)
     {
         var rollWeight = run.Roll.Weight;
         var counted = run.TestReport;
 
-        return rollWeight is null || counted is null
-            ? null
-            : Between(rollWeight.Value, counted.PieceCount, counted.PieceWeight);
+        if (run.LeftUnfinished || rollWeight is null || counted is null || earlierPlatesKg is null)
+        {
+            return null;
+        }
+
+        return Math.Round(
+            Between(rollWeight.Value, counted.PieceCount, counted.PieceWeight) - earlierPlatesKg.Value,
+            3);
     }
 
     /// <summary>
