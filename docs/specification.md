@@ -1418,7 +1418,7 @@ The label also confirms the shift on the bag is the **thermo** shift (A), while 
 
 **Product code format:** `AB500B` = type (`AB` / `NOR`) + plates per bag (`500`) + colour letter (`B` = black). Generated from the bag's own attributes, so it can never disagree with them.
 
-*Changed in 19.25:* the product codes are now the factory's own list, kept in Master Data, and each bag's barcode is its bag code — `B050111261758`. The rule above only fills in for a product and colour the list does not have.
+*Changed in 19.25:* the product codes are now the factory's own list, kept in Master Data, and each bag's barcode is its bag code — `B0050111261758`. The rule above only fills in for a product and colour the list does not have.
 
 ### Format
 
@@ -2517,20 +2517,20 @@ written down as the factory uses them rather than worked out:
   report is made. Changing a code changes it on a reprinted label too.
 
 **The bag code is B, the bag's number that day, then the date and the 24-hour time it was
-counted:** `B050111261758` is the fifth bag of 1 November 2026, counted at 17:58.
+counted:** `B0050111261758` is the fifth bag of 1 November 2026, counted at 17:58.
 
 - It is the bag's barcode, as a roll's code is its barcode (section 8) — one code to
   read, type and scan. Bags made before this change keep the barcodes they were printed
   with.
 - The number counts every bag the thermo makes that day, across runs and shifts, and
-  starts again at 01 every day at midnight, which is where shift B ends. There is nothing
+  starts again at 001 every day at midnight, which is where shift B ends. There is nothing
   to reset by hand: the first bag of a day starts that day's count.
 - Two bags never share a code. The number is unique within a day, and the date in the
   code is that day.
 - The date, time and midnight are the factory's clock. The tablet sends its time zone
   with the counts, because the server keeps time in UTC and, on the cloud trial, runs in
   a zone that is not the factory's.
-- Past 99 the number simply grows a digit — `B100…` — as the roll number does.
+- The number is three digits — `001` to `999` — and past 999 simply grows a digit.
 ---
 ---
 ---

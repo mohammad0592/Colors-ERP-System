@@ -722,12 +722,12 @@ public class ThermoTests(DatabaseFixture fixture)
         Assert.True(a.IsSuccess, a.Message);
         Assert.True(b.IsSuccess, b.Message);
 
-        // The count runs on across the day's runs: 01 to 03, then 04 and 05.
+        // The count runs on across the day's runs: 001 to 003, then 004 and 005.
         Assert.Equal(
-            ["B010403911758", "B020403911758", "B030403911758"],
+            ["B0010403911758", "B0020403911758", "B0030403911758"],
             a.Value!.Bags.Select(x => x.Barcode).Order(StringComparer.Ordinal));
         Assert.Equal(
-            ["B040403911758", "B050403911758"],
+            ["B0040403911758", "B0050403911758"],
             b.Value!.Bags.Select(x => x.Barcode).Order(StringComparer.Ordinal));
     }
 
@@ -749,8 +749,8 @@ public class ThermoTests(DatabaseFixture fixture)
         var afterMidnight = await service.SaveTestReportAsync(
             early.Id, new SaveThermoTestRequest(1, 4m, 10m, 0m, null, UtcOffsetMinutes: 180), ids.UserId);
 
-        Assert.Contains("B020605912359", beforeMidnight.Value!.Bags.Select(x => x.Barcode));
-        Assert.Equal("B010705910001", Assert.Single(afterMidnight.Value!.Bags).Barcode);
+        Assert.Contains("B0020605912359", beforeMidnight.Value!.Bags.Select(x => x.Barcode));
+        Assert.Equal("B0010705910001", Assert.Single(afterMidnight.Value!.Bags).Barcode);
     }
 
     [Fact]

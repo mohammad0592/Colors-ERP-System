@@ -379,13 +379,13 @@ public class ThermoService(
         await db.SaveChangesAsync(cancellationToken);
 
         // The day's numbers, taken inside this transaction: the counter's row stays locked
-        // until it commits, so two tablets saving at once cannot both be handed 05, and a
+        // until it commits, so two tablets saving at once cannot both be handed 005, and a
         // refusal below rolls it back so the numbers are not lost.
         var firstNumber = await TakeBagNumbersAsync(
             DateOnly.FromDateTime(local.DateTime), bags.Count, cancellationToken);
 
         // Each bag's code is its barcode, as a roll's is (section 19.25): B, its number
-        // that day, the date and the time — B050111261758.
+        // that day, the date and the time — B0050111261758.
         foreach (var (bag, index) in bags.Select((bag, index) => (bag, index)))
         {
             var barcode = await barcodes.IssueAsync(
