@@ -2458,7 +2458,7 @@ changed. Such a roll comes out, goes back to stock half used, and goes in again 
 
 **Decided, and built:**
 
-- **Not finished.** Beside *Take it out*, a roll in the machine has **Not finished**. It
+- **Not finished.** Beside *Finished*, a roll in the machine has **Not finished**. It
   asks why — a reason is required — and takes the roll out: the run ends, keeping the
   reason (`ThermoProductions.UnfinishedReason`), and the roll goes back to stock with a
   new status, **Not completed**. The thermo screen shows the reason under the roll code.

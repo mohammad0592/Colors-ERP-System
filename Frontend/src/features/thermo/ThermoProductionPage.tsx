@@ -116,7 +116,7 @@ export function ThermoProductionPage(): ReactElement {
           canForm ? (
             <StartOnLineButton
               lines={lines}
-              action="Put a roll in"
+              action={t('thermo.addRoll')}
               onStart={(shiftLineId) => {
                 const line = lines.find((l) => l.shiftLineId === shiftLineId);
                 if (line !== undefined) {
@@ -163,8 +163,8 @@ export function ThermoProductionPage(): ReactElement {
       {justStarted !== null && (
         <p className="mb-4 rounded-control border border-s-4 border-ok/30 border-s-ok bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
           {t('term.roll')} <strong className="font-mono">{justStarted.rollCode}</strong>{' '}
-          is in the machine, making {justStarted.productName ?? 'its product'}. Take it
-          out when the run is done, then count what it made.
+          is in the machine, making {justStarted.productName ?? 'its product'}. Press{' '}
+          {t('thermo.takeItOut')} when the run is done, then count what it made.
         </p>
       )}
 
@@ -177,6 +177,8 @@ export function ThermoProductionPage(): ReactElement {
               <th className="px-4 py-3 font-semibold">{t('term.shift')}</th>
               <th className="px-4 py-3 font-semibold">{t('thermo.operator')}</th>
               <th className="px-4 py-3 font-semibold">{t('thermo.whereItIs')}</th>
+              <th className="px-4 py-3 font-semibold">{t('thermo.timeIn')}</th>
+              <th className="px-4 py-3 font-semibold">{t('thermo.timeOut')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('field.minutes')}</th>
               <th className="px-4 py-3 text-end font-semibold">{t('term.bags')}</th>
               <th className="px-4 py-3" />
@@ -185,7 +187,7 @@ export function ThermoProductionPage(): ReactElement {
           <tbody>
             {runs.data.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-8 text-center text-ink-muted">
+                <td colSpan={10} className="px-4 py-8 text-center text-ink-muted">
                   {openOnly ? t('thermo.nothingToCount') : t('thermo.noneFormed')}
                 </td>
               </tr>
@@ -213,6 +215,12 @@ export function ThermoProductionPage(): ReactElement {
                 <td className="px-4 py-3 text-ink-soft">{run.operatorName}</td>
                 <td className="px-4 py-3">
                   <RunStage run={run} />
+                </td>
+                <td className="px-4 py-3 tabular-nums text-ink-soft">
+                  <ClockTime at={run.startedAt} />
+                </td>
+                <td className="px-4 py-3 tabular-nums text-ink-soft">
+                  {run.finishedAt === null ? '—' : <ClockTime at={run.finishedAt} />}
                 </td>
                 <td className="px-4 py-3 text-end tabular-nums text-ink-soft">
                   {run.totalTimeMinutes ?? '—'}
@@ -250,11 +258,12 @@ export function ThermoProductionPage(): ReactElement {
                         className="min-h-9 rounded-control border border-brand-600 bg-brand-600 px-3 text-sm font-medium whitespace-nowrap text-white transition-colors hover:bg-brand-700"
                         onClick={() => {
                           setConfirm({
-                            title: `Take roll ${run.rollCode} out?`,
+                            title: `Roll ${run.rollCode} finished?`,
                             message: (
                               <>
-                                The run ends now. Counting what it made comes next, on the
-                                Thermo Tests screen — and that is what creates the bags.
+                                The roll comes out now, and this is its time out. Counting
+                                what it made comes next, on the Thermo Tests screen — and
+                                that is what creates the bags.
                               </>
                             ),
                             confirmLabel: t('thermo.takeItOut'),
@@ -359,6 +368,26 @@ function RunStage({
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${tone}`}>
       {label}
+    </span>
+  );
+}
+
+/**
+ * When the roll went in or came out, on the clock of the tablet showing it. The day goes
+ * on a second line only when it is not today: the still-to-count list carries rolls over
+ * from earlier shifts, and "23:40" under a roll counted the next morning would read as
+ * tonight.
+ */
+function ClockTime({ at }: { at: string }): ReactElement {
+  const when = new Date(at);
+  const time = when.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const day = when.toLocaleDateString('en-GB');
+  return (
+    <span className="whitespace-nowrap">
+      {time}
+      {day !== new Date().toLocaleDateString('en-GB') && (
+        <span className="block text-xs text-ink-muted">{day}</span>
+      )}
     </span>
   );
 }
