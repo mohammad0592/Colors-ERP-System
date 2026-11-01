@@ -830,6 +830,22 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Colors.Domain.Entities.Packaging.PalletNumberCounter", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<int>("NextNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Day");
+
+                    b.ToTable("PalletNumberCounters", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_pallet_number_positive", "\"NextNumber\" > 0");
+                        });
+                });
+
             modelBuilder.Entity("Colors.Domain.Entities.Packaging.WoodenPallet", b =>
                 {
                     b.Property<int>("Id")

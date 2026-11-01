@@ -360,12 +360,29 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
 
         var live = pallet.Assignments.Where(a => a.ReversedAt is null).ToList();
 
+        // P in front of the code of the bags on it — PAB500B, PBB (section 19.26). The
+        // pallet took its product and colour off its first bag, so they are the bags'.
+        string? generalCode = null;
+        if (pallet.Product is not null && pallet.Color is not null)
+        {
+            var book = await ProductCodeBook.LoadAsync(db, cancellationToken);
+            generalCode = PalletCode.General(book.For(
+                pallet.Product.Id,
+                pallet.Color.Id,
+                pallet.Product.IsAbsorbent,
+                pallet.Product.PiecesPerBag,
+                pallet.Color.Code));
+        }
+
         return Result<BarcodeLabelDto>.Success(new BarcodeLabelDto(
             barcode,
             "Pallet",
-            $"Pallet {pallet.PalletNumber}",
+            // On top, the general code, as a bag's label has its product code; the
+            // pallet's own code is printed over the barcode. A pallet nothing has gone on
+            // has no general code yet, so it shows its own.
+            generalCode ?? barcode,
             null,
-            null,
+            generalCode,
             pallet.Product?.Name,
             pallet.Color?.Name,
             live.Sum(a => a.ProducedBag.PieceCount),
@@ -373,7 +390,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             null,
             pallet.ShiftLine.ShiftReport.Shift.Name,
             pallet.ShiftLine.ShiftReport.ProductionDate,
-            pallet.CreatedAt,
+            // The time in its code: when it was finished, full or closed.
+            pallet.CompletedAt ?? pallet.ClosedAt ?? pallet.CreatedAt,
             null,
             null));
     }

@@ -5,6 +5,18 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Colors.Infrastructure.Persistence.Configurations;
 
+public class PalletNumberCounterConfiguration : IEntityTypeConfiguration<PalletNumberCounter>
+{
+    public void Configure(EntityTypeBuilder<PalletNumberCounter> builder)
+    {
+        builder.ToTable("PalletNumberCounters", t =>
+            t.HasCheckConstraint("ck_pallet_number_positive", "\"NextNumber\" > 0"));
+
+        // The day is the key: one row per day, added by the first pallet finished in it.
+        builder.HasKey(e => e.Day);
+    }
+}
+
 public class WoodenPalletConfiguration : IEntityTypeConfiguration<WoodenPallet>
 {
     public void Configure(EntityTypeBuilder<WoodenPallet> builder)

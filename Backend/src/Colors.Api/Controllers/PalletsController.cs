@@ -102,9 +102,13 @@ public class PalletsController(IPalletService pallets) : ApiControllerBase
     /// </summary>
     [HttpPost("{id:int}/close")]
     [Authorize(Roles = CanPack)]
-    public async Task<IActionResult> ClosePallet(int id, CancellationToken cancellationToken)
+    public async Task<IActionResult> ClosePallet(
+        int id,
+        [FromBody] ClosePalletRequest request,
+        CancellationToken cancellationToken)
     {
-        return ToResponse(await pallets.ClosePalletAsync(id, CurrentUserId(), cancellationToken));
+        return ToResponse(
+            await pallets.ClosePalletAsync(id, request, CurrentUserId(), cancellationToken));
     }
 
     /// <summary>Opens a closed pallet again, to take more bags.</summary>

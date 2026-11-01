@@ -1808,7 +1808,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-five changes, from watching the factory use the system. They are written here rather
+Twenty-six changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2531,6 +2531,38 @@ counted:** `B0050111261758` is the fifth bag of 1 November 2026, counted at 17:5
   with the counts, because the server keeps time in UTC and, on the cloud trial, runs in
   a zone that is not the factory's.
 - The number is three digits — `001` to `999` — and past 999 simply grows a digit.
+
+### 19.26 Pallet codes
+
+A pallet now has codes made the way a bag's are (19.25): a **general code** saying what
+kind of pallet it is, and its **own code**, which is its barcode.
+
+**The general code is P in front of the code of the bags on it** — `PAB500B`, `PLB03W`,
+`PBB`. A pallet takes its product and colour from its first bag, so its general code
+follows from the bags', and changes with the product code list. It is the top line of the
+pallet's label, as the product code is on a bag's.
+
+**Its own code is P, the pallet's number that day, then the date and the 24-hour time it
+was finished:** `P030111261758` is the third pallet finished on 1 November 2026, at 17:58.
+
+- Two digits for the number, not three as on a bag: the factory finishes a few dozen
+  pallets a day. Past 99 it grows a digit.
+- *Finished* means full — the bag that fills it goes on — or closed not full (19.21).
+  The count is of pallets finished that day, and starts again at 01 every day at
+  midnight, where shift B ends.
+- So a pallet has no code while it is being filled. The screens call it by its number,
+  *Pallet 12*, until then, and **its label is printed when it is finished** rather than
+  when it is started: the label comes up on its own the moment it is full or closed.
+- A pallet reopened and finished again keeps the code it was given the first time. That
+  label is already on it, and a second code would leave it carrying one that no longer
+  scans. Pallets started before this change keep the codes they were printed with.
+- The date, time and midnight are the factory's clock, sent by the tablet, as for bags.
+
+**No weight on the pallet's label.** The factory does not print it, as it does not on a
+bag's. The weight is still recorded and shown on the Pallets screen.
+
+How many bags fill a pallet is unchanged: it is the product's *bags per pallet*, set on
+the Products tab of Master Data.
 ---
 ---
 ---

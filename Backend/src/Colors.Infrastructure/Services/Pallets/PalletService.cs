@@ -132,8 +132,9 @@ public class PalletService(
             return Invalid(ShiftWork.RefusalFor(shiftLine.ShiftReport));
         }
 
-        // The pallet, its label and the wood it is built on are one act, exactly as a
-        // roll and its bag are.
+        // The pallet and the wood it is built on are one act. It has no code yet: a
+        // pallet's code carries the time it was finished, so it is given one when it is
+        // full or closed, and its label is printed then (section 19.26).
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
 
         var pallet = new WoodenPallet
@@ -148,16 +149,6 @@ public class PalletService(
 
         db.WoodenPallets.Add(pallet);
         await db.SaveChangesAsync(cancellationToken);
-
-        var barcode = await barcodes.IssueAsync(
-            BarcodeObjectType.Pallet, pallet.Id, cancellationToken);
-
-        if (!barcode.IsSuccess)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            db.ChangeTracker.Clear();
-            return Invalid(barcode.Message ?? "The pallet's label could not be printed.");
-        }
 
         // The wood leaves the store now, not at the end of the shift. That is when the
         // operator picks it up, and it is what makes the store's figure true all day
@@ -296,9 +287,15 @@ public class PalletService(
 
     public async Task<Result<PalletDto>> ClosePalletAsync(
         int palletId,
+        ClosePalletRequest request,
         int userId,
         CancellationToken cancellationToken = default)
     {
+        if (!ValidOffset(request.UtcOffsetMinutes))
+        {
+            return Invalid(BadOffset);
+        }
+
         var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
         if (pallet is null)
         {
@@ -323,9 +320,21 @@ public class PalletService(
                     pallet.PalletNumber.ToString());
         }
 
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
         pallet.ClosedAt = timeProvider.GetUtcNow();
         pallet.ClosedByUserId = userId;
         await db.SaveChangesAsync(cancellationToken);
+
+        var coded = await GiveCodeAsync(pallet, pallet.ClosedAt.Value, request.UtcOffsetMinutes, cancellationToken);
+        if (coded is not null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            db.ChangeTracker.Clear();
+            return Invalid(coded);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
 
         return await LoadAsync(palletId, cancellationToken);
     }
@@ -402,6 +411,11 @@ public class PalletService(
                 pallet.PalletNumber.ToString());
         }
 
+        if (!ValidOffset(request.UtcOffsetMinutes))
+        {
+            return Invalid(BadOffset);
+        }
+
         var found = await FindBagAsync(request, cancellationToken);
         if (!found.IsSuccess)
         {
@@ -461,7 +475,23 @@ public class PalletService(
             pallet.CompletedAt = now;
         }
 
+        // The bag and the code it may finish the pallet with are one act: a full pallet
+        // without a code could not be labelled or shipped.
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         await db.SaveChangesAsync(cancellationToken);
+
+        if (pallet.CompletedAt is not null)
+        {
+            var coded = await GiveCodeAsync(pallet, now, request.UtcOffsetMinutes, cancellationToken);
+            if (coded is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                db.ChangeTracker.Clear();
+                return Invalid(coded);
+            }
+        }
+
+        await transaction.CommitAsync(cancellationToken);
 
         return await LoadAsync(palletId, cancellationToken);
     }
@@ -768,6 +798,65 @@ public class PalletService(
         ProducedBagStatus.Defective => "This bag was marked defective.",
         _ => "This bag cannot go on a pallet.",
     };
+
+    /// <summary>
+    /// Gives a finished pallet its code — P, the day's number, the date and the time it
+    /// was finished (section 19.26) — and returns why not, or null when it has one.
+    ///
+    /// Only once. A closed pallet reopened and finished again keeps the code it was given
+    /// the first time, because that is the label already stuck on it; a second code would
+    /// leave the pallet carrying a label that no longer scans. Pallets started before
+    /// this change keep the code they were printed with for the same reason.
+    /// </summary>
+    private async Task<string?> GiveCodeAsync(
+        WoodenPallet pallet,
+        DateTimeOffset finishedAt,
+        int utcOffsetMinutes,
+        CancellationToken cancellationToken)
+    {
+        var hasCode = await db.Barcodes.AnyAsync(
+            b => b.ObjectType == BarcodeObjectType.Pallet && b.ObjectId == pallet.Id && b.IsActive,
+            cancellationToken);
+        if (hasCode)
+        {
+            return null;
+        }
+
+        var local = finishedAt.ToOffset(TimeSpan.FromMinutes(utcOffsetMinutes));
+        var number = await TakePalletNumberAsync(DateOnly.FromDateTime(local.DateTime), cancellationToken);
+
+        var barcode = await barcodes.IssueAsync(
+            BarcodeObjectType.Pallet, pallet.Id, PalletCode.For(number, local), cancellationToken);
+
+        return barcode.IsSuccess ? null : barcode.Message ?? "The pallet's label could not be printed.";
+    }
+
+    /// <summary>
+    /// Takes the next number from the day's count and moves it on, in one statement. The
+    /// first pallet finished in a day adds its row, starting at 1 — that is the whole of
+    /// the daily reset. The row stays locked until the caller's transaction ends, so two
+    /// tablets finishing pallets at once cannot both be handed 03.
+    /// </summary>
+    private async Task<int> TakePalletNumberAsync(DateOnly day, CancellationToken cancellationToken)
+    {
+        var taken = await db.Database
+            .SqlQuery<int>(
+                $"""
+                 INSERT INTO "PalletNumberCounters" ("Day", "NextNumber") VALUES ({day}, 2)
+                 ON CONFLICT ("Day") DO UPDATE
+                     SET "NextNumber" = "PalletNumberCounters"."NextNumber" + 1
+                 RETURNING "NextNumber" - 1 AS "Value"
+                 """)
+            .ToListAsync(cancellationToken);
+
+        return taken[0];
+    }
+
+    // The widest time zones there are, UTC-12 to UTC+14.
+    private static bool ValidOffset(int minutes) => minutes is >= -12 * 60 and <= 14 * 60;
+
+    private const string BadOffset =
+        "The tablet's time zone is not one that exists. Check its clock settings.";
 
     private async Task<int?> CapacityAsync(int? productId, CancellationToken cancellationToken)
     {

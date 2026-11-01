@@ -83,6 +83,23 @@ export interface AvailableBagDto {
   createdAt: string;
 }
 
+/**
+ * What to call a pallet on screen: its code once it has one, and its number while it is
+ * still being filled. A pallet is given its code when it is finished, full or closed,
+ * because the code carries the time it was finished (section 19.26).
+ */
+export function palletName(pallet: { barcode: string; palletNumber: number }): string {
+  return pallet.barcode === '' ? `Pallet ${String(pallet.palletNumber)}` : pallet.barcode;
+}
+
+/**
+ * The tablet's distance from UTC. Finishing a pallet gives it its code, with the day's
+ * number and the time on the factory's clock, and the server keeps time in UTC.
+ */
+function utcOffsetMinutes(): number {
+  return -new Date().getTimezoneOffset();
+}
+
 export const palletsApi = {
   list: (openOnly = false): Promise<PalletSummaryDto[]> =>
     apiRequest<PalletSummaryDto[]>(`/api/pallets?openOnly=${String(openOnly)}`),
@@ -108,7 +125,7 @@ export const palletsApi = {
   close: (palletId: number): Promise<PalletDto> =>
     apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/close`, {
       method: 'POST',
-      body: {},
+      body: { utcOffsetMinutes: utcOffsetMinutes() },
     }),
 
   /** Opens a closed pallet again, to take more bags. */
@@ -132,7 +149,7 @@ export const palletsApi = {
   ): Promise<PalletDto> =>
     apiRequest<PalletDto>(`/api/pallets/${String(palletId)}/bags`, {
       method: 'POST',
-      body,
+      body: { ...body, utcOffsetMinutes: utcOffsetMinutes() },
       ...(entry === undefined ? {} : { entry }),
     }),
 

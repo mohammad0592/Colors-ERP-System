@@ -65,6 +65,7 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
 
     // Pallets and packaging — specification section 10.
     public DbSet<WoodenPallet> WoodenPallets => Set<WoodenPallet>();
+    public DbSet<PalletNumberCounter> PalletNumberCounters => Set<PalletNumberCounter>();
     public DbSet<BagPalletAssignment> BagPalletAssignments => Set<BagPalletAssignment>();
     public DbSet<PackagingConsumption> PackagingConsumptions => Set<PackagingConsumption>();
     public DbSet<PackagingConsumptionLine> PackagingConsumptionLines =>

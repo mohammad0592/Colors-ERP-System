@@ -9,7 +9,7 @@ import { RoleNames } from '../../lib/roles';
 import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { shiftReportsApi } from '../shifts/api';
 import { formatDate } from '../shifts/shiftFormat';
-import { palletsApi } from './api';
+import { palletName, palletsApi, type PalletDto } from './api';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { CancelPalletDialog } from './CancelPalletDialog';
 import { PalletCard } from './PalletCard';
@@ -97,12 +97,26 @@ export function PalletsPage(): ReactElement {
     void queryClient.invalidateQueries({ queryKey: ['inventory-movements'] });
   }
 
+  /**
+   * The label comes up when a pallet is finished — full, or closed not full — because
+   * that is when it is given its code (section 19.26). A pallet reopened and finished
+   * again keeps the code it had, and its label is already on it.
+   */
+  function labelIfJustCoded(before: { barcode: string }, after: PalletDto): void {
+    if (before.barcode === '' && after.barcode !== '') {
+      setLabelFor(after.barcode);
+    }
+  }
+
   // Closing a pallet that is not full to store it, and opening it again (section 19.21).
   const closeOrReopen = useMutation({
     mutationFn: ({ id, action }: { id: number; action: 'close' | 'reopen' }) =>
       action === 'close' ? palletsApi.close(id) : palletsApi.reopen(id),
-    onSuccess: () => {
+    onSuccess: (pallet) => {
       setActionError(null);
+      if (selected.data !== undefined) {
+        labelIfJustCoded(selected.data, pallet);
+      }
       invalidate();
     },
     onError: (caught: unknown) => {
@@ -116,10 +130,8 @@ export function PalletsPage(): ReactElement {
     mutationFn: (shiftLineId: number) => palletsApi.start(shiftLineId, null),
     onSuccess: (pallet) => {
       setActionError(null);
+      // No label yet: it is printed when the pallet is finished (section 19.26).
       setSelectedId(pallet.id);
-      // The label goes on the empty pallet before the first bag does, so it comes up
-      // the moment the pallet is started.
-      setLabelFor(pallet.barcode);
     },
     onError: (caught: unknown) => {
       setActionError(
@@ -222,7 +234,7 @@ export function PalletsPage(): ReactElement {
           ) : (
             <div className="card p-5">
               <h2 className="mb-1 font-mono text-lg font-bold text-ink">
-                {open.barcode}
+                {palletName(open)}
               </h2>
               <p className="mb-3 text-sm text-ink-muted">
                 Pallet {open.palletNumber} · {open.productionLineName}, shift{' '}
@@ -231,15 +243,18 @@ export function PalletsPage(): ReactElement {
               {/* One button under another, full width: pressed on a tablet with a
                   glove, and a text link that size is too easy to miss. */}
               <div className="mb-5 flex flex-col gap-2">
-                <button
-                  type="button"
-                  className="min-h-touch w-full rounded-control border px-4 text-sm font-semibold transition-colors disabled:opacity-50 border-line text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
-                  onClick={() => {
-                    setLabelFor(open.barcode);
-                  }}
-                >
-                  {t('pallets.printLabel')}
-                </button>
+                {/* Only once it has its code, which it is given when it is finished. */}
+                {open.barcode !== '' && (
+                  <button
+                    type="button"
+                    className="min-h-touch w-full rounded-control border px-4 text-sm font-semibold transition-colors disabled:opacity-50 border-line text-ink-soft hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                    onClick={() => {
+                      setLabelFor(open.barcode);
+                    }}
+                  >
+                    {t('pallets.printLabel')}
+                  </button>
+                )}
 
                 {/* Only while it is empty. After the first bag the wood is under the
                     bags, and the way back is to take the bags off. */}
@@ -264,7 +279,7 @@ export function PalletsPage(): ReactElement {
                     disabled={closeOrReopen.isPending}
                     onClick={() => {
                       setConfirm({
-                        title: `${t('pallets.closeNotFull')} — ${open.barcode}`,
+                        title: `${t('pallets.closeNotFull')} — ${palletName(open)}`,
                         message: t('pallets.closeConfirm'),
                         confirmLabel: t('pallets.closeNotFull'),
                         onConfirm: () => {
@@ -314,7 +329,10 @@ export function PalletsPage(): ReactElement {
                 <PalletScanBox
                   pallet={open}
                   bags={availableBags.data ?? []}
-                  onScanned={invalidate}
+                  onScanned={(updated) => {
+                    labelIfJustCoded(open, updated);
+                    invalidate();
+                  }}
                 />
               )}
 
@@ -346,7 +364,9 @@ export function PalletsPage(): ReactElement {
 
       {open !== null && (
         <section className="mt-8">
-          <h2 className="mb-3 text-lg font-bold text-ink">What is on {open.barcode}</h2>
+          <h2 className="mb-3 text-lg font-bold text-ink">
+            What is on {palletName(open)}
+          </h2>
 
           <div className="card overflow-x-auto">
             <table className="w-full text-start text-sm">

@@ -65,7 +65,7 @@ export function PalletScanBox({
     <div className="mb-5">
       <ScanField
         label={t('pallets.scanABag')}
-        placeholder="B000123"
+        placeholder="B0010111261210"
         value={barcode}
         onChange={setBarcode}
         onSubmit={(code, entry) => {

@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
-import type { PalletSummaryDto } from './api';
+import { palletName, type PalletSummaryDto } from './api';
 import { PalletStatusBadge } from './PalletStatusBadge';
 
 interface PalletCardProps {
@@ -43,7 +43,7 @@ export function PalletCard({
       ].join(' ')}
     >
       <div className="mb-1 flex items-start justify-between gap-3">
-        <span className="font-mono text-lg font-bold text-ink">{pallet.barcode}</span>
+        <span className="font-mono text-lg font-bold text-ink">{palletName(pallet)}</span>
         <PalletStatusBadge status={pallet.status} />
       </div>
 

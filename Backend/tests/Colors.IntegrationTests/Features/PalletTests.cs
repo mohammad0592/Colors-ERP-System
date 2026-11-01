@@ -117,8 +117,8 @@ public class PalletTests(DatabaseFixture fixture)
         Assert.Null(pallet.ProductId);
         Assert.Equal(0, pallet.BagCount);
 
-        // The label and the pallet are one act, as with a roll and a bag.
-        Assert.StartsWith("P", pallet.Barcode, StringComparison.Ordinal);
+        // No code yet: a pallet's code carries the time it was finished (section 19.26).
+        Assert.Equal(string.Empty, pallet.Barcode);
     }
 
     [Fact]
@@ -455,12 +455,14 @@ public class PalletTests(DatabaseFixture fixture)
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "PAL17");
+        var (part, _) = await PartPalletAsync(db, ids, "PAL17", 1, 1);
+        var closed = (await NewService(db).ClosePalletAsync(part.Id, new ClosePalletRequest(), ids.UserId)).Value!;
         var pallet = await PalletAsync(db, ids);
 
         // The barcode table knows the difference, so this is an answer rather than a
         // failed search (specification section 12).
         var scanned = await NewService(db).ScanBagAsync(
-            pallet.Id, new ScanBagRequest(pallet.Barcode, null), ids.UserId);
+            pallet.Id, new ScanBagRequest(closed.Barcode, null), ids.UserId);
 
         Assert.False(scanned.IsSuccess);
         Assert.Contains("not a bag", scanned.Message!, StringComparison.OrdinalIgnoreCase);
@@ -736,8 +738,9 @@ public class PalletTests(DatabaseFixture fixture)
         await service.ScanBagAsync(
             pallet.Id, new ScanBagRequest(bags[0].Barcode, null), ids.UserId);
 
+        // Chosen off the list: a pallet still being filled has no code to scan yet.
         var shipped = await service.ShipPalletAsync(
-            new ShipPalletRequest(pallet.Barcode, null), ids.UserId);
+            new ShipPalletRequest(null, pallet.Id), ids.UserId);
 
         Assert.False(shipped.IsSuccess);
         Assert.Equal("pallet.notFinished", shipped.MessageCode);
@@ -960,7 +963,7 @@ public class PalletTests(DatabaseFixture fixture)
         var (pallet, bags) = await PartPalletAsync(db, ids, "PCL1", 4, 3);
         var service = NewService(db);
 
-        var closed = await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        var closed = await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(), ids.UserId);
 
         Assert.True(closed.IsSuccess, closed.Message);
         Assert.Equal(PalletStatus.ClosedNotFull.ToString(), closed.Value!.Status);
@@ -986,12 +989,12 @@ public class PalletTests(DatabaseFixture fixture)
         var empty = await PalletAsync(db, ids);
 
         // An empty one is cancelled instead, and its wood goes back.
-        var closedEmpty = await service.ClosePalletAsync(empty.Id, ids.UserId);
+        var closedEmpty = await service.ClosePalletAsync(empty.Id, new ClosePalletRequest(), ids.UserId);
         Assert.Equal("pallet.closeEmpty", closedEmpty.MessageCode);
 
         var (pallet, _) = await PartPalletAsync(db, ids, "PCL2", 2, 2);
-        await service.ClosePalletAsync(pallet.Id, ids.UserId);
-        var twice = await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(), ids.UserId);
+        var twice = await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(), ids.UserId);
         Assert.Equal("pallet.closeNotBuilding", twice.MessageCode);
     }
 
@@ -1002,7 +1005,7 @@ public class PalletTests(DatabaseFixture fixture)
         var ids = await FactoryData.CreateAsync(db, "PCL3");
         var (pallet, bags) = await PartPalletAsync(db, ids, "PCL3", 3, 2);
         var service = NewService(db);
-        await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(), ids.UserId);
 
         var reopened = await service.ReopenPalletAsync(pallet.Id);
         Assert.True(reopened.IsSuccess, reopened.Message);
@@ -1029,7 +1032,7 @@ public class PalletTests(DatabaseFixture fixture)
         var early = await service.ShipPalletAsync(new ShipPalletRequest(null, pallet.Id), ids.UserId);
         Assert.Equal("pallet.notFinished", early.MessageCode);
 
-        await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(), ids.UserId);
         var shipped = await service.ShipPalletAsync(new ShipPalletRequest(null, pallet.Id), ids.UserId);
         Assert.True(shipped.IsSuccess, shipped.Message);
         Assert.Equal(PalletStatus.Shipped.ToString(), shipped.Value!.Status);
@@ -1047,7 +1050,7 @@ public class PalletTests(DatabaseFixture fixture)
         var ids = await FactoryData.CreateAsync(db, "PCL5");
         var (pallet, _) = await PartPalletAsync(db, ids, "PCL5", 2, 2);
         var service = NewService(db);
-        var closed = await service.ClosePalletAsync(pallet.Id, ids.UserId);
+        var closed = await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(), ids.UserId);
 
         var reversed = await service.ReverseAssignmentAsync(
             closed.Value!.Bags[0].AssignmentId, new ReverseAssignmentRequest("Torn bag"), ids.UserId);
@@ -1055,5 +1058,98 @@ public class PalletTests(DatabaseFixture fixture)
         Assert.True(reversed.IsSuccess, reversed.Message);
         Assert.Equal(PalletStatus.Opened.ToString(), reversed.Value!.Status);
         Assert.Null(reversed.Value.ClosedAt);
+    }
+
+    // ---------- pallet codes (section 19.26) ----------
+    // Each test finishes its pallets on a day of its own, far from today, so the day's
+    // count is its alone even though every test shares one database.
+
+    private static PalletService ServiceAt(ColorsDbContext db, TimeProvider clock) =>
+        new(db, new BarcodeService(db, clock), new StockLedger(db, clock), clock);
+
+    [Fact]
+    public async Task A_closed_pallet_is_coded_with_its_number_that_day_and_the_time()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCO1");
+        var (first, _) = await PartPalletAsync(db, ids, "PCO1", 2, 2);
+        var (second, _) = await PartPalletAsync(db, ids, "PCO1b", 2, 2);
+        var (nextDay, _) = await PartPalletAsync(db, ids, "PCO1c", 2, 2);
+
+        // 14:58 UTC is 17:58 in the factory, three hours ahead.
+        var clock = new TestClock(new DateTimeOffset(2092, 2, 3, 14, 58, 0, TimeSpan.Zero));
+        var service = ServiceAt(db, clock);
+        var at = new ClosePalletRequest(UtcOffsetMinutes: 180);
+
+        var a = await service.ClosePalletAsync(first.Id, at, ids.UserId);
+        var b = await service.ClosePalletAsync(second.Id, at, ids.UserId);
+
+        // Midnight on the factory's clock, where shift B ends, starts the count again.
+        clock.Advance(TimeSpan.FromHours(7));
+        var c = await service.ClosePalletAsync(nextDay.Id, at, ids.UserId);
+
+        Assert.Equal("P010302921758", a.Value!.Barcode);
+        Assert.Equal("P020302921758", b.Value!.Barcode);
+        Assert.Equal("P010402920058", c.Value!.Barcode);
+    }
+
+    [Fact]
+    public async Task A_pallet_is_coded_when_the_bag_that_fills_it_goes_on()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCO2");
+        var bags = await BagsAsync(db, ids, "PCO2", 15);
+        var pallet = await PalletAsync(db, ids);
+        var clock = new TestClock(new DateTimeOffset(2092, 5, 6, 9, 30, 0, TimeSpan.Zero));
+        var service = ServiceAt(db, clock);
+
+        PalletDto latest = pallet;
+        foreach (var bag in bags)
+        {
+            // Still being filled, so no code yet.
+            Assert.Equal(string.Empty, latest.Barcode);
+            latest = (await service.ScanBagAsync(
+                pallet.Id, new ScanBagRequest(bag.Barcode, null, UtcOffsetMinutes: 180), ids.UserId)).Value!;
+        }
+
+        Assert.Equal(PalletStatus.Completed.ToString(), latest.Status);
+        Assert.Equal("P010605921230", latest.Barcode);
+    }
+
+    [Fact]
+    public async Task A_pallet_reopened_and_closed_again_keeps_the_code_on_its_label()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCO3");
+        var (pallet, bags) = await PartPalletAsync(db, ids, "PCO3", 3, 2);
+        var clock = new TestClock(new DateTimeOffset(2092, 7, 8, 9, 0, 0, TimeSpan.Zero));
+        var service = ServiceAt(db, clock);
+
+        var closed = await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(180), ids.UserId);
+        await service.ReopenPalletAsync(pallet.Id);
+        await service.ScanBagAsync(pallet.Id, new ScanBagRequest(bags[2].Barcode, null, 180), ids.UserId);
+        clock.Advance(TimeSpan.FromHours(2));
+        var again = await service.ClosePalletAsync(pallet.Id, new ClosePalletRequest(180), ids.UserId);
+
+        Assert.Equal(closed.Value!.Barcode, again.Value!.Barcode);
+        Assert.Single(await db.Barcodes.Where(
+            b => b.ObjectType == BarcodeObjectType.Pallet && b.ObjectId == pallet.Id).ToListAsync());
+    }
+
+    [Fact]
+    public async Task The_pallet_label_carries_P_in_front_of_the_bags_code()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PCO4");
+        var (pallet, bags) = await PartPalletAsync(db, ids, "PCO4", 1, 1);
+        var closed = (await NewService(db).ClosePalletAsync(pallet.Id, new ClosePalletRequest(), ids.UserId)).Value!;
+        var stock = new ProducedStockService(db);
+
+        var bagLabel = (await stock.GetLabelAsync(bags[0].Barcode)).Value!;
+        var palletLabel = (await stock.GetLabelAsync(closed.Barcode)).Value!;
+
+        Assert.Equal($"P{bagLabel.ProductCode}", palletLabel.ProductCode);
+        Assert.Equal(palletLabel.ProductCode, palletLabel.HeadlineCode);
+        Assert.Equal(closed.Barcode, palletLabel.Barcode);
     }
 }

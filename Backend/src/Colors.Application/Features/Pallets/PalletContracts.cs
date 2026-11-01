@@ -106,8 +106,18 @@ public sealed record StartPalletRequest(int ShiftLineId, string? Notes);
 ///
 /// The operator scans; the id is there for the office. Nothing else is given — the
 /// colour and the product come from the bag itself.
+///
+/// <c>UtcOffsetMinutes</c> is the tablet's distance from UTC. The bag that fills the
+/// pallet finishes it, and a finished pallet is given its code — the day's number and the
+/// time, on the factory's clock (section 19.26).
 /// </summary>
-public sealed record ScanBagRequest(string? BagBarcode, int? ProducedBagId);
+public sealed record ScanBagRequest(string? BagBarcode, int? ProducedBagId, int UtcOffsetMinutes = 0);
+
+/// <summary>
+/// Closes a pallet that is not full (section 19.21). Closing finishes it, so it is given
+/// its code then, on the factory's clock — hence the tablet's distance from UTC.
+/// </summary>
+public sealed record ClosePalletRequest(int UtcOffsetMinutes = 0);
 
 /// <summary>
 /// Undoes a wrong scan. The reason is required: a reversal without one is not a
@@ -180,6 +190,7 @@ public interface IPalletService
     /// </summary>
     Task<Result<PalletDto>> ClosePalletAsync(
         int palletId,
+        ClosePalletRequest request,
         int userId,
         CancellationToken cancellationToken = default);
 
