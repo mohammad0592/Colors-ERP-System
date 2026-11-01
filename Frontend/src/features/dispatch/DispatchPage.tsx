@@ -93,7 +93,7 @@ export function DispatchPage(): ReactElement {
       <div className="mb-6 max-w-xl">
         <ScanField
           label={t('dispatch.scanAPallet')}
-          placeholder="P000123"
+          placeholder="P010111261244"
           value={barcode}
           onChange={setBarcode}
           onSubmit={(code, entry) => {
@@ -104,6 +104,18 @@ export function DispatchPage(): ReactElement {
           options={waiting.map((pallet) => ({
             value: pallet.barcode,
             label: `${pallet.barcode} — pallet ${String(pallet.palletNumber)}, ${pallet.colorName ?? ''} ${pallet.productName ?? ''}`,
+            title: pallet.productName ?? undefined,
+            colour: pallet.colorName ?? undefined,
+            details: [
+              `${t('term.pallet')} ${String(pallet.palletNumber)}`,
+              `${String(pallet.bagCount)} ${(pallet.bagCount === 1 ? t('term.bag') : t('term.bags')).toLowerCase()}`,
+              formatDate(pallet.productionDate),
+            ],
+            // Leaving short of full is allowed (section 19.21), but worth seeing.
+            flag:
+              pallet.status === 'ClosedNotFull'
+                ? t('status.pallet.closedNotFull')
+                : undefined,
           }))}
           optionsHint="finished pallets still in the factory"
           submitLabel="Send out"
@@ -127,12 +139,14 @@ export function DispatchPage(): ReactElement {
       </div>
 
       <section className="mb-8">
-        <h2 className="mb-1 text-lg font-semibold text-ink">{t('dispatch.inTheFactory')}</h2>
-        <p className="mb-3 text-sm text-ink-muted">
-          {t('dispatch.oldestFirst')}
-        </p>
+        <h2 className="mb-1 text-lg font-semibold text-ink">
+          {t('dispatch.inTheFactory')}
+        </h2>
+        <p className="mb-3 text-sm text-ink-muted">{t('dispatch.oldestFirst')}</p>
 
-        {inStock.isPending && <p className="text-sm text-ink-muted">{t('common.loading')}</p>}
+        {inStock.isPending && (
+          <p className="text-sm text-ink-muted">{t('common.loading')}</p>
+        )}
 
         {!inStock.isPending && waiting.length === 0 && (
           <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">

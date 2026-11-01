@@ -74,6 +74,12 @@ export function PalletScanBox({
         options={bags.map((bag) => ({
           value: bag.barcode,
           label: `${bag.barcode} — ${bag.colorName} ${bag.productName}, from roll ${bag.rollCode}`,
+          title: bag.productName,
+          colour: bag.colorName,
+          details: [
+            `${t('term.roll')} ${bag.rollCode}`,
+            `${bag.pieceCount.toLocaleString('en-GB')} ${t('field.pieces').toLowerCase()}`,
+          ],
         }))}
         optionsHint={
           pallet.colorId === null

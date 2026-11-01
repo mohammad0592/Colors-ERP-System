@@ -701,6 +701,8 @@ export const en = {
   'scan.picked': 'Picked',
   'scan.typed': 'Typed',
   'scan.nothingToChoose': 'Nothing is waiting to be chosen from.',
+  'scan.orChoose': 'Or choose one',
+  'scan.noMatch': 'Nothing on the list matches what is typed. Check the code, or use it as it is.',
   'inventory.noneBelowMinimum': 'Nothing is below its minimum.',
   'inventory.noMaterials': 'No materials yet.',
   'inventory.recentMovements': 'Recent movements',

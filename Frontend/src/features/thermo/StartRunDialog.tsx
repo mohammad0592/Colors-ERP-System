@@ -170,6 +170,19 @@ export function StartRunDialog({
               label:
                 `${roll.rollCode} — ${roll.colorName}, ${roll.recipeFamilyName}, ${formatDate(roll.productionDate)}` +
                 (roll.notCompleted ? ` (${t('status.roll.notCompleted')})` : ''),
+              code: roll.rollCode,
+              title: `${t('term.recipe')} ${String(roll.recipeNumber)} · ${roll.recipeFamilyName}`,
+              colour: roll.colorName,
+              details: [
+                formatDate(roll.productionDate),
+                ...(roll.weight === null ? [] : [`${String(roll.weight)} kg`]),
+                ...(roll.length === null
+                  ? []
+                  : [`${t('field.length')} ${String(roll.length)}`]),
+                ...(roll.productName === null ? [] : [roll.productName]),
+              ],
+              // Back from the thermo unfinished: worth seeing before it goes in again.
+              flag: roll.notCompleted ? t('status.roll.notCompleted') : undefined,
             }))}
             optionsHint="measured rolls in stock, oldest first"
             submitLabel="Start forming"

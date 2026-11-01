@@ -722,6 +722,8 @@ export const ar: Record<TranslationKey, string> = {
   'scan.picked': 'مختار',
   'scan.typed': 'مكتوب',
   'scan.nothingToChoose': 'لا يوجد ما يمكن اختياره.',
+  'scan.orChoose': 'أو اختر من القائمة',
+  'scan.noMatch': 'لا شيء في القائمة يطابق ما كُتب. تأكد من الرمز، أو استخدمه كما هو.',
   'inventory.noneBelowMinimum': 'لا شيء تحت حده الأدنى.',
   'inventory.noMaterials': 'لا توجد مواد بعد.',
   'inventory.recentMovements': 'الحركات الأخيرة',

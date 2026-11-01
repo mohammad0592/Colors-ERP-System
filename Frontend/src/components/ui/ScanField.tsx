@@ -1,10 +1,4 @@
-import {
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactElement,
-} from 'react';
+import { useEffect, useId, useRef, useState, type ReactElement } from 'react';
 import {
   currentEnvironment,
   startScanning,
@@ -14,13 +8,24 @@ import {
 } from '../../lib/barcodeScanner';
 import { Modal } from './Modal';
 import { useTranslation } from '../../hooks/useTranslation';
+import { colourSwatch } from '../../lib/colourSwatch';
 
 /** One thing the field can be filled from without scanning or typing. */
 export interface ScanOption {
   /** The code that goes in the box — a barcode, or a roll code. */
   value: string;
-  /** What the man reads: "B000123 — Black Big Plate, from roll 09WN180726A". */
+  /** Everything about it in one line. Searched as the man types, and read by screen readers. */
   label: string;
+  /** The code as it is written on the label, where that differs from the barcode's capitals. */
+  code?: string | undefined;
+  /** What it is, in a few words: "Absorbent Big Plate". */
+  title?: string | undefined;
+  /** Its colour's name, painted as a swatch so the list reads by colour at a glance. */
+  colour?: string | undefined;
+  /** Short facts in small chips: the roll, the date, the weight. */
+  details?: string[] | undefined;
+  /** Something to notice before choosing it — "Not completed". */
+  flag?: string | undefined;
 }
 
 interface ScanFieldProps {
@@ -64,9 +69,15 @@ interface ScanFieldProps {
  * | **Type** | the label is torn — section 12 insists this must never be blocked |
  * | **Pick** | there is no label in hand at all, or the office is working from a list |
  *
- * So they share one box. The list is the browser's own `datalist`, which is what makes
- * this a single input rather than an input plus a dropdown: the same box accepts typing
- * and offers the list, and the browser filters as the man types.
+ * So they share one box. The list sits under it as cards, every one in view: what each
+ * thing is, its colour and the facts that tell two alike apart. It was the browser's own
+ * `datalist` once, which showed nothing until something was typed, looked different on
+ * every tablet, and squeezed a bag's whole description into one grey line. Typing in the
+ * box filters the cards.
+ *
+ * Tapping a card puts its code in the box and marks it; the button beside the box does
+ * the rest. Not straight away, because a list on a tablet is scrolled with the same
+ * finger that taps it, and a scroll that lands on a card must not put a bag on a pallet.
  *
  * The camera button hides itself where it cannot work, saying why (see
  * `lib/barcodeScanner.ts`). A code is never blocked by that — typing is always there.
@@ -147,6 +158,24 @@ export function ScanField({
     setIsCameraOpen(false);
   }
 
+  /** The cards still matching what is in the box. All of them while it is empty. */
+  function matching(all: ScanOption[]): ScanOption[] {
+    const wanted = value.trim().toLowerCase();
+    if (wanted === '') {
+      return all;
+    }
+    return all.filter((option) =>
+      [
+        option.value,
+        option.code,
+        option.label,
+        option.title,
+        option.colour,
+        ...(option.details ?? []),
+      ].some((text) => text?.toLowerCase().includes(wanted) === true),
+    );
+  }
+
   /** Typed, unless it is exactly one of the offered codes — then he picked it. */
   function methodFor(entered: string): EntryMethod {
     return options?.some((option) => option.value === entered) === true
@@ -162,14 +191,16 @@ export function ScanField({
         {label}
       </label>
 
-      <div className="mb-3 flex gap-2">
+      {/* Wraps in a narrow panel: the buttons drop under the box rather than squeeze it
+          to nothing, as they did in the pallet screen's side panel. */}
+      <div className="mb-3 flex flex-wrap gap-2">
         <input
           id={id}
           ref={box}
-          className="field-input flex-1 font-mono text-lg"
+          className="field-input min-w-0 flex-[1_1_14rem] font-mono text-lg"
           placeholder={placeholder}
           autoComplete="off"
-          list={options === undefined ? undefined : listId}
+          aria-controls={options === undefined ? undefined : listId}
           value={value}
           disabled={disabled || busy}
           onChange={(event) => {
@@ -214,21 +245,17 @@ export function ScanField({
       </div>
 
       {options !== undefined && (
-        <datalist id={listId}>
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </datalist>
-      )}
-
-      {options !== undefined && (
-        <p className="mb-2 text-xs text-ink-muted">
-          {options.length === 0
-            ? t('scan.nothingToChoose')
-            : `Or type to choose from ${String(options.length)} — ${optionsHint ?? 'the list'}.`}
-        </p>
+        <OptionList
+          id={listId}
+          options={options}
+          shown={matching(options)}
+          hint={optionsHint}
+          current={trimmed}
+          disabled={disabled || busy}
+          onPick={(option) => {
+            onChange(option.value);
+          }}
+        />
       )}
 
       {blocked !== null && <p className="mb-2 text-xs text-ink-muted">{blocked}</p>}
@@ -244,12 +271,146 @@ export function ScanField({
 
       {isCameraOpen && (
         <Modal title={t('ui.holdLabelUp')} onClose={closeCamera}>
-          <video ref={video} className="w-full rounded-control bg-canvas" playsInline muted />
+          <video
+            ref={video}
+            className="w-full rounded-control bg-canvas"
+            playsInline
+            muted
+          />
           <p className="mt-3 text-sm text-ink-muted">
             It reads the code by itself and closes. If the label is torn, close this and
             type the code.
           </p>
         </Modal>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The cards under the box. Their own component so the field above stays about the box,
+ * the camera and the button.
+ */
+function OptionList({
+  id,
+  options,
+  shown,
+  hint,
+  current,
+  disabled,
+  onPick,
+}: {
+  id: string;
+  options: ScanOption[];
+  shown: ScanOption[];
+  hint: string | undefined;
+  /** What is in the box, so the card it names is marked as the one chosen. */
+  current: string;
+  disabled: boolean;
+  onPick: (option: ScanOption) => void;
+}): ReactElement {
+  const { t } = useTranslation();
+
+  if (options.length === 0) {
+    return (
+      <p className="mb-3 rounded-control border border-dashed border-line px-4 py-3 text-sm text-ink-muted">
+        {t('scan.nothingToChoose')}
+      </p>
+    );
+  }
+
+  const chosen = current.toUpperCase();
+
+  return (
+    <div className="mb-3 rounded-control border border-line bg-canvas p-2">
+      <div className="flex items-baseline justify-between gap-3 px-1 pb-2">
+        <span className="text-xs font-semibold tracking-wider text-ink-soft uppercase">
+          {t('scan.orChoose')}
+        </span>
+        <span className="text-xs text-ink-muted tabular-nums">
+          {shown.length === options.length
+            ? String(options.length)
+            : `${String(shown.length)} / ${String(options.length)}`}
+        </span>
+      </div>
+      {hint !== undefined && <p className="px-1 pb-2 text-xs text-ink-muted">{hint}</p>}
+
+      {shown.length === 0 ? (
+        <p className="px-1 pb-1 text-sm text-ink-muted">{t('scan.noMatch')}</p>
+      ) : (
+        <ul
+          id={id}
+          className="grid max-h-80 grid-cols-[repeat(auto-fill,minmax(min(15rem,100%),1fr))] gap-1.5 overflow-y-auto"
+        >
+          {shown.map((option) => {
+            const isChosen = option.value.toUpperCase() === chosen;
+            const paint = colourSwatch(option.colour);
+            return (
+              <li key={option.value}>
+                <button
+                  type="button"
+                  aria-label={option.label}
+                  aria-pressed={isChosen}
+                  disabled={disabled}
+                  onClick={() => {
+                    onPick(option);
+                  }}
+                  className={[
+                    'flex h-full w-full items-start gap-3 rounded-control border bg-surface px-3 py-2.5 text-start transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+                    isChosen
+                      ? 'border-brand-600 ring-1 ring-brand-600'
+                      : 'border-line hover:border-brand-400 hover:bg-brand-50',
+                  ].join(' ')}
+                >
+                  {option.colour !== undefined && (
+                    <span
+                      aria-hidden="true"
+                      title={option.colour}
+                      className={[
+                        'mt-0.5 size-5 shrink-0 rounded-full border',
+                        paint === null
+                          ? 'border-dashed border-ink-muted bg-canvas'
+                          : 'border-ink/20',
+                      ].join(' ')}
+                      style={paint === null ? undefined : { background: paint }}
+                    />
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-mono text-sm font-bold break-all text-ink">
+                        {option.code ?? option.value}
+                      </span>
+                      {option.flag !== undefined && (
+                        <span className="rounded-full bg-warn-soft px-2 py-0.5 text-[11px] font-semibold text-warn">
+                          {option.flag}
+                        </span>
+                      )}
+                    </span>
+                    {option.title !== undefined && (
+                      <span className="block text-sm text-ink-soft">{option.title}</span>
+                    )}
+                    {option.details !== undefined && option.details.length > 0 && (
+                      <span className="mt-1.5 flex flex-wrap gap-1">
+                        {option.details.map((detail) => (
+                          <span
+                            key={detail}
+                            className="rounded bg-canvas px-1.5 py-0.5 text-[11px] break-all text-ink-soft"
+                          >
+                            {detail}
+                          </span>
+                        ))}
+                      </span>
+                    )}
+                    {/* A caller that gives no parts still shows its one line. */}
+                    {option.title === undefined && option.details === undefined && (
+                      <span className="block text-sm text-ink-soft">{option.label}</span>
+                    )}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
