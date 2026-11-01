@@ -687,6 +687,8 @@ export const ar: Record<TranslationKey, string> = {
   'trace.onThePallet': 'على المنصة',
   'trace.theBag': 'الكيس',
   'trace.formedAtThermo': 'شُكّل في التشكيل الحراري',
+  'trace.rollTest': 'فحص الرول',
+  'trace.palletHistory': 'المنصات التي وُضع عليها',
   'trace.theRoll': 'الرول',
   'trace.theMix': 'الخلطة، وما دخل الوردية',
   'users.passwordRule': 'ثمانية أحرف على الأقل، مع رقم وحرف صغير.',

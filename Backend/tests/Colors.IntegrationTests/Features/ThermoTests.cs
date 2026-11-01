@@ -10,6 +10,7 @@ using Colors.Infrastructure.Persistence;
 using Colors.Infrastructure.Services.Barcodes;
 using Colors.Infrastructure.Services.Production;
 using Colors.Infrastructure.Services.Thermo;
+using Colors.Infrastructure.Services.Trace;
 using Colors.IntegrationTests.Common;
 using Microsoft.EntityFrameworkCore;
 
@@ -980,5 +981,61 @@ public class ThermoTests(DatabaseFixture fixture)
         var scrapped = await production.ScrapRollAsync(roll.Id, new RemoveRollRequest("Holes all through it"), ids.UserId);
         Assert.True(scrapped.IsSuccess, scrapped.Message);
         Assert.Equal(RollStatus.Scrapped.ToString(), scrapped.Value!.Status);
+    }
+
+    // ---------- tracing a label shows everything behind it ----------
+
+    [Fact]
+    public async Task Tracing_a_roll_shows_its_run_its_correction_and_the_bags_it_cancelled()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "TRC1");
+        var run = await CountedAsync(db, ids, "TRC1", 3);
+        await NewService(db).CorrectTestReportAsync(
+            run.Id, new CorrectThermoTestRequest(2, 4m, 10m, 0m, null, "Typed 3 for 2"), ids.UserId);
+
+        var trace = await new TraceService(db).GetAsync(run.RollBarcode);
+
+        Assert.True(trace.IsSuccess, trace.Message);
+        var formed = Assert.Single(trace.Value!.Runs);
+        Assert.Equal(run.StartedAt, formed.StartedAt);
+        Assert.NotNull(formed.FinishedAt);
+        Assert.Equal("Typed 3 for 2", formed.CorrectionReason);
+        Assert.NotNull(formed.CountedAt);
+        Assert.NotNull(trace.Value.Roll!.Test);
+
+        // The cancelled bag no longer scans anywhere else, but the trace still names it.
+        Assert.Equal(3, trace.Value.Bags.Count);
+        var cancelled = Assert.Single(trace.Value.Bags, b => b.Status == "Cancelled");
+        Assert.False(string.IsNullOrEmpty(cancelled.Barcode));
+        Assert.Equal("Typed 3 for 2", cancelled.RemovalReason);
+    }
+
+    [Fact]
+    public async Task Tracing_a_bag_shows_its_code_and_every_pallet_it_has_been_on()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "TRC2");
+        var run = await CountedAsync(db, ids, "TRC2", 1);
+        var bag = run.Bags[0];
+        var pallets = new PalletService(
+            db, new BarcodeService(db, TimeProvider.System), new StockLedger(db, TimeProvider.System), TimeProvider.System);
+
+        var first = (await pallets.StartPalletAsync(new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId)).Value!;
+        var onFirst = await pallets.ScanBagAsync(first.Id, new ScanBagRequest(bag.Barcode, null), ids.UserId);
+        await pallets.ReverseAssignmentAsync(
+            onFirst.Value!.Bags[0].AssignmentId, new ReverseAssignmentRequest("Wrong pallet"), ids.UserId);
+        var second = (await pallets.StartPalletAsync(new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId)).Value!;
+        await pallets.ScanBagAsync(second.Id, new ScanBagRequest(bag.Barcode, null), ids.UserId);
+
+        var trace = await new TraceService(db).GetAsync(bag.Barcode);
+
+        Assert.True(trace.IsSuccess, trace.Message);
+        Assert.False(string.IsNullOrEmpty(trace.Value!.Bag!.ProductCode));
+        Assert.Equal(second.PalletNumber, trace.Value.Bag.PalletNumber);
+        Assert.Equal(2, trace.Value.PalletHistory.Count);
+        Assert.Equal("Wrong pallet", trace.Value.PalletHistory[0].ReversalReason);
+        Assert.Null(trace.Value.PalletHistory[1].ReversedAt);
+        Assert.NotNull(trace.Value.Thermo);
     }
 }

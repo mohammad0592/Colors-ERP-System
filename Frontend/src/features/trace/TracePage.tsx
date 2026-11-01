@@ -19,6 +19,11 @@ import { traceApi, type TraceBagDto, type TraceDto } from './api';
  * Read in order, the chain runs backwards down the page: the thing scanned, then what
  * made it, then what made that, ending at the materials. What it *became* comes last,
  * because the man scanning a roll already knows he has a roll.
+ *
+ * Everything recorded about each step is shown — every reading, note and correction,
+ * and who did each thing when. A trace is usually a complaint being chased, and the one
+ * fact left off is the one that was needed. A fact never recorded is left out rather
+ * than shown as a dash, so the page stays as long as the story and no longer.
  */
 export function TracePage(): ReactElement {
   const { t } = useTranslation();
@@ -78,6 +83,15 @@ export function TracePage(): ReactElement {
 
 function Chain({ trace }: { trace: TraceDto }): ReactElement {
   const { t } = useTranslation();
+  // A bag carries its own run; a roll lists every run it went through.
+  const runs = trace.thermo !== null ? [trace.thermo] : trace.runs;
+  const code =
+    trace.bag !== null
+      ? trace.bag.productCode
+      : trace.kind === 'Pallet'
+        ? (trace.pallet?.generalCode ?? null)
+        : null;
+
   return (
     <>
       <div className="card mb-6 p-5">
@@ -85,7 +99,10 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
           {trace.kind}
         </p>
         <p className="font-mono text-2xl font-bold text-ink">{trace.barcode}</p>
-        <p className="text-ink-soft">{trace.headline}</p>
+        <p className="text-ink-soft">
+          {trace.headline}
+          {code !== null && <span className="ms-2 font-mono font-semibold">{code}</span>}
+        </p>
       </div>
 
       {trace.pallet !== null && (
@@ -96,6 +113,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
           <Facts
             rows={[
               ['Barcode', trace.pallet.barcode],
+              ['General code', trace.pallet.generalCode],
               ['Holding', trace.pallet.productName ?? 'nothing yet'],
               ['Colour', trace.pallet.colorName ?? '—'],
               [
@@ -111,6 +129,24 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
                 'Built on',
                 `${trace.pallet.shiftName} · ${formatDate(trace.pallet.productionDate)}`,
               ],
+              ['Started', doneBy(trace.pallet.createdAt, trace.pallet.createdByName)],
+              ['Full', when(trace.pallet.completedAt)],
+              ['Closed', doneBy(trace.pallet.closedAt, trace.pallet.closedByName)],
+              ['Shipped', doneBy(trace.pallet.shippedAt, trace.pallet.shippedByName)],
+              [
+                'Shipping taken back',
+                doneBy(
+                  trace.pallet.shippingReversedAt,
+                  trace.pallet.shippingReversedByName,
+                ),
+              ],
+              ['Why taken back', trace.pallet.shippingReversalReason],
+              [
+                'Cancelled',
+                doneBy(trace.pallet.cancelledAt, trace.pallet.cancelledByName),
+              ],
+              ['Why cancelled', trace.pallet.cancellationReason],
+              ['Note', trace.pallet.notes],
             ]}
           />
         </Step>
@@ -120,57 +156,122 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
         <Step title={t('trace.theBag')} subtitle={trace.bag.productName}>
           <Facts
             rows={[
+              ['Product code', trace.bag.productCode],
               ['Colour', trace.bag.colorName],
               ['Pieces', String(trace.bag.pieceCount)],
               ['Weight', `${String(trace.bag.weight)} kg`],
               ['Status', trace.bag.status],
               ['From roll', trace.bag.rollCode],
+              ['Made', when(trace.bag.createdAt)],
+              [
+                'On pallet',
+                trace.bag.palletNumber === null
+                  ? null
+                  : (trace.bag.palletBarcode ??
+                    `Pallet ${String(trace.bag.palletNumber)}`),
+              ],
+              ['Note', trace.bag.notes],
+              ['Removed', doneBy(trace.bag.removedAt, trace.bag.removedByName)],
+              ['Why removed', trace.bag.removalReason],
             ]}
           />
         </Step>
       )}
 
-      {trace.thermo !== null && (
+      {trace.palletHistory.length > 0 && (
         <Step
-          title={t('trace.formedAtThermo')}
-          subtitle={`${trace.thermo.shiftName} · ${formatDate(trace.thermo.productionDate)}`}
+          title={t('trace.palletHistory')}
+          subtitle={`${String(trace.palletHistory.length)} time${trace.palletHistory.length === 1 ? '' : 's'}`}
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full text-start text-sm">
+              <thead>
+                <tr className="border-b border-line text-xs tracking-wider text-ink-muted uppercase">
+                  <th className="py-2 pe-4 font-semibold">{t('term.pallet')}</th>
+                  <th className="py-2 pe-4 font-semibold">Put on</th>
+                  <th className="py-2 pe-4 font-semibold">Taken off</th>
+                  <th className="py-2 font-semibold">Why</th>
+                </tr>
+              </thead>
+              <tbody>
+                {trace.palletHistory.map((move) => (
+                  <tr
+                    key={`${String(move.palletNumber)}-${move.assignedAt}`}
+                    className="border-b border-line last:border-0"
+                  >
+                    <td className="py-2 pe-4 font-mono font-semibold text-ink">
+                      {move.palletBarcode ?? `Pallet ${String(move.palletNumber)}`}
+                    </td>
+                    <td className="py-2 pe-4 text-ink-soft">
+                      {doneBy(move.assignedAt, move.assignedByName)}
+                    </td>
+                    <td className="py-2 pe-4 text-ink-soft">
+                      {doneBy(move.reversedAt, move.reversedByName) ?? 'still on it'}
+                    </td>
+                    <td className="py-2 text-ink-soft">{move.reversalReason ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Step>
+      )}
+
+      {runs.map((run, index) => (
+        <Step
+          key={run.id}
+          title={
+            runs.length > 1
+              ? `${t('trace.formedAtThermo')} — ${String(index + 1)} / ${String(runs.length)}`
+              : t('trace.formedAtThermo')
+          }
+          subtitle={`${run.productionLineName} · ${run.shiftName} · ${formatDate(run.productionDate)}`}
         >
           <Facts
             rows={[
-              ['Operator', trace.thermo.operatorName],
-              ['Product', trace.thermo.productName ?? 'not counted yet'],
+              ['Operator', run.operatorName],
+              ['Product', run.productName ?? 'not named yet'],
+              ['Time in', when(run.startedAt)],
+              ['Time out', when(run.finishedAt) ?? 'still in the machine'],
               [
                 'Time in the machine',
-                trace.thermo.totalTimeMinutes === null
-                  ? 'still running'
-                  : `${String(trace.thermo.totalTimeMinutes)} min`,
+                run.totalTimeMinutes === null
+                  ? null
+                  : `${String(run.totalTimeMinutes)} min`,
               ],
-              [
-                'Bags made',
-                trace.thermo.bagCount === null ? '—' : String(trace.thermo.bagCount),
-              ],
+              ['Taken out unfinished', run.unfinishedReason],
+              ['Bags made', run.bagCount === null ? null : String(run.bagCount)],
               [
                 'Pieces',
-                trace.thermo.pieceCount === null
-                  ? '—'
-                  : trace.thermo.pieceCount.toLocaleString('en-GB'),
+                run.pieceCount === null ? null : run.pieceCount.toLocaleString('en-GB'),
               ],
               [
                 'Piece weight',
-                trace.thermo.pieceWeight === null
-                  ? '—'
-                  : `${String(trace.thermo.pieceWeight)} g`,
+                run.pieceWeight === null ? null : `${String(run.pieceWeight)} g`,
+              ],
+              [
+                'Bag weight',
+                run.bagWeight === null ? null : `${String(run.bagWeight)} kg`,
               ],
               [
                 'Absorbency',
-                trace.thermo.absorbentPercentage === null
-                  ? '—'
-                  : `${String(trace.thermo.absorbentPercentage)} %`,
+                run.absorbentPercentage === null || run.absorbentPercentage === 0
+                  ? null
+                  : `${String(run.absorbentPercentage)} %`,
               ],
+              [
+                'Scrap',
+                run.scrapWeight === null ? null : `${String(run.scrapWeight)} kg`,
+              ],
+              ['Counted', doneBy(run.countedAt, run.countedByName) ?? 'not counted yet'],
+              ['Count note', run.countNotes],
+              ['Corrected', doneBy(run.correctedAt, run.correctedByName)],
+              ['Why corrected', run.correctionReason],
+              ['Note', run.notes],
             ]}
           />
         </Step>
-      )}
+      ))}
 
       {trace.roll !== null && (
         <Step title={t('trace.theRoll')} subtitle={trace.roll.rollCode}>
@@ -182,31 +283,60 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
                 `${String(trace.roll.recipeNumber)} · ${trace.roll.recipeFamilyName}`,
               ],
               ['Colour', trace.roll.colorName],
+              ['Formed into', trace.roll.productName],
               ['Status', trace.roll.status],
               [
                 'Extruded on',
                 `${trace.roll.shiftName} · ${formatDate(trace.roll.productionDate)}`,
               ],
-              ['By', trace.roll.producedByName],
+              [
+                'Out of the extruder',
+                doneBy(trace.roll.producedAt, trace.roll.producedByName),
+              ],
               [
                 'Weight',
                 trace.roll.weight === null
                   ? 'not measured'
                   : `${String(trace.roll.weight)} kg`,
               ],
-              ['Length', trace.roll.length === null ? '—' : String(trace.roll.length)],
+              ['Length', trace.roll.length === null ? null : String(trace.roll.length)],
+              ['Measured', doneBy(trace.roll.measuredAt, trace.roll.measuredByName)],
+              ['Note', trace.roll.notes],
+              ['Removed', doneBy(trace.roll.removedAt, trace.roll.removedByName)],
+              ['Why removed', trace.roll.removalReason],
+            ]}
+          />
+        </Step>
+      )}
+
+      {trace.roll?.test != null && (
+        <Step title={t('trace.rollTest')} subtitle={when(trace.roll.test.testedAt) ?? ''}>
+          <Facts
+            rows={[
+              ['Tested by', trace.roll.test.testedByName],
+              ['Plate weight', grams(trace.roll.test.plateWeight)],
+              ['Thickness RS', mm(trace.roll.test.thicknessRs)],
+              ['Thickness RM', mm(trace.roll.test.thicknessRm)],
+              ['Thickness LM', mm(trace.roll.test.thicknessLm)],
+              ['Thickness LS', mm(trace.roll.test.thicknessLs)],
+              ['Average thickness', mm(trace.roll.test.averageThickness)],
               [
-                'Plate weight',
-                trace.roll.plateWeight === null
-                  ? '—'
-                  : `${String(trace.roll.plateWeight)} g`,
+                'Thickness in range',
+                trace.roll.test.thicknessInSpec === null
+                  ? null
+                  : trace.roll.test.thicknessInSpec
+                    ? 'Yes'
+                    : 'No',
               ],
+              ['Dry weight', grams(trace.roll.test.absorbencyDryWeight)],
+              ['Wet weight', grams(trace.roll.test.absorbencyWetWeight)],
               [
-                'Thickness',
-                trace.roll.averageThickness === null
-                  ? '—'
-                  : String(trace.roll.averageThickness),
+                'Absorbency',
+                trace.roll.test.absorbencyPercentage === null
+                  ? null
+                  : `${String(trace.roll.test.absorbencyPercentage)} %`,
               ],
+              ['Note', trace.roll.test.notes],
             ]}
           />
         </Step>
@@ -215,7 +345,7 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
       {trace.mix !== null && (
         <Step
           title={t('trace.theMix')}
-          subtitle={`${trace.mix.productionLineName} · ${trace.mix.shiftName} · ${formatDate(trace.mix.productionDate)}`}
+          subtitle={`${trace.mix.productionLineName} · ${trace.mix.shiftName} · ${formatDate(trace.mix.productionDate)} · batch ${String(trace.mix.batchNumber)}`}
         >
           {trace.mix.materials.length === 0 ? (
             <p className="text-sm text-ink-muted">{t('trace.noMaterialIssued')}</p>
@@ -284,6 +414,35 @@ function Chain({ trace }: { trace: TraceDto }): ReactElement {
   );
 }
 
+/** "01/11/2026 12:44", or null when it has not happened. */
+function when(at: string | null): string | null {
+  if (at === null) {
+    return null;
+  }
+  const moment = new Date(at);
+  return `${moment.toLocaleDateString('en-GB')} ${moment.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })}`;
+}
+
+/** "01/11/2026 12:44 · Mohammad", or null when it was never done. */
+function doneBy(at: string | null, name: string | null): string | null {
+  const moment = when(at);
+  if (moment === null) {
+    return null;
+  }
+  return name === null ? moment : `${moment} · ${name}`;
+}
+
+function grams(value: number | null): string | null {
+  return value === null ? null : `${String(value)} g`;
+}
+
+function mm(value: number | null): string | null {
+  return value === null ? null : `${String(value)} mm`;
+}
+
 function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
   const { t } = useTranslation();
 
@@ -324,6 +483,7 @@ function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
                 </td>
                 <td className="py-2 pe-4 text-ink-soft">
                   {bag.productName} · {bag.colorName}
+                  <span className="ms-2 font-mono text-xs">{bag.productCode}</span>
                 </td>
                 <td className="py-2 pe-4 text-end tabular-nums text-ink-soft">
                   {bag.pieceCount}
@@ -331,8 +491,17 @@ function BagTable({ bags }: { bags: TraceBagDto[] }): ReactElement {
                 <td className="py-2 pe-4 text-end tabular-nums text-ink-soft">
                   {bag.weight}
                 </td>
-                <td className="py-2 pe-4 text-ink-soft">{bag.status}</td>
-                <td className="py-2 text-ink-soft">{bag.palletNumber ?? '—'}</td>
+                <td className="py-2 pe-4 text-ink-soft">
+                  {bag.status}
+                  {/* Why a bag is cancelled or defective, where the eye already is. */}
+                  {bag.removalReason !== null && (
+                    <span className="block text-xs text-warn">{bag.removalReason}</span>
+                  )}
+                </td>
+                <td className="py-2 font-mono text-xs text-ink-soft">
+                  {bag.palletBarcode ??
+                    (bag.palletNumber === null ? '—' : String(bag.palletNumber))}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -362,10 +531,12 @@ function Step({
   );
 }
 
-function Facts({ rows }: { rows: [string, string][] }): ReactElement {
+/** Name and value pairs. A null value was never recorded, and its row is left out. */
+function Facts({ rows }: { rows: [string, string | null][] }): ReactElement {
+  const shown = rows.filter((row): row is [string, string] => row[1] !== null);
   return (
     <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
-      {rows.map(([label, value]) => (
+      {shown.map(([label, value]) => (
         <div key={label} className="flex justify-between gap-3 border-b border-line py-1">
           <dt className="text-ink-soft">{label}</dt>
           <dd className="text-end font-semibold text-ink">{value}</dd>

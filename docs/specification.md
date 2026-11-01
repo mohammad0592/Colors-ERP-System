@@ -1808,7 +1808,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-eight changes, from watching the factory use the system. They are written here rather
+Twenty-nine changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2640,6 +2640,31 @@ the QR with the code printed beside it for typing in when the label is torn.
 - **Pallet** — nothing but the pallet's code at the top, a QR as large as the sticker
   allows in the middle, and the general code at the bottom (19.26). What is on the pallet
   is one scan away.
+
+### 19.29 Tracing a label shows everything
+
+Scanning a label on *Trace a label* shows everything recorded about what it names and
+what made it (section 13). A trace is usually a complaint being chased, and the one fact
+left off is the one that was needed. A fact never recorded is left out rather than shown
+as a dash.
+
+- **Roll** — its formed-into product, when it came off the extruder and who logged it,
+  who measured it and when, its notes, and a cancellation or scrapping with who and why.
+  Its **test** in full: who tested it and when, plate weight, the four thickness readings
+  and their average, whether the thickness was in range, dry and wet weights and the
+  absorbency, and the test's note. And **every run** it went through at the thermo — more
+  than one when it came out unfinished and went in again.
+- **Thermo run** — the line, operator, time in and time out, minutes in the machine, why
+  it came out unfinished, the counts with bag weight and scrap, who counted it and when,
+  and any correction with who and why.
+- **Bag** — its product code, when it was made, the pallet it is on by code, its note,
+  and a defect or cancellation with who and why. Every pallet it has been on, with who
+  put it on, who took it off and why.
+- **Pallet** — its general code, who started it, when it filled, who closed or shipped it
+  and when, a shipment taken back or a cancellation with who and why, and its note.
+
+A bag cancelled by a count correction no longer scans anywhere else, but a trace of its
+roll still names it by its code, with the reason.
 
 ---
 ---

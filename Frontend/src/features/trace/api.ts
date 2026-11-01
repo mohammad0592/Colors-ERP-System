@@ -29,6 +29,24 @@ export interface TraceMixDto {
   issuedToShiftNotMix: boolean;
 }
 
+/** The roll's own test, every reading on it, and who took them. */
+export interface TraceRollTestDto {
+  testedByName: string;
+  testedAt: string;
+  plateWeight: number | null;
+  /** The four corners as the test sheet has them: right side, right middle, left middle, left side. */
+  thicknessRs: number | null;
+  thicknessRm: number | null;
+  thicknessLm: number | null;
+  thicknessLs: number | null;
+  averageThickness: number | null;
+  thicknessInSpec: boolean | null;
+  absorbencyDryWeight: number | null;
+  absorbencyWetWeight: number | null;
+  absorbencyPercentage: number | null;
+  notes: string | null;
+}
+
 export interface TraceRollDto {
   id: number;
   rollCode: string;
@@ -45,6 +63,16 @@ export interface TraceRollDto {
   length: number | null;
   plateWeight: number | null;
   averageThickness: number | null;
+  /** Named at the thermo (section 19.17), so empty until the roll has gone in. */
+  productName: string | null;
+  notes: string | null;
+  measuredByName: string | null;
+  measuredAt: string | null;
+  test: TraceRollTestDto | null;
+  /** Cancelled or scrapped (section 19.27). */
+  removedAt: string | null;
+  removedByName: string | null;
+  removalReason: string | null;
 }
 
 export interface TraceThermoDto {
@@ -61,6 +89,19 @@ export interface TraceThermoDto {
   pieceWeight: number | null;
   bagWeight: number | null;
   absorbentPercentage: number | null;
+  productionLineName: string;
+  notes: string | null;
+  /** Taken out before it was finished (section 19.23), and why. */
+  unfinishedReason: string | null;
+  countedByName: string | null;
+  countedAt: string | null;
+  countNotes: string | null;
+  /** Counts corrected after they were saved (section 19.27). */
+  correctedAt: string | null;
+  correctedByName: string | null;
+  correctionReason: string | null;
+  /** Roll weight less the plates it made. Calculated, never stored. */
+  scrapWeight: number | null;
 }
 
 export interface TraceBagDto {
@@ -74,6 +115,26 @@ export interface TraceBagDto {
   pieceCount: number;
   status: string;
   palletNumber: number | null;
+  /** AB500B: the kind of bag, as its label prints it. */
+  productCode: string;
+  createdAt: string;
+  notes: string | null;
+  /** Marked defective, or cancelled by a count correction (section 19.27). */
+  removedAt: string | null;
+  removedByName: string | null;
+  removalReason: string | null;
+  palletBarcode: string | null;
+}
+
+/** One time a bag went onto a pallet, kept when it came off again. */
+export interface TracePalletMoveDto {
+  palletNumber: number;
+  palletBarcode: string | null;
+  assignedAt: string;
+  assignedByName: string;
+  reversedAt: string | null;
+  reversedByName: string | null;
+  reversalReason: string | null;
 }
 
 export interface TracePalletDto {
@@ -91,6 +152,20 @@ export interface TracePalletDto {
   productionDate: string;
   createdAt: string;
   completedAt: string | null;
+  /** P in front of its bags' code — PAB500B. Empty while nothing is on it. */
+  generalCode: string | null;
+  createdByName: string;
+  closedAt: string | null;
+  closedByName: string | null;
+  shippedAt: string | null;
+  shippedByName: string | null;
+  shippingReversedAt: string | null;
+  shippingReversedByName: string | null;
+  shippingReversalReason: string | null;
+  cancelledAt: string | null;
+  cancelledByName: string | null;
+  cancellationReason: string | null;
+  notes: string | null;
 }
 
 export interface TraceDto {
@@ -104,6 +179,10 @@ export interface TraceDto {
   pallet: TracePalletDto | null;
   /** A roll's bags, or a pallet's — each naming its own roll. */
   bags: TraceBagDto[];
+  /** A roll's runs through the thermo, first to last — more than one if it went in again. */
+  runs: TraceThermoDto[];
+  /** A bag's pallets, the ones it came off included. */
+  palletHistory: TracePalletMoveDto[];
 }
 
 export const traceApi = {

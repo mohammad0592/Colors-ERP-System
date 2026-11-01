@@ -688,6 +688,8 @@ export const en = {
   'trace.onThePallet': 'On the pallet',
   'trace.theBag': 'The bag',
   'trace.formedAtThermo': 'Formed at the thermo',
+  'trace.rollTest': "The roll's test",
+  'trace.palletHistory': 'Pallets it has been on',
   'trace.theRoll': 'The roll',
   'trace.theMix': 'The mix, and what went into the shift',
   'users.passwordRule': 'At least eight characters, with a digit and a small letter.',

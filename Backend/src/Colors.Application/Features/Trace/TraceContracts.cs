@@ -33,6 +33,24 @@ public sealed record TraceMixDto(
     // made this roll" — with one mix per shift that is the same set of materials.
     bool IssuedToShiftNotMix);
 
+/// <summary>The roll's own test, every reading on it, and who took them.</summary>
+public sealed record TraceRollTestDto(
+    string TestedByName,
+    DateTimeOffset TestedAt,
+    decimal? PlateWeight,
+    // The four corners, as the test sheet has them: right side, right middle, left
+    // middle, left side.
+    decimal? ThicknessRs,
+    decimal? ThicknessRm,
+    decimal? ThicknessLm,
+    decimal? ThicknessLs,
+    decimal? AverageThickness,
+    bool? ThicknessInSpec,
+    decimal? AbsorbencyDryWeight,
+    decimal? AbsorbencyWetWeight,
+    decimal? AbsorbencyPercentage,
+    string? Notes);
+
 public sealed record TraceRollDto(
     int Id,
     string RollCode,
@@ -49,7 +67,17 @@ public sealed record TraceRollDto(
     decimal? Weight,
     decimal? Length,
     decimal? PlateWeight,
-    decimal? AverageThickness);
+    decimal? AverageThickness,
+    // Named at the thermo (section 19.17), so empty until the roll has gone in.
+    string? ProductName,
+    string? Notes,
+    string? MeasuredByName,
+    DateTimeOffset? MeasuredAt,
+    TraceRollTestDto? Test,
+    // Cancelled or scrapped (section 19.27): when, by whom and why.
+    DateTimeOffset? RemovedAt,
+    string? RemovedByName,
+    string? RemovalReason);
 
 public sealed record TraceThermoDto(
     int Id,
@@ -64,7 +92,20 @@ public sealed record TraceThermoDto(
     int? PieceCount,
     decimal? PieceWeight,
     decimal? BagWeight,
-    decimal? AbsorbentPercentage);
+    decimal? AbsorbentPercentage,
+    string ProductionLineName,
+    string? Notes,
+    // Taken out before it was finished (section 19.23), and why.
+    string? UnfinishedReason,
+    string? CountedByName,
+    DateTimeOffset? CountedAt,
+    string? CountNotes,
+    // Counts corrected after they were saved (section 19.27).
+    DateTimeOffset? CorrectedAt,
+    string? CorrectedByName,
+    string? CorrectionReason,
+    // Roll weight less the plates it made. Calculated, never stored (section 9).
+    decimal? ScrapWeight);
 
 /// <summary>A bag, always carrying the roll it came from — that is the whole point.</summary>
 public sealed record TraceBagDto(
@@ -76,7 +117,29 @@ public sealed record TraceBagDto(
     decimal Weight,
     int PieceCount,
     string Status,
-    int? PalletNumber);
+    int? PalletNumber,
+    // AB500B: the kind of bag, as its label prints it (section 19.25).
+    string ProductCode,
+    DateTimeOffset CreatedAt,
+    string? Notes,
+    // Marked defective, or cancelled by a count correction (section 19.27).
+    DateTimeOffset? RemovedAt,
+    string? RemovedByName,
+    string? RemovalReason,
+    string? PalletBarcode);
+
+/// <summary>
+/// One time a bag went onto a pallet. Kept when it came off again, so a bag moved from
+/// one pallet to another shows both, and why it was moved.
+/// </summary>
+public sealed record TracePalletMoveDto(
+    int PalletNumber,
+    string? PalletBarcode,
+    DateTimeOffset AssignedAt,
+    string AssignedByName,
+    DateTimeOffset? ReversedAt,
+    string? ReversedByName,
+    string? ReversalReason);
 
 public sealed record TracePalletDto(
     int Id,
@@ -92,7 +155,21 @@ public sealed record TracePalletDto(
     string ShiftName,
     DateOnly ProductionDate,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? CompletedAt);
+    DateTimeOffset? CompletedAt,
+    // P in front of its bags' code — PAB500B (section 19.26). Empty while nothing is on it.
+    string? GeneralCode,
+    string CreatedByName,
+    DateTimeOffset? ClosedAt,
+    string? ClosedByName,
+    DateTimeOffset? ShippedAt,
+    string? ShippedByName,
+    DateTimeOffset? ShippingReversedAt,
+    string? ShippingReversedByName,
+    string? ShippingReversalReason,
+    DateTimeOffset? CancelledAt,
+    string? CancelledByName,
+    string? CancellationReason,
+    string? Notes);
 
 /// <summary>
 /// The whole chain for one barcode. Which parts are filled in depends on what was
@@ -110,7 +187,12 @@ public sealed record TraceDto(
     TracePalletDto? Pallet,
     // Forwards. A roll lists the bags it made; a pallet lists the bags on it, each
     // naming its own roll — which is how a pallet built from three rolls reads.
-    IReadOnlyList<TraceBagDto> Bags);
+    IReadOnlyList<TraceBagDto> Bags,
+    // A roll's runs through the thermo, first to last. More than one when it was taken
+    // out unfinished and went in again (section 19.23).
+    IReadOnlyList<TraceThermoDto> Runs,
+    // A bag's pallets, the ones it came off included.
+    IReadOnlyList<TracePalletMoveDto> PalletHistory);
 
 /// <summary>
 /// Traceability (specification section 13). Declared here, implemented in Infrastructure.

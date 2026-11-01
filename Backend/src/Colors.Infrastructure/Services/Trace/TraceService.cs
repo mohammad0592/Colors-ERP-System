@@ -6,6 +6,8 @@ using Colors.Domain.Entities.Production;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.MasterData;
+using Colors.Infrastructure.Services.Thermo;
 using Microsoft.EntityFrameworkCore;
 
 namespace Colors.Infrastructure.Services.Trace;
@@ -16,6 +18,10 @@ namespace Colors.Infrastructure.Services.Trace;
 /// Nothing here is stored. Every link it follows is already a foreign key — a bag knows
 /// its run, a run knows its roll, a roll knows its recipe and its mix — so this walks
 /// what exists rather than keeping a second copy that could disagree.
+///
+/// It says everything that is recorded about what was scanned: every reading, every note,
+/// who did each thing and when, and anything put right afterwards. A man tracing a label
+/// is usually chasing a complaint, and the one fact left off is the one he needed.
 /// </summary>
 public class TraceService(ColorsDbContext db) : ITraceService
 {
@@ -83,17 +89,27 @@ public class TraceService(ColorsDbContext db) : ITraceService
             return Gone(barcode);
         }
 
+        var runs = await RunQuery()
+            .Where(p => p.RollId == rollId)
+            .OrderBy(p => p.StartedAt)
+            .ToListAsync(cancellationToken);
+
+        var names = await UserNamesAsync(
+            [.. RollUserIds(roll), .. runs.SelectMany(RunUserIds)], cancellationToken);
+
         return Result<TraceDto>.Success(new TraceDto(
             barcode,
             "Roll",
             roll.RollCode,
             await MixAsync(roll, cancellationToken),
-            await RollDtoAsync(roll, barcode, cancellationToken),
+            RollDto(roll, barcode, names),
             null,
             null,
             null,
             // Forwards: everything this roll became.
-            await BagsOfRollAsync(rollId, cancellationToken)));
+            await BagsOfRollAsync(rollId, cancellationToken),
+            await RunDtosAsync(runs, names, cancellationToken),
+            []));
     }
 
     private async Task<Result<TraceDto>> FromBagAsync(
@@ -101,29 +117,37 @@ public class TraceService(ColorsDbContext db) : ITraceService
         int bagId,
         CancellationToken cancellationToken)
     {
-        var bag = await db.ProducedBags
-            .Include(b => b.Color)
-            .Include(b => b.Product)
-            .Include(b => b.ThermoProduction).ThenInclude(t => t.TestReport).ThenInclude(r => r!.Product)
-            .Include(b => b.ThermoProduction).ThenInclude(t => t.ShiftLine)
-                .ThenInclude(l => l.ShiftReport).ThenInclude(s => s.Shift)
-            .AsSplitQuery()
-            .FirstOrDefaultAsync(b => b.Id == bagId, cancellationToken);
-
+        var bag = await BagQuery().FirstOrDefaultAsync(b => b.Id == bagId, cancellationToken);
         if (bag is null)
         {
             return Gone(barcode);
         }
 
-        var roll = await RollQuery()
-            .FirstAsync(r => r.Id == bag.ThermoProduction.RollId, cancellationToken);
+        var run = await RunQuery().FirstAsync(p => p.Id == bag.ThermoProductionId, cancellationToken);
+        var roll = await RollQuery().FirstAsync(r => r.Id == run.RollId, cancellationToken);
+
+        // Every pallet it has been on, the ones it came off included.
+        var moves = await db.BagPalletAssignments
+            .Include(a => a.WoodenPallet)
+            .Where(a => a.ProducedBagId == bagId)
+            .OrderBy(a => a.AssignedAt)
+            .ToListAsync(cancellationToken);
+        var palletCodes = await BarcodesForAsync(
+            BarcodeObjectType.Pallet, moves.Select(a => a.WoodenPalletId).Distinct().ToList(), cancellationToken);
 
         var rollCodes = await BarcodesForAsync(BarcodeObjectType.Roll, [roll.Id], cancellationToken);
-        var pallets = await PalletsOfBagsAsync([bag.Id], cancellationToken);
         var names = await UserNamesAsync(
-            [roll.ProducedByUserId, bag.ThermoProduction.OperatorUserId], cancellationToken);
+            [
+                .. RollUserIds(roll),
+                .. RunUserIds(run),
+                .. BagUserIds(bag),
+                .. moves.Select(a => a.AssignedByUserId),
+                .. moves.Where(a => a.ReversedByUserId is not null).Select(a => a.ReversedByUserId!.Value),
+            ],
+            cancellationToken);
 
-        var run = bag.ThermoProduction;
+        var onNow = moves.FirstOrDefault(a => a.ReversedAt is null);
+        var codes = await ProductCodeBook.LoadAsync(db, cancellationToken);
 
         return Result<TraceDto>.Success(new TraceDto(
             barcode,
@@ -131,34 +155,27 @@ public class TraceService(ColorsDbContext db) : ITraceService
             bag.Product.Name,
             await MixAsync(roll, cancellationToken),
             RollDto(roll, rollCodes.GetValueOrDefault(roll.Id, string.Empty), names),
-            new TraceThermoDto(
-                run.Id,
-                run.ShiftLine.ShiftReport.Shift.Name,
-                run.ShiftLine.ShiftReport.ProductionDate,
-                names.GetValueOrDefault(run.OperatorUserId, "—"),
-                run.StartedAt,
-                run.FinishedAt,
-                run.TotalTimeMinutes,
-                run.TestReport?.Product.Name,
-                run.TestReport?.BagCount,
-                run.TestReport?.PieceCount,
-                run.TestReport?.PieceWeight,
-                run.TestReport?.BagWeight,
-                run.TestReport?.AbsorbentPercentage),
-            new TraceBagDto(
-                bag.Id,
+            (await RunDtosAsync([run], names, cancellationToken))[0],
+            BagDto(
+                bag,
                 barcode,
-                roll.RollCode,
-                bag.Product.Name,
-                bag.Color.Name,
-                bag.Weight,
-                bag.PieceCount,
-                Spaced(bag.Status.ToString()),
-                pallets.TryGetValue(bag.Id, out var number) ? number : null),
-            pallets.TryGetValue(bag.Id, out var palletNumber)
-                ? await PalletDtoAsync(palletNumber, cancellationToken)
-                : null,
-            []));
+                codes,
+                names,
+                onNow?.WoodenPallet.PalletNumber,
+                onNow is null ? null : palletCodes.GetValueOrDefault(onNow.WoodenPalletId)),
+            onNow is null ? null : await PalletDtoAsync(onNow.WoodenPalletId, cancellationToken),
+            [],
+            [],
+            moves
+                .Select(a => new TracePalletMoveDto(
+                    a.WoodenPallet.PalletNumber,
+                    palletCodes.GetValueOrDefault(a.WoodenPalletId),
+                    a.AssignedAt,
+                    names.GetValueOrDefault(a.AssignedByUserId, "—"),
+                    a.ReversedAt,
+                    Name(names, a.ReversedByUserId),
+                    a.ReversalReason))
+                .ToList()));
     }
 
     private async Task<Result<TraceDto>> FromPalletAsync(
@@ -185,11 +202,13 @@ public class TraceService(ColorsDbContext db) : ITraceService
             null,
             null,
             null,
-            ToPalletDto(pallet, barcode),
+            await ToPalletDtoAsync(pallet, barcode, cancellationToken),
             // The bags on it, each naming its own roll. A pallet of fifteen built from
             // rolls of twelve and nine reads as exactly that, which is what the bag
             // barcodes were for (specification section 10).
-            await BagsOnPalletAsync(bagIds, cancellationToken)));
+            await BagsOnPalletAsync(bagIds, cancellationToken),
+            [],
+            []));
     }
 
     // ---------- the links ----------
@@ -231,17 +250,11 @@ public class TraceService(ColorsDbContext db) : ITraceService
             IssuedToShiftNotMix: true);
     }
 
-    private async Task<TraceRollDto> RollDtoAsync(
-        Roll roll,
-        string barcode,
-        CancellationToken cancellationToken)
+    private static TraceRollDto RollDto(Roll roll, string barcode, Dictionary<int, string> names)
     {
-        var names = await UserNamesAsync([roll.ProducedByUserId], cancellationToken);
-        return RollDto(roll, barcode, names);
-    }
+        var test = roll.TestReport;
 
-    private static TraceRollDto RollDto(Roll roll, string barcode, Dictionary<int, string> names) =>
-        new(
+        return new(
             roll.Id,
             roll.RollCode,
             barcode,
@@ -255,17 +268,105 @@ public class TraceService(ColorsDbContext db) : ITraceService
             Spaced(roll.Status.ToString()),
             roll.Weight,
             roll.Length,
-            roll.TestReport?.PlateWeight,
-            roll.TestReport?.AverageThickness);
+            test?.PlateWeight,
+            test?.AverageThickness,
+            roll.Product?.Name,
+            roll.Notes,
+            Name(names, roll.MeasuredByUserId),
+            roll.MeasuredAt,
+            test is null
+                ? null
+                : new TraceRollTestDto(
+                    names.GetValueOrDefault(test.TestedByUserId, "—"),
+                    test.TestedAt,
+                    test.PlateWeight,
+                    test.ThicknessRs,
+                    test.ThicknessRm,
+                    test.ThicknessLm,
+                    test.ThicknessLs,
+                    test.AverageThickness,
+                    test.ThicknessInSpec,
+                    test.AbsorbencyDryWeight,
+                    test.AbsorbencyWetWeight,
+                    test.AbsorbencyPercentage,
+                    test.Notes),
+            roll.RemovedAt,
+            Name(names, roll.RemovedByUserId),
+            roll.RemovalReason);
+    }
+
+    private async Task<List<TraceThermoDto>> RunDtosAsync(
+        List<ThermoProduction> runs,
+        Dictionary<int, string> names,
+        CancellationToken cancellationToken)
+    {
+        // What earlier unfinished runs of the same roll made, which the finishing run's
+        // scrap is worked out against (section 19.23).
+        var earlier = await UnfinishedRuns.ForRollsAsync(
+            db, runs.Select(r => r.RollId), cancellationToken);
+
+        return runs
+            .Select(run =>
+            {
+                var counted = run.TestReport;
+                return new TraceThermoDto(
+                    run.Id,
+                    run.ShiftLine.ShiftReport.Shift.Name,
+                    run.ShiftLine.ShiftReport.ProductionDate,
+                    names.GetValueOrDefault(run.OperatorUserId, "—"),
+                    run.StartedAt,
+                    run.FinishedAt,
+                    run.TotalTimeMinutes,
+                    counted?.Product.Name ?? run.Roll.Product?.Name,
+                    counted?.BagCount,
+                    counted?.PieceCount,
+                    counted?.PieceWeight,
+                    counted?.BagWeight,
+                    counted?.AbsorbentPercentage,
+                    run.ShiftLine.ProductionLine.Name,
+                    run.Notes,
+                    run.UnfinishedReason,
+                    counted is null ? null : names.GetValueOrDefault(counted.TestedByUserId, "—"),
+                    counted?.TestedAt,
+                    counted?.Notes,
+                    counted?.CorrectedAt,
+                    Name(names, counted?.CorrectedByUserId),
+                    counted?.CorrectionReason,
+                    ThermoScrap.For(run, earlier[run.RollId].PlatesKg));
+            })
+            .ToList();
+    }
+
+    private static TraceBagDto BagDto(
+        ProducedBag bag,
+        string barcode,
+        ProductCodeBook codes,
+        Dictionary<int, string> names,
+        int? palletNumber,
+        string? palletBarcode) =>
+        new(
+            bag.Id,
+            barcode,
+            bag.ThermoProduction.Roll.RollCode,
+            bag.Product.Name,
+            bag.Color.Name,
+            bag.Weight,
+            bag.PieceCount,
+            Spaced(bag.Status.ToString()),
+            palletNumber,
+            codes.For(bag.ProductId, bag.ColorId, bag.Product.IsAbsorbent, bag.PieceCount, bag.Color.Code),
+            bag.CreatedAt,
+            bag.Notes,
+            bag.RemovedAt,
+            Name(names, bag.RemovedByUserId),
+            bag.RemovalReason,
+            palletBarcode);
 
     private async Task<List<TraceBagDto>> BagsOfRollAsync(
         int rollId,
         CancellationToken cancellationToken)
     {
-        var bags = await db.ProducedBags
-            .Include(b => b.Color)
-            .Include(b => b.Product)
-            .Include(b => b.ThermoProduction).ThenInclude(t => t.Roll)
+        var bags = await BagQuery()
             .Where(b => b.ThermoProduction.RollId == rollId)
             .OrderBy(b => b.Id)
             .ToListAsync(cancellationToken);
@@ -282,10 +383,7 @@ public class TraceService(ColorsDbContext db) : ITraceService
             return [];
         }
 
-        var bags = await db.ProducedBags
-            .Include(b => b.Color)
-            .Include(b => b.Product)
-            .Include(b => b.ThermoProduction).ThenInclude(t => t.Roll)
+        var bags = await BagQuery()
             .Where(b => bagIds.Contains(b.Id))
             .OrderBy(b => b.Id)
             .ToListAsync(cancellationToken);
@@ -298,42 +396,76 @@ public class TraceService(ColorsDbContext db) : ITraceService
         CancellationToken cancellationToken)
     {
         var ids = bags.Select(b => b.Id).ToList();
-        var codes = await BarcodesForAsync(BarcodeObjectType.Bag, ids, cancellationToken);
+        var bagCodes = await BarcodesForAsync(BarcodeObjectType.Bag, ids, cancellationToken);
         var pallets = await PalletsOfBagsAsync(ids, cancellationToken);
+        var palletCodes = await BarcodesForAsync(
+            BarcodeObjectType.Pallet, pallets.Values.Select(p => p.Id).Distinct().ToList(), cancellationToken);
+        var names = await UserNamesAsync([.. bags.SelectMany(BagUserIds)], cancellationToken);
+        var codes = await ProductCodeBook.LoadAsync(db, cancellationToken);
 
         return bags
-            .Select(b => new TraceBagDto(
-                b.Id,
-                codes.GetValueOrDefault(b.Id, string.Empty),
-                b.ThermoProduction.Roll.RollCode,
-                b.Product.Name,
-                b.Color.Name,
-                b.Weight,
-                b.PieceCount,
-                Spaced(b.Status.ToString()),
-                pallets.TryGetValue(b.Id, out var number) ? number : null))
+            .Select(b =>
+            {
+                var on = pallets.TryGetValue(b.Id, out var pallet) ? pallet : null;
+                return BagDto(
+                    b,
+                    bagCodes.GetValueOrDefault(b.Id, string.Empty),
+                    codes,
+                    names,
+                    on?.Number,
+                    on is null ? null : palletCodes.GetValueOrDefault(on.Id));
+            })
             .ToList();
     }
 
     private async Task<TracePalletDto?> PalletDtoAsync(
-        int palletNumber,
+        int palletId,
         CancellationToken cancellationToken)
     {
-        var pallet = await PalletQuery()
-            .FirstOrDefaultAsync(p => p.PalletNumber == palletNumber, cancellationToken);
-
+        var pallet = await PalletQuery().FirstOrDefaultAsync(p => p.Id == palletId, cancellationToken);
         if (pallet is null)
         {
             return null;
         }
 
         var codes = await BarcodesForAsync(BarcodeObjectType.Pallet, [pallet.Id], cancellationToken);
-        return ToPalletDto(pallet, codes.GetValueOrDefault(pallet.Id, string.Empty));
+        return await ToPalletDtoAsync(pallet, codes.GetValueOrDefault(pallet.Id, string.Empty), cancellationToken);
     }
 
-    private static TracePalletDto ToPalletDto(WoodenPallet pallet, string barcode)
+    private async Task<TracePalletDto> ToPalletDtoAsync(
+        WoodenPallet pallet,
+        string barcode,
+        CancellationToken cancellationToken)
     {
         var live = pallet.Assignments.Where(a => a.ReversedAt is null).ToList();
+
+        var names = await UserNamesAsync(
+            new int?[]
+            {
+                pallet.CreatedByUserId,
+                pallet.ClosedByUserId,
+                pallet.ShippedByUserId,
+                pallet.ShippingReversedByUserId,
+                pallet.CancelledByUserId,
+            }
+            .Where(id => id is not null)
+            .Select(id => id!.Value)
+            .ToList(),
+            cancellationToken);
+
+        // P in front of the code of the bags on it (section 19.26). The pallet took its
+        // product and colour off its first bag, so they are the bags'.
+        string? generalCode = null;
+        if (pallet.Product is not null && pallet.Color is not null)
+        {
+            var book = await ProductCodeBook.LoadAsync(db, cancellationToken);
+            generalCode = PalletCode.General(book.For(
+                pallet.Product.Id,
+                pallet.Color.Id,
+                pallet.Product.IsAbsorbent,
+                pallet.Product.PiecesPerBag,
+                pallet.Color.Code));
+        }
 
         return new TracePalletDto(
             pallet.Id,
@@ -341,7 +473,7 @@ public class TraceService(ColorsDbContext db) : ITraceService
             barcode,
             pallet.Product?.Name,
             pallet.Color?.Name,
-            pallet.Status.ToString(),
+            Spaced(pallet.Status.ToString()),
             live.Count,
             pallet.Product?.BagsPerPallet is > 0 ? pallet.Product.BagsPerPallet : null,
             live.Sum(a => a.ProducedBag.PieceCount),
@@ -349,7 +481,20 @@ public class TraceService(ColorsDbContext db) : ITraceService
             pallet.ShiftLine.ShiftReport.Shift.Name,
             pallet.ShiftLine.ShiftReport.ProductionDate,
             pallet.CreatedAt,
-            pallet.CompletedAt);
+            pallet.CompletedAt,
+            generalCode,
+            names.GetValueOrDefault(pallet.CreatedByUserId, "—"),
+            pallet.ClosedAt,
+            Name(names, pallet.ClosedByUserId),
+            pallet.ShippedAt,
+            Name(names, pallet.ShippedByUserId),
+            pallet.ShippingReversedAt,
+            Name(names, pallet.ShippingReversedByUserId),
+            pallet.ShippingReversalReason,
+            pallet.CancelledAt,
+            Name(names, pallet.CancelledByUserId),
+            pallet.CancellationReason,
+            pallet.Notes);
     }
 
     // ---------- helpers ----------
@@ -357,12 +502,28 @@ public class TraceService(ColorsDbContext db) : ITraceService
     private IQueryable<Roll> RollQuery() =>
         db.Rolls
             .Include(r => r.Color)
+            .Include(r => r.Product)
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(r => r.TestReport)
             .Include(r => r.Batch).ThenInclude(b => b.ShiftLine).ThenInclude(l => l.ProductionLine)
             .Include(r => r.Batch).ThenInclude(b => b.ShiftLine)
                 .ThenInclude(l => l.ShiftReport).ThenInclude(s => s.Shift)
             .AsSplitQuery();
+
+    /// <summary>A run with what its scrap and its count need: the roll's weight and the count.</summary>
+    private IQueryable<ThermoProduction> RunQuery() =>
+        db.ThermoProductions
+            .Include(p => p.Roll).ThenInclude(r => r.Product)
+            .Include(p => p.TestReport).ThenInclude(t => t!.Product)
+            .Include(p => p.ShiftLine).ThenInclude(l => l.ProductionLine)
+            .Include(p => p.ShiftLine).ThenInclude(l => l.ShiftReport).ThenInclude(s => s.Shift)
+            .AsSplitQuery();
+
+    private IQueryable<ProducedBag> BagQuery() =>
+        db.ProducedBags
+            .Include(b => b.Color)
+            .Include(b => b.Product)
+            .Include(b => b.ThermoProduction).ThenInclude(t => t.Roll);
 
     private IQueryable<WoodenPallet> PalletQuery() =>
         db.WoodenPallets
@@ -372,8 +533,23 @@ public class TraceService(ColorsDbContext db) : ITraceService
             .Include(p => p.Assignments).ThenInclude(a => a.ProducedBag)
             .AsSplitQuery();
 
+    private static IEnumerable<int> RollUserIds(Roll roll) =>
+        new int?[] { roll.ProducedByUserId, roll.MeasuredByUserId, roll.RemovedByUserId, roll.TestReport?.TestedByUserId }
+            .Where(id => id is not null)
+            .Select(id => id!.Value);
+
+    private static IEnumerable<int> RunUserIds(ThermoProduction run) =>
+        new int?[] { run.OperatorUserId, run.TestReport?.TestedByUserId, run.TestReport?.CorrectedByUserId }
+            .Where(id => id is not null)
+            .Select(id => id!.Value);
+
+    private static IEnumerable<int> BagUserIds(ProducedBag bag) =>
+        bag.RemovedByUserId is { } id ? [id] : [];
+
+    private sealed record PalletRef(int Id, int Number);
+
     /// <summary>Which pallet each bag sits on. Live assignments only — a bag taken off is back in the store.</summary>
-    private async Task<Dictionary<int, int>> PalletsOfBagsAsync(
+    private async Task<Dictionary<int, PalletRef>> PalletsOfBagsAsync(
         IReadOnlyList<int> bagIds,
         CancellationToken cancellationToken)
     {
@@ -384,8 +560,11 @@ public class TraceService(ColorsDbContext db) : ITraceService
 
         return await db.BagPalletAssignments
             .Where(a => bagIds.Contains(a.ProducedBagId) && a.ReversedAt == null)
-            .Select(a => new { a.ProducedBagId, a.WoodenPallet.PalletNumber })
-            .ToDictionaryAsync(a => a.ProducedBagId, a => a.PalletNumber, cancellationToken);
+            .Select(a => new { a.ProducedBagId, a.WoodenPalletId, a.WoodenPallet.PalletNumber })
+            .ToDictionaryAsync(
+                a => a.ProducedBagId,
+                a => new PalletRef(a.WoodenPalletId, a.PalletNumber),
+                cancellationToken);
     }
 
     private async Task<Dictionary<int, string>> BarcodesForAsync(
@@ -398,9 +577,17 @@ public class TraceService(ColorsDbContext db) : ITraceService
             return [];
         }
 
-        return await db.Barcodes
-            .Where(b => b.ObjectType == objectType && objectIds.Contains(b.ObjectId) && b.IsActive)
-            .ToDictionaryAsync(b => b.ObjectId, b => b.Value, cancellationToken);
+        // A code switched off still names its thing here: a bag cancelled by a count
+        // correction no longer scans anywhere else, but a trace of its roll must still say
+        // which bag it was. A live code wins where there are both.
+        var rows = await db.Barcodes
+            .Where(b => b.ObjectType == objectType && objectIds.Contains(b.ObjectId))
+            .Select(b => new { b.ObjectId, b.Value, b.IsActive })
+            .ToListAsync(cancellationToken);
+
+        return rows
+            .GroupBy(b => b.ObjectId)
+            .ToDictionary(g => g.Key, g => g.OrderByDescending(b => b.IsActive).First().Value);
     }
 
     private async Task<Dictionary<int, string>> UserNamesAsync(
@@ -418,6 +605,10 @@ public class TraceService(ColorsDbContext db) : ITraceService
             .ToDictionaryAsync(u => u.Id, u => u.FullName, cancellationToken);
     }
 
+    /// <summary>The name of whoever did a thing that may not have been done.</summary>
+    private static string? Name(Dictionary<int, string> names, int? id) =>
+        id is null ? null : names.GetValueOrDefault(id.Value, "—");
+
     /// <summary><c>NeedsTest</c> is how the code spells it; <c>Needs test</c> is how a person reads it.</summary>
     private static string Spaced(string status) =>
         string.Concat(status.Select((c, i) =>
@@ -426,9 +617,6 @@ public class TraceService(ColorsDbContext db) : ITraceService
     private static Result<TraceDto> Gone(string barcode) =>
         Result<TraceDto>.Failure(
             ErrorCode.NotFound, $"{barcode} names something that is no longer here.", "stock.gone", barcode);
-
-    private static Result<TraceDto> Invalid(string message) =>
-        Result<TraceDto>.Failure(ErrorCode.ValidationFailed, message);
 
     /// <summary>The same refusal, named so the screens can say it in Arabic.</summary>
     private static Result<TraceDto> Invalid(string message, string code, params string[] args) =>
