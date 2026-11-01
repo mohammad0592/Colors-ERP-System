@@ -36,7 +36,8 @@ export const en = {
   'print.print': 'Print',
   'print.cancel': 'Remove',
   'print.cancelTitle': 'Remove this job without printing?',
-  'print.cancelMessage': 'Use this for labels sent twice or by mistake. It stays in the history.',
+  'print.cancelMessage':
+    'Use this for labels sent twice or by mistake. It stays in the history.',
   'print.labels': 'labels',
   'print.nothingWaiting': 'Nothing waiting. New labels appear here by themselves.',
   'print.loadFailed': 'Could not load the print queue.',
@@ -45,10 +46,14 @@ export const en = {
   'print.cancelledAt': 'Removed',
   'print.reprint': 'Print again',
   'print.setupTitle': 'Setting this computer up to print by itself',
-  'print.setup1': 'Make the label printer the default printer in Windows, with 4 × 4 in paper.',
-  'print.setup2': 'Sign in on this computer with an account that has the Label Printer role.',
-  'print.setup3': 'Open this page from a Chrome shortcut with kiosk printing turned on, so it prints without asking:',
-  'print.setup4': 'Switch Auto-print on. New labels then print as they arrive; without kiosk printing, Chrome asks once per job.',
+  'print.setup1':
+    'Make the label printer the default printer in Windows, with 4 × 4 in paper.',
+  'print.setup2':
+    'Sign in on this computer with an account that has the Label Printer role.',
+  'print.setup3':
+    'Open this page from a Chrome shortcut with kiosk printing turned on, so it prints without asking:',
+  'print.setup4':
+    'Switch Auto-print on. New labels then print as they arrive; without kiosk printing, Chrome asks once per job.',
   'refusal.print.nothingToPrint': 'There is no label to print.',
   'refusal.print.tooMany': 'At most {0} labels go in one job.',
   'refusal.print.notFound': 'This print job does not exist.',
@@ -65,24 +70,31 @@ export const en = {
   'shiftCfg.extruder': 'Extruder Shift Configuration',
   'shiftCfg.thermo': 'Thermoforming Shift Configuration',
   'shiftCfg.recycler': 'Recycle Shift Configuration',
-  'shiftCfg.noOpenShift': 'No shift is open. The supervisor opens one on the Shifts screen.',
+  'shiftCfg.noOpenShift':
+    'No shift is open. The supervisor opens one on the Shifts screen.',
   'shiftCfg.lineNotRunning': 'This line is not running on this shift.',
   'shiftCfg.operator': 'Operator',
   'shiftCfg.noOperator': 'not set yet — the supervisor chooses it on the Shifts screen',
-  'shiftCfg.readOnly': 'Only this line\'s operator, the supervisor or an administrator can change it.',
+  'shiftCfg.readOnly':
+    "Only this line's operator, the supervisor or an administrator can change it.",
   'shiftCfg.electricityTitle': 'Electricity — shared by every line',
   'shiftCfg.enteredBy': 'Entered by',
   'shiftCfg.notEntered': 'Not entered yet',
   'shiftCfg.saveElectricity': 'Save electricity',
-  'shiftCfg.electricityReadOnly': 'Only an operator on this shift, the supervisor or an administrator can enter it.',
+  'shiftCfg.electricityReadOnly':
+    'Only an operator on this shift, the supervisor or an administrator can enter it.',
   'shiftCfg.lineNotes': 'Notes for this line',
   'shifts.lineOperators': 'Line operators',
-  'shifts.operatorsHint': 'Choose who runs each line. They fill in its times, staff, workers and notes on their line\'s Shift Configuration, under Production.',
+  'shifts.operatorsHint':
+    "Choose who runs each line. They fill in its times, staff, workers and notes on their line's Shift Configuration, under Production.",
   'shifts.chooseOperator': 'Choose the operator…',
-  'refusal.shift.notLineOperator': 'Only the operator set on {0} for this shift, the supervisor or an administrator can change it.',
+  'refusal.shift.notLineOperator':
+    'Only the operator set on {0} for this shift, the supervisor or an administrator can change it.',
   'refusal.shift.chooseActiveOperator': 'Choose an active person as the operator.',
-  'refusal.shift.operatorLacksRole': '{0} does not hold the job that runs {1}. Give it to them in Users first.',
-  'refusal.shift.notShiftOperator': 'Only an operator on this shift, the supervisor or an administrator can enter the electricity.',
+  'refusal.shift.operatorLacksRole':
+    '{0} does not hold the job that runs {1}. Give it to them in Users first.',
+  'refusal.shift.notShiftOperator':
+    'Only an operator on this shift, the supervisor or an administrator can enter the electricity.',
   'nav.reports': 'Reports',
   'nav.audit': 'Audit log',
   'nav.recipes': 'Recipes',
@@ -116,7 +128,8 @@ export const en = {
   'page.thermo.title': 'Thermoforming',
   'page.thermo.subtitle': 'One roll goes in whole.',
   'page.thermoTests.title': 'Thermo Tests',
-  'page.thermoTests.subtitle': 'Bags, piece weight and bag weight, counted after the run.',
+  'page.thermoTests.subtitle':
+    'Bags, piece weight and bag weight, counted after the run.',
   'page.pallets.title': 'Pallets',
   'page.pallets.subtitle': 'Pallets being built, and the bags on them.',
   'page.packaging.title': 'Packaging',
@@ -224,14 +237,16 @@ export const en = {
   'pallets.woodGoesBack': 'The wooden pallet goes back to the store.',
   'pallets.wrongLine': 'Started on the wrong line',
   'pallets.nothingOnIt': 'Nothing on it yet',
-  'pallets.firstBagDecidesLong': 'The first bag scanned decides what this pallet is, and how many fill it.',
+  'pallets.firstBagDecidesLong':
+    'The first bag scanned decides what this pallet is, and how many fill it.',
   'pallets.scanABag': 'Scan a bag',
   'pallets.loadFailed': 'Could not load the pallets.',
   'pallets.choosePallet': 'Choose a pallet to scan bags onto it.',
   'pallets.printLabel': 'Print the pallet label',
   'pallets.cancelThis': 'Cancel this pallet',
   'pallets.scannedBy': 'Scanned by',
-  'pallets.nothingOnItLong': 'Nothing on it yet. The first bag decides what this pallet is.',
+  'pallets.nothingOnItLong':
+    'Nothing on it yet. The first bag decides what this pallet is.',
   'pallets.takeItOff': 'Take it off',
   'pallets.beingBuilt': 'Being built',
   'pallets.everyPallet': 'Every pallet',
@@ -254,33 +269,45 @@ export const en = {
   'dispatch.whyComingBack': 'Why is it coming back?',
   'dispatch.backToList': 'The pallet goes back to the list.',
   'dispatch.wrongAtLorry': 'Scanned the wrong pallet at the lorry',
-  'rolls.codeHint': 'Number, type, date and time, colour — worked out by the system. It is the barcode too.',
+  'rolls.codeHint':
+    'Number, type, date and time, colour — worked out by the system. It is the barcode too.',
   'rolls.measure': 'Measure',
-  'rolls.measureNote': 'The roll goes to the thermo once it is both measured and tested, in either order.',
-  'rolls.weightLooksWrong': 'A roll weighs between 50 and 150 kg. Is this the length typed into the weight box?',
+  'rolls.measureNote':
+    'The roll goes to the thermo once it is both measured and tested, in either order.',
+  'rolls.weightLooksWrong':
+    'A roll weighs between 50 and 150 kg. Is this the length typed into the weight box?',
   'rolls.testTitle': 'Roll test',
   'rolls.test': 'Test',
   'rolls.nextNumber': 'Next roll',
   'shifts.startingShift': 'Starting shift',
-  'shifts.startingShiftNote': 'Roll numbers start again at 01 when this shift opens. Leave it off to carry on counting from the last shift.',
+  'shifts.startingShiftNote':
+    'Roll numbers start again at 01 when this shift opens. Leave it off to carry on counting from the last shift.',
   'shifts.startingShiftBadge': 'Starting shift — roll numbers from 01',
-  'rolls.nextNumberHint': 'Starts again at 01 when a shift is opened as the extruder\'s starting shift.',
-  'refusal.shift.startingNeedsExtruder': 'A starting shift starts the extruder\'s roll numbers again, so the extruder must be one of the lines.',
+  'rolls.nextNumberHint':
+    "Starts again at 01 when a shift is opened as the extruder's starting shift.",
+  'refusal.shift.startingNeedsExtruder':
+    "A starting shift starts the extruder's roll numbers again, so the extruder must be one of the lines.",
   'rolls.printLabel': 'Print the label',
   'status.roll.needsMeasure': 'Needs measuring',
   'status.roll.needsTestAndMeasure': 'Needs test and measuring',
-  'refusal.roll.alreadyFormed': 'Roll {0} has gone into the thermo. Its weight is part of that run now.',
-  'refusal.roll.weightOutOfRange': 'A roll weighs between {0} and {1} kg. This looks like the length typed into the weight box.',
-  'refusal.roll.lengthMissing': 'The roll\'s length is missing.',
+  'refusal.roll.alreadyFormed':
+    'Roll {0} has gone into the thermo. Its weight is part of that run now.',
+  'refusal.roll.weightOutOfRange':
+    'A roll weighs between {0} and {1} kg. This looks like the length typed into the weight box.',
+  'refusal.roll.lengthMissing': "The roll's length is missing.",
   'refusal.barcode.valueTaken': 'Another label already carries {0}.',
-  'rolls.outAtHint': 'When the roll came off the extruder — now, unless it is logged late.',
+  'rolls.outAtHint':
+    'When the roll came off the extruder — now, unless it is logged late.',
   'rolls.editTitle': 'Edit roll',
-  'rolls.editNote': 'The code follows the recipe, time and colour. If the code, recipe or colour changes, a new label comes up to print. Weight and length are corrected with Measure.',
+  'rolls.editNote':
+    'The code follows the recipe, time and colour. If the code, recipe or colour changes, a new label comes up to print. Weight and length are corrected with Measure.',
   'refusal.roll.codeRequired': 'The roll needs a code.',
   'refusal.roll.codeTooLong': 'A roll code is at most 30 characters.',
   'refusal.roll.codeTaken': 'Another roll already has the code {0}.',
-  'refusal.roll.outAtInFuture': 'A roll cannot come off the extruder in the future. Check the out time.',
-  'refusal.roll.shiftClosed': 'Roll {0} belongs to a closed shift. An administrator must reopen it first.',
+  'refusal.roll.outAtInFuture':
+    'A roll cannot come off the extruder in the future. Check the out time.',
+  'refusal.roll.shiftClosed':
+    'Roll {0} belongs to a closed shift. An administrator must reopen it first.',
   'refusal.roll.chooseForCode': 'Choose the line, the recipe and the colour first.',
   'rolls.loadFailed1': 'Could not load line 1.',
   'rolls.noShift': 'No shift is open, so a roll cannot be logged.',
@@ -293,35 +320,50 @@ export const en = {
   'rolls.absorbencyWet': 'After 10 minutes in water (g)',
   'rolls.absorbencyPercent': 'Absorbency',
   'rolls.absorbencyShort': 'Absorbency',
-  'rolls.absorbencyNote': 'The water it took up as a share of its dry weight: (after − before) ÷ before × 100. Worked out, never typed.',
-  'rolls.absorbencyBackwards': 'It weighs less after the water than before. Are the two weights swapped?',
+  'rolls.absorbencyNote':
+    'The water it took up as a share of its dry weight: (after − before) ÷ before × 100. Worked out, never typed.',
+  'rolls.absorbencyBackwards':
+    'It weighs less after the water than before. Are the two weights swapped?',
   'rolls.label': 'Label',
-  'rolls.loggedMeasureNext': 'logged. Weigh and measure it — its label comes up to print once the weight and length are in.',
-  'rolls.measuredPrint': 'weighed and measured. Print this label and stick it on the roll.',
-  'rolls.remeasuredPrint': 'measured again. Print a new label and replace the old one — it shows the old figures.',
+  'rolls.loggedMeasureNext':
+    'logged. Weigh and measure it — its label comes up to print once the weight and length are in.',
+  'rolls.measuredPrint':
+    'weighed and measured. Print this label and stick it on the roll.',
+  'rolls.remeasuredPrint':
+    'measured again. Print a new label and replace the old one — it shows the old figures.',
   'rolls.changedPrint': 'changed. Print a new label and replace the old one.',
   'rolls.missingPlate': 'plate weight',
   'rolls.missingThickness': 'the four thickness readings',
   'rolls.missingDry': 'absorbency before water',
   'rolls.missingWet': 'absorbency after water',
   'rolls.stillToTake': 'Still to take:',
-  'rolls.savedAsYouGo': 'Save what you have — it is kept, and the roll waits at Needs test until every reading is in.',
-  'rolls.testAllIn': 'Every reading is in. Saved, and measured, the roll goes to the thermo.',
-  'rolls.soakDryFirst': 'Weigh the piece, save, then put it in the water — the 10-minute timer starts when the dry weight is saved.',
+  'rolls.savedAsYouGo':
+    'Save what you have — it is kept, and the roll waits at Needs test until every reading is in.',
+  'rolls.testAllIn':
+    'Every reading is in. Saved, and measured, the roll goes to the thermo.',
+  'rolls.soakDryFirst':
+    'Weigh the piece, save, then put it in the water — the 10-minute timer starts when the dry weight is saved.',
   'rolls.soaking': 'In the water. Weigh it again in',
   'rolls.soakDone': 'Ten minutes are up. Take the piece out, weigh it, and save.',
   'rolls.weighNow': 'Weigh now',
   'rolls.testFinished': 'test finished.',
-  'rolls.testSavedSoaking': 'saved. The piece is in the water; its row counts down the ten minutes and beeps when they are up.',
+  'rolls.testSavedSoaking':
+    'saved. The piece is in the water; its row counts down the ten minutes and beeps when they are up.',
   'rolls.testSavedPartly': 'saved. It waits at Needs test until every reading is in.',
-  'refusal.roll.choicesAlreadyFormed': 'Roll {0} has gone into the thermo. Its recipe, product and colour are part of that run now.',
-  'refusal.roll.testAlreadyFormed': 'Roll {0} has gone into the thermo. Its test is part of that run now.',
-  'refusal.roll.absorbencyDryFirst': 'Save the piece\'s dry weight first, then weigh it again after ten minutes in water.',
-  'refusal.roll.absorbencySoaking': 'The piece has been in the water less than ten minutes. Weigh it again in {0} min.',
+  'refusal.roll.choicesAlreadyFormed':
+    'Roll {0} has gone into the thermo. Its recipe, product and colour are part of that run now.',
+  'refusal.roll.testAlreadyFormed':
+    'Roll {0} has gone into the thermo. Its test is part of that run now.',
+  'refusal.roll.absorbencyDryFirst':
+    "Save the piece's dry weight first, then weigh it again after ten minutes in water.",
+  'refusal.roll.absorbencySoaking':
+    'The piece has been in the water less than ten minutes. Weigh it again in {0} min.',
   'refusal.roll.testEmpty': 'Type at least one reading before saving.',
-  'refusal.roll.readingNotPositive': 'A reading must be more than zero. Leave a box empty if it is not taken yet.',
+  'refusal.roll.readingNotPositive':
+    'A reading must be more than zero. Leave a box empty if it is not taken yet.',
   'refusal.roll.notAbsorbent': 'This roll is not absorbent. Leave the absorbency empty.',
-  'refusal.roll.absorbencyBackwards': 'The weight after the water is less than before. Check the two weights are not swapped.',
+  'refusal.roll.absorbencyBackwards':
+    'The weight after the water is less than before. Check the two weights are not swapped.',
   'rolls.averageThickness': 'Average thickness',
   'rolls.meanOfFour': 'The mean of the four. Worked out, never typed.',
   'rolls.plateWeightG': 'Plate weight (g)',
@@ -396,7 +438,10 @@ export const en = {
   'extruderRpt.testedBy': 'Tested by',
   'extruderRpt.formedOn': 'Formed on',
   'extruderRpt.rollsColumn': 'Rolls',
-  'thermo.productBeingFormed': 'The product being formed — the mould on the machine. Remembered for the next roll.',
+  'thermo.productBeingFormed':
+    'The product being formed — the mould on the machine. Chosen for every roll.',
+  'thermo.chooseProductFirst': 'Choose the product before the roll goes in.',
+  'thermo.productKept': 'Named when this roll first went in. It keeps it.',
   'extruderRpt.formedInto': 'Formed into',
   'extruderRpt.byRecipe': 'By recipe',
   'extruderRpt.testOpen': 'test not finished',
@@ -454,19 +499,22 @@ export const en = {
   'staff.noAccount': 'worker',
   'staff.systemUsers': 'Staff (with an account)',
   'staff.withoutAccount': 'Workers (no account)',
-  'staff.addedByAdmin': 'Somebody missing? The administrator adds staff and workers on the Users screen.',
+  'staff.addedByAdmin':
+    'Somebody missing? The administrator adds staff and workers on the Users screen.',
   'staff.numberOptional': 'Number (optional)',
   'staff.addNew': 'Add worker',
   'staff.listTitle': 'Workers',
-  'staff.listNote': 'People who work the floor without an account. They do not sign in, and are only recorded on the shifts they work.',
+  'staff.listNote':
+    'People who work the floor without an account. They do not sign in, and are only recorded on the shifts they work.',
   'staff.loadFailed': 'Could not load the workers.',
   'staff.none': 'No workers yet. Add one with Add worker.',
   'staff.left': 'left',
   'staff.stillWorksHere': 'Still works here',
   'refusal.staff.notFound': 'This worker does not exist.',
-  'refusal.staff.nameRequired': 'Type the worker\'s name.',
+  'refusal.staff.nameRequired': "Type the worker's name.",
   'refusal.staff.tooLong': 'A name is at most 100 characters and a number at most 20.',
-  'refusal.staff.numberIsUser': '{0} belongs to a staff member with an account. Choose them from the list instead.',
+  'refusal.staff.numberIsUser':
+    '{0} belongs to a staff member with an account. Choose them from the list instead.',
   'refusal.staff.numberTaken': 'Another worker already has the number {0}.',
   'refusal.productCode.notFound': 'This product code does not exist.',
   'refusal.productCode.codeRequired': 'Type the code.',
@@ -474,14 +522,16 @@ export const en = {
   'refusal.productCode.productRequired': 'Choose the product.',
   'refusal.productCode.colourRequired': 'Choose the colour.',
   'refusal.productCode.codeTaken': '{0} is already the code for {1}.',
-  'refusal.productCode.colourTaken': 'This product already has a code for that colour. Change that one instead.',
+  'refusal.productCode.colourTaken':
+    'This product already has a code for that colour. Change that one instead.',
   'shifts.nobodyYet': 'Nobody added yet.',
   'shifts.trainee': 'Trainee',
   'shifts.remove': 'Remove',
   'shifts.addWorkerEllipsis': 'Add staff or a worker…',
   'shifts.add': 'Add',
   'shifts.productionDate': 'Production date',
-  'shifts.dateNote': 'The day the shift belongs to. A night shift belongs to the day it started.',
+  'shifts.dateNote':
+    'The day the shift belongs to. A night shift belongs to the day it started.',
   'shifts.whichLines': 'Which lines are running?',
   'shifts.lineLater': 'A line that starts later can be added to the shift afterwards.',
   'shifts.whyReopen': 'Why is it being reopened?',
@@ -514,7 +564,8 @@ export const en = {
   'inventory.whatCounted': 'What did you count?',
   'inventory.whyDifferent': 'Why is it different?',
   'inventory.keptForGood': 'Kept on the record for good.',
-  'inventory.adjustExample': 'Spillage, a bag found behind the door, a delivery booked in twice…',
+  'inventory.adjustExample':
+    'Spillage, a bag found behind the door, a delivery booked in twice…',
   'inventory.loadFailed': 'Could not load the store.',
   'inventory.receiveMaterials': 'Receive materials',
   'inventory.low': 'Low',
@@ -546,9 +597,11 @@ export const en = {
   'issue.rawOnly': 'Raw material only.',
   'issue.whichMix': 'Which mix it is for…',
   'dashboard.noShiftOpen': 'No shift open',
-  'dashboard.loadFailed': 'Could not load what is happening. The rest of the system still works.',
+  'dashboard.loadFailed':
+    'Could not load what is happening. The rest of the system still works.',
   'dashboard.noShiftIsOpen': 'No shift is open',
-  'dashboard.noShiftLong': 'No shift is open. A supervisor opens the next one from Shifts.',
+  'dashboard.noShiftLong':
+    'No shift is open. A supervisor opens the next one from Shifts.',
   'dashboard.nothingRecorded': 'Nothing has been recorded on it yet.',
   'dashboard.waitingForSomeone': 'Waiting for someone',
   'dashboard.quickActions': 'Quick actions',
@@ -621,7 +674,8 @@ export const en = {
   'recipes.itCan': 'It can',
   'recipes.newMain': 'New main recipe',
   'recipes.code': 'Code in the roll code',
-  'recipes.codeHint': 'Appears inside every roll code — N for Normal, Abs for Absorbent, LN for Lunch Box.',
+  'recipes.codeHint':
+    'Appears inside every roll code — N for Normal, Abs for Absorbent, LN for Lunch Box.',
   'recipes.absorbentHint': 'Products made from it are absorbent.',
   'recipes.createMain': 'Create',
   'recipes.putInProduction': 'Put in production',
@@ -659,15 +713,19 @@ export const en = {
   'status.pallet.full': 'Full',
   'status.pallet.closedNotFull': 'Closed – not full',
   'pallets.closeNotFull': 'Close – not full',
-  'pallets.closeConfirm': 'Close this pallet as it is and store it in the warehouse? No more bags go on unless it is reopened. It can be dispatched like a full one.',
+  'pallets.closeConfirm':
+    'Close this pallet as it is and store it in the warehouse? No more bags go on unless it is reopened. It can be dispatched like a full one.',
   'pallets.reopen': 'Reopen to add bags',
   'pallets.closedBy': 'Closed, not full, by',
   'pallets.closedNote': 'Stored in the warehouse as it is. Reopen it to add more bags.',
-  'pallets.closedReopenToAdd': 'This pallet is closed, not full. Reopen it to add more bags.',
+  'pallets.closedReopenToAdd':
+    'This pallet is closed, not full. Reopen it to add more bags.',
   'reports.closedNotFullNote': 'stored as they are, not counted under a product',
   'refusal.pallet.closedReopenFirst': 'Pallet {0} is closed. Reopen it to add more bags.',
-  'refusal.pallet.closeEmpty': 'Pallet {0} has nothing on it. Cancel it instead, and its wooden pallet goes back to the store.',
-  'refusal.pallet.closeNotBuilding': 'Pallet {0} is not being built, so there is nothing to close.',
+  'refusal.pallet.closeEmpty':
+    'Pallet {0} has nothing on it. Cancel it instead, and its wooden pallet goes back to the store.',
+  'refusal.pallet.closeNotBuilding':
+    'Pallet {0} is not being built, so there is nothing to close.',
   'refusal.pallet.reopenNotClosed': 'Pallet {0} is not closed, so it cannot be reopened.',
   'status.pallet.shipped': 'Shipped',
   'status.pallet.cancelled': 'Cancelled',
@@ -679,43 +737,54 @@ export const en = {
   'status.roll.notCompleted': 'Not completed',
   'status.roll.cancelled': 'Cancelled',
   'correct.countsTitle': 'Correct the counts',
-  'correct.countsExplain': 'Change what was saved wrong. More bags than before makes the missing ones, with new labels; fewer cancels the newest extra ones, which must not be on a pallet.',
+  'correct.countsExplain':
+    'Change what was saved wrong. More bags than before makes the missing ones, with new labels; fewer cancels the newest extra ones, which must not be on a pallet.',
   'correct.absorbency': 'Absorbency (%)',
-  'correct.bagsWillBeCancelled': 'of this roll’s newest bags will be cancelled, and their labels will stop scanning.',
+  'correct.bagsWillBeCancelled':
+    'of this roll’s newest bags will be cancelled, and their labels will stop scanning.',
   'correct.bagsWillBeMade': 'new bags will be made, and their labels printed.',
   'correct.whyCorrect': 'Why are the counts being corrected?',
   'correct.saveCorrection': 'Save the correction',
   'correct.correct': 'Correct',
   'correct.newBagsLabels': 'new bags made by the correction of roll',
   'correct.wrongRoll': 'Wrong roll',
-  'correct.wrongRollExplain': 'The roll goes back to stock as if it had never gone in, and the run is taken off the list. Who did it and why is kept in the audit log.',
+  'correct.wrongRollExplain':
+    'The roll goes back to stock as if it had never gone in, and the run is taken off the list. Who did it and why is kept in the audit log.',
   'correct.whyWrongRoll': 'What happened?',
   'correct.takeBack': 'Take it back out',
   'correct.defective': 'Defective',
-  'correct.defectiveExplain': 'The bag goes to the recycler, not onto a pallet. It stays on record as defective, with the reason.',
+  'correct.defectiveExplain':
+    'The bag goes to the recycler, not onto a pallet. It stays on record as defective, with the reason.',
   'correct.whyDefective': 'What is wrong with it?',
   'correct.markDefective': 'Mark it defective',
   'correct.somethingWrong': 'Something wrong with this roll?',
   'correct.cancelRoll': 'Cancel — logged by mistake',
   'correct.scrapRoll': 'Scrap — the roll is bad',
-  'correct.cancelRollExplain': 'For a roll that never came off the extruder, or was logged twice. It stays on record as cancelled, keeps its number, and is left out of every report.',
-  'correct.scrapRollExplain': 'For a real roll that cannot be used. It goes to the recycler instead of the thermo, and still counts as made.',
+  'correct.cancelRollExplain':
+    'For a roll that never came off the extruder, or was logged twice. It stays on record as cancelled, keeps its number, and is left out of every report.',
+  'correct.scrapRollExplain':
+    'For a real roll that cannot be used. It goes to the recycler instead of the thermo, and still counts as made.',
   'correct.why': 'Why?',
   'correct.reverse': 'Reverse',
   'correct.reversed': 'Reversed',
   'correct.reverseDelivery': 'Reverse delivery',
-  'correct.reverseDeliveryExplain': 'The same quantity goes back out of the store, beside the wrong delivery, which stays on record. It is refused if the material has already been used.',
+  'correct.reverseDeliveryExplain':
+    'The same quantity goes back out of the store, beside the wrong delivery, which stays on record. It is refused if the material has already been used.',
   'correct.cancelTicket': 'Cancel ticket — issued by mistake',
-  'correct.cancelTicketExplain': 'Everything on the ticket that has not come back goes back to the store, so the ticket used nothing. It cannot be reopened.',
+  'correct.cancelTicketExplain':
+    'Everything on the ticket that has not come back goes back to the store, so the ticket used nothing. It cannot be reopened.',
   'correct.ticketCancelled': 'Cancelled',
   'refusal.correction.reasonRequired': 'Say why.',
   'refusal.thermo.notCountedYet': 'Roll {0} has not been counted yet. Count it instead.',
-  'refusal.thermo.correctionBagsOnPallets': '{0} bags have to go, and only {1} of this roll’s bags are off a pallet. Take the rest off their pallets first, then correct the count.',
-  'refusal.thermo.undoOnlyInMachine': 'Roll {0} has already been taken out. Only a roll still in the machine is taken back as a wrong start.',
+  'refusal.thermo.correctionBagsOnPallets':
+    '{0} bags have to go, and only {1} of this roll’s bags are off a pallet. Take the rest off their pallets first, then correct the count.',
+  'refusal.thermo.undoOnlyInMachine':
+    'Roll {0} has already been taken out. Only a roll still in the machine is taken back as a wrong start.',
   'refusal.bag.notFound': 'This bag does not exist.',
   'refusal.bag.onPallet': 'This bag is on a pallet. Take it off the pallet first.',
   'refusal.bag.notAvailable': 'Only a bag waiting for a pallet can be marked defective.',
-  'refusal.roll.cannotCancel': 'Roll {0} has already been worked on, so it cannot be cancelled. Scrap it instead if it is bad.',
+  'refusal.roll.cannotCancel':
+    'Roll {0} has already been worked on, so it cannot be cancelled. Scrap it instead if it is bad.',
   'refusal.roll.cannotScrap': 'Roll {0} is not in stock, so there is nothing to scrap.',
   'refusal.roll.wasCancelled': 'Roll {0} was cancelled.',
   'refusal.roll.wasScrapped': 'Roll {0} was scrapped.',
@@ -723,7 +792,8 @@ export const en = {
   'refusal.stock.onlyDeliveries': 'Only a delivery can be reversed here.',
   'refusal.stock.alreadyReversed': 'This delivery has already been reversed.',
   'thermo.notFinished': 'Not finished',
-  'thermo.notFinishedExplain': 'The roll comes out of the machine now and goes back to stock as Not completed, to go in again later. Count what it made so far on Thermo Tests, as for any run.',
+  'thermo.notFinishedExplain':
+    'The roll comes out of the machine now and goes back to stock as Not completed, to go in again later. Count what it made so far on Thermo Tests, as for any run.',
   'thermo.whyNotFinished': 'Why could the roll not be finished?',
   'thermo.takeOutUnfinished': 'Take it out unfinished',
   'thermo.notFinishedToCount': 'Not finished · waiting to be counted',
@@ -747,7 +817,8 @@ export const en = {
   'scan.typed': 'Typed',
   'scan.nothingToChoose': 'Nothing is waiting to be chosen from.',
   'scan.orChoose': 'Or choose one',
-  'scan.noMatch': 'Nothing on the list matches what is typed. Check the code, or use it as it is.',
+  'scan.noMatch':
+    'Nothing on the list matches what is typed. Check the code, or use it as it is.',
   'inventory.noneBelowMinimum': 'Nothing is below its minimum.',
   'inventory.noMaterials': 'No materials yet.',
   'inventory.recentMovements': 'Recent movements',
@@ -771,9 +842,11 @@ export const en = {
   'md.addProductCode': 'Add code',
   'md.editProductCode': 'Edit product code',
   'md.deleteProductCode': 'Delete product code',
-  'md.deleteProductCodeNote': 'bags of this product and colour will print a code worked out from the product until another is given.',
+  'md.deleteProductCodeNote':
+    'bags of this product and colour will print a code worked out from the product until another is given.',
   'md.everyColour': 'Every colour',
-  'md.productCodesHint': 'The code printed on every bag of a product in a colour. A product with one code whatever its colour, like the burger boxes, has it under Every colour.',
+  'md.productCodesHint':
+    'The code printed on every bag of a product in a colour. A product with one code whatever its colour, like the burger boxes, has it under Every colour.',
   'md.productCodesFailed': 'Could not load the product codes.',
   'md.productTypes': 'Product types',
   'md.lines': 'Lines',
@@ -782,9 +855,11 @@ export const en = {
   'md.goesOnTicket': 'Goes out on an issue ticket',
   'md.codeLetter': 'Code letter',
   'md.madeFrom': 'Made from',
-  'md.madeFromHint': 'The main recipe this product\'s rolls are made to. It also decides whether the product is absorbent.',
+  'md.madeFromHint':
+    "The main recipe this product's rolls are made to. It also decides whether the product is absorbent.",
   'md.recordsSettings': 'Records machine settings',
-  'md.settingsNote': 'Only the thermo line. It is then asked for forming speed, feed distance and cycle time.',
+  'md.settingsNote':
+    'Only the thermo line. It is then asked for forming speed, feed distance and cycle time.',
   'md.mixesRolls': 'Mixes and makes rolls',
   'md.mixesNote': 'The extruder. Batches can only be started on a line ticked here.',
   'md.formsBags': 'Forms bags',
@@ -829,21 +904,30 @@ export const en = {
 
   // What the server says when it refuses. The numbers in braces are filled in from the values it sends beside the code.
   'refusal.pallet.chooseOpenShiftLine': 'Choose a line of an open shift.',
-  'refusal.pallet.lineMakesNoBags': '{0} does not make bags, so nothing is packed there. Choose the thermo line.',
+  'refusal.pallet.lineMakesNoBags':
+    '{0} does not make bags, so nothing is packed there. Choose the thermo line.',
   'refusal.pallet.sayWhyCancelling': 'Say why the pallet is being cancelled.',
   'refusal.pallet.alreadyCancelled': 'Pallet {0} has already been cancelled.',
-  'refusal.pallet.finishedTakeBagsOff': 'Pallet {0} is finished. Take its bags off first if it was built by mistake.',
-  'refusal.pallet.hasBagsOn': 'Pallet {0} has bags on it. Take them off before cancelling it.',
-  'refusal.pallet.cancelledStartNew': 'Pallet {0} was cancelled and its wooden pallet went back to the store. Start a new one.',
+  'refusal.pallet.finishedTakeBagsOff':
+    'Pallet {0} is finished. Take its bags off first if it was built by mistake.',
+  'refusal.pallet.hasBagsOn':
+    'Pallet {0} has bags on it. Take them off before cancelling it.',
+  'refusal.pallet.cancelledStartNew':
+    'Pallet {0} was cancelled and its wooden pallet went back to the store. Start a new one.',
   'refusal.pallet.alreadyShipped': 'Pallet {0} has already been shipped.',
   'refusal.pallet.isFull': 'Pallet {0} is full. Start a new one for the next bag.',
-  'refusal.pallet.bagDoesNotFit': 'Pallet {0} is {1}. This bag is {2}, so it belongs on a different pallet.',
-  'refusal.pallet.sayWhyBagComingOff': 'Say why the bag is coming off. It stays in the history either way.',
+  'refusal.pallet.bagDoesNotFit':
+    'Pallet {0} is {1}. This bag is {2}, so it belongs on a different pallet.',
+  'refusal.pallet.sayWhyBagComingOff':
+    'Say why the bag is coming off. It stays in the history either way.',
   'refusal.pallet.bagAlreadyTakenOff': 'This bag has already been taken off.',
-  'refusal.pallet.leftTheFactory': 'Pallet {0} has left the factory. A bag cannot be taken off it now.',
-  'refusal.pallet.cancelledNeverHeld': 'Pallet {0} was cancelled. It never held anything.',
+  'refusal.pallet.leftTheFactory':
+    'Pallet {0} has left the factory. A bag cannot be taken off it now.',
+  'refusal.pallet.cancelledNeverHeld':
+    'Pallet {0} was cancelled. It never held anything.',
   'refusal.pallet.alreadyGone': 'Pallet {0} has already gone.',
-  'refusal.pallet.notFinished': 'Pallet {0} is still being built. Only a full or a closed pallet leaves.',
+  'refusal.pallet.notFinished':
+    'Pallet {0} is still being built. Only a full or a closed pallet leaves.',
   'refusal.pallet.sayWhyComingBack': 'Say why the pallet is coming back.',
   'refusal.pallet.notShipped': 'Pallet {0} has not been shipped.',
   'refusal.pallet.doesNotExist': 'This pallet does not exist.',
@@ -855,43 +939,63 @@ export const en = {
   'refusal.barcode.needsAnObject': 'A barcode needs an object to belong to.',
   'refusal.barcode.noMatch': 'No label in the system matches {0}.',
   'refusal.inventory.chooseActiveMaterial': 'Choose an active material.',
-  'refusal.inventory.countAlreadyMatches': 'The count already matches what the system says. Nothing to correct.',
+  'refusal.inventory.countAlreadyMatches':
+    'The count already matches what the system says. Nothing to correct.',
   'refusal.inventory.countBelowZero': 'A stock count cannot be less than nothing.',
-  'refusal.inventory.noPackSize': '{0} has no pack size for that unit. Add one in Master Data, or receive it in its base unit.',
-  'refusal.inventory.sayWhyCountDiffers': 'Say why the count differs — it stays on the record.',
+  'refusal.inventory.noPackSize':
+    '{0} has no pack size for that unit. Add one in Master Data, or receive it in its base unit.',
+  'refusal.inventory.sayWhyCountDiffers':
+    'Say why the count differs — it stays on the record.',
   'refusal.inventory.typeHowMuch': 'Type how much arrived.',
   'refusal.issue.activeMaterial': 'Every line must name an active material.',
   'refusal.issue.alreadyClosed': 'This ticket is already closed.',
   'refusal.issue.lineNeedsWeight': 'Every line needs a weight.',
-  'refusal.issue.lineTakesNoRaw': '{0} does not take raw material. Choose the extruder line.',
-  'refusal.issue.materialTwice': 'Each material may appear once. Add the quantities together.',
-  'refusal.issue.materialTwiceOnTicket': 'Each material may appear once on a ticket. Add the quantities together.',
+  'refusal.issue.lineTakesNoRaw':
+    '{0} does not take raw material. Choose the extruder line.',
+  'refusal.issue.materialTwice':
+    'Each material may appear once. Add the quantities together.',
+  'refusal.issue.materialTwiceOnTicket':
+    'Each material may appear once on a ticket. Add the quantities together.',
   'refusal.issue.needsAMaterial': 'A ticket needs at least one material on it.',
-  'refusal.issue.neverIssued': 'Something came back that was never issued on this ticket.',
+  'refusal.issue.neverIssued':
+    'Something came back that was never issued on this ticket.',
   'refusal.issue.notFound': 'This ticket does not exist.',
-  'refusal.issue.notRawMaterial': '{0} cannot go out on a ticket — only raw material does. Packaging is counted at the end of the shift, from what was produced.',
-  'refusal.issue.returnBelowZero': 'A return must be more than nothing. Leave a material out if none came back.',
+  'refusal.issue.notRawMaterial':
+    '{0} cannot go out on a ticket — only raw material does. Packaging is counted at the end of the shift, from what was produced.',
+  'refusal.issue.returnBelowZero':
+    'A return must be more than nothing. Leave a material out if none came back.',
   'refusal.issue.sayWhatCameBack': 'Say what came back.',
   'refusal.issue.ticketClosed': 'This ticket is closed. Its figures cannot change.',
   'refusal.ledger.movementBelowZero': 'A movement must be more than nothing.',
-  'refusal.ledger.movementTypeMissing': "The movement type '{0}' is missing from master data.",
-  'refusal.masterData.inUse': 'This row is used by other records, so it cannot be deleted. Deactivate it instead.',
+  'refusal.ledger.movementTypeMissing':
+    "The movement type '{0}' is missing from master data.",
+  'refusal.masterData.inUse':
+    'This row is used by other records, so it cannot be deleted. Deactivate it instead.',
   'refusal.masterData.notFound': 'This item does not exist.',
-  'refusal.packaging.activeMaterial': 'Every line must name an active packaging material.',
-  'refusal.packaging.alreadyRecorded': 'Packaging has already been recorded for this line. It is written once, at the end of the shift.',
-  'refusal.packaging.linePacksNothing': '{0} does not pack anything. Choose the thermo line.',
-  'refusal.packaging.nothingToRecord': 'Nothing to record. The shift produced no bags and no packaging was typed in.',
+  'refusal.packaging.activeMaterial':
+    'Every line must name an active packaging material.',
+  'refusal.packaging.alreadyRecorded':
+    'Packaging has already been recorded for this line. It is written once, at the end of the shift.',
+  'refusal.packaging.linePacksNothing':
+    '{0} does not pack anything. Choose the thermo line.',
+  'refusal.packaging.nothingToRecord':
+    'Nothing to record. The shift produced no bags and no packaging was typed in.',
   'refusal.packaging.quantityBelowZero': 'A quantity cannot be less than nothing.',
-  'refusal.packaging.zeroWeight': 'A weight of zero is not a weighing. Leave it empty instead.',
+  'refusal.packaging.zeroWeight':
+    'A weight of zero is not a weighing. Leave it empty instead.',
   'refusal.recipe.alreadyInProduction': 'Recipe {0} is already the one in production.',
   'refusal.recipe.chooseFamily': 'Choose a recipe family.',
   'refusal.recipe.familyNotFound': 'This recipe family does not exist.',
   'refusal.recipe.noMaterials': 'A recipe with no materials cannot go into production.',
   'refusal.recipe.notFound': 'This recipe does not exist.',
-  'refusal.recipe.replaced': 'Recipe {0} has been replaced. Copy it to a new recipe instead.',
-  'refusal.recipe.usedInProduction': 'Recipe {0} has been used in production and is kept for ever.',
-  'refusal.recycler.alreadyRecorded': 'The recycler has already been recorded for this line. It is written once, at the end of the shift.',
-  'refusal.recycler.lineDoesNotRecycle': '{0} does not recycle. Choose the recycler line.',
+  'refusal.recipe.replaced':
+    'Recipe {0} has been replaced. Copy it to a new recipe instead.',
+  'refusal.recipe.usedInProduction':
+    'Recipe {0} has been used in production and is kept for ever.',
+  'refusal.recycler.alreadyRecorded':
+    'The recycler has already been recorded for this line. It is written once, at the end of the shift.',
+  'refusal.recycler.lineDoesNotRecycle':
+    '{0} does not recycle. Choose the recycler line.',
   'refusal.recycler.weighOutput': 'Weigh what the recycler produced.',
   'refusal.reports.badDateRange': 'The last day cannot be before the first.',
   'refusal.roll.notFound': 'This roll does not exist.',
@@ -899,27 +1003,39 @@ export const en = {
   'refusal.shift.alreadyClosed': 'This shift is already closed.',
   'refusal.shift.alreadyReopened': 'This shift is already reopened.',
   'refusal.shift.badEndTime': 'The end time must be written as HH:mm, for example 16:00.',
-  'refusal.shift.badStartTime': 'The start time must be written as HH:mm, for example 08:00.',
+  'refusal.shift.badStartTime':
+    'The start time must be written as HH:mm, for example 08:00.',
   'refusal.shift.chooseALine': 'Choose at least one line that is running this shift.',
   'refusal.shift.chooseActiveLine': 'Choose an active production line.',
   'refusal.shift.chooseActiveShift': 'Choose an active shift.',
   'refusal.shift.chooseOpenLine': 'Choose a line of an open shift.',
-  'refusal.shift.closedIsKept': 'A closed shift is part of the record and is kept for ever.',
-  'refusal.shift.closedReopenFirst': 'This shift is closed. An administrator must reopen it before anything can change.',
+  'refusal.shift.closedIsKept':
+    'A closed shift is part of the record and is kept for ever.',
+  'refusal.shift.closedReopenFirst':
+    'This shift is closed. An administrator must reopen it before anything can change.',
   'refusal.shift.downtimeNegative': 'Downtime cannot be negative.',
-  'refusal.shift.downtimeTooLong': 'Downtime is longer than the shift itself. Check the hours.',
-  'refusal.shift.hasWork': 'Work has been recorded against this shift, so it cannot be removed. Close it instead.',
-  'refusal.shift.hasWorkers': 'This shift already has workers recorded on it. Close it instead.',
+  'refusal.shift.downtimeTooLong':
+    'Downtime is longer than the shift itself. Check the hours.',
+  'refusal.shift.hasWork':
+    'Work has been recorded against this shift, so it cannot be removed. Close it instead.',
+  'refusal.shift.hasWorkers':
+    'This shift already has workers recorded on it. Close it instead.',
   'refusal.shift.lineAlreadyOn': 'That line is already on this shift.',
-  'refusal.shift.lineHasNoSettings': '{0} does not record machine settings. Speed, feed distance and cycle time belong to the thermo line.',
-  'refusal.shift.lineHasWork': 'Work has been recorded against this line, so it cannot be removed from the shift.',
-  'refusal.shift.lineHasWorkers': '{0} already has workers recorded on it. Remove them first if the line did not run.',
+  'refusal.shift.lineHasNoSettings':
+    '{0} does not record machine settings. Speed, feed distance and cycle time belong to the thermo line.',
+  'refusal.shift.lineHasWork':
+    'Work has been recorded against this line, so it cannot be removed from the shift.',
+  'refusal.shift.lineHasWorkers':
+    '{0} already has workers recorded on it. Remove them first if the line did not run.',
   'refusal.shift.lineNotFound': 'This line of the shift does not exist.',
   'refusal.shift.lineNotOnShift': 'That line is not part of this shift.',
-  'refusal.shift.meterWentBackwards': "The end meter is below the start meter. Check the readings — if the meter rolled over or was replaced, record it in the shift's notes.",
-  'refusal.shift.needsALine': 'A shift must have at least one line. Discard the whole shift instead.',
+  'refusal.shift.meterWentBackwards':
+    "The end meter is below the start meter. Check the readings — if the meter rolled over or was replaced, record it in the shift's notes.",
+  'refusal.shift.needsALine':
+    'A shift must have at least one line. Discard the whole shift instead.',
   'refusal.shift.notFound': 'This shift does not exist.',
-  'refusal.shift.sayWhyReopening': 'Say why the shift is being reopened — it stays on the record.',
+  'refusal.shift.sayWhyReopening':
+    'Say why the shift is being reopened — it stays on the record.',
   'refusal.shift.tooFarAhead': 'A shift cannot be opened more than a day ahead.',
   'refusal.stock.gone': '{0} names something that is no longer here.',
   'refusal.stock.noMatch': 'No label in the system matches {0}.',
@@ -928,12 +1044,15 @@ export const en = {
   'refusal.thermo.rollGone': 'That label names a roll that is no longer here.',
   'refusal.thermo.runNotFound': 'This run does not exist.',
   'refusal.thermo.scanTheRoll': 'Scan the roll.',
-  'refusal.trace.noMatch': 'Nothing in the system matches {0} — not a label, and not a roll code.',
+  'refusal.trace.noMatch':
+    'Nothing in the system matches {0} — not a label, and not a roll code.',
   'refusal.trace.scanOrType': 'Scan a label, or type the code printed under it.',
-  'refusal.user.lastAdministrator': '{0} is the only administrator left. Give somebody else the administrator role first, or nobody can get back in.',
+  'refusal.user.lastAdministrator':
+    '{0} is the only administrator left. Give somebody else the administrator role first, or nobody can get back in.',
   'refusal.user.nameNeeded': 'A full name is needed.',
   'refusal.user.notFound': 'This person does not exist.',
-  'refusal.user.numberNeeded': 'An employee number is needed — it is how the floor knows him.',
+  'refusal.user.numberNeeded':
+    'An employee number is needed — it is how the floor knows him.',
   'refusal.user.numberTaken': 'Employee number {0} already belongs to somebody.',
   'common.thisShift': 'This shift',
 
@@ -943,12 +1062,14 @@ export const en = {
   'md.thickness': 'Thickness',
   'md.minThickness': 'Thinnest (mm)',
   'md.maxThickness': 'Thickest (mm)',
-  'md.thicknessNote': 'What a roll for this product should measure. Leave it empty until it is known.',
+  'md.thicknessNote':
+    'What a roll for this product should measure. Leave it empty until it is known.',
   'refusal.roll.chooseActiveProduct': 'Choose an active product.',
   'refusal.thermo.chooseProduct': 'Choose the product roll {0} is being formed into.',
   'refusal.roll.productAbsorbentRecipeNot': '{0} is absorbent, but recipe {1} is not.',
   'refusal.roll.productNotAbsorbentRecipeIs': '{0} is not absorbent, but recipe {1} is.',
-  'refusal.roll.productWrongRecipe': '{0} is not made from {1}. Choose a product this recipe makes.',
+  'refusal.roll.productWrongRecipe':
+    '{0} is not made from {1}. Choose a product this recipe makes.',
   'refusal.roll.recipeRetired': '{0} is no longer used. Choose one of the main recipes.',
 } as const;
 

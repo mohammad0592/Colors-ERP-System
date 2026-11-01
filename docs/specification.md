@@ -2316,11 +2316,14 @@ become. This reverses part of 19.1.
   and no longer prints the product's thickness range.
 - **The product is named at the thermo**, when the roll goes into the machine — the mould
   is the product, and the mould is on the thermo. The start window asks for it above the
-  scan box, offers only the products the roll's recipe makes, and remembers the last one
-  on the tablet, since the thermo runs the same mould for hours: a scan then goes straight
-  through. It is written onto the roll then, so the bags and every report read it from
-  there as before (19.9). A roll logged while the extruder still asked keeps its product
-  and is not asked again.
+  scan box, and offers only the products the roll's recipe makes. **It is required, and
+  chosen for every roll** — the box starts empty and no roll goes in without it. It was
+  remembered from the last roll at first, so a scan went straight through; after a mould
+  change that put the first rolls in under the old product, and the bags took the wrong
+  code from it. It is written onto the roll then, so the bags and every report read it
+  from there as before (19.9). A roll that already has its product — logged while the
+  extruder still asked, or back from the thermo unfinished — shows it, locked, and keeps
+  it.
 - **The extruder report** groups the shift's rolls **by recipe**, and its product column
   is now *Formed into* — filled once the thermo has named it.
 

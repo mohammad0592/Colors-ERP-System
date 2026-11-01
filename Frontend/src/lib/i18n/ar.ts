@@ -69,7 +69,8 @@ export const ar: Record<TranslationKey, string> = {
   'print.setup1': 'اجعل طابعة الملصقات الطابعة الافتراضية في ويندوز، بورق 4 × 4 إنش.',
   'print.setup2': 'سجّل الدخول على هذا الحاسوب بحساب لديه دور طابعة الملصقات.',
   'print.setup3': 'افتح هذه الصفحة من اختصار كروم مع تفعيل الطباعة دون سؤال:',
-  'print.setup4': 'فعّل الطباعة التلقائية. تُطبع الملصقات الجديدة عند وصولها؛ ودون هذا الإعداد يسأل كروم مرة لكل مهمة.',
+  'print.setup4':
+    'فعّل الطباعة التلقائية. تُطبع الملصقات الجديدة عند وصولها؛ ودون هذا الإعداد يسأل كروم مرة لكل مهمة.',
   'refusal.print.nothingToPrint': 'لا يوجد ملصق للطباعة.',
   'refusal.print.tooMany': 'المهمة الواحدة {0} ملصقاً على الأكثر.',
   'refusal.print.notFound': 'مهمة الطباعة هذه غير موجودة.',
@@ -95,15 +96,20 @@ export const ar: Record<TranslationKey, string> = {
   'shiftCfg.enteredBy': 'أدخلها',
   'shiftCfg.notEntered': 'لم تُدخَل بعد',
   'shiftCfg.saveElectricity': 'حفظ الكهرباء',
-  'shiftCfg.electricityReadOnly': 'لا يدخلها إلا مشغّل في هذه الوردية أو المشرف أو المدير.',
+  'shiftCfg.electricityReadOnly':
+    'لا يدخلها إلا مشغّل في هذه الوردية أو المشرف أو المدير.',
   'shiftCfg.lineNotes': 'ملاحظات هذا الخط',
   'shifts.lineOperators': 'مشغّلو الخطوط',
-  'shifts.operatorsHint': 'اختر من يشغّل كل خط. هو من يُدخل أوقاته وموظفيه وعماله وملاحظاته من إعدادات الوردية لخطه، تحت الإنتاج.',
+  'shifts.operatorsHint':
+    'اختر من يشغّل كل خط. هو من يُدخل أوقاته وموظفيه وعماله وملاحظاته من إعدادات الوردية لخطه، تحت الإنتاج.',
   'shifts.chooseOperator': 'اختر المشغّل…',
-  'refusal.shift.notLineOperator': 'لا يغيّر {0} في هذه الوردية إلا مشغّله المحدد أو المشرف أو المدير.',
+  'refusal.shift.notLineOperator':
+    'لا يغيّر {0} في هذه الوردية إلا مشغّله المحدد أو المشرف أو المدير.',
   'refusal.shift.chooseActiveOperator': 'اختر شخصاً مفعّلاً ليكون المشغّل.',
-  'refusal.shift.operatorLacksRole': '{0} لا يحمل الوظيفة التي تشغّل {1}. أعطه إياها من شاشة المستخدمين أولاً.',
-  'refusal.shift.notShiftOperator': 'لا يدخل الكهرباء إلا مشغّل في هذه الوردية أو المشرف أو المدير.',
+  'refusal.shift.operatorLacksRole':
+    '{0} لا يحمل الوظيفة التي تشغّل {1}. أعطه إياها من شاشة المستخدمين أولاً.',
+  'refusal.shift.notShiftOperator':
+    'لا يدخل الكهرباء إلا مشغّل في هذه الوردية أو المشرف أو المدير.',
   'nav.reports': 'التقارير',
   'nav.audit': 'سجل التدقيق',
   'nav.recipes': 'الوصفات',
@@ -275,33 +281,41 @@ export const ar: Record<TranslationKey, string> = {
   'dispatch.whyComingBack': 'لماذا تعود؟',
   'dispatch.backToList': 'تعود المنصة إلى القائمة.',
   'dispatch.wrongAtLorry': 'مُسحت المنصة الخطأ عند الشاحنة',
-  'rolls.codeHint': 'الرقم والنوع والتاريخ والوقت واللون — يحسبه النظام. وهو الباركود أيضاً.',
+  'rolls.codeHint':
+    'الرقم والنوع والتاريخ والوقت واللون — يحسبه النظام. وهو الباركود أيضاً.',
   'rolls.measure': 'قياس',
   'rolls.measureNote': 'يذهب الرول إلى التشكيل بعد قياسه وفحصه معاً، بأي ترتيب.',
-  'rolls.weightLooksWrong': 'وزن الرول بين 50 و150 كغم. هل هذا هو الطول كُتب في خانة الوزن؟',
+  'rolls.weightLooksWrong':
+    'وزن الرول بين 50 و150 كغم. هل هذا هو الطول كُتب في خانة الوزن؟',
   'rolls.testTitle': 'فحص الرول',
   'rolls.test': 'فحص',
   'rolls.nextNumber': 'الرول التالي',
   'shifts.startingShift': 'وردية بداية',
-  'shifts.startingShiftNote': 'تبدأ أرقام الرولات من 01 عند فتح هذه الوردية. اتركها غير محددة لمتابعة العدّ من الوردية السابقة.',
+  'shifts.startingShiftNote':
+    'تبدأ أرقام الرولات من 01 عند فتح هذه الوردية. اتركها غير محددة لمتابعة العدّ من الوردية السابقة.',
   'shifts.startingShiftBadge': 'وردية بداية — الرولات من 01',
   'rolls.nextNumberHint': 'يبدأ من 01 عند فتح وردية بداية للبثق.',
-  'refusal.shift.startingNeedsExtruder': 'وردية البداية تعيد ترقيم رولات البثق، لذا يجب أن يكون خط البثق من الخطوط المختارة.',
+  'refusal.shift.startingNeedsExtruder':
+    'وردية البداية تعيد ترقيم رولات البثق، لذا يجب أن يكون خط البثق من الخطوط المختارة.',
   'rolls.printLabel': 'طباعة الملصق',
   'status.roll.needsMeasure': 'بحاجة إلى قياس',
   'status.roll.needsTestAndMeasure': 'بحاجة إلى فحص وقياس',
   'refusal.roll.alreadyFormed': 'الرول {0} دخل التشكيل. وزنه أصبح جزءاً من تلك الدورة.',
-  'refusal.roll.weightOutOfRange': 'وزن الرول بين {0} و{1} كغم. يبدو أن الطول كُتب في خانة الوزن.',
+  'refusal.roll.weightOutOfRange':
+    'وزن الرول بين {0} و{1} كغم. يبدو أن الطول كُتب في خانة الوزن.',
   'refusal.roll.lengthMissing': 'طول الرول مفقود.',
   'refusal.barcode.valueTaken': 'يوجد ملصق آخر يحمل {0}.',
   'rolls.outAtHint': 'وقت خروج الرول من البثّاقة — الآن، إلا إن سُجّل متأخراً.',
   'rolls.editTitle': 'تعديل الرول',
-  'rolls.editNote': 'الرمز يتبع الوصفة والوقت واللون. إن تغيّر الرمز أو الوصفة أو اللون يظهر ملصق جديد للطباعة. الوزن والطول يُصحَّحان من زر القياس.',
+  'rolls.editNote':
+    'الرمز يتبع الوصفة والوقت واللون. إن تغيّر الرمز أو الوصفة أو اللون يظهر ملصق جديد للطباعة. الوزن والطول يُصحَّحان من زر القياس.',
   'refusal.roll.codeRequired': 'الرول يحتاج رمزاً.',
   'refusal.roll.codeTooLong': 'رمز الرول 30 حرفاً على الأكثر.',
   'refusal.roll.codeTaken': 'يوجد رول آخر يحمل الرمز {0}.',
-  'refusal.roll.outAtInFuture': 'لا يمكن أن يخرج الرول من البثّاقة في المستقبل. تحقق من وقت الخروج.',
-  'refusal.roll.shiftClosed': 'الرول {0} يتبع وردية مغلقة. يجب أن يعيد المدير فتحها أولاً.',
+  'refusal.roll.outAtInFuture':
+    'لا يمكن أن يخرج الرول من البثّاقة في المستقبل. تحقق من وقت الخروج.',
+  'refusal.roll.shiftClosed':
+    'الرول {0} يتبع وردية مغلقة. يجب أن يعيد المدير فتحها أولاً.',
   'refusal.roll.chooseForCode': 'اختر الخط والوصفة واللون أولاً.',
   'rolls.loadFailed1': 'تعذّر تحميل الخط 1.',
   'rolls.noShift': 'لا توجد وردية مفتوحة، فلا يمكن تسجيل رول.',
@@ -314,35 +328,47 @@ export const ar: Record<TranslationKey, string> = {
   'rolls.absorbencyWet': 'بعد 10 دقائق في الماء (غرام)',
   'rolls.absorbencyPercent': 'نسبة الامتصاص',
   'rolls.absorbencyShort': 'الامتصاص',
-  'rolls.absorbencyNote': 'الماء الذي امتصته نسبةً إلى وزنها الجاف: (بعد − قبل) ÷ قبل × 100. يُحسب ولا يُكتب.',
+  'rolls.absorbencyNote':
+    'الماء الذي امتصته نسبةً إلى وزنها الجاف: (بعد − قبل) ÷ قبل × 100. يُحسب ولا يُكتب.',
   'rolls.absorbencyBackwards': 'وزنها بعد الماء أقل منه قبله. هل الوزنان مقلوبان؟',
   'rolls.label': 'الملصق',
-  'rolls.loggedMeasureNext': 'تم تسجيله. زِنه وقِس طوله — يظهر ملصقه للطباعة بعد إدخال الوزن والطول.',
+  'rolls.loggedMeasureNext':
+    'تم تسجيله. زِنه وقِس طوله — يظهر ملصقه للطباعة بعد إدخال الوزن والطول.',
   'rolls.measuredPrint': 'تم وزنه وقياسه. اطبع هذا الملصق والصقه على الرول.',
-  'rolls.remeasuredPrint': 'أُعيد قياسه. اطبع ملصقاً جديداً بدل القديم — فالقديم يحمل الأرقام السابقة.',
+  'rolls.remeasuredPrint':
+    'أُعيد قياسه. اطبع ملصقاً جديداً بدل القديم — فالقديم يحمل الأرقام السابقة.',
   'rolls.changedPrint': 'تم تعديله. اطبع ملصقاً جديداً بدل القديم.',
   'rolls.missingPlate': 'وزن الصحن',
   'rolls.missingThickness': 'قراءات السماكة الأربع',
   'rolls.missingDry': 'الامتصاص قبل الماء',
   'rolls.missingWet': 'الامتصاص بعد الماء',
   'rolls.stillToTake': 'المتبقي:',
-  'rolls.savedAsYouGo': 'احفظ ما لديك — يبقى محفوظاً، ويبقى الرول بحاجة إلى فحص حتى تُدخل كل القراءات.',
+  'rolls.savedAsYouGo':
+    'احفظ ما لديك — يبقى محفوظاً، ويبقى الرول بحاجة إلى فحص حتى تُدخل كل القراءات.',
   'rolls.testAllIn': 'كل القراءات موجودة. بعد الحفظ والقياس يذهب الرول إلى الثيرمو.',
-  'rolls.soakDryFirst': 'زِن القطعة واحفظ، ثم ضعها في الماء — يبدأ مؤقت العشر دقائق عند حفظ الوزن الجاف.',
+  'rolls.soakDryFirst':
+    'زِن القطعة واحفظ، ثم ضعها في الماء — يبدأ مؤقت العشر دقائق عند حفظ الوزن الجاف.',
   'rolls.soaking': 'في الماء. زِنها مرة أخرى بعد',
   'rolls.soakDone': 'انتهت العشر دقائق. أخرج القطعة وزِنها واحفظ.',
   'rolls.weighNow': 'زِن الآن',
   'rolls.testFinished': 'اكتمل الفحص.',
-  'rolls.testSavedSoaking': 'تم الحفظ. القطعة في الماء؛ يعدّ سطرها العشر دقائق ويصدر صوتاً عند انتهائها.',
+  'rolls.testSavedSoaking':
+    'تم الحفظ. القطعة في الماء؛ يعدّ سطرها العشر دقائق ويصدر صوتاً عند انتهائها.',
   'rolls.testSavedPartly': 'تم الحفظ. يبقى بحاجة إلى فحص حتى تُدخل كل القراءات.',
-  'refusal.roll.choicesAlreadyFormed': 'الرول {0} دخل الثيرمو. وصفته ومنتجه ولونه أصبحت جزءاً من تلك الدفعة.',
-  'refusal.roll.testAlreadyFormed': 'الرول {0} دخل الثيرمو. فحصه أصبح جزءاً من تلك الدفعة.',
-  'refusal.roll.absorbencyDryFirst': 'احفظ وزن القطعة جافة أولاً، ثم زِنها مرة أخرى بعد عشر دقائق في الماء.',
-  'refusal.roll.absorbencySoaking': 'لم تمضِ عشر دقائق على القطعة في الماء. زِنها مرة أخرى بعد {0} دقيقة.',
+  'refusal.roll.choicesAlreadyFormed':
+    'الرول {0} دخل الثيرمو. وصفته ومنتجه ولونه أصبحت جزءاً من تلك الدفعة.',
+  'refusal.roll.testAlreadyFormed':
+    'الرول {0} دخل الثيرمو. فحصه أصبح جزءاً من تلك الدفعة.',
+  'refusal.roll.absorbencyDryFirst':
+    'احفظ وزن القطعة جافة أولاً، ثم زِنها مرة أخرى بعد عشر دقائق في الماء.',
+  'refusal.roll.absorbencySoaking':
+    'لم تمضِ عشر دقائق على القطعة في الماء. زِنها مرة أخرى بعد {0} دقيقة.',
   'refusal.roll.testEmpty': 'أدخل قراءة واحدة على الأقل قبل الحفظ.',
-  'refusal.roll.readingNotPositive': 'يجب أن تكون القراءة أكبر من صفر. اترك الخانة فارغة إن لم تُؤخذ بعد.',
+  'refusal.roll.readingNotPositive':
+    'يجب أن تكون القراءة أكبر من صفر. اترك الخانة فارغة إن لم تُؤخذ بعد.',
   'refusal.roll.notAbsorbent': 'هذا الرول ليس ماصاً. اترك الامتصاص فارغاً.',
-  'refusal.roll.absorbencyBackwards': 'الوزن بعد الماء أقل منه قبله. تأكد أن الوزنين غير مقلوبين.',
+  'refusal.roll.absorbencyBackwards':
+    'الوزن بعد الماء أقل منه قبله. تأكد أن الوزنين غير مقلوبين.',
   'rolls.averageThickness': 'متوسط السماكة',
   'rolls.meanOfFour': 'متوسط القراءات الأربع. محسوب، لا يُكتب.',
   'rolls.plateWeightG': 'وزن الطبق (غ)',
@@ -417,7 +443,10 @@ export const ar: Record<TranslationKey, string> = {
   'extruderRpt.testedBy': 'فحصه',
   'extruderRpt.formedOn': 'شُكّل في',
   'extruderRpt.rollsColumn': 'الرولات',
-  'thermo.productBeingFormed': 'المنتج الذي يُشكَّل — القالب على الماكينة. يُحفظ للرول التالي.',
+  'thermo.productBeingFormed':
+    'المنتج الذي يُشكَّل — القالب على الماكينة. يُختار لكل رول.',
+  'thermo.chooseProductFirst': 'اختر المنتج قبل إدخال الرول.',
+  'thermo.productKept': 'سُمّي عند دخول هذا الرول أول مرة، ويبقى معه.',
   'extruderRpt.formedInto': 'شُكّل إلى',
   'extruderRpt.byRecipe': 'حسب الوصفة',
   'extruderRpt.testOpen': 'الفحص غير مكتمل',
@@ -475,11 +504,13 @@ export const ar: Record<TranslationKey, string> = {
   'staff.noAccount': 'عامل',
   'staff.systemUsers': 'الموظفون (لهم حساب)',
   'staff.withoutAccount': 'العمال (بلا حساب)',
-  'staff.addedByAdmin': 'أحد غير موجود؟ يضيف المسؤول الموظفين والعمال من شاشة المستخدمين.',
+  'staff.addedByAdmin':
+    'أحد غير موجود؟ يضيف المسؤول الموظفين والعمال من شاشة المستخدمين.',
   'staff.numberOptional': 'الرقم (اختياري)',
   'staff.addNew': 'إضافة عامل',
   'staff.listTitle': 'العمال',
-  'staff.listNote': 'من يعمل في المصنع بلا حساب. لا يسجّلون الدخول، ويُسجَّلون فقط في الورديات التي يعملون بها.',
+  'staff.listNote':
+    'من يعمل في المصنع بلا حساب. لا يسجّلون الدخول، ويُسجَّلون فقط في الورديات التي يعملون بها.',
   'staff.loadFailed': 'تعذّر تحميل العمال.',
   'staff.none': 'لا عمال بعد. أضف عاملاً من زر إضافة عامل.',
   'staff.left': 'غادر',
@@ -495,7 +526,8 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.productCode.productRequired': 'اختر المنتج.',
   'refusal.productCode.colourRequired': 'اختر اللون.',
   'refusal.productCode.codeTaken': 'الرمز {0} مستخدم من قبل للمنتج {1}.',
-  'refusal.productCode.colourTaken': 'لهذا المنتج رمز لهذا اللون من قبل. عدّل ذلك الرمز بدلاً من إضافة آخر.',
+  'refusal.productCode.colourTaken':
+    'لهذا المنتج رمز لهذا اللون من قبل. عدّل ذلك الرمز بدلاً من إضافة آخر.',
   'shifts.nobodyYet': 'لم يُضف أحد بعد.',
   'shifts.trainee': 'متدرب',
   'shifts.remove': 'إزالة',
@@ -680,14 +712,17 @@ export const ar: Record<TranslationKey, string> = {
   'status.pallet.full': 'ممتلئة',
   'status.pallet.closedNotFull': 'مغلق – غير ممتلئ',
   'pallets.closeNotFull': 'إغلاق – غير ممتلئ',
-  'pallets.closeConfirm': 'إغلاق هذه المنصة كما هي وتخزينها في المستودع؟ لن تُضاف أكياس أخرى إلا بعد إعادة فتحها. يمكن شحنها مثل المنصة الممتلئة.',
+  'pallets.closeConfirm':
+    'إغلاق هذه المنصة كما هي وتخزينها في المستودع؟ لن تُضاف أكياس أخرى إلا بعد إعادة فتحها. يمكن شحنها مثل المنصة الممتلئة.',
   'pallets.reopen': 'إعادة الفتح لإضافة أكياس',
   'pallets.closedBy': 'أُغلقت غير ممتلئة بواسطة',
   'pallets.closedNote': 'مخزّنة في المستودع كما هي. أعد فتحها لإضافة أكياس أخرى.',
-  'pallets.closedReopenToAdd': 'هذه المنصة مغلقة وغير ممتلئة. أعد فتحها لإضافة أكياس أخرى.',
+  'pallets.closedReopenToAdd':
+    'هذه المنصة مغلقة وغير ممتلئة. أعد فتحها لإضافة أكياس أخرى.',
   'reports.closedNotFullNote': 'مخزّنة كما هي، لا تُحسب تحت منتج',
   'refusal.pallet.closedReopenFirst': 'المنصة {0} مغلقة. أعد فتحها لإضافة أكياس أخرى.',
-  'refusal.pallet.closeEmpty': 'لا شيء على المنصة {0}. ألغها بدلاً من ذلك، فيعود لوحها الخشبي إلى المخزن.',
+  'refusal.pallet.closeEmpty':
+    'لا شيء على المنصة {0}. ألغها بدلاً من ذلك، فيعود لوحها الخشبي إلى المخزن.',
   'refusal.pallet.closeNotBuilding': 'المنصة {0} ليست قيد البناء، فلا شيء لإغلاقه.',
   'refusal.pallet.reopenNotClosed': 'المنصة {0} ليست مغلقة، فلا يمكن إعادة فتحها.',
   'status.pallet.shipped': 'شُحنت',
@@ -700,43 +735,54 @@ export const ar: Record<TranslationKey, string> = {
   'status.roll.notCompleted': 'غير مكتمل',
   'status.roll.cancelled': 'ملغى',
   'correct.countsTitle': 'تصحيح العدّ',
-  'correct.countsExplain': 'غيّر ما حُفظ خطأً. عدد أكياس أكبر من السابق يُنشئ الأكياس الناقصة مع ملصقات جديدة، وعدد أقل يُلغي أحدث الأكياس الزائدة، ويجب ألا تكون على منصة.',
+  'correct.countsExplain':
+    'غيّر ما حُفظ خطأً. عدد أكياس أكبر من السابق يُنشئ الأكياس الناقصة مع ملصقات جديدة، وعدد أقل يُلغي أحدث الأكياس الزائدة، ويجب ألا تكون على منصة.',
   'correct.absorbency': 'نسبة الامتصاص (%)',
-  'correct.bagsWillBeCancelled': 'من أحدث أكياس هذا الرول ستُلغى، ولن تعمل ملصقاتها بعد ذلك.',
+  'correct.bagsWillBeCancelled':
+    'من أحدث أكياس هذا الرول ستُلغى، ولن تعمل ملصقاتها بعد ذلك.',
   'correct.bagsWillBeMade': 'أكياس جديدة ستُنشأ وتُطبع ملصقاتها.',
   'correct.whyCorrect': 'لماذا يُصحَّح العدّ؟',
   'correct.saveCorrection': 'حفظ التصحيح',
   'correct.correct': 'تصحيح',
   'correct.newBagsLabels': 'أكياس جديدة أنشأها تصحيح الرول',
   'correct.wrongRoll': 'رول خاطئ',
-  'correct.wrongRollExplain': 'يعود الرول إلى المخزون كأنه لم يدخل، وتُحذف الدورة من القائمة. يبقى في سجل التدقيق من فعل ذلك ولماذا.',
+  'correct.wrongRollExplain':
+    'يعود الرول إلى المخزون كأنه لم يدخل، وتُحذف الدورة من القائمة. يبقى في سجل التدقيق من فعل ذلك ولماذا.',
   'correct.whyWrongRoll': 'ماذا حدث؟',
   'correct.takeBack': 'إخراجه وإرجاعه',
   'correct.defective': 'تالف',
-  'correct.defectiveExplain': 'يذهب الكيس إلى إعادة التدوير لا إلى منصة. يبقى مسجّلاً كتالف مع السبب.',
+  'correct.defectiveExplain':
+    'يذهب الكيس إلى إعادة التدوير لا إلى منصة. يبقى مسجّلاً كتالف مع السبب.',
   'correct.whyDefective': 'ما العيب فيه؟',
   'correct.markDefective': 'تسجيله تالفاً',
   'correct.somethingWrong': 'هل في هذا الرول خطأ؟',
   'correct.cancelRoll': 'إلغاء — سُجّل بالخطأ',
   'correct.scrapRoll': 'إتلاف — الرول غير صالح',
-  'correct.cancelRollExplain': 'لرول لم يخرج من الإكسترودر أو سُجّل مرتين. يبقى مسجّلاً كملغى ويحتفظ برقمه، ولا يدخل في أي تقرير.',
-  'correct.scrapRollExplain': 'لرول حقيقي لا يمكن استخدامه. يذهب إلى إعادة التدوير بدلاً من الثيرمو، ويبقى محسوباً كمنتَج.',
+  'correct.cancelRollExplain':
+    'لرول لم يخرج من الإكسترودر أو سُجّل مرتين. يبقى مسجّلاً كملغى ويحتفظ برقمه، ولا يدخل في أي تقرير.',
+  'correct.scrapRollExplain':
+    'لرول حقيقي لا يمكن استخدامه. يذهب إلى إعادة التدوير بدلاً من الثيرمو، ويبقى محسوباً كمنتَج.',
   'correct.why': 'لماذا؟',
   'correct.reverse': 'عكس',
   'correct.reversed': 'معكوس',
   'correct.reverseDelivery': 'عكس التوريد',
-  'correct.reverseDeliveryExplain': 'تخرج الكمية نفسها من المخزن بجانب التوريد الخاطئ الذي يبقى مسجّلاً. يُرفض إذا كانت المادة قد استُخدمت.',
+  'correct.reverseDeliveryExplain':
+    'تخرج الكمية نفسها من المخزن بجانب التوريد الخاطئ الذي يبقى مسجّلاً. يُرفض إذا كانت المادة قد استُخدمت.',
   'correct.cancelTicket': 'إلغاء التذكرة — صُرفت بالخطأ',
-  'correct.cancelTicketExplain': 'كل ما في التذكرة ولم يرجع يعود إلى المخزن، فلا تُحسب التذكرة كاستهلاك. لا يمكن إعادة فتحها.',
+  'correct.cancelTicketExplain':
+    'كل ما في التذكرة ولم يرجع يعود إلى المخزن، فلا تُحسب التذكرة كاستهلاك. لا يمكن إعادة فتحها.',
   'correct.ticketCancelled': 'ملغاة',
   'refusal.correction.reasonRequired': 'اذكر السبب.',
   'refusal.thermo.notCountedYet': 'الرول {0} لم يُعدّ بعد. قم بعدّه بدلاً من ذلك.',
-  'refusal.thermo.correctionBagsOnPallets': 'يجب إزالة {0} أكياس، و{1} فقط من أكياس هذا الرول خارج المنصات. أنزل الباقي عن منصاتها أولاً ثم صحّح العدّ.',
-  'refusal.thermo.undoOnlyInMachine': 'الرول {0} أُخرج من قبل. لا يُرجَع كبداية خاطئة إلا رول ما زال في الماكينة.',
+  'refusal.thermo.correctionBagsOnPallets':
+    'يجب إزالة {0} أكياس، و{1} فقط من أكياس هذا الرول خارج المنصات. أنزل الباقي عن منصاتها أولاً ثم صحّح العدّ.',
+  'refusal.thermo.undoOnlyInMachine':
+    'الرول {0} أُخرج من قبل. لا يُرجَع كبداية خاطئة إلا رول ما زال في الماكينة.',
   'refusal.bag.notFound': 'هذا الكيس غير موجود.',
   'refusal.bag.onPallet': 'هذا الكيس على منصة. أنزله عن المنصة أولاً.',
   'refusal.bag.notAvailable': 'لا يُسجَّل تالفاً إلا كيس ينتظر منصة.',
-  'refusal.roll.cannotCancel': 'الرول {0} عُمل عليه من قبل، فلا يمكن إلغاؤه. أتلفه بدلاً من ذلك إن كان غير صالح.',
+  'refusal.roll.cannotCancel':
+    'الرول {0} عُمل عليه من قبل، فلا يمكن إلغاؤه. أتلفه بدلاً من ذلك إن كان غير صالح.',
   'refusal.roll.cannotScrap': 'الرول {0} ليس في المخزون، فلا يوجد ما يُتلف.',
   'refusal.roll.wasCancelled': 'الرول {0} ملغى.',
   'refusal.roll.wasScrapped': 'الرول {0} أُتلف.',
@@ -744,7 +790,8 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.stock.onlyDeliveries': 'لا يُعكس هنا إلا التوريد.',
   'refusal.stock.alreadyReversed': 'هذا التوريد عُكس من قبل.',
   'thermo.notFinished': 'لم يكتمل',
-  'thermo.notFinishedExplain': 'يخرج الرول من الماكينة الآن ويعود إلى المخزن كغير مكتمل، ليدخل مرة أخرى لاحقاً. عُدّ ما أنتجه حتى الآن من فحوصات الثيرمو، كأي تشغيلة.',
+  'thermo.notFinishedExplain':
+    'يخرج الرول من الماكينة الآن ويعود إلى المخزن كغير مكتمل، ليدخل مرة أخرى لاحقاً. عُدّ ما أنتجه حتى الآن من فحوصات الثيرمو، كأي تشغيلة.',
   'thermo.whyNotFinished': 'لماذا لم يكتمل الرول؟',
   'thermo.takeOutUnfinished': 'إخراجه غير مكتمل',
   'thermo.notFinishedToCount': 'لم يكتمل · بانتظار العدّ',
@@ -792,9 +839,11 @@ export const ar: Record<TranslationKey, string> = {
   'md.addProductCode': 'إضافة رمز',
   'md.editProductCode': 'تعديل رمز المنتج',
   'md.deleteProductCode': 'حذف رمز المنتج',
-  'md.deleteProductCodeNote': 'ستُطبع على أكياس هذا المنتج بهذا اللون رمز محسوب من المنتج إلى أن يُعطى رمز آخر.',
+  'md.deleteProductCodeNote':
+    'ستُطبع على أكياس هذا المنتج بهذا اللون رمز محسوب من المنتج إلى أن يُعطى رمز آخر.',
   'md.everyColour': 'كل الألوان',
-  'md.productCodesHint': 'الرمز المطبوع على كل كيس من منتج بلون معيّن. المنتج الذي له رمز واحد مهما كان لونه، مثل علب البرغر، يوضع رمزه تحت كل الألوان.',
+  'md.productCodesHint':
+    'الرمز المطبوع على كل كيس من منتج بلون معيّن. المنتج الذي له رمز واحد مهما كان لونه، مثل علب البرغر، يوضع رمزه تحت كل الألوان.',
   'md.productCodesFailed': 'تعذّر تحميل رموز المنتجات.',
   'md.productTypes': 'أنواع المنتجات',
   'md.lines': 'الخطوط',
@@ -803,9 +852,11 @@ export const ar: Record<TranslationKey, string> = {
   'md.goesOnTicket': 'تخرج بتذكرة صرف',
   'md.codeLetter': 'حرف الرمز',
   'md.madeFrom': 'مصنوع من',
-  'md.madeFromHint': 'الوصفة الرئيسية التي تُصنع منها رولات هذا المنتج. وهي التي تحدد إن كان المنتج ماصًا.',
+  'md.madeFromHint':
+    'الوصفة الرئيسية التي تُصنع منها رولات هذا المنتج. وهي التي تحدد إن كان المنتج ماصًا.',
   'md.recordsSettings': 'يسجّل إعدادات الماكينة',
-  'md.settingsNote': 'خط التشكيل فقط. عندها يُطلب منه سرعة التشكيل ومسافة التغذية وزمن الدورة.',
+  'md.settingsNote':
+    'خط التشكيل فقط. عندها يُطلب منه سرعة التشكيل ومسافة التغذية وزمن الدورة.',
   'md.mixesRolls': 'يخلط ويصنع الرولات',
   'md.mixesNote': 'الإكسترودر. لا تبدأ الخلطات إلا على خط محدد هنا.',
   'md.formsBags': 'يشكّل الأكياس',
@@ -850,21 +901,26 @@ export const ar: Record<TranslationKey, string> = {
 
   // What the server says when it refuses. The numbers in braces are filled in from the values it sends beside the code.
   'refusal.pallet.chooseOpenShiftLine': 'اختر خطاً من وردية مفتوحة.',
-  'refusal.pallet.lineMakesNoBags': '{0} لا يصنع أكياساً، فلا شيء يُغلَّف هناك. اختر خط التشكيل.',
+  'refusal.pallet.lineMakesNoBags':
+    '{0} لا يصنع أكياساً، فلا شيء يُغلَّف هناك. اختر خط التشكيل.',
   'refusal.pallet.sayWhyCancelling': 'اذكر سبب إلغاء المنصة.',
   'refusal.pallet.alreadyCancelled': 'المنصة {0} أُلغيت مسبقاً.',
-  'refusal.pallet.finishedTakeBagsOff': 'المنصة {0} مكتملة. أزل أكياسها أولاً إن كانت قد جُهّزت بالخطأ.',
+  'refusal.pallet.finishedTakeBagsOff':
+    'المنصة {0} مكتملة. أزل أكياسها أولاً إن كانت قد جُهّزت بالخطأ.',
   'refusal.pallet.hasBagsOn': 'المنصة {0} عليها أكياس. أزلها قبل إلغائها.',
-  'refusal.pallet.cancelledStartNew': 'المنصة {0} أُلغيت وعادت منصتها الخشبية إلى المخزن. ابدأ واحدة جديدة.',
+  'refusal.pallet.cancelledStartNew':
+    'المنصة {0} أُلغيت وعادت منصتها الخشبية إلى المخزن. ابدأ واحدة جديدة.',
   'refusal.pallet.alreadyShipped': 'المنصة {0} شُحنت مسبقاً.',
   'refusal.pallet.isFull': 'المنصة {0} ممتلئة. ابدأ واحدة جديدة للكيس التالي.',
   'refusal.pallet.bagDoesNotFit': 'المنصة {0} هي {1}. هذا الكيس {2}، فمكانه منصة أخرى.',
   'refusal.pallet.sayWhyBagComingOff': 'اذكر سبب إزالة الكيس. يبقى في السجل في الحالتين.',
   'refusal.pallet.bagAlreadyTakenOff': 'هذا الكيس أُزيل مسبقاً.',
-  'refusal.pallet.leftTheFactory': 'المنصة {0} غادرت المصنع. لا يمكن إزالة كيس منها الآن.',
+  'refusal.pallet.leftTheFactory':
+    'المنصة {0} غادرت المصنع. لا يمكن إزالة كيس منها الآن.',
   'refusal.pallet.cancelledNeverHeld': 'المنصة {0} أُلغيت. لم تحمل شيئاً قط.',
   'refusal.pallet.alreadyGone': 'المنصة {0} غادرت مسبقاً.',
-  'refusal.pallet.notFinished': 'المنصة {0} ما زالت قيد البناء. لا تخرج إلا المنصة الممتلئة أو المغلقة.',
+  'refusal.pallet.notFinished':
+    'المنصة {0} ما زالت قيد البناء. لا تخرج إلا المنصة الممتلئة أو المغلقة.',
   'refusal.pallet.sayWhyComingBack': 'اذكر سبب عودة المنصة.',
   'refusal.pallet.notShipped': 'المنصة {0} لم تُشحن.',
   'refusal.pallet.doesNotExist': 'هذه المنصة غير موجودة.',
@@ -878,7 +934,8 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.inventory.chooseActiveMaterial': 'اختر مادة مفعّلة.',
   'refusal.inventory.countAlreadyMatches': 'الجرد يطابق ما يقوله النظام. لا شيء لتصحيحه.',
   'refusal.inventory.countBelowZero': 'لا يمكن أن يكون الجرد أقل من صفر.',
-  'refusal.inventory.noPackSize': '{0} ليس لها حجم عبوة بهذه الوحدة. أضف واحداً في البيانات الأساسية، أو استلمها بوحدتها الأساسية.',
+  'refusal.inventory.noPackSize':
+    '{0} ليس لها حجم عبوة بهذه الوحدة. أضف واحداً في البيانات الأساسية، أو استلمها بوحدتها الأساسية.',
   'refusal.inventory.sayWhyCountDiffers': 'اذكر سبب اختلاف الجرد — يبقى في السجل.',
   'refusal.inventory.typeHowMuch': 'اكتب الكمية التي وصلت.',
   'refusal.issue.activeMaterial': 'كل سطر يجب أن يسمّي مادة مفعّلة.',
@@ -886,22 +943,29 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.issue.lineNeedsWeight': 'كل سطر يحتاج وزناً.',
   'refusal.issue.lineTakesNoRaw': '{0} لا يستلم مواد خام. اختر خط الإكسترودر.',
   'refusal.issue.materialTwice': 'تظهر كل مادة مرة واحدة. اجمع الكميات معاً.',
-  'refusal.issue.materialTwiceOnTicket': 'تظهر كل مادة مرة واحدة في التذكرة. اجمع الكميات معاً.',
+  'refusal.issue.materialTwiceOnTicket':
+    'تظهر كل مادة مرة واحدة في التذكرة. اجمع الكميات معاً.',
   'refusal.issue.needsAMaterial': 'التذكرة تحتاج مادة واحدة على الأقل.',
   'refusal.issue.neverIssued': 'عاد شيء لم يُصرف على هذه التذكرة.',
   'refusal.issue.notFound': 'هذه التذكرة غير موجودة.',
-  'refusal.issue.notRawMaterial': '{0} لا تخرج بتذكرة — المواد الخام فقط. التغليف يُحسب في نهاية الوردية مما أُنتج.',
-  'refusal.issue.returnBelowZero': 'المرتجع يجب أن يكون أكثر من صفر. اترك المادة خارج القائمة إن لم يعد منها شيء.',
+  'refusal.issue.notRawMaterial':
+    '{0} لا تخرج بتذكرة — المواد الخام فقط. التغليف يُحسب في نهاية الوردية مما أُنتج.',
+  'refusal.issue.returnBelowZero':
+    'المرتجع يجب أن يكون أكثر من صفر. اترك المادة خارج القائمة إن لم يعد منها شيء.',
   'refusal.issue.sayWhatCameBack': 'اذكر ما الذي عاد.',
   'refusal.issue.ticketClosed': 'هذه التذكرة مغلقة. لا يمكن تغيير أرقامها.',
   'refusal.ledger.movementBelowZero': 'الحركة يجب أن تكون أكثر من صفر.',
-  'refusal.ledger.movementTypeMissing': 'نوع الحركة «{0}» غير موجود في البيانات الأساسية.',
-  'refusal.masterData.inUse': 'هذا السطر مستخدم في سجلات أخرى، فلا يمكن حذفه. ألغِ تفعيله بدلاً من ذلك.',
+  'refusal.ledger.movementTypeMissing':
+    'نوع الحركة «{0}» غير موجود في البيانات الأساسية.',
+  'refusal.masterData.inUse':
+    'هذا السطر مستخدم في سجلات أخرى، فلا يمكن حذفه. ألغِ تفعيله بدلاً من ذلك.',
   'refusal.masterData.notFound': 'هذا العنصر غير موجود.',
   'refusal.packaging.activeMaterial': 'كل سطر يجب أن يسمّي مادة تغليف مفعّلة.',
-  'refusal.packaging.alreadyRecorded': 'التغليف مسجّل مسبقاً لهذا الخط. يُكتب مرة واحدة، في نهاية الوردية.',
+  'refusal.packaging.alreadyRecorded':
+    'التغليف مسجّل مسبقاً لهذا الخط. يُكتب مرة واحدة، في نهاية الوردية.',
   'refusal.packaging.linePacksNothing': '{0} لا يغلّف شيئاً. اختر خط التشكيل.',
-  'refusal.packaging.nothingToRecord': 'لا شيء للتسجيل. الوردية لم تنتج أكياساً ولم يُدخل أي تغليف.',
+  'refusal.packaging.nothingToRecord':
+    'لا شيء للتسجيل. الوردية لم تنتج أكياساً ولم يُدخل أي تغليف.',
   'refusal.packaging.quantityBelowZero': 'لا يمكن أن تكون الكمية أقل من صفر.',
   'refusal.packaging.zeroWeight': 'وزن صفر ليس وزناً. اتركه فارغاً بدلاً من ذلك.',
   'refusal.recipe.alreadyInProduction': 'الوصفة {0} هي بالفعل التي في الإنتاج.',
@@ -911,7 +975,8 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.recipe.notFound': 'هذه الوصفة غير موجودة.',
   'refusal.recipe.replaced': 'الوصفة {0} استُبدلت. انسخها إلى وصفة جديدة بدلاً من ذلك.',
   'refusal.recipe.usedInProduction': 'الوصفة {0} استُخدمت في الإنتاج وتُحفظ دائماً.',
-  'refusal.recycler.alreadyRecorded': 'التدوير مسجّل مسبقاً لهذا الخط. يُكتب مرة واحدة، في نهاية الوردية.',
+  'refusal.recycler.alreadyRecorded':
+    'التدوير مسجّل مسبقاً لهذا الخط. يُكتب مرة واحدة، في نهاية الوردية.',
   'refusal.recycler.lineDoesNotRecycle': '{0} لا يعيد التدوير. اختر خط التدوير.',
   'refusal.recycler.weighOutput': 'زِن ما أنتجه خط التدوير.',
   'refusal.reports.badDateRange': 'اليوم الأخير لا يمكن أن يسبق الأول.',
@@ -926,19 +991,24 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.shift.chooseActiveShift': 'اختر وردية مفعّلة.',
   'refusal.shift.chooseOpenLine': 'اختر خطاً من وردية مفتوحة.',
   'refusal.shift.closedIsKept': 'الوردية المغلقة جزء من السجل وتُحفظ دائماً.',
-  'refusal.shift.closedReopenFirst': 'هذه الوردية مغلقة. على المدير إعادة فتحها قبل تغيير أي شيء.',
+  'refusal.shift.closedReopenFirst':
+    'هذه الوردية مغلقة. على المدير إعادة فتحها قبل تغيير أي شيء.',
   'refusal.shift.downtimeNegative': 'لا يمكن أن يكون التوقف بالسالب.',
   'refusal.shift.downtimeTooLong': 'التوقف أطول من الوردية نفسها. راجع الساعات.',
-  'refusal.shift.hasWork': 'سُجّل عمل على هذه الوردية، فلا يمكن حذفها. أغلقها بدلاً من ذلك.',
+  'refusal.shift.hasWork':
+    'سُجّل عمل على هذه الوردية، فلا يمكن حذفها. أغلقها بدلاً من ذلك.',
   'refusal.shift.hasWorkers': 'هذه الوردية مسجّل عليها عمال. أغلقها بدلاً من ذلك.',
   'refusal.shift.lineAlreadyOn': 'هذا الخط موجود على الوردية أصلاً.',
-  'refusal.shift.lineHasNoSettings': '{0} لا يسجّل إعدادات الماكينة. السرعة ومسافة التغذية وزمن الدورة تخص خط التشكيل.',
+  'refusal.shift.lineHasNoSettings':
+    '{0} لا يسجّل إعدادات الماكينة. السرعة ومسافة التغذية وزمن الدورة تخص خط التشكيل.',
   'refusal.shift.lineHasWork': 'سُجّل عمل على هذا الخط، فلا يمكن إزالته من الوردية.',
   'refusal.shift.lineHasWorkers': '{0} مسجّل عليه عمال. أزلهم أولاً إن لم يعمل الخط.',
   'refusal.shift.lineNotFound': 'هذا الخط من الوردية غير موجود.',
   'refusal.shift.lineNotOnShift': 'هذا الخط ليس جزءاً من هذه الوردية.',
-  'refusal.shift.meterWentBackwards': 'قراءة العداد النهائية أقل من الابتدائية. راجع القراءات — إن دار العداد أو استُبدل، اذكر ذلك في ملاحظات الوردية.',
-  'refusal.shift.needsALine': 'الوردية تحتاج خطاً واحداً على الأقل. تجاهل الوردية كلها بدلاً من ذلك.',
+  'refusal.shift.meterWentBackwards':
+    'قراءة العداد النهائية أقل من الابتدائية. راجع القراءات — إن دار العداد أو استُبدل، اذكر ذلك في ملاحظات الوردية.',
+  'refusal.shift.needsALine':
+    'الوردية تحتاج خطاً واحداً على الأقل. تجاهل الوردية كلها بدلاً من ذلك.',
   'refusal.shift.notFound': 'هذه الوردية غير موجودة.',
   'refusal.shift.sayWhyReopening': 'اذكر سبب إعادة فتح الوردية — يبقى في السجل.',
   'refusal.shift.tooFarAhead': 'لا يمكن فتح وردية قبل أكثر من يوم.',
@@ -951,7 +1021,8 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.thermo.scanTheRoll': 'امسح الرول.',
   'refusal.trace.noMatch': 'لا شيء في النظام يطابق {0} — لا ملصق ولا رمز رول.',
   'refusal.trace.scanOrType': 'امسح ملصقاً، أو اكتب الرمز المطبوع تحته.',
-  'refusal.user.lastAdministrator': '{0} هو المدير الوحيد المتبقي. امنح شخصاً آخر دور المدير أولاً، وإلا لن يستطيع أحد الدخول.',
+  'refusal.user.lastAdministrator':
+    '{0} هو المدير الوحيد المتبقي. امنح شخصاً آخر دور المدير أولاً، وإلا لن يستطيع أحد الدخول.',
   'refusal.user.nameNeeded': 'الاسم الكامل مطلوب.',
   'refusal.user.notFound': 'هذا الشخص غير موجود.',
   'refusal.user.numberNeeded': 'الرقم الوظيفي مطلوب — به يعرفه المصنع.',

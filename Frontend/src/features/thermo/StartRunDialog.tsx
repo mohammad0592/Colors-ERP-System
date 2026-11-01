@@ -29,28 +29,14 @@ interface StartRunDialogProps {
  * `ScanField` and behaves the same wherever a code is asked for.
  *
  * The recipe and the colour come from the roll. The product is chosen here — the mould on
- * the machine is the product, and the extruder names only the recipe (section 19.17). It
- * is chosen above the scan box and remembered on this tablet, because the thermo runs the
- * same mould for hours: a scan then goes straight through. A roll logged when the
- * extruder still named the product keeps that one.
+ * the machine is the product, and the extruder names only the recipe (section 19.17).
+ *
+ * It must be chosen for every roll, and starts empty. It used to be remembered from the
+ * last roll, so a scan went straight through — and after a mould change the first rolls
+ * went in under the old product, with nobody having chosen it. The bags take their code
+ * from it, so a wrong one is a pallet of wrong labels. A roll that already has its product
+ * — it went in before and came back unfinished — shows it, locked: it keeps it.
  */
-const lastProductKey = 'colors.lastThermoProduct';
-
-function readLastProduct(): number {
-  try {
-    return Number(window.localStorage.getItem(lastProductKey) ?? 0) || 0;
-  } catch {
-    return 0;
-  }
-}
-
-function saveLastProduct(productId: number): void {
-  try {
-    window.localStorage.setItem(lastProductKey, String(productId));
-  } catch {
-    // Private browsing or a full store: the next roll asks again, nothing is lost.
-  }
-}
 export function StartRunDialog({
   line,
   rolls,
@@ -67,7 +53,9 @@ export function StartRunDialog({
   const chosen = rolls.find((r) => r.barcode === cleanCode(barcode)) ?? null;
   // Every roll asks, unless it was logged when the extruder still named its product.
   const needsProduct = (chosen?.productId ?? null) === null;
-  const [picked, setPicked] = useState(readLastProduct);
+  const [picked, setPicked] = useState(0);
+  // Set when a start is refused for want of a product, so the box itself turns red.
+  const [productMissing, setProductMissing] = useState(false);
 
   const products = useQuery({
     queryKey: ['products', 'active'],
@@ -88,7 +76,8 @@ export function StartRunDialog({
     const scanned = rolls.find((r) => r.barcode === cleanCode(code)) ?? null;
     const asks = (scanned?.productId ?? null) === null;
     if (asks && productId === 0) {
-      setError(t('thermo.productBeingFormed'));
+      setProductMissing(true);
+      setError(t('thermo.chooseProductFirst'));
       return;
     }
 
@@ -106,9 +95,6 @@ export function StartRunDialog({
         },
         entry,
       );
-      if (asks) {
-        saveLastProduct(productId);
-      }
       onStarted(run);
       onClose();
     } catch (caught) {
@@ -129,18 +115,27 @@ export function StartRunDialog({
           </p>
         </div>
 
-        {needsProduct && (
-          <div className="mb-4">
-            <label className="field-label" htmlFor="thermo-product">
-              {t('term.product')}
-            </label>
+        <div className="mb-4">
+          <label className="field-label" htmlFor="thermo-product">
+            {t('term.product')}
+            {needsProduct && (
+              <span className="ms-1 text-bad" aria-hidden="true">
+                *
+              </span>
+            )}
+          </label>
+          {needsProduct ? (
             <select
               id="thermo-product"
-              className="field-input"
+              className={`field-input ${productMissing && productId === 0 ? 'border-bad' : ''}`}
               value={productId}
               disabled={isSaving}
+              required
+              aria-invalid={productMissing && productId === 0}
               onChange={(event) => {
                 setPicked(Number(event.target.value));
+                setProductMissing(false);
+                setError(null);
               }}
             >
               <option value={0}>{t('action.choose')}</option>
@@ -150,11 +145,15 @@ export function StartRunDialog({
                 </option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-ink-muted">
-              {t('thermo.productBeingFormed')}
-            </p>
-          </div>
-        )}
+          ) : (
+            <select id="thermo-product" className="field-input" disabled>
+              <option>{chosen?.productName}</option>
+            </select>
+          )}
+          <p className="mt-1 text-xs text-ink-muted">
+            {needsProduct ? t('thermo.productBeingFormed') : t('thermo.productKept')}
+          </p>
+        </div>
 
         <div className="mb-4">
           <ScanField
