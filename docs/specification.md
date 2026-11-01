@@ -2629,7 +2629,8 @@ A roll, a bag and a pallet each have a label laid out their own way, so they are
 apart across the floor before anybody reads a word. All three stay 4 × 4 inches and keep
 the QR with the code printed beside it for typing in when the label is torn.
 
-- **Roll** — a black band across the top with a roll drawn in it and the roll's code.
+- **Roll** — a box across the top with a roll drawn in it and the roll's code, black on
+  white (a black band with white words was tried first and not liked).
   Below, the QR on the left and the roll's facts on the right: the recipe in large
   letters, then colour, weight, length, shift and date.
 - **Bag** — a plate drawn at the top beside the product code in the largest letters on

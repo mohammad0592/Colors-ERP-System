@@ -113,10 +113,6 @@
   width: 101.6mm;
   height: 101.6mm;
   overflow: hidden;
-  /* A roll's label has a black band. Browsers leave backgrounds off a print unless told,
-     which would print the band's white words on white paper. */
-  -webkit-print-color-adjust: exact;
-  print-color-adjust: exact;
 }
 
 /* The page is exactly the sticker. No margin at all: a margin here would leave less than

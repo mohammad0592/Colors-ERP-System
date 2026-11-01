@@ -261,7 +261,7 @@ export function LabelPrintScreen({
 /**
  * One sticker. Each kind has a layout of its own, so a roll, a bag and a pallet are told
  * apart across the floor before anybody reads a word: the roll's label is the one with
- * the black band and the roll drawn on it, the bag's has the plate and its product code
+ * the roll drawn in a box at the top, the bag's has the plate and its product code
  * in big letters, and the pallet's is almost nothing but its QR.
  */
 function LabelSheet({
@@ -320,8 +320,9 @@ function useQr(barcode: string, onReady: (barcode: string) => void): string | nu
 }
 
 /**
- * A black band across the top with the roll drawn in it, the QR on the left, and the
- * roll's own facts on the right. Weight and length are printed on a roll's label only
+ * A box across the top with the roll drawn in it, the QR on the left, and the roll's own
+ * facts on the right. Black on white: the factory tried white on a black band and did not
+ * like it. Weight and length are printed on a roll's label only
  * (sections 19.25 and 19.26), so they get the room.
  */
 function RollLabel({
@@ -335,7 +336,7 @@ function RollLabel({
 
   return (
     <div className="print-label mx-auto mb-4 flex flex-col rounded-card border-2 border-ink bg-white p-[3mm] text-ink">
-      <div className="mb-[2.5mm] flex items-center gap-[3mm] rounded bg-ink px-[3mm] py-[2mm] text-white">
+      <div className="mb-[2.5mm] flex items-center gap-[3mm] rounded border-2 border-ink px-[3mm] py-[2mm]">
         <RollIcon className="h-[13mm] w-[19mm] shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-[9px] font-bold tracking-widest uppercase">
