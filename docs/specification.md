@@ -2633,8 +2633,8 @@ the QR with the code printed beside it for typing in when the label is torn.
   white (a black band with white words was tried first and not liked).
   Below, the QR on the left and the roll's facts on the right: the recipe in large
   letters, then colour, weight, length, shift and date.
-- **Bag** — a plate drawn at the top beside the product code in the largest letters on
-  the label, with the product's name under it. Below, the facts on the left — the piece
+- **Bag** — a rectangular plate, as the factory makes, drawn at the top beside the
+  product code in the largest letters on the label, with the product's name under it. Below, the facts on the left — the piece
   count in a box of its own, colour, roll, shift and date — and the QR on the right, the
   other way round from a roll's.
 - **Pallet** — nothing but the pallet's code at the top, a QR as large as the sticker

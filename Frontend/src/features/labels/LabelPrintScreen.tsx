@@ -514,7 +514,11 @@ function RollIcon({ className }: { className: string }): ReactElement {
   );
 }
 
-/** A plate seen from a little above: the rim, the well, and the edge underneath. */
+/**
+ * A rectangular foam plate seen from a little above: the rim, the well, and the edge
+ * underneath. Rectangular because that is what the factory makes — a round one was
+ * drawn first and did not look like their plates.
+ */
 function PlateIcon({ className }: { className: string }): ReactElement {
   return (
     <svg
@@ -522,11 +526,12 @@ function PlateIcon({ className }: { className: string }): ReactElement {
       className={className}
       fill="none"
       stroke="currentColor"
+      strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M2 15 v3 a22 11 0 0 0 44 0 v-3" strokeWidth="2.5" />
-      <ellipse cx="24" cy="15" rx="22" ry="11" strokeWidth="2.5" />
-      <ellipse cx="24" cy="15" rx="13" ry="6" strokeWidth="1.8" />
+      <path d="M2 20 v4 a5 5 0 0 0 5 5 h34 a5 5 0 0 0 5 -5 v-4" strokeWidth="2.5" />
+      <rect x="2" y="3" width="44" height="22" rx="5" strokeWidth="2.5" />
+      <rect x="9" y="8" width="30" height="12" rx="2.5" strokeWidth="1.8" />
     </svg>
   );
 }
