@@ -13,6 +13,8 @@ const styles: Record<RollStatus, string> = {
   Scrapped: 'bg-bad-soft text-bad',
   // Back in stock half used, to go into the thermo again (section 19.23).
   NotCompleted: 'bg-warn-soft text-warn',
+  // Logged by mistake (section 19.27). Kept, struck through, so its number is accounted for.
+  Cancelled: 'bg-line text-ink-muted line-through',
 };
 
 const labels: Record<RollStatus, TranslationKey> = {
@@ -22,6 +24,7 @@ const labels: Record<RollStatus, TranslationKey> = {
   Processed: 'status.roll.processed',
   Scrapped: 'status.roll.scrapped',
   NotCompleted: 'status.roll.notCompleted',
+  Cancelled: 'status.roll.cancelled',
 };
 
 /**

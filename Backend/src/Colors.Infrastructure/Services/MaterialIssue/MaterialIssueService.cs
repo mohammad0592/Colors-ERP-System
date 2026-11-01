@@ -206,7 +206,7 @@ public class MaterialIssueService(
             return NotFound();
         }
 
-        if (ticket.Status == IssueTicketStatus.Closed)
+        if (ticket.Status != IssueTicketStatus.Open)
         {
             return Invalid("This ticket is closed. Its figures cannot change.", "issue.ticketClosed");
         }
@@ -287,7 +287,7 @@ public class MaterialIssueService(
             return NotFound();
         }
 
-        if (ticket.Status == IssueTicketStatus.Closed)
+        if (ticket.Status != IssueTicketStatus.Open)
         {
             return Invalid("This ticket is already closed.", "issue.alreadyClosed");
         }
@@ -299,6 +299,69 @@ public class MaterialIssueService(
         ticket.ClosedByUserId = userId;
 
         await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadAsync(id, cancellationToken);
+    }
+
+    public async Task<Result<IssueTicketDto>> CancelAsync(
+        int id,
+        CancelTicketRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var ticket = await Query().FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+        if (ticket is null)
+        {
+            return NotFound();
+        }
+
+        // Open only. A closed ticket's material has been counted as used; a mistake there
+        // is corrected by adjusting the store.
+        if (ticket.Status != IssueTicketStatus.Open)
+        {
+            return Invalid("This ticket is already closed.", "issue.alreadyClosed");
+        }
+
+        var reason = Trimmed(request.Reason);
+        if (reason is null)
+        {
+            return Invalid("Say why the ticket is being cancelled.", "correction.reasonRequired");
+        }
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        // Everything still out comes back, as a return the store can see — so the ticket
+        // used nothing, and every report reading it says so without knowing it was cancelled.
+        foreach (var line in ticket.Lines.Where(l => l.NetUsed > 0))
+        {
+            var back = line.NetUsed;
+            line.ReturnedQuantity = line.IssuedQuantity;
+
+            var posted = await ledger.PostAsync(
+                line.MaterialId,
+                MovementTypeNames.Return,
+                back,
+                userId,
+                $"Ticket {ticket.TicketNumber} cancelled: {reason}",
+                ticket.Id,
+                ticket.ShiftLine.ShiftReportId,
+                cancellationToken);
+
+            if (!posted.IsSuccess)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                db.ChangeTracker.Clear();
+                return Invalid(posted.Message ?? "The ticket could not be cancelled.");
+            }
+        }
+
+        ticket.Status = IssueTicketStatus.Cancelled;
+        ticket.ClosedAt = timeProvider.GetUtcNow();
+        ticket.ClosedByUserId = userId;
+        ticket.CancellationReason = reason;
+
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return await LoadAsync(id, cancellationToken);
     }
@@ -384,7 +447,8 @@ public class MaterialIssueService(
                     l.IssuedQuantity,
                     l.ReturnedQuantity,
                     l.NetUsed))
-                .ToList());
+                .ToList(),
+            ticket.CancellationReason);
     }
 
     private static string? Trimmed(string? value) =>

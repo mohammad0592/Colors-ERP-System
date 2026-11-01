@@ -59,6 +59,10 @@ export interface ThermoTestReportDto {
   testedByName: string;
   testedAt: string;
   notes: string | null;
+  /** The last correction of the counts, if there was one (section 19.27). */
+  correctedAt: string | null;
+  correctedByName: string | null;
+  correctionReason: string | null;
 }
 
 /** The roll's own measurements, shown read-only — never asked for again. */
@@ -171,6 +175,40 @@ export const thermoApi = {
    * Takes the roll out before it is finished, with the reason (section 19.23). It goes
    * back to stock as Not completed; what it made so far is counted next.
    */
+  /**
+   * Corrects saved counts (section 19.27). A higher bag count makes the missing bags; a
+   * lower one cancels extra bags that are not on a pallet.
+   */
+  correctTest: (
+    runId: number,
+    body: {
+      bagCount: number;
+      pieceWeight: number;
+      bagWeight: number;
+      absorbentPercentage: number;
+      notes: string | null;
+      reason: string;
+    },
+  ): Promise<ThermoRunDto> =>
+    apiRequest<ThermoRunDto>(`/api/thermo/runs/${String(runId)}/test/correct`, {
+      method: 'POST',
+      body: { ...body, utcOffsetMinutes: -new Date().getTimezoneOffset() },
+    }),
+
+  /** Takes back a run started with the wrong roll, while it is in the machine (19.27). */
+  undoStart: (runId: number, reason: string): Promise<boolean> =>
+    apiRequest<boolean>(`/api/thermo/runs/${String(runId)}/undo-start`, {
+      method: 'POST',
+      body: { reason },
+    }),
+
+  /** Marks a bag not on a pallet defective (section 19.27). */
+  markBagDefective: (bagId: number, reason: string): Promise<ProducedBagDto> =>
+    apiRequest<ProducedBagDto>(`/api/thermo/bags/${String(bagId)}/defective`, {
+      method: 'POST',
+      body: { reason },
+    }),
+
   leaveUnfinished: (id: number, reason: string): Promise<ThermoRunDto> =>
     apiRequest<ThermoRunDto>(`/api/thermo/runs/${String(id)}/unfinished`, {
       method: 'POST',

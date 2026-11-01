@@ -2,12 +2,15 @@ import { useState, type ReactElement } from 'react';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
+import { ReasonDialog } from '../../components/ui/ReasonDialog';
 import { ApiError } from '../../lib/apiClient';
 import { materialIssueApi, type IssueTicketDto } from './api';
 
 interface IssueTicketDialogProps {
   ticket: IssueTicketDto;
   canIssue: boolean;
+  /** Cancelling a ticket issued by mistake (section 19.27). */
+  canCancel: boolean;
   onClose: () => void;
   onChanged: (ticket: IssueTicketDto) => void;
 }
@@ -22,6 +25,7 @@ interface IssueTicketDialogProps {
 export function IssueTicketDialog({
   ticket,
   canIssue,
+  canCancel,
   onClose,
   onChanged,
 }: IssueTicketDialogProps): ReactElement {
@@ -30,6 +34,7 @@ export function IssueTicketDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const typed = Object.entries(returns)
     .map(([materialId, value]) => ({
@@ -77,6 +82,13 @@ export function IssueTicketDialog({
         <span>· issued by {ticket.issuedByName}</span>
       </div>
 
+      {ticket.cancellationReason !== null && (
+        <p className="mb-4 rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
+          <strong>{t('correct.ticketCancelled')}</strong> — {ticket.closedByName}:{' '}
+          {ticket.cancellationReason}
+        </p>
+      )}
+
       {ticket.notes !== null && (
         <p className="mb-4 rounded-control bg-canvas px-4 py-3 text-sm text-ink-soft">
           {ticket.notes}
@@ -92,7 +104,9 @@ export function IssueTicketDialog({
               <th className="px-3 py-2 text-end font-semibold">{t('action.back')}</th>
               <th className="px-3 py-2 text-end font-semibold">{t('field.used')}</th>
               {ticket.isOpen && canIssue && (
-                <th className="py-2 ps-3 text-end font-semibold">{t('issue.weighBackIn')}</th>
+                <th className="py-2 ps-3 text-end font-semibold">
+                  {t('issue.weighBackIn')}
+                </th>
               )}
             </tr>
           </thead>
@@ -184,8 +198,8 @@ export function IssueTicketDialog({
                 title: `Close ticket ${String(ticket.ticketNumber)}?`,
                 message: (
                   <>
-                    {t('issue.notBackCountsAs')} <strong>used</strong> —{' '}
-                    {totalUsed} of {totalIssued} issued.
+                    {t('issue.notBackCountsAs')} <strong>used</strong> — {totalUsed} of{' '}
+                    {totalIssued} issued.
                     <br />
                     <br />
                     {t('issue.figuresFixed')}
@@ -202,6 +216,34 @@ export function IssueTicketDialog({
             {t('issue.closeTicket')}
           </button>
         </div>
+      )}
+
+      {ticket.isOpen && canCancel && (
+        <button
+          type="button"
+          className="mt-3 min-h-touch w-full rounded-control border border-line px-5 text-sm font-semibold text-ink-soft transition-colors hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
+          disabled={isSaving}
+          onClick={() => {
+            setCancelling(true);
+          }}
+        >
+          {t('correct.cancelTicket')}
+        </button>
+      )}
+
+      {cancelling && (
+        <ReasonDialog
+          title={`${t('correct.cancelTicket')} — ${String(ticket.ticketNumber)}`}
+          explanation={t('correct.cancelTicketExplain')}
+          question={t('correct.why')}
+          confirmLabel={t('correct.cancelTicket')}
+          onConfirm={async (reason) => {
+            onChanged(await materialIssueApi.cancel(ticket.id, reason));
+          }}
+          onClose={() => {
+            setCancelling(false);
+          }}
+        />
       )}
 
       {confirm !== null && (

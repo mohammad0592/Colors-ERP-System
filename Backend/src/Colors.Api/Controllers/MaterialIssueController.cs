@@ -20,6 +20,10 @@ public class MaterialIssueController(IMaterialIssueService tickets) : ApiControl
 {
     private const string CanIssue = $"{RoleNames.Administrator},{RoleNames.InventoryManager}";
 
+    // The storekeeper who issued it may cancel his own mistake, as may a supervisor (19.27).
+    private const string CanCancel =
+        $"{RoleNames.Administrator},{RoleNames.InventoryManager},{RoleNames.Supervisor}";
+
     [HttpGet]
     public async Task<IActionResult> GetAll(
         [FromQuery] int? shiftReportId = null,
@@ -55,6 +59,19 @@ public class MaterialIssueController(IMaterialIssueService tickets) : ApiControl
     {
         return ToResponse(
             await tickets.RecordReturnsAsync(id, request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>
+    /// Cancels an open ticket issued by mistake; what is still out goes back (section 19.27).
+    /// </summary>
+    [HttpPost("{id:int}/cancel")]
+    [Authorize(Roles = CanCancel)]
+    public async Task<IActionResult> Cancel(
+        int id,
+        [FromBody] CancelTicketRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await tickets.CancelAsync(id, request, CurrentUserId(), cancellationToken));
     }
 
     /// <summary>Closes the ticket. Whatever has not come back counts as used.</summary>

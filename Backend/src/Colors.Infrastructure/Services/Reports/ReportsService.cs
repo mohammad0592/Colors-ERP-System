@@ -1,6 +1,7 @@
 ﻿using Colors.Application.Common.Models;
 using Colors.Application.Features.Reports;
 using Colors.Domain.Common;
+using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +58,8 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         // means one recipe in practice, but the data is asked rather than assumed.
         var rolls = await db.Rolls
             .Where(r => lineIds.Contains(r.Batch.ShiftLineId))
+            // A roll cancelled as logged by mistake was never made (section 19.27).
+            .Where(r => r.Status != RollStatus.Cancelled)
             .Select(r => new
             {
                 r.RecipeVersionId,
@@ -203,6 +206,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
 
         var rolls = await db.Rolls
             .Where(r => allLineIds.Contains(r.Batch.ShiftLineId))
+            .Where(r => r.Status != RollStatus.Cancelled)
             .Select(r => new
             {
                 ShiftLineId = r.Batch.ShiftLineId,
@@ -480,6 +484,7 @@ public class ReportsService(ColorsDbContext db) : IReportsService
         // What the extruder made.
         var made = await db.Rolls
             .Where(r => lineIds.Contains(r.Batch.ShiftLineId))
+            .Where(r => r.Status != RollStatus.Cancelled)
             .Select(r => r.Weight)
             .ToListAsync(cancellationToken);
 

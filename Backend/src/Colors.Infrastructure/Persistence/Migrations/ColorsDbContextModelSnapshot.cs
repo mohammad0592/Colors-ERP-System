@@ -174,6 +174,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 3)
                         .HasColumnType("numeric(18,3)");
 
+                    b.Property<int?>("ReversesMovementId")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("ShiftReportId")
                         .HasColumnType("integer");
 
@@ -183,6 +186,11 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("MovementTypeId");
+
+                    b.HasIndex("ReversesMovementId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_material_movements_reverses")
+                        .HasFilter("\"ReversesMovementId\" IS NOT NULL");
 
                     b.HasIndex("ShiftReportId");
 
@@ -204,6 +212,9 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CancellationReason")
+                        .HasColumnType("text");
 
                     b.Property<DateTimeOffset?>("ClosedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1031,6 +1042,15 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("RemovalReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RemovedByUserId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1058,6 +1078,8 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.ToTable("ProducedBags", null, t =>
                         {
                             t.HasCheckConstraint("ck_produced_bags_positive", "\"Weight\" > 0 AND \"PieceCount\" > 0");
+
+                            t.HasCheckConstraint("ck_produced_bags_removed_together", "(\"RemovedAt\" IS NULL) = (\"RemovedByUserId\" IS NULL) AND (\"RemovedAt\" IS NULL) = (\"RemovalReason\" IS NULL)");
                         });
                 });
 
@@ -1143,6 +1165,15 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<int>("RecipeVersionId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("RemovalReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("RemovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RemovedByUserId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("RollCode")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1184,6 +1215,8 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.ToTable("Rolls", null, t =>
                         {
                             t.HasCheckConstraint("ck_rolls_measured_positive", "(\"Weight\" IS NULL OR \"Weight\" > 0) AND (\"Length\" IS NULL OR \"Length\" > 0)");
+
+                            t.HasCheckConstraint("ck_rolls_removed_together", "(\"RemovedAt\" IS NULL) = (\"RemovedByUserId\" IS NULL) AND (\"RemovedAt\" IS NULL) = (\"RemovalReason\" IS NULL)");
                         });
                 });
 
@@ -1354,6 +1387,15 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Property<decimal>("BagWeight")
                         .HasPrecision(9, 3)
                         .HasColumnType("numeric(9,3)");
+
+                    b.Property<DateTimeOffset?>("CorrectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("CorrectedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CorrectionReason")
+                        .HasColumnType("text");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
@@ -2111,6 +2153,11 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         .HasForeignKey("MovementTypeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Colors.Domain.Entities.Inventory.MaterialInventoryMovement", null)
+                        .WithMany()
+                        .HasForeignKey("ReversesMovementId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Colors.Domain.Entities.Shifts.ShiftReport", "ShiftReport")
                         .WithMany()

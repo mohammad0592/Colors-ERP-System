@@ -7,6 +7,7 @@ import { RoleNames } from '../../lib/roles';
 import { LabelPrintScreen } from '../labels/LabelPrintScreen';
 import { formatDate } from '../shifts/shiftFormat';
 import { thermoApi, type ThermoRunDto, type ThermoRunSummaryDto } from './api';
+import { CorrectCountsDialog } from './CorrectCountsDialog';
 import { ThermoTestDialog } from './ThermoTestDialog';
 
 /**
@@ -27,6 +28,9 @@ export function ThermoTestsPage(): ReactElement {
 
   const [waitingOnly, setWaitingOnly] = useState(true);
   const [counting, setCounting] = useState<ThermoRunSummaryDto | null>(null);
+  // Saved counts that were wrong. It adds or cancels bags, so it is a supervisor's (19.27).
+  const canCorrect = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
+  const [correcting, setCorrecting] = useState<ThermoRunSummaryDto | null>(null);
   const [justSaved, setJustSaved] = useState<ThermoRunDto | null>(null);
 
   // Saving the form is what creates the bags, so the labels come up straight after it.
@@ -178,7 +182,18 @@ export function ThermoTestsPage(): ReactElement {
                   <Waste kg={run.scrapWeight} rollKg={run.rollWeight} />
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex justify-end">
+                  <div className="flex justify-end gap-2">
+                    {!run.needsTest && canCorrect && (
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-brand-200 hover:bg-brand-50 hover:text-brand-700"
+                        onClick={() => {
+                          setCorrecting(run);
+                        }}
+                      >
+                        {t('correct.correct')}
+                      </button>
+                    )}
                     {run.needsTest && run.isFinished && canTest && (
                       <button
                         type="button"
@@ -245,6 +260,26 @@ export function ThermoTestsPage(): ReactElement {
           {...(printing.headline === undefined ? {} : { headline: printing.headline })}
           onClose={() => {
             setPrinting(null);
+          }}
+        />
+      )}
+
+      {correcting !== null && (
+        <CorrectCountsDialog
+          runId={correcting.id}
+          rollCode={correcting.rollCode}
+          onClose={() => {
+            setCorrecting(null);
+          }}
+          onCorrected={(run, newBarcodes) => {
+            invalidate();
+            // Bags the correction made need labels, as any new bag does.
+            if (newBarcodes.length > 0) {
+              setPrinting({
+                barcodes: newBarcodes,
+                headline: `${String(newBarcodes.length)} ${t('correct.newBagsLabels')} ${run.rollCode}.`,
+              });
+            }
           }}
         />
       )}

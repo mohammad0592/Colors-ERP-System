@@ -1,3 +1,4 @@
+using Colors.Application.Features.Inventory;
 using Colors.Application.Features.MaterialIssue;
 using Colors.Domain.Constants;
 using Colors.Infrastructure.Persistence;
@@ -340,5 +341,85 @@ public class MaterialIssueTests(DatabaseFixture fixture)
         // The service checks it, but so does the database — no code path can get round
         // a check constraint.
         await Assert.ThrowsAsync<DbUpdateException>(() => db.SaveChangesAsync());
+    }
+
+    // ---------- corrections (section 19.27) ----------
+
+    private static InventoryService NewInventory(ColorsDbContext db) =>
+        new(db, new StockLedger(db, TimeProvider.System), NullLogger<InventoryService>.Instance);
+
+    private static Task<int> LastDeliveryAsync(ColorsDbContext db, int materialId) =>
+        db.MaterialInventoryMovements
+            .Where(m => m.MaterialId == materialId && m.MovementType.Name == MovementTypeNames.Receive)
+            .OrderByDescending(m => m.Id)
+            .Select(m => m.Id)
+            .FirstAsync();
+
+    [Fact]
+    public async Task A_wrong_delivery_is_taken_back_out_once()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRT1");
+        await StockUp(db, ids.GppsId, ids.UserId, 1000);
+        await StockUp(db, ids.GppsId, ids.UserId, 250);
+        var wrong = await LastDeliveryAsync(db, ids.GppsId);
+        var inventory = NewInventory(db);
+
+        var reversed = await inventory.ReverseDeliveryAsync(wrong, new ReverseDeliveryRequest("Booked twice"), ids.UserId);
+
+        Assert.True(reversed.IsSuccess, reversed.Message);
+        Assert.Equal(1000, await Balance(db, ids.GppsId));
+
+        var twice = await inventory.ReverseDeliveryAsync(wrong, new ReverseDeliveryRequest("Booked twice"), ids.UserId);
+        Assert.Equal("stock.alreadyReversed", twice.MessageCode);
+
+        // The list shows the wrong delivery as reversed, beside what reversed it.
+        var movements = await inventory.GetMovementsAsync(ids.GppsId);
+        Assert.Contains(movements, m => m.Id == wrong && m.IsReversed);
+        Assert.Contains(movements, m => m.ReversesMovementId == wrong);
+    }
+
+    [Fact]
+    public async Task A_delivery_already_used_cannot_be_taken_back()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRT2");
+        await StockUp(db, ids.GppsId, ids.UserId, 100);
+        var delivery = await LastDeliveryAsync(db, ids.GppsId);
+        await NewService(db).CreateAsync(
+            new CreateIssueTicketRequest(ids.ShiftLineId, null, [new IssueLineRequest(ids.GppsId, 60)]), ids.UserId);
+
+        var reversed = await NewInventory(db).ReverseDeliveryAsync(delivery, new ReverseDeliveryRequest("Wrong"), ids.UserId);
+
+        Assert.False(reversed.IsSuccess);
+        Assert.Equal(40, await Balance(db, ids.GppsId));
+    }
+
+    [Fact]
+    public async Task A_ticket_issued_by_mistake_is_cancelled_and_everything_comes_back()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRT3");
+        await StockUp(db, ids.GppsId, ids.UserId, 1000);
+        var service = NewService(db);
+        var ticket = (await service.CreateAsync(
+            new CreateIssueTicketRequest(ids.ShiftLineId, null, [new IssueLineRequest(ids.GppsId, 400)]),
+            ids.UserId)).Value!;
+        await service.RecordReturnsAsync(
+            ticket.Id, new RecordReturnsRequest([new ReturnLineRequest(ids.GppsId, 100)]), ids.UserId);
+
+        var cancelled = await service.CancelAsync(ticket.Id, new CancelTicketRequest("Wrong line"), ids.UserId);
+
+        Assert.True(cancelled.IsSuccess, cancelled.Message);
+        Assert.Equal("Cancelled", cancelled.Value!.Status);
+        Assert.Equal("Wrong line", cancelled.Value.CancellationReason);
+        Assert.All(cancelled.Value.Lines, l => Assert.Equal(0, l.NetUsed));
+        Assert.Equal(1000, await Balance(db, ids.GppsId));
+
+        // Finished with: no more returns, and no closing it afterwards.
+        var more = await service.RecordReturnsAsync(
+            ticket.Id, new RecordReturnsRequest([new ReturnLineRequest(ids.GppsId, 1)]), ids.UserId);
+        Assert.False(more.IsSuccess);
+        Assert.False((await service.CloseAsync(ticket.Id, ids.UserId)).IsSuccess);
     }
 }

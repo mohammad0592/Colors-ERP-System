@@ -1,6 +1,7 @@
 ﻿import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type ReactElement } from 'react';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
+import { ReasonDialog } from '../../components/ui/ReasonDialog';
 import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StartOnLineButton } from '../../components/ui/StartOnLineButton';
@@ -25,6 +26,13 @@ export function ThermoProductionPage(): ReactElement {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canForm = hasRole(RoleNames.Administrator, RoleNames.ThermoOperator);
+  // The wrong roll scanned in: the operator's own fresh mistake, or a supervisor's (19.27).
+  const canUndoStart = hasRole(
+    RoleNames.Administrator,
+    RoleNames.Supervisor,
+    RoleNames.ThermoOperator,
+  );
+  const [undoing, setUndoing] = useState<{ id: number; rollCode: string } | null>(null);
 
   const [openOnly, setOpenOnly] = useState(true);
   const [starting, setStarting] = useState<{
@@ -214,6 +222,17 @@ export function ThermoProductionPage(): ReactElement {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex justify-end gap-2">
+                    {canUndoStart && !run.isFinished && (
+                      <button
+                        type="button"
+                        className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
+                        onClick={() => {
+                          setUndoing({ id: run.id, rollCode: run.rollCode });
+                        }}
+                      >
+                        {t('correct.wrongRoll')}
+                      </button>
+                    )}
                     {canForm && !run.isFinished && (
                       <button
                         type="button"
@@ -282,6 +301,23 @@ export function ThermoProductionPage(): ReactElement {
             // Out of the machine, so "it is in the machine" no longer holds.
             setJustStarted(null);
             invalidate();
+          }}
+        />
+      )}
+
+      {undoing !== null && (
+        <ReasonDialog
+          title={`${t('correct.wrongRoll')} — ${undoing.rollCode}`}
+          explanation={t('correct.wrongRollExplain')}
+          question={t('correct.whyWrongRoll')}
+          confirmLabel={t('correct.takeBack')}
+          onConfirm={async (reason) => {
+            await thermoApi.undoStart(undoing.id, reason);
+            setJustStarted(null);
+            invalidate();
+          }}
+          onClose={() => {
+            setUndoing(null);
           }}
         />
       )}

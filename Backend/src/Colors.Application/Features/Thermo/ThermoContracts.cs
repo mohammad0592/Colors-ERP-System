@@ -49,7 +49,11 @@ public sealed record ThermoTestReportDto(
     decimal AbsorbentPercentage,
     string TestedByName,
     DateTimeOffset TestedAt,
-    string? Notes);
+    string? Notes,
+    // The last correction of the counts, if there was one (section 19.27).
+    DateTimeOffset? CorrectedAt = null,
+    string? CorrectedByName = null,
+    string? CorrectionReason = null);
 
 /// <summary>
 /// The roll's own measurements, shown read-only beside the thermo form.
@@ -166,6 +170,29 @@ public sealed record LeaveRunUnfinishedRequest(string Reason, DateTimeOffset? Fi
 /// time in UTC, and on a cloud host its own zone is not the factory's, so the tablet
 /// says which zone the factory is in.
 /// </summary>
+/// <summary>
+/// Corrects counts that were saved wrong (specification section 19.27) — the same figures
+/// as the count, and why. A bag count put up makes the missing bags, with new codes on the
+/// factory's clock; put down, it cancels the extra ones, which must not be on a pallet.
+/// </summary>
+public sealed record CorrectThermoTestRequest(
+    int BagCount,
+    decimal PieceWeight,
+    decimal BagWeight,
+    decimal AbsorbentPercentage,
+    string? Notes,
+    string Reason,
+    int UtcOffsetMinutes = 0);
+
+/// <summary>
+/// Takes back a run started with the wrong roll (section 19.27), while the roll is still
+/// in the machine and nothing has been counted. The roll goes back to stock.
+/// </summary>
+public sealed record UndoThermoStartRequest(string Reason);
+
+/// <summary>Marks a bag not on a pallet defective, with why (section 19.27).</summary>
+public sealed record MarkBagDefectiveRequest(string Reason);
+
 public sealed record SaveThermoTestRequest(
     int BagCount,
     decimal PieceWeight,
@@ -221,6 +248,27 @@ public interface IThermoService
         CancellationToken cancellationToken = default);
 
     /// <summary>Records the counts, creates every bag and prints their barcodes — all or nothing.</summary>
+    /// <summary>Corrects saved counts, adding or cancelling bags to match (section 19.27).</summary>
+    Task<Result<ThermoRunDto>> CorrectTestReportAsync(
+        int runId,
+        CorrectThermoTestRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Takes back a run started with the wrong roll; the roll returns to stock.</summary>
+    Task<Result<bool>> UndoStartAsync(
+        int runId,
+        UndoThermoStartRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Marks a bag defective. Only one that is not on a pallet.</summary>
+    Task<Result<ProducedBagDto>> MarkBagDefectiveAsync(
+        int bagId,
+        MarkBagDefectiveRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
     Task<Result<ThermoRunDto>> SaveTestReportAsync(
         int runId,
         SaveThermoTestRequest request,

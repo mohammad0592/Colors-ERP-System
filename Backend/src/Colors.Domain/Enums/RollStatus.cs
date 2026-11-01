@@ -28,4 +28,11 @@ public enum RollStatus
     /// so one roll can have several runs, and is counted once.
     /// </summary>
     NotCompleted = 6,
+
+    /// <summary>
+    /// Logged by mistake — a roll that never came off the extruder, or was logged twice
+    /// (specification section 19.27). Kept, with who cancelled it and why, so its number
+    /// is never handed out again; left out of every report as if it had not been made.
+    /// </summary>
+    Cancelled = 7,
 }

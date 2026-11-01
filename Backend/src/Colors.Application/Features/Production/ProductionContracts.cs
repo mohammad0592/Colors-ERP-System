@@ -114,7 +114,17 @@ public sealed record RollDto(
     string? MeasuredByName,
     DateTimeOffset? MeasuredAt,
     string? Notes,
-    RollTestReportDto? TestReport);
+    RollTestReportDto? TestReport,
+    // Set when the roll was cancelled or scrapped (section 19.27); Status says which.
+    DateTimeOffset? RemovedAt = null,
+    string? RemovedByName = null,
+    string? RemovalReason = null);
+
+/// <summary>
+/// Cancels a roll logged by mistake, or scraps a bad one (specification section 19.27).
+/// The reason is required either way.
+/// </summary>
+public sealed record RemoveRollRequest(string Reason);
 
 /// <summary>
 /// Logs a roll off the extruder.
@@ -254,6 +264,26 @@ public interface IProductionService
     Task<Result<RollDto>> UpdateRollAsync(
         int rollId,
         UpdateRollRequest request,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancels a roll logged by mistake (section 19.27). Only one that has not been near the
+    /// thermo. It stays on record and is left out of the reports.
+    /// </summary>
+    Task<Result<RollDto>> CancelRollAsync(
+        int rollId,
+        RemoveRollRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Scraps a bad roll that is in stock (section 19.27). It was made, so the reports still
+    /// count it; it goes to the recycler instead of the thermo.
+    /// </summary>
+    Task<Result<RollDto>> ScrapRollAsync(
+        int rollId,
+        RemoveRollRequest request,
+        int userId,
         CancellationToken cancellationToken = default);
 
     /// <summary>Logs a roll and prints its barcode, both or neither.</summary>

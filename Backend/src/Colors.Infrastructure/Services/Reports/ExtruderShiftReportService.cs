@@ -47,6 +47,8 @@ public class ExtruderShiftReportService(ColorsDbContext db) : IExtruderShiftRepo
 
         var rolls = await db.Rolls
             .Where(r => r.Batch.ShiftLineId == line.Id)
+            // A roll cancelled as logged by mistake was never made (section 19.27).
+            .Where(r => r.Status != RollStatus.Cancelled)
             .Include(r => r.Batch)
             .Include(r => r.RecipeVersion).ThenInclude(v => v.Family)
             .Include(r => r.Color)

@@ -327,6 +327,12 @@ public class ProductionService(
             return RollNotFound();
         }
 
+        // Cancelled or scrapped, it is finished with (section 19.27).
+        if (Removed(roll) is { } removed)
+        {
+            return removed;
+        }
+
         // A closed shift accepts nothing further (specification section 2) — the roll's
         // record is part of it, and correcting it is the reopened shift's business.
         if (roll.Batch.ShiftLine.ShiftReport.Status == ShiftReportStatus.Closed)
@@ -454,6 +460,89 @@ public class ProductionService(
             : null;
     }
 
+    public async Task<Result<RollDto>> CancelRollAsync(
+        int rollId,
+        RemoveRollRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var roll = await RollQuery().FirstOrDefaultAsync(r => r.Id == rollId, cancellationToken);
+        if (roll is null)
+        {
+            return RollNotFound();
+        }
+
+        // Only one nothing has happened to. Once it has been in the thermo it was real, and
+        // a bad roll that is real is scrapped instead.
+        var beenFormed = await db.ThermoProductions.AnyAsync(p => p.RollId == rollId, cancellationToken);
+        if (roll.Status is not (RollStatus.NeedsTest or RollStatus.Available) || beenFormed)
+        {
+            return InvalidRoll(
+                $"Roll {roll.RollCode} has already been worked on, so it cannot be cancelled. Scrap it instead if it is bad.",
+                "roll.cannotCancel",
+                roll.RollCode);
+        }
+
+        return await RemoveAsync(roll, RollStatus.Cancelled, request.Reason, userId, cancellationToken);
+    }
+
+    public async Task<Result<RollDto>> ScrapRollAsync(
+        int rollId,
+        RemoveRollRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var roll = await RollQuery().FirstOrDefaultAsync(r => r.Id == rollId, cancellationToken);
+        if (roll is null)
+        {
+            return RollNotFound();
+        }
+
+        // In stock, whole or part-worked: one in the machine is taken out first, and one
+        // already formed has nothing left to scrap.
+        if (roll.Status is not (RollStatus.NeedsTest or RollStatus.Available or RollStatus.NotCompleted))
+        {
+            return InvalidRoll(
+                $"Roll {roll.RollCode} is not in stock, so there is nothing to scrap.",
+                "roll.cannotScrap",
+                roll.RollCode);
+        }
+
+        return await RemoveAsync(roll, RollStatus.Scrapped, request.Reason, userId, cancellationToken);
+    }
+
+    private async Task<Result<RollDto>> RemoveAsync(
+        Roll roll,
+        RollStatus status,
+        string? reason,
+        int userId,
+        CancellationToken cancellationToken)
+    {
+        var why = Trimmed(reason);
+        if (why is null)
+        {
+            return InvalidRoll("Say why.", "correction.reasonRequired");
+        }
+
+        roll.Status = status;
+        roll.RemovedAt = timeProvider.GetUtcNow();
+        roll.RemovedByUserId = userId;
+        roll.RemovalReason = why;
+        await db.SaveChangesAsync(cancellationToken);
+
+        return await LoadRollAsync(roll.Id, cancellationToken);
+    }
+
+    /// <summary>The refusal for working on a roll that was cancelled or scrapped, or null.</summary>
+    private static Result<RollDto>? Removed(Roll roll) => roll.Status switch
+    {
+        RollStatus.Cancelled => InvalidRoll(
+            $"Roll {roll.RollCode} was cancelled.", "roll.wasCancelled", roll.RollCode),
+        RollStatus.Scrapped => InvalidRoll(
+            $"Roll {roll.RollCode} was scrapped.", "roll.wasScrapped", roll.RollCode),
+        _ => null,
+    };
+
     public async Task<Result<RollDto>> SaveTestReportAsync(
         int rollId,
         SaveRollTestRequest request,
@@ -464,6 +553,12 @@ public class ProductionService(
         if (roll is null)
         {
             return RollNotFound();
+        }
+
+        // Cancelled or scrapped, it is finished with (section 19.27).
+        if (Removed(roll) is { } removed)
+        {
+            return removed;
         }
 
         // Corrected freely until it goes into the thermo; after that the run was made
@@ -545,6 +640,12 @@ public class ProductionService(
         if (roll is null)
         {
             return RollNotFound();
+        }
+
+        // Cancelled or scrapped, it is finished with (section 19.27).
+        if (Removed(roll) is { } removed)
+        {
+            return removed;
         }
 
         // Once it is in the thermo its weight is what the run's scrap is worked out from,
@@ -938,6 +1039,11 @@ public class ProductionService(
             ids.Add(roll.MeasuredByUserId.Value);
         }
 
+        if (roll.RemovedByUserId is not null)
+        {
+            ids.Add(roll.RemovedByUserId.Value);
+        }
+
         var names = await UserNamesAsync(ids, cancellationToken);
         var codes = await BarcodesForAsync([roll.Id], cancellationToken);
 
@@ -987,7 +1093,10 @@ public class ProductionService(
                     TestComplete(roll),
                     names.GetValueOrDefault(roll.TestReport.TestedByUserId, "—"),
                     roll.TestReport.TestedAt,
-                    roll.TestReport.Notes));
+                    roll.TestReport.Notes),
+            roll.RemovedAt,
+            roll.RemovedByUserId is null ? null : names.GetValueOrDefault(roll.RemovedByUserId.Value),
+            roll.RemovalReason);
     }
 
     private static string? Trimmed(string? value) =>

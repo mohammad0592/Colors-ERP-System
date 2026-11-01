@@ -1808,7 +1808,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-six changes, from watching the factory use the system. They are written here rather
+Twenty-seven changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2563,6 +2563,62 @@ bag's. The weight is still recorded and shown on the Pallets screen.
 
 How many bags fill a pallet is unchanged: it is the product's *bags per pallet*, set on
 the Products tab of Master Data.
+
+### 19.27 Putting mistakes right
+
+Something logged by accident, or something real that turned out bad, is put right without
+deleting what was recorded. The one rule: **the record stays, and what was done to it is
+written beside it with who did it and why.** Every one of these asks for a reason and will
+not go ahead without one.
+
+Which way out depends on what has happened to the thing:
+
+| What happened | The way out |
+|---|---|
+| Logged by mistake, and nothing has been done to it | **Cancel** — it stays on record as cancelled and stops counting |
+| Something has already happened to it | **Reverse** — the opposite step, beside the first |
+| It is real, but bad | **Scrap / mark defective** — it leaves stock for the recycler |
+| A number was saved wrong | **Correct** — the figures change; the old ones are in the audit log |
+
+Pallets already had all of this (19.21 and section 10). The rest:
+
+**Thermo counts corrected** (supervisor, administrator). The counts of a run open again with
+the figures as saved. A higher bag count makes the missing bags, coded as of now, and their
+labels come up to print. A lower one cancels the extra bags — newest first, and only bags
+not on a pallet; if not enough are off a pallet, it says how many to take off first. A
+cancelled bag never existed: its label stops scanning, it uses no packaging, and the run no
+longer lists it. Every bag of the run takes the corrected weight.
+
+**A wrong thermo start taken back** (thermo operator, supervisor, administrator). The wrong
+roll was scanned in. While it is still in the machine and nothing is counted, the run is
+taken back: the roll returns to stock — or to *Not completed* if an earlier run left it so —
+and the run comes off the list. It made nothing, so it is removed rather than marked; the
+audit log keeps that it happened, who did it and why. A roll already taken out was formed,
+and is left unfinished instead (19.23).
+
+**Bags marked defective** (thermo and packing operators, supervisor, administrator), from the
+stock list. Only a bag waiting for a pallet; one on a pallet is taken off it first. It goes
+to the recycler and never onto a pallet. Its packaging was used, so it still counts there.
+
+**Rolls cancelled or scrapped**, from the roll's Edit window:
+
+- *Cancel* (extruder operator, supervisor, administrator) — a roll that never came off the
+  extruder, or was logged twice. Only one nothing has been done to: not yet in the thermo.
+  It keeps its number, which is never handed out again, and is left out of every report.
+- *Scrap* (supervisor, administrator) — a real roll that cannot be used, whole or part
+  worked. It goes to the recycler instead of the thermo, and still counts as made.
+
+Either way it is finished with: it is not measured, tested, edited or formed again.
+
+**A wrong delivery reversed** (supervisor, administrator), from the store's movements. The
+same quantity goes back out, beside the wrong delivery, which stays on the list marked
+*Reversed*. A delivery is reversed once at most, and not at all if its material has already
+been used — the store cannot give back what it no longer holds.
+
+**A wrong issue ticket cancelled** (storekeeper, supervisor, administrator), while it is open.
+Everything on it that has not come back is returned to the store, so the ticket used nothing
+and every report reading it says so. A closed ticket is not cancelled: its material has been
+counted as used, and a mistake there is corrected by adjusting the store.
 ---
 ---
 ---

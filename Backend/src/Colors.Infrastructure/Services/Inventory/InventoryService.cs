@@ -113,6 +113,14 @@ public class InventoryService(
             .Take(Math.Clamp(take, 1, 500))
             .ToListAsync(cancellationToken);
 
+        // Which of these deliveries have been taken back out.
+        var shownIds = movements.Select(m => m.Id).ToList();
+        var reversed = (await db.MaterialInventoryMovements
+                .Where(m => m.ReversesMovementId != null && shownIds.Contains(m.ReversesMovementId.Value))
+                .Select(m => m.ReversesMovementId!.Value)
+                .ToListAsync(cancellationToken))
+            .ToHashSet();
+
         var userIds = movements.Select(m => m.UserId).Distinct().ToList();
         var names = await db.Set<ApplicationUser>()
             .Where(u => userIds.Contains(u.Id))
@@ -130,8 +138,64 @@ public class InventoryService(
                 m.Material.BaseUnit.Symbol,
                 names.GetValueOrDefault(m.UserId, "—"),
                 m.MovementDate,
-                m.Notes))
+                m.Notes,
+                reversed.Contains(m.Id),
+                m.ReversesMovementId))
             .ToList();
+    }
+
+    public async Task<Result<bool>> ReverseDeliveryAsync(
+        int movementId,
+        ReverseDeliveryRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var delivery = await db.MaterialInventoryMovements
+            .Include(m => m.MovementType)
+            .Include(m => m.Material)
+            .FirstOrDefaultAsync(m => m.Id == movementId, cancellationToken);
+        if (delivery is null)
+        {
+            return Result<bool>.Failure(ErrorCode.NotFound, "This movement does not exist.", "stock.movementNotFound");
+        }
+
+        // Deliveries only. Everything else that moves stock has its own way back — a
+        // ticket is returned to or cancelled, a count is adjusted.
+        if (delivery.MovementType.Name != MovementTypeNames.Receive)
+        {
+            return Result<bool>.Failure(
+                ErrorCode.ValidationFailed, "Only a delivery can be reversed here.", "stock.onlyDeliveries");
+        }
+
+        if (await db.MaterialInventoryMovements.AnyAsync(m => m.ReversesMovementId == movementId, cancellationToken))
+        {
+            return Result<bool>.Failure(
+                ErrorCode.ValidationFailed, "This delivery has already been reversed.", "stock.alreadyReversed");
+        }
+
+        var reason = string.IsNullOrWhiteSpace(request.Reason) ? null : request.Reason.Trim();
+        if (reason is null)
+        {
+            return Result<bool>.Failure(
+                ErrorCode.ValidationFailed, "Say why the delivery is being reversed.", "correction.reasonRequired");
+        }
+
+        // Out again through the ledger, which refuses to go below nothing: if the material
+        // has already been used, the store cannot give back what it does not hold.
+        var posted = await ledger.PostAsync(
+            delivery.MaterialId,
+            MovementTypeNames.AdjustmentOut,
+            delivery.Quantity,
+            userId,
+            $"Reverses the delivery of {delivery.MovementDate:dd/MM/yyyy}: {reason}",
+            null,
+            null,
+            cancellationToken,
+            reversesMovementId: delivery.Id);
+
+        return posted.IsSuccess
+            ? Result<bool>.Success(true)
+            : Result<bool>.Failure(ErrorCode.ValidationFailed, posted.Message ?? "The delivery could not be reversed.");
     }
 
     public async Task<Result<MaterialStockDto>> ReceiveAsync(

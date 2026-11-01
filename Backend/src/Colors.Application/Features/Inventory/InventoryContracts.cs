@@ -37,7 +37,14 @@ public sealed record InventoryMovementDto(
     string BaseUnitSymbol,
     string UserName,
     DateTimeOffset MovementDate,
-    string? Notes);
+    string? Notes,
+    // A delivery booked by mistake and taken back out, and the movement that did it
+    // (section 19.27).
+    bool IsReversed = false,
+    int? ReversesMovementId = null);
+
+/// <summary>Takes back a delivery booked in by mistake, with why (section 19.27).</summary>
+public sealed record ReverseDeliveryRequest(string Reason);
 
 /// <summary>
 /// Booking a delivery in. The storekeeper picks the material, picks the unit it
@@ -88,6 +95,16 @@ public interface IInventoryService
 
     Task<Result<MaterialStockDto>> ReceiveAsync(
         ReceiveMaterialRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Takes a delivery booked by mistake back out of the store (section 19.27). The wrong
+    /// delivery stays, with its reversal beside it.
+    /// </summary>
+    Task<Result<bool>> ReverseDeliveryAsync(
+        int movementId,
+        ReverseDeliveryRequest request,
         int userId,
         CancellationToken cancellationToken = default);
 

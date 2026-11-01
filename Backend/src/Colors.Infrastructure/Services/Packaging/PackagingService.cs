@@ -250,6 +250,8 @@ public class PackagingService(
     {
         var bags = await db.ProducedBags
             .Where(b => b.ThermoProduction.ShiftLineId == shiftLineId)
+            // A bag cancelled by a corrected count never existed, so it used no packaging.
+            .Where(b => b.Status != ProducedBagStatus.Cancelled)
             .Select(b => new { b.Product.LargeBagsPerBag, b.Product.SmallBagsPerBag })
             .ToListAsync(cancellationToken);
 

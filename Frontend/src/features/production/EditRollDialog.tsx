@@ -16,6 +16,10 @@ interface EditRollDialogProps {
   onClose: () => void;
   /** With whether anything printed on the label changed, so the screen can offer a new one. */
   onSaved: (roll: RollDto, labelChanged: boolean) => void;
+  /** Cancelling or scrapping the roll, asked for here and done by the screen (19.27). */
+  onRemove?: (roll: RollDto, action: 'cancel' | 'scrap') => void;
+  /** Scrapping is a supervisor's judgement. */
+  canScrap?: boolean;
 }
 
 /**
@@ -33,6 +37,8 @@ export function EditRollDialog({
   colors,
   onClose,
   onSaved,
+  onRemove,
+  canScrap = false,
 }: EditRollDialogProps): ReactElement {
   const { t } = useTranslation();
 
@@ -48,16 +54,81 @@ export function EditRollDialog({
         <p className="text-ink-muted">{t('common.loading')}</p>
       ) : full.isError ? (
         <p className="text-bad">{t('rolls.loadFailed')}</p>
+      ) : full.data.removalReason !== null ? (
+        // Cancelled or scrapped: nothing more is done to it, so there is nothing to edit.
+        <p className="rounded-control border border-line bg-canvas px-4 py-3 text-sm text-ink-soft">
+          <strong>
+            {full.data.status === 'Cancelled'
+              ? t('status.roll.cancelled')
+              : t('status.roll.scrapped')}
+          </strong>{' '}
+          — {full.data.removedByName}: {full.data.removalReason}
+        </p>
       ) : (
-        <EditRollForm
-          roll={full.data}
-          recipes={recipes}
-          colors={colors}
-          onClose={onClose}
-          onSaved={onSaved}
-        />
+        <>
+          <EditRollForm
+            roll={full.data}
+            recipes={recipes}
+            colors={colors}
+            onClose={onClose}
+            onSaved={onSaved}
+          />
+          <RemoveRoll roll={full.data} canScrap={canScrap} onRemove={onRemove} />
+        </>
       )}
     </Modal>
+  );
+}
+
+/**
+ * The ways out for a roll that should not be on the list (section 19.27): cancelled when it
+ * was logged by mistake and nothing has been done to it, scrapped when it is real but bad.
+ */
+function RemoveRoll({
+  roll,
+  canScrap,
+  onRemove,
+}: {
+  roll: RollDto;
+  canScrap: boolean;
+  onRemove: ((roll: RollDto, action: 'cancel' | 'scrap') => void) | undefined;
+}): ReactElement | null {
+  const { t } = useTranslation();
+  const cancellable = roll.status === 'NeedsTest' || roll.status === 'Available';
+  const scrappable = canScrap && (cancellable || roll.status === 'NotCompleted');
+
+  if (onRemove === undefined || (!cancellable && !scrappable)) {
+    return null;
+  }
+
+  return (
+    <div className="mt-6 border-t border-line pt-4">
+      <p className="mb-3 text-sm font-semibold text-ink">{t('correct.somethingWrong')}</p>
+      <div className="flex flex-col gap-2">
+        {cancellable && (
+          <button
+            type="button"
+            className="min-h-touch w-full rounded-control border border-line px-4 text-sm font-semibold text-ink-soft transition-colors hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
+            onClick={() => {
+              onRemove(roll, 'cancel');
+            }}
+          >
+            {t('correct.cancelRoll')}
+          </button>
+        )}
+        {scrappable && (
+          <button
+            type="button"
+            className="min-h-touch w-full rounded-control border border-bad/40 px-4 text-sm font-semibold text-bad transition-colors hover:bg-bad-soft"
+            onClick={() => {
+              onRemove(roll, 'scrap');
+            }}
+          >
+            {t('correct.scrapRoll')}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

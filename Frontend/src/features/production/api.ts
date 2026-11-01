@@ -7,7 +7,13 @@
 
 /** NotCompleted: taken out of the thermo unfinished, back in stock (section 19.23). */
 export type RollStatus =
-  'NeedsTest' | 'Available' | 'InThermo' | 'Processed' | 'Scrapped' | 'NotCompleted';
+  | 'NeedsTest'
+  | 'Available'
+  | 'InThermo'
+  | 'Processed'
+  | 'Scrapped'
+  | 'NotCompleted'
+  | 'Cancelled';
 
 export interface BatchSummaryDto {
   id: number;
@@ -111,6 +117,10 @@ export interface RollDto extends Omit<
   measuredAt: string | null;
   notes: string | null;
   testReport: RollTestReportDto | null;
+  /** Set when the roll was cancelled or scrapped (section 19.27); the status says which. */
+  removedAt: string | null;
+  removedByName: string | null;
+  removalReason: string | null;
 }
 
 /** The factory's running roll number (section 19.12). */
@@ -185,6 +195,20 @@ export const productionApi = {
   },
 
   /** The roll's weight and length, taken on the production screen (section 19.12). */
+  /** Cancels a roll logged by mistake (section 19.27). */
+  cancelRoll: (id: number, reason: string): Promise<RollDto> =>
+    apiRequest<RollDto>(`/api/production/rolls/${String(id)}/cancel`, {
+      method: 'POST',
+      body: { reason },
+    }),
+
+  /** Scraps a bad roll in stock (section 19.27). */
+  scrapRoll: (id: number, reason: string): Promise<RollDto> =>
+    apiRequest<RollDto>(`/api/production/rolls/${String(id)}/scrap`, {
+      method: 'POST',
+      body: { reason },
+    }),
+
   measureRoll: (id: number, body: { weight: number; length: number }): Promise<RollDto> =>
     apiRequest<RollDto>(`/api/production/rolls/${String(id)}/measure`, {
       method: 'POST',

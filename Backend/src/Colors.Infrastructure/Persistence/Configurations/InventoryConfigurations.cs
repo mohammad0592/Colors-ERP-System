@@ -54,6 +54,18 @@ public class MaterialInventoryMovementConfiguration
             // always positive. A negative here would flip a balance the wrong way.
             t.HasCheckConstraint("ck_material_movements_positive", "\"Quantity\" > 0"));
 
+        // A delivery is reversed once at most: a second reversal would take it out twice
+        // (specification section 19.27). Restrict, so a reversed delivery cannot be deleted
+        // from under its reversal.
+        builder.HasIndex(e => e.ReversesMovementId)
+            .IsUnique()
+            .HasFilter("\"ReversesMovementId\" IS NOT NULL")
+            .HasDatabaseName("ux_material_movements_reverses");
+        builder.HasOne<MaterialInventoryMovement>()
+            .WithMany()
+            .HasForeignKey(e => e.ReversesMovementId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Property(e => e.Quantity).HasPrecision(18, 3);
         builder.Property(e => e.Notes).HasMaxLength(500);
 

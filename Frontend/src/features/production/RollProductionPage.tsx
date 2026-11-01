@@ -18,6 +18,7 @@ import { EditRollDialog } from './EditRollDialog';
 import { MeasureRollDialog } from './MeasureRollDialog';
 import { NewRollDialog } from './NewRollDialog';
 import { RollStatusBadge } from './RollStatusBadge';
+import { ReasonDialog } from '../../components/ui/ReasonDialog';
 
 /**
  * Line 1 — the mixer and the extruder (specification section 8).
@@ -40,6 +41,12 @@ export function RollProductionPage(): ReactElement {
     RoleNames.ExtruderOperator,
   );
   const [correcting, setCorrecting] = useState<RollSummaryDto | null>(null);
+  // Cancelling a roll logged by mistake, or scrapping a bad one (section 19.27).
+  const canScrap = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
+  const [removing, setRemoving] = useState<{
+    roll: RollDto;
+    action: 'cancel' | 'scrap';
+  } | null>(null);
   // Weighing moved here from the roll test (section 19.12).
   const canMeasure = hasRole(
     RoleNames.Administrator,
@@ -333,11 +340,42 @@ export function RollProductionPage(): ReactElement {
         />
       )}
 
+      {removing !== null && (
+        <ReasonDialog
+          title={`${removing.action === 'cancel' ? t('correct.cancelRoll') : t('correct.scrapRoll')} — ${removing.roll.rollCode}`}
+          explanation={
+            removing.action === 'cancel'
+              ? t('correct.cancelRollExplain')
+              : t('correct.scrapRollExplain')
+          }
+          question={t('correct.why')}
+          confirmLabel={
+            removing.action === 'cancel'
+              ? t('correct.cancelRoll')
+              : t('correct.scrapRoll')
+          }
+          onConfirm={async (reason) => {
+            await (removing.action === 'cancel'
+              ? productionApi.cancelRoll(removing.roll.id, reason)
+              : productionApi.scrapRoll(removing.roll.id, reason));
+            invalidate();
+          }}
+          onClose={() => {
+            setRemoving(null);
+          }}
+        />
+      )}
+
       {correcting !== null && (
         <EditRollDialog
           roll={correcting}
           recipes={usableRecipes}
           colors={colors.data}
+          canScrap={canScrap}
+          onRemove={(roll, action) => {
+            setCorrecting(null);
+            setRemoving({ roll, action });
+          }}
           onClose={() => {
             setCorrecting(null);
           }}

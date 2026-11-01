@@ -43,5 +43,12 @@ public class MaterialIssueTicket
 
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// Why a ticket issued by mistake was cancelled (specification section 19.27). When and
+    /// by whom are <see cref="ClosedAt"/> and <see cref="ClosedByUserId"/>: cancelling ends
+    /// the ticket, as closing does.
+    /// </summary>
+    public string? CancellationReason { get; set; }
+
     public List<MaterialIssueTicketLine> Lines { get; set; } = [];
 }

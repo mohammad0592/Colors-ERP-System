@@ -38,6 +38,10 @@ export interface InventoryMovementDto {
   userName: string;
   movementDate: string;
   notes: string | null;
+  /** A delivery booked by mistake and taken back out (section 19.27). */
+  isReversed: boolean;
+  /** Set on the movement that took a delivery back out. */
+  reversesMovementId: number | null;
 }
 
 export interface ReceivingUnitDto {
@@ -79,6 +83,13 @@ export const inventoryApi = {
     apiRequest<MaterialStockDto>('/api/inventory/receive', { method: 'POST', body }),
 
   /** Corrects a balance to what a stock count found. Always with a reason. */
+  /** Takes back a delivery booked by mistake (section 19.27). */
+  reverseDelivery: (movementId: number, reason: string): Promise<boolean> =>
+    apiRequest<boolean>(`/api/inventory/movements/${String(movementId)}/reverse`, {
+      method: 'POST',
+      body: { reason },
+    }),
+
   adjust: (body: {
     materialId: number;
     countedQuantity: number;

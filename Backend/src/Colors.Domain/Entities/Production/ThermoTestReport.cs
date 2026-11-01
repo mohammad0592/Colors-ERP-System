@@ -65,4 +65,15 @@ public class ThermoTestReport
     public DateTimeOffset TestedAt { get; set; }
 
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// The last time the counts were corrected, by whom and why (specification section
+    /// 19.27). Each correction before it is a line in the audit log, with the figures it
+    /// replaced.
+    /// </summary>
+    public DateTimeOffset? CorrectedAt { get; set; }
+
+    public int? CorrectedByUserId { get; set; }
+
+    public string? CorrectionReason { get; set; }
 }

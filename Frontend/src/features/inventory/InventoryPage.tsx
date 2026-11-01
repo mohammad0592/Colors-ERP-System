@@ -8,6 +8,7 @@ import { RoleNames } from '../../lib/roles';
 import { materialStockRoles } from '../../routes/access';
 import { ProducedStockTab } from '../labels/ProducedStockTab';
 import { AdjustStockDialog } from './AdjustStockDialog';
+import { ReasonDialog } from '../../components/ui/ReasonDialog';
 import { inventoryApi, type MaterialStockDto } from './api';
 
 type Section = 'raw' | 'packing' | 'Roll' | 'Bag' | 'Pallet';
@@ -37,6 +38,8 @@ export function InventoryPage(): ReactElement {
   const [lowOnly, setLowOnly] = useState(false);
   const [adjusting, setAdjusting] = useState<MaterialStockDto | null>(null);
   const [historyFor, setHistoryFor] = useState<MaterialStockDto | null>(null);
+  // A delivery booked by mistake, taken back out (section 19.27).
+  const [reversing, setReversing] = useState<{ id: number; label: string } | null>(null);
 
   // Everything, once. Each tab is a slice of it, so the "below minimum" count on a
   // tab is right before it is pressed, not only after.
@@ -255,19 +258,20 @@ export function InventoryPage(): ReactElement {
                     </th>
                     <th className="px-4 py-3 font-semibold">By</th>
                     <th className="px-4 py-3 font-semibold">{t('field.note')}</th>
+                    <th className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody>
                   {movements.isPending && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-6 text-center text-ink-muted">
+                      <td colSpan={7} className="px-4 py-6 text-center text-ink-muted">
                         {t('common.loading')}
                       </td>
                     </tr>
                   )}
                   {sectionMoves?.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                      <td colSpan={7} className="px-4 py-8 text-center text-ink-muted">
                         {t('inventory.nothingMoved')}
                       </td>
                     </tr>
@@ -300,6 +304,29 @@ export function InventoryPage(): ReactElement {
                       <td className="max-w-md px-4 py-3 text-ink-muted">
                         {move.notes ?? '—'}
                       </td>
+                      <td className="px-4 py-3 text-end">
+                        {move.isReversed ? (
+                          <span className="rounded-full bg-line px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap text-ink-muted">
+                            {t('correct.reversed')}
+                          </span>
+                        ) : (
+                          canAdjust &&
+                          move.movementTypeName === 'Receive' && (
+                            <button
+                              type="button"
+                              className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
+                              onClick={() => {
+                                setReversing({
+                                  id: move.id,
+                                  label: `${String(move.quantity)} ${move.baseUnitSymbol} ${move.materialName}`,
+                                });
+                              }}
+                            >
+                              {t('correct.reverse')}
+                            </button>
+                          )
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -307,6 +334,22 @@ export function InventoryPage(): ReactElement {
             </div>
           </section>
         </>
+      )}
+
+      {reversing !== null && (
+        <ReasonDialog
+          title={`${t('correct.reverseDelivery')} — ${reversing.label}`}
+          explanation={t('correct.reverseDeliveryExplain')}
+          question={t('correct.why')}
+          confirmLabel={t('correct.reverseDelivery')}
+          onConfirm={async (reason) => {
+            await inventoryApi.reverseDelivery(reversing.id, reason);
+            invalidate();
+          }}
+          onClose={() => {
+            setReversing(null);
+          }}
+        />
       )}
 
       {adjusting !== null && (

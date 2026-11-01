@@ -39,9 +39,14 @@ public class RollConfiguration : IEntityTypeConfiguration<Roll>
         // The Roll Log export contains a roll weighing 350 — the operator typed the length
         // into the weight box. Ranges are checked in the service while he is still at the
         // machine; this is the outer wall no path gets past.
-        builder.ToTable("Rolls", t => t.HasCheckConstraint(
-            "ck_rolls_measured_positive",
-            "(\"Weight\" IS NULL OR \"Weight\" > 0) AND (\"Length\" IS NULL OR \"Length\" > 0)"));
+        builder.ToTable("Rolls", t =>
+        {
+            t.HasCheckConstraint(
+                "ck_rolls_measured_positive",
+                "(\"Weight\" IS NULL OR \"Weight\" > 0) AND (\"Length\" IS NULL OR \"Length\" > 0)");
+            // Cancelled or scrapped says when, by whom and why, all three or none (19.27).
+            t.HasCheckConstraint("ck_rolls_removed_together", "(\"RemovedAt\" IS NULL) = (\"RemovedByUserId\" IS NULL) AND (\"RemovedAt\" IS NULL) = (\"RemovalReason\" IS NULL)");
+        });
 
         // Room for the colour's name at the end: 04N2309260844-White.
         builder.Property(e => e.RollCode).IsRequired().HasMaxLength(50);
@@ -275,9 +280,13 @@ public class ProducedBagConfiguration : IEntityTypeConfiguration<ProducedBag>
     public void Configure(EntityTypeBuilder<ProducedBag> builder)
     {
         builder.ToTable("ProducedBags", t =>
+        {
             t.HasCheckConstraint(
                 "ck_produced_bags_positive",
-                "\"Weight\" > 0 AND \"PieceCount\" > 0"));
+                "\"Weight\" > 0 AND \"PieceCount\" > 0");
+            // Defective or cancelled says when, by whom and why, all three or none (19.27).
+            t.HasCheckConstraint("ck_produced_bags_removed_together", "(\"RemovedAt\" IS NULL) = (\"RemovedByUserId\" IS NULL) AND (\"RemovedAt\" IS NULL) = (\"RemovalReason\" IS NULL)");
+        });
 
         builder.Property(e => e.Weight).HasPrecision(9, 3);
         builder.Property(e => e.Status).HasConversion<string>().HasMaxLength(20);

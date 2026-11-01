@@ -24,6 +24,12 @@ export function MaterialIssuePage(): ReactElement {
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
   const canIssue = hasRole(RoleNames.Administrator, RoleNames.InventoryManager);
+  // The storekeeper's own mistake, or a supervisor's correction (section 19.27).
+  const canCancel = hasRole(
+    RoleNames.Administrator,
+    RoleNames.InventoryManager,
+    RoleNames.Supervisor,
+  );
 
   const [openOnly, setOpenOnly] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -199,7 +205,9 @@ export function MaterialIssuePage(): ReactElement {
                         open.mutate(ticket.id);
                       }}
                     >
-                      {ticket.isOpen && canIssue ? t('issue.weighBackIn') : t('common.view')}
+                      {ticket.isOpen && canIssue
+                        ? t('issue.weighBackIn')
+                        : t('common.view')}
                     </button>
                   </div>
                 </td>
@@ -230,6 +238,7 @@ export function MaterialIssuePage(): ReactElement {
         <IssueTicketDialog
           ticket={viewing}
           canIssue={canIssue}
+          canCancel={canCancel}
           onClose={() => {
             setViewing(null);
           }}

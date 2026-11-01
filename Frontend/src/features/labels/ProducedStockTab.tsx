@@ -1,7 +1,11 @@
-﻿import { useQuery } from '@tanstack/react-query';
+﻿import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from '../../hooks/useTranslation';
 import { useState, type ReactElement } from 'react';
 import { Link } from 'react-router-dom';
+import { ReasonDialog } from '../../components/ui/ReasonDialog';
+import { useAuth } from '../../hooks/useAuth';
+import { RoleNames } from '../../lib/roles';
+import { thermoApi } from '../thermo/api';
 import { formatDate } from '../shifts/shiftFormat';
 import { producedStockApi, type ProducedKind } from './api';
 import { LabelPrintScreen } from './LabelPrintScreen';
@@ -31,6 +35,18 @@ export function ProducedStockTab({
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [labelFor, setLabelFor] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { hasRole } = useAuth();
+  // Whoever packs the bags finds the bad ones (section 19.27).
+  const canMarkDefective = hasRole(
+    RoleNames.Administrator,
+    RoleNames.Supervisor,
+    RoleNames.ThermoOperator,
+    RoleNames.PackagingOperator,
+  );
+  const [defective, setDefective] = useState<{ id: number; barcode: string } | null>(
+    null,
+  );
 
   const items = useQuery({
     queryKey: ['produced-stock', kind, status, search],
@@ -181,6 +197,18 @@ export function ProducedStockTab({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex justify-end gap-2">
+                      {/* A bag waiting for a pallet. One on a pallet is taken off first. */}
+                      {item.kind === 'Bag' && item.isAvailable && canMarkDefective && (
+                        <button
+                          type="button"
+                          className="min-h-9 rounded-control border border-line px-3 text-sm font-medium whitespace-nowrap text-ink-soft transition-colors hover:border-bad/40 hover:bg-bad-soft hover:text-bad"
+                          onClick={() => {
+                            setDefective({ id: item.id, barcode: item.barcode });
+                          }}
+                        >
+                          {t('correct.defective')}
+                        </button>
+                      )}
                       {item.barcode !== '' && (
                         <Link
                           to={`/trace?code=${encodeURIComponent(item.barcode)}`}
@@ -214,6 +242,23 @@ export function ProducedStockTab({
           barcodes={[labelFor]}
           onClose={() => {
             setLabelFor(null);
+          }}
+        />
+      )}
+
+      {defective !== null && (
+        <ReasonDialog
+          title={`${t('correct.defective')} — ${defective.barcode}`}
+          explanation={t('correct.defectiveExplain')}
+          question={t('correct.whyDefective')}
+          confirmLabel={t('correct.markDefective')}
+          onConfirm={async (reason) => {
+            await thermoApi.markBagDefective(defective.id, reason);
+            void queryClient.invalidateQueries({ queryKey: ['produced-stock'] });
+            void queryClient.invalidateQueries({ queryKey: ['available-bags'] });
+          }}
+          onClose={() => {
+            setDefective(null);
           }}
         />
       )}

@@ -107,6 +107,22 @@ public class InventoryController(
         return ToResponse(await inventory.ReceiveAsync(request, CurrentUserId(), cancellationToken));
     }
 
+    /// <summary>
+    /// Takes back a delivery booked by mistake (section 19.27). It overrides what was booked,
+    /// so it is the supervisor's, as adjusting is.
+    /// </summary>
+    [HttpPost("movements/{id:int}/reverse")]
+    [Authorize(Roles = CanAdjust)]
+    public async Task<IActionResult> ReverseDelivery(
+        int id,
+        [FromBody] ReverseDeliveryRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(
+            await inventory.ReverseDeliveryAsync(id, request, CurrentUserId(), cancellationToken),
+            "MaterialInventoryMovement");
+    }
+
     /// <summary>Corrects a balance after a stock count. Always with a reason.</summary>
     [HttpPost("adjust")]
     [Authorize(Roles = CanAdjust)]

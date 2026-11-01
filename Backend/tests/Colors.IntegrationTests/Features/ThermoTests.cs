@@ -1,4 +1,7 @@
-﻿using Colors.Application.Features.Production;
+﻿using Colors.Infrastructure.Services.Pallets;
+using Colors.Infrastructure.Services.Inventory;
+using Colors.Application.Features.Pallets;
+using Colors.Application.Features.Production;
 using Colors.Application.Features.Thermo;
 using Colors.Domain.Entities.MasterData;
 using Colors.Domain.Entities.Recipes;
@@ -785,5 +788,197 @@ public class ThermoTests(DatabaseFixture fixture)
 
         Assert.False(counted.IsSuccess);
         Assert.Empty(await db.ProducedBags.Where(b => b.ThermoProductionId == run.Id).ToListAsync());
+    }
+
+    // ---------- corrections (section 19.27) ----------
+
+    private static async Task<ThermoRunDto> CountedAsync(
+        ColorsDbContext db, FactoryData.Ids ids, string suffix, int bags)
+    {
+        var run = await FinishedRunAsync(db, ids, suffix);
+        var counted = await NewService(db).SaveTestReportAsync(
+            run.Id, new SaveThermoTestRequest(bags, 4m, 10m, 0m, null), ids.UserId);
+        Assert.True(counted.IsSuccess, counted.Message);
+        return counted.Value!;
+    }
+
+    [Fact]
+    public async Task A_count_put_up_makes_the_missing_bags()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX1");
+        var run = await CountedAsync(db, ids, "CRX1", 3);
+
+        var corrected = await NewService(db).CorrectTestReportAsync(
+            run.Id, new CorrectThermoTestRequest(5, 4.5m, 11m, 0m, null, "Two bags were missed"), ids.UserId);
+
+        Assert.True(corrected.IsSuccess, corrected.Message);
+        var report = corrected.Value!.TestReport!;
+        Assert.Equal(5, report.BagCount);
+        Assert.Equal(5 * (run.TestReport!.PieceCount / 3), report.PieceCount);
+        Assert.Equal("Two bags were missed", report.CorrectionReason);
+        Assert.Equal(5, corrected.Value.Bags.Count);
+        Assert.Equal(5, corrected.Value.Bags.Select(b => b.Barcode).Distinct().Count());
+        // The weight follows the correction on every bag, the old ones too.
+        Assert.All(corrected.Value.Bags, b => Assert.Equal(11m, b.Weight));
+    }
+
+    [Fact]
+    public async Task A_count_put_down_cancels_the_extra_bags_and_their_labels()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX2");
+        var run = await CountedAsync(db, ids, "CRX2", 5);
+
+        var corrected = await NewService(db).CorrectTestReportAsync(
+            run.Id, new CorrectThermoTestRequest(3, 4m, 10m, 0m, null, "Typed 5 for 3"), ids.UserId);
+
+        Assert.True(corrected.IsSuccess, corrected.Message);
+        Assert.Equal(3, corrected.Value!.Bags.Count);
+
+        // The two newest went, and their labels no longer scan.
+        var gone = run.Bags.OrderBy(b => b.Id).TakeLast(2).ToList();
+        foreach (var bag in gone)
+        {
+            Assert.Equal(ProducedBagStatus.Cancelled, (await db.ProducedBags.AsNoTracking().SingleAsync(b => b.Id == bag.Id)).Status);
+            var found = await new BarcodeService(db, TimeProvider.System).LookupAsync(bag.Barcode);
+            Assert.False(found.Value!.IsActive);
+        }
+    }
+
+    [Fact]
+    public async Task A_count_cannot_be_put_down_past_the_bags_already_on_pallets()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX3");
+        var run = await CountedAsync(db, ids, "CRX3", 2);
+        var pallets = new PalletService(
+            db, new BarcodeService(db, TimeProvider.System), new StockLedger(db, TimeProvider.System), TimeProvider.System);
+        var pallet = (await pallets.StartPalletAsync(new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId)).Value!;
+        foreach (var bag in run.Bags)
+        {
+            await pallets.ScanBagAsync(pallet.Id, new ScanBagRequest(bag.Barcode, null), ids.UserId);
+        }
+
+        var corrected = await NewService(db).CorrectTestReportAsync(
+            run.Id, new CorrectThermoTestRequest(1, 4m, 10m, 0m, null, "One too many"), ids.UserId);
+
+        Assert.Equal("thermo.correctionBagsOnPallets", corrected.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_correction_needs_a_reason()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX4");
+        var run = await CountedAsync(db, ids, "CRX4", 2);
+
+        var corrected = await NewService(db).CorrectTestReportAsync(
+            run.Id, new CorrectThermoTestRequest(3, 4m, 10m, 0m, null, "  "), ids.UserId);
+
+        Assert.Equal("correction.reasonRequired", corrected.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_wrong_start_puts_the_roll_back_in_stock_and_says_why_in_the_log()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX5");
+        var roll = await AvailableRollAsync(db, ids, "CRX5");
+        var service = NewService(db);
+        var run = await StartAsync(service, ids, roll);
+
+        var undone = await service.UndoStartAsync(run.Id, new UndoThermoStartRequest("Scanned the wrong roll"), ids.UserId);
+
+        Assert.True(undone.IsSuccess, undone.Message);
+        Assert.Equal(RollStatus.Available, (await db.Rolls.AsNoTracking().SingleAsync(r => r.Id == roll.Id)).Status);
+        Assert.False(await db.ThermoProductions.AnyAsync(p => p.Id == run.Id));
+        Assert.True(await db.AuditEntries.AnyAsync(
+            a => a.ObjectType == "Roll" && a.ObjectId == roll.Id && a.Details!.Contains("Scanned the wrong roll")));
+
+        // And it may go in again, the right way.
+        Assert.True((await service.StartRunAsync(
+            new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null), ids.UserId)).IsSuccess);
+    }
+
+    [Fact]
+    public async Task A_roll_taken_out_is_not_a_wrong_start()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX6");
+        var run = await FinishedRunAsync(db, ids, "CRX6");
+
+        var undone = await NewService(db).UndoStartAsync(run.Id, new UndoThermoStartRequest("Wrong roll"), ids.UserId);
+
+        Assert.Equal("thermo.undoOnlyInMachine", undone.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_bag_off_a_pallet_can_be_marked_defective_and_then_goes_on_none()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX7");
+        var run = await CountedAsync(db, ids, "CRX7", 2);
+        var bag = run.Bags[0];
+
+        var marked = await NewService(db).MarkBagDefectiveAsync(bag.Id, new MarkBagDefectiveRequest("Torn"), ids.UserId);
+        Assert.True(marked.IsSuccess, marked.Message);
+        Assert.Equal(ProducedBagStatus.Defective.ToString(), marked.Value!.Status);
+
+        var pallets = new PalletService(
+            db, new BarcodeService(db, TimeProvider.System), new StockLedger(db, TimeProvider.System), TimeProvider.System);
+        var pallet = (await pallets.StartPalletAsync(new StartPalletRequest(ids.ThermoShiftLineId, null), ids.UserId)).Value!;
+        var scanned = await pallets.ScanBagAsync(pallet.Id, new ScanBagRequest(bag.Barcode, null), ids.UserId);
+        Assert.False(scanned.IsSuccess);
+
+        // Marked once is marked: a second time is refused.
+        var again = await NewService(db).MarkBagDefectiveAsync(bag.Id, new MarkBagDefectiveRequest("Torn"), ids.UserId);
+        Assert.Equal("bag.notAvailable", again.MessageCode);
+    }
+
+    [Fact]
+    public async Task A_roll_logged_by_mistake_is_cancelled_and_kept_out_of_everything()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX8");
+        var roll = await AvailableRollAsync(db, ids, "CRX8");
+        var production = NewProduction(db);
+
+        var cancelled = await production.CancelRollAsync(roll.Id, new RemoveRollRequest("Logged twice"), ids.UserId);
+
+        Assert.True(cancelled.IsSuccess, cancelled.Message);
+        Assert.Equal(RollStatus.Cancelled.ToString(), cancelled.Value!.Status);
+        Assert.Equal("Logged twice", cancelled.Value.RemovalReason);
+
+        // Nothing more is done to it, and the thermo will not take it.
+        var measured = await production.MeasureRollAsync(roll.Id, new MeasureRollRequest(90m, 1000m), ids.UserId);
+        Assert.Equal("roll.wasCancelled", measured.MessageCode);
+        var started = await NewService(db).StartRunAsync(
+            new StartThermoRunRequest(roll.Barcode, null, ids.ThermoShiftLineId, null, null), ids.UserId);
+        Assert.False(started.IsSuccess);
+
+        // And the extruder's report does not count it.
+        var report = await new Colors.Infrastructure.Services.Reports.ExtruderShiftReportService(db)
+            .GetAsync(ids.ShiftReportId);
+        Assert.DoesNotContain(report.Value!.Rolls, r => r.RollCode == roll.RollCode);
+    }
+
+    [Fact]
+    public async Task A_roll_that_has_been_in_the_thermo_is_scrapped_not_cancelled()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "CRX9");
+        var roll = await AvailableRollAsync(db, ids, "CRX9");
+        var service = NewService(db);
+        var run = await StartAsync(service, ids, roll);
+        await service.LeaveUnfinishedAsync(run.Id, new LeaveRunUnfinishedRequest("Mould cracked"));
+
+        var production = NewProduction(db);
+        var cancelled = await production.CancelRollAsync(roll.Id, new RemoveRollRequest("Bad"), ids.UserId);
+        Assert.Equal("roll.cannotCancel", cancelled.MessageCode);
+
+        var scrapped = await production.ScrapRollAsync(roll.Id, new RemoveRollRequest("Holes all through it"), ids.UserId);
+        Assert.True(scrapped.IsSuccess, scrapped.Message);
+        Assert.Equal(RollStatus.Scrapped.ToString(), scrapped.Value!.Status);
     }
 }

@@ -2,6 +2,7 @@
 using Colors.Application.Features.Barcodes;
 using Colors.Application.Features.Thermo;
 using Colors.Domain.Entities.Production;
+using Colors.Domain.Entities.System;
 using Colors.Domain.Common;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Identity;
@@ -378,14 +379,289 @@ public class ThermoService(
         db.ProducedBags.AddRange(bags);
         await db.SaveChangesAsync(cancellationToken);
 
-        // The day's numbers, taken inside this transaction: the counter's row stays locked
-        // until it commits, so two tablets saving at once cannot both be handed 005, and a
-        // refusal below rolls it back so the numbers are not lost.
+        var coded = await CodeBagsAsync(bags, local, cancellationToken);
+        if (coded is not null)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            db.ChangeTracker.Clear();
+            return InvalidRun(coded);
+        }
+
+        await transaction.CommitAsync(cancellationToken);
+
+        return await LoadRunAsync(runId, cancellationToken);
+    }
+
+    public async Task<Result<ThermoRunDto>> CorrectTestReportAsync(
+        int runId,
+        CorrectThermoTestRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var run = await RunQuery().FirstOrDefaultAsync(p => p.Id == runId, cancellationToken);
+        if (run is null)
+        {
+            return RunNotFound();
+        }
+
+        var report = run.TestReport;
+        if (report is null)
+        {
+            return InvalidRun(
+                $"Roll {run.Roll.RollCode} has not been counted yet. Count it instead.",
+                "thermo.notCountedYet",
+                run.Roll.RollCode);
+        }
+
+        var reason = Trimmed(request.Reason);
+        if (reason is null)
+        {
+            return InvalidRun("Say why the counts are being corrected.", "correction.reasonRequired");
+        }
+
+        var error = Validate(new SaveThermoTestRequest(
+            request.BagCount,
+            request.PieceWeight,
+            request.BagWeight,
+            request.AbsorbentPercentage,
+            request.Notes,
+            request.UtcOffsetMinutes));
+        if (error is not null)
+        {
+            return InvalidRun(error);
+        }
+
+        if (!run.Roll.RecipeVersion.Family.IsAbsorbent && request.AbsorbentPercentage != 0)
+        {
+            return InvalidRun(
+                $"Roll {run.Roll.RollCode} was made to {run.Roll.RecipeVersion.Family.Name}, "
+                + "which is not absorbent. Leave the absorbency at zero.");
+        }
+
+        // The bags that exist. One cancelled by an earlier correction never did.
+        var live = run.Bags.Where(b => b.Status != ProducedBagStatus.Cancelled).OrderBy(b => b.Id).ToList();
+        var piecesPerBag = report.PieceCount / report.BagCount;
+        var now = timeProvider.GetUtcNow();
+        var difference = request.BagCount - live.Count;
+
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+        if (difference < 0)
+        {
+            // Too many were made. The extra ones go, newest first, and only off a pallet:
+            // a bag on a pallet is under other bags and in somebody's count.
+            var extra = live
+                .Where(b => b.Status == ProducedBagStatus.Available)
+                .OrderByDescending(b => b.Id)
+                .Take(-difference)
+                .ToList();
+
+            if (extra.Count < -difference)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return InvalidRun(
+                    $"{-difference} bags have to go, and only {extra.Count} of this roll's bags are off a "
+                    + "pallet. Take the rest off their pallets first, then correct the count.",
+                    "thermo.correctionBagsOnPallets",
+                    (-difference).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    extra.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+
+            var extraIds = extra.Select(b => b.Id).ToList();
+            foreach (var bag in extra)
+            {
+                bag.Status = ProducedBagStatus.Cancelled;
+                bag.RemovedAt = now;
+                bag.RemovedByUserId = userId;
+                bag.RemovalReason = reason;
+            }
+
+            // Their labels stop scanning: a bag that never existed must not reach a pallet.
+            await db.Barcodes
+                .Where(b => b.ObjectType == BarcodeObjectType.Bag && extraIds.Contains(b.ObjectId) && b.IsActive)
+                .ExecuteUpdateAsync(set => set.SetProperty(b => b.IsActive, false), cancellationToken);
+        }
+
+        // The weight follows the corrected figure on every bag of the run, as it was copied
+        // from it at the count.
+        foreach (var bag in run.Bags.Where(b => b.Status != ProducedBagStatus.Cancelled))
+        {
+            bag.Weight = request.BagWeight;
+        }
+
+        report.BagCount = request.BagCount;
+        report.PieceCount = request.BagCount * piecesPerBag;
+        report.PieceWeight = request.PieceWeight;
+        report.BagWeight = request.BagWeight;
+        report.AbsorbentPercentage = request.AbsorbentPercentage;
+        report.Notes = Trimmed(request.Notes);
+        report.CorrectedAt = now;
+        report.CorrectedByUserId = userId;
+        report.CorrectionReason = reason;
+
+        if (difference > 0)
+        {
+            // Too few were made: the missing ones now, coded as of now, as any bag is.
+            var added = Enumerable.Range(0, difference)
+                .Select(_ => new ProducedBag
+                {
+                    ThermoProductionId = run.Id,
+                    ColorId = run.Roll.ColorId,
+                    ProductId = report.ProductId,
+                    Weight = request.BagWeight,
+                    PieceCount = piecesPerBag,
+                    Status = ProducedBagStatus.Available,
+                    CreatedAt = now,
+                })
+                .ToList();
+
+            db.ProducedBags.AddRange(added);
+            await db.SaveChangesAsync(cancellationToken);
+
+            var coded = await CodeBagsAsync(
+                added, now.ToOffset(TimeSpan.FromMinutes(request.UtcOffsetMinutes)), cancellationToken);
+            if (coded is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                db.ChangeTracker.Clear();
+                return InvalidRun(coded);
+            }
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return await LoadRunAsync(runId, cancellationToken);
+    }
+
+    public async Task<Result<bool>> UndoStartAsync(
+        int runId,
+        UndoThermoStartRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var run = await db.ThermoProductions
+            .Include(p => p.Roll)
+            .Include(p => p.TestReport)
+            .Include(p => p.ShiftLine)
+            .FirstOrDefaultAsync(p => p.Id == runId, cancellationToken);
+        if (run is null)
+        {
+            return Result<bool>.Failure(ErrorCode.NotFound, "This run does not exist.", "thermo.runNotFound");
+        }
+
+        // Only while the roll is still in the machine. Once it is out, it was formed —
+        // plates were made — and the way back is to leave it unfinished.
+        if (run.FinishedAt is not null || run.TestReport is not null)
+        {
+            return Result<bool>.Failure(
+                ErrorCode.ValidationFailed,
+                $"Roll {run.Roll.RollCode} has already been taken out. Only a roll still in the machine "
+                + "is taken back as a wrong start.",
+                "thermo.undoOnlyInMachine",
+                run.Roll.RollCode);
+        }
+
+        var reason = Trimmed(request.Reason);
+        if (reason is null)
+        {
+            return Result<bool>.Failure(
+                ErrorCode.ValidationFailed, "Say why the start is being taken back.", "correction.reasonRequired");
+        }
+
+        // Back where it was: in stock, or not completed if an earlier run left it so.
+        var workedBefore = await db.ThermoProductions
+            .AnyAsync(p => p.RollId == run.RollId && p.Id != run.Id, cancellationToken);
+        run.Roll.Status = workedBefore ? RollStatus.NotCompleted : RollStatus.Available;
+
+        // The run made nothing and nothing hangs off it, so it goes. The audit log keeps
+        // that it happened, who took it back and why.
+        db.ThermoProductions.Remove(run);
+        db.AuditEntries.Add(new AuditEntry
+        {
+            UserId = userId,
+            ShiftReportId = run.ShiftLine.ShiftReportId,
+            Action = "Thermo.UndoStart",
+            ObjectType = "Roll",
+            ObjectId = run.RollId,
+            Result = AuditResult.Success,
+            Details = $"Roll {run.Roll.RollCode} taken back out of the thermo, started by mistake: {reason}",
+            Timestamp = timeProvider.GetUtcNow(),
+        });
+
+        await db.SaveChangesAsync(cancellationToken);
+        return Result<bool>.Success(true);
+    }
+
+    public async Task<Result<ProducedBagDto>> MarkBagDefectiveAsync(
+        int bagId,
+        MarkBagDefectiveRequest request,
+        int userId,
+        CancellationToken cancellationToken = default)
+    {
+        var bag = await db.ProducedBags
+            .Include(b => b.Color)
+            .Include(b => b.Product)
+            .FirstOrDefaultAsync(b => b.Id == bagId, cancellationToken);
+        if (bag is null)
+        {
+            return Result<ProducedBagDto>.Failure(ErrorCode.NotFound, "This bag does not exist.", "bag.notFound");
+        }
+
+        // A bag on a pallet is taken off first, which the pallet's history records.
+        if (bag.Status != ProducedBagStatus.Available)
+        {
+            return Result<ProducedBagDto>.Failure(
+                ErrorCode.ValidationFailed,
+                bag.Status == ProducedBagStatus.Assigned
+                    ? "This bag is on a pallet. Take it off the pallet first."
+                    : "Only a bag waiting for a pallet can be marked defective.",
+                bag.Status == ProducedBagStatus.Assigned ? "bag.onPallet" : "bag.notAvailable");
+        }
+
+        var reason = Trimmed(request.Reason);
+        if (reason is null)
+        {
+            return Result<ProducedBagDto>.Failure(
+                ErrorCode.ValidationFailed, "Say what is wrong with the bag.", "correction.reasonRequired");
+        }
+
+        bag.Status = ProducedBagStatus.Defective;
+        bag.RemovedAt = timeProvider.GetUtcNow();
+        bag.RemovedByUserId = userId;
+        bag.RemovalReason = reason;
+        await db.SaveChangesAsync(cancellationToken);
+
+        var codes = await BarcodesForAsync(BarcodeObjectType.Bag, [bag.Id], cancellationToken);
+        return Result<ProducedBagDto>.Success(new ProducedBagDto(
+            bag.Id,
+            codes.GetValueOrDefault(bag.Id, string.Empty),
+            bag.Color.Name,
+            bag.Product.Name,
+            bag.Weight,
+            bag.PieceCount,
+            bag.Status.ToString(),
+            bag.CreatedAt));
+    }
+
+    // ---------- helpers ----------
+
+    /// <summary>
+    /// Gives each new bag its code, which is its barcode (section 19.25): B, its number that
+    /// day, the date and the time — B0050111261758. Returns why not, or null.
+    ///
+    /// The day's numbers are taken inside the caller's transaction: the counter's row stays
+    /// locked until it commits, so two tablets saving at once cannot both be handed 005,
+    /// and a refusal rolls it back so the numbers are not lost.
+    /// </summary>
+    private async Task<string?> CodeBagsAsync(
+        List<ProducedBag> bags,
+        DateTimeOffset local,
+        CancellationToken cancellationToken)
+    {
         var firstNumber = await TakeBagNumbersAsync(
             DateOnly.FromDateTime(local.DateTime), bags.Count, cancellationToken);
 
-        // Each bag's code is its barcode, as a roll's is (section 19.25): B, its number
-        // that day, the date and the time — B0050111261758.
         foreach (var (bag, index) in bags.Select((bag, index) => (bag, index)))
         {
             var barcode = await barcodes.IssueAsync(
@@ -396,18 +672,12 @@ public class ThermoService(
 
             if (!barcode.IsSuccess)
             {
-                await transaction.RollbackAsync(cancellationToken);
-                db.ChangeTracker.Clear();
-                return InvalidRun(barcode.Message ?? "The bag labels could not be printed.");
+                return barcode.Message ?? "The bag labels could not be printed.";
             }
         }
 
-        await transaction.CommitAsync(cancellationToken);
-
-        return await LoadRunAsync(runId, cancellationToken);
+        return null;
     }
-
-    // ---------- helpers ----------
 
     /// <summary>
     /// A roll weighs fifty to a hundred and fifty kilos and holds a few thousand pieces,
@@ -580,6 +850,7 @@ public class ThermoService(
         RollStatus.InThermo => $"Roll {roll.RollCode} is already in the machine.",
         RollStatus.Processed => $"Roll {roll.RollCode} has already been formed.",
         RollStatus.Scrapped => $"Roll {roll.RollCode} was scrapped.",
+        RollStatus.Cancelled => $"Roll {roll.RollCode} was cancelled — it was logged by mistake.",
         _ => $"Roll {roll.RollCode} cannot go into the thermo.",
     };
 
@@ -653,6 +924,10 @@ public class ThermoService(
         if (run.TestReport is not null)
         {
             ids.Add(run.TestReport.TestedByUserId);
+            if (run.TestReport.CorrectedByUserId is not null)
+            {
+                ids.Add(run.TestReport.CorrectedByUserId.Value);
+            }
         }
 
         var names = await UserNamesAsync(ids, cancellationToken);
@@ -698,9 +973,15 @@ public class ThermoService(
                     run.TestReport.AbsorbentPercentage,
                     names.GetValueOrDefault(run.TestReport.TestedByUserId, "—"),
                     run.TestReport.TestedAt,
-                    run.TestReport.Notes),
+                    run.TestReport.Notes,
+                    run.TestReport.CorrectedAt,
+                    run.TestReport.CorrectedByUserId is null
+                        ? null
+                        : names.GetValueOrDefault(run.TestReport.CorrectedByUserId.Value),
+                    run.TestReport.CorrectionReason),
             ThermoScrap.For(run, (await UnfinishedRuns.ForRollsAsync(db, [run.RollId], cancellationToken))[run.RollId].PlatesKg),
             run.Bags
+                .Where(b => b.Status != ProducedBagStatus.Cancelled)
                 .OrderBy(b => b.Id)
                 .Select(b => new ProducedBagDto(
                     b.Id,

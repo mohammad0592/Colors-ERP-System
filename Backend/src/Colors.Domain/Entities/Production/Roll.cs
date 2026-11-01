@@ -99,5 +99,15 @@ public class Roll
 
     public string? Notes { get; set; }
 
+    /// <summary>
+    /// When the roll was cancelled or scrapped, by whom and why (specification section
+    /// 19.27). <see cref="Status"/> says which. All three together, or none.
+    /// </summary>
+    public DateTimeOffset? RemovedAt { get; set; }
+
+    public int? RemovedByUserId { get; set; }
+
+    public string? RemovalReason { get; set; }
+
     public RollTestReport? TestReport { get; set; }
 }

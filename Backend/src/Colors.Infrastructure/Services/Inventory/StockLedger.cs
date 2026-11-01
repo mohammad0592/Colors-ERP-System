@@ -34,7 +34,8 @@ public class StockLedger(ColorsDbContext db, TimeProvider timeProvider)
         string note,
         int? issueTicketId = null,
         int? shiftReportId = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int? reversesMovementId = null)
     {
         if (quantity <= 0)
         {
@@ -107,6 +108,7 @@ public class StockLedger(ColorsDbContext db, TimeProvider timeProvider)
                 Quantity = quantity,
                 ShiftReportId = shiftReportId ?? await CurrentShiftIdAsync(cancellationToken),
                 IssueTicketId = issueTicketId,
+                ReversesMovementId = reversesMovementId,
                 UserId = userId,
                 MovementDate = timeProvider.GetUtcNow(),
                 Notes = note,

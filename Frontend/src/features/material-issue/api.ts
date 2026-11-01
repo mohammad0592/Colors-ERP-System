@@ -5,7 +5,7 @@ import { apiRequest } from '../../lib/apiClient';
  * Specification section 7.
  */
 
-export type IssueTicketStatus = 'Open' | 'Closed';
+export type IssueTicketStatus = 'Open' | 'Closed' | 'Cancelled';
 
 export interface IssueTicketLineDto {
   id: number;
@@ -51,6 +51,8 @@ export interface IssueTicketDto {
   closedAt: string | null;
   notes: string | null;
   lines: IssueTicketLineDto[];
+  /** Why a ticket issued by mistake was cancelled (section 19.27). */
+  cancellationReason: string | null;
 }
 
 export const materialIssueApi = {
@@ -77,6 +79,13 @@ export const materialIssueApi = {
     apiRequest<IssueTicketDto>(`/api/material-issue/${String(id)}/returns`, {
       method: 'POST',
       body: { lines },
+    }),
+
+  /** Cancels an open ticket issued by mistake; what is still out goes back (19.27). */
+  cancel: (id: number, reason: string): Promise<IssueTicketDto> =>
+    apiRequest<IssueTicketDto>(`/api/material-issue/${String(id)}/cancel`, {
+      method: 'POST',
+      body: { reason },
     }),
 
   close: (id: number): Promise<IssueTicketDto> =>

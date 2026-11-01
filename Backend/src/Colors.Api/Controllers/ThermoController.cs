@@ -27,6 +27,15 @@ public class ThermoController(IThermoService thermo) : ApiControllerBase
     private const string CanTest =
         $"{RoleNames.Administrator},{RoleNames.ThermoTestPerson},{RoleNames.ThermoOperator}";
 
+    // Corrections (section 19.27). Changing saved counts adds or cancels bags, so it is a
+    // supervisor's; taking back a wrong start is the operator's own fresh mistake too; and
+    // a defective bag is found by whoever packs it.
+    private const string CanCorrect = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
+    private const string CanUndoStart =
+        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ThermoOperator}";
+    private const string CanMarkDefective =
+        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ThermoOperator},{RoleNames.PackagingOperator}";
+
     // ---------- runs ----------
 
     /// <summary>
@@ -88,6 +97,49 @@ public class ThermoController(IThermoService thermo) : ApiControllerBase
         CancellationToken cancellationToken)
     {
         return ToResponse(await thermo.LeaveUnfinishedAsync(id, request, cancellationToken));
+    }
+
+    /// <summary>
+    /// Corrects counts saved wrong (section 19.27). A supervisor's job: it adds or cancels
+    /// bags, and those may already be on the floor.
+    /// </summary>
+    [HttpPost("runs/{id:int}/test/correct")]
+    [Authorize(Roles = CanCorrect)]
+    public async Task<IActionResult> CorrectTest(
+        int id,
+        [FromBody] CorrectThermoTestRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(
+            await thermo.CorrectTestReportAsync(id, request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>
+    /// Takes back a run started with the wrong roll, while it is in the machine (section
+    /// 19.27). The operator who scanned it may, as may a supervisor.
+    /// </summary>
+    [HttpPost("runs/{id:int}/undo-start")]
+    [Authorize(Roles = CanUndoStart)]
+    public async Task<IActionResult> UndoStart(
+        int id,
+        [FromBody] UndoThermoStartRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(
+            await thermo.UndoStartAsync(id, request, CurrentUserId(), cancellationToken),
+            "ThermoProduction");
+    }
+
+    /// <summary>Marks a bag not on a pallet defective (section 19.27). Floor work.</summary>
+    [HttpPost("bags/{id:int}/defective")]
+    [Authorize(Roles = CanMarkDefective)]
+    public async Task<IActionResult> MarkBagDefective(
+        int id,
+        [FromBody] MarkBagDefectiveRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(
+            await thermo.MarkBagDefectiveAsync(id, request, CurrentUserId(), cancellationToken));
     }
 
     /// <summary>The counts. Saving them creates the bags and prints their labels.</summary>

@@ -47,4 +47,14 @@ public class ProducedBag
     public DateTimeOffset CreatedAt { get; set; }
 
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// When the bag was marked defective or cancelled, by whom and why (specification
+    /// section 19.27). <see cref="Status"/> says which. All three together, or none.
+    /// </summary>
+    public DateTimeOffset? RemovedAt { get; set; }
+
+    public int? RemovedByUserId { get; set; }
+
+    public string? RemovalReason { get; set; }
 }

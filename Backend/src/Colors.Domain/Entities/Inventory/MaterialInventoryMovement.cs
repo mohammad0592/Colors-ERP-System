@@ -52,4 +52,11 @@ public class MaterialInventoryMovement
 
     /// <summary>Required for an adjustment: a correction with no reason is a mystery.</summary>
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// The delivery this movement takes back out, when it is the reversal of one booked in
+    /// by mistake (specification section 19.27). The wrong delivery is never removed: the
+    /// two stand side by side, and a delivery is reversed once at most.
+    /// </summary>
+    public int? ReversesMovementId { get; set; }
 }

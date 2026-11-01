@@ -45,7 +45,12 @@ public sealed record IssueTicketDto(
     DateTimeOffset CreatedAt,
     DateTimeOffset? ClosedAt,
     string? Notes,
-    IReadOnlyList<IssueTicketLineDto> Lines);
+    IReadOnlyList<IssueTicketLineDto> Lines,
+    // Why a ticket issued by mistake was cancelled (section 19.27).
+    string? CancellationReason = null);
+
+/// <summary>Cancels a ticket issued by mistake, with why (section 19.27).</summary>
+public sealed record CancelTicketRequest(string Reason);
 
 /// <summary>One material on a new ticket, weighed out of the store.</summary>
 public sealed record IssueLineRequest(int MaterialId, decimal Quantity);
@@ -88,6 +93,16 @@ public interface IMaterialIssueService
     Task<Result<IssueTicketDto>> RecordReturnsAsync(
         int id,
         RecordReturnsRequest request,
+        int userId,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cancels an open ticket issued by mistake (section 19.27). Everything on it that has not
+    /// come back goes back to the store, so it used nothing.
+    /// </summary>
+    Task<Result<IssueTicketDto>> CancelAsync(
+        int id,
+        CancelTicketRequest request,
         int userId,
         CancellationToken cancellationToken = default);
 

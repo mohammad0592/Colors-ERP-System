@@ -30,6 +30,8 @@ public class ProductionController(IProductionService production) : ApiController
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator},{RoleNames.ExtruderTestPerson}";
     private const string CanCorrect =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator}";
+    // Scrapping is a judgement that the roll is bad, so it is the supervisor's (19.27).
+    private const string CanScrap = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
 
     // ---------- batches ----------
 
@@ -128,6 +130,28 @@ public class ProductionController(IProductionService production) : ApiController
     }
 
     /// <summary>Logs a roll off the extruder and prints its barcode.</summary>
+    /// <summary>Cancels a roll logged by mistake (section 19.27).</summary>
+    [HttpPost("rolls/{id:int}/cancel")]
+    [Authorize(Roles = CanCorrect)]
+    public async Task<IActionResult> CancelRoll(
+        int id,
+        [FromBody] RemoveRollRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await production.CancelRollAsync(id, request, CurrentUserId(), cancellationToken));
+    }
+
+    /// <summary>Scraps a bad roll in stock (section 19.27).</summary>
+    [HttpPost("rolls/{id:int}/scrap")]
+    [Authorize(Roles = CanScrap)]
+    public async Task<IActionResult> ScrapRoll(
+        int id,
+        [FromBody] RemoveRollRequest request,
+        CancellationToken cancellationToken)
+    {
+        return ToResponse(await production.ScrapRollAsync(id, request, CurrentUserId(), cancellationToken));
+    }
+
     [HttpPost("rolls")]
     [Authorize(Roles = CanProduce)]
     public async Task<IActionResult> CreateRoll(

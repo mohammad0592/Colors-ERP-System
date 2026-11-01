@@ -15,5 +15,15 @@ public enum ProducedBagStatus
     /// <summary>On a pallet. It cannot be put on a second one.</summary>
     Assigned = 2,
 
+    /// <summary>
+    /// Torn, dirty or badly formed — it goes to the recycler, not onto a pallet
+    /// (specification section 19.27). Its packaging was used, so it still counts there.
+    /// </summary>
     Defective = 3,
+
+    /// <summary>
+    /// Never existed: made by a count typed wrong, and taken away when the count was
+    /// corrected (section 19.27). Its label no longer scans.
+    /// </summary>
+    Cancelled = 4,
 }
