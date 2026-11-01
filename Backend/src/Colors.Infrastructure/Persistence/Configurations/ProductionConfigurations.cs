@@ -110,6 +110,18 @@ public class RollNumberCounterConfiguration : IEntityTypeConfiguration<RollNumbe
     }
 }
 
+public class BagNumberCounterConfiguration : IEntityTypeConfiguration<BagNumberCounter>
+{
+    public void Configure(EntityTypeBuilder<BagNumberCounter> builder)
+    {
+        builder.ToTable("BagNumberCounters", t =>
+            t.HasCheckConstraint("ck_bag_number_positive", "\"NextNumber\" > 0"));
+
+        // The day is the key: one row per day, added by the first bag of it.
+        builder.HasKey(e => e.Day);
+    }
+}
+
 public class RollTestReportConfiguration : IEntityTypeConfiguration<RollTestReport>
 {
     public void Configure(EntityTypeBuilder<RollTestReport> builder)

@@ -184,3 +184,36 @@ export const colorsApi = crudFor<ColorDto, { name: string; code: string }>('/api
 export const productsApi = crudFor<ProductDto, SaveProduct>('/api/products');
 export const productTypesApi = crudFor<LookupDto, { name: string }>('/api/product-types');
 export const materialsApi = crudFor<MaterialDto, SaveMaterial>('/api/materials');
+
+/**
+ * One of the factory's product codes — printed on every bag of a product in a colour
+ * (specification section 19.25). No colour means every colour, as the burger boxes have.
+ */
+export interface ProductCodeDto {
+  id: number;
+  productId: number;
+  productName: string;
+  colorId: number | null;
+  colorName: string | null;
+  code: string;
+}
+
+export interface SaveProductCode {
+  productId: number;
+  colorId: number | null;
+  code: string;
+}
+
+export const productCodesApi = {
+  list: (): Promise<ProductCodeDto[]> =>
+    apiRequest<ProductCodeDto[]>('/api/product-codes'),
+  create: (body: SaveProductCode): Promise<ProductCodeDto> =>
+    apiRequest<ProductCodeDto>('/api/product-codes', { method: 'POST', body }),
+  update: (id: number, body: SaveProductCode): Promise<ProductCodeDto> =>
+    apiRequest<ProductCodeDto>(`/api/product-codes/${String(id)}`, {
+      method: 'PUT',
+      body,
+    }),
+  remove: (id: number): Promise<undefined> =>
+    apiRequest<undefined>(`/api/product-codes/${String(id)}`, { method: 'DELETE' }),
+};

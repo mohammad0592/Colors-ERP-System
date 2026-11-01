@@ -1418,6 +1418,8 @@ The label also confirms the shift on the bag is the **thermo** shift (A), while 
 
 **Product code format:** `AB500B` = type (`AB` / `NOR`) + plates per bag (`500`) + colour letter (`B` = black). Generated from the bag's own attributes, so it can never disagree with them.
 
+*Changed in 19.25:* the product codes are now the factory's own list, kept in Master Data, and each bag's barcode is its bag code — `B050111261758`. The rule above only fills in for a product and colour the list does not have.
+
 ### Format
 
 - **QR code** recommended, since the workers use Android tablets and a camera reads QR at an angle and survives a damaged label better than a linear barcode.
@@ -1806,7 +1808,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-four changes, from watching the factory use the system. They are written here rather
+Twenty-five changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2491,6 +2493,44 @@ shift configuration and a Close button; now it has one **Save**.
 **What goes with it:** a shift's line configurations are reached from the menu, and those
 screens open the running shift. A closed or corrected shift's configuration is no longer
 one click from its window.
+
+### 19.25 Product codes and bag codes
+
+Every bag out of the thermo carries two codes: the **product code**, which says what kind
+of bag it is and is the same on every bag of that kind, and the **bag code**, which says
+which bag it is and is its barcode.
+
+**Product codes are the factory's own list.** `AB500B` for a black absorbent big plate,
+`LB03W` for a white 3-compartment lunch box, `N250P` for a pink normal small plate — and
+`BB` and `BS` for the large and small burger boxes, whatever their colour. They follow no
+single rule (blue is `AB500BLUE` on one plate and `N500BL` on another), so they are
+written down as the factory uses them rather than worked out:
+
+- Master Data has a **Product Codes** tab: a code for a product in a colour, or for a
+  product in *every colour*. A colour's own code comes before the every-colour one.
+- A code is on one row only, and a product has one code per colour.
+- The list was filled in from the factory's sheet on the first start after this change.
+  *Mixed* (محير) was the one colour the system did not have, and was added with it.
+- A product or colour with no code yet prints the code worked out by the old rule
+  (section 12), so a label is never printed with the code missing.
+- The code is read from the list each time a label, the stock screen or the thermo shift
+  report is made. Changing a code changes it on a reprinted label too.
+
+**The bag code is B, the bag's number that day, then the date and the 24-hour time it was
+counted:** `B050111261758` is the fifth bag of 1 November 2026, counted at 17:58.
+
+- It is the bag's barcode, as a roll's code is its barcode (section 8) — one code to
+  read, type and scan. Bags made before this change keep the barcodes they were printed
+  with.
+- The number counts every bag the thermo makes that day, across runs and shifts, and
+  starts again at 01 every day at midnight, which is where shift B ends. There is nothing
+  to reset by hand: the first bag of a day starts that day's count.
+- Two bags never share a code. The number is unique within a day, and the date in the
+  code is that day.
+- The date, time and midnight are the factory's clock. The tablet sends its time zone
+  with the counts, because the server keeps time in UTC and, on the cloud trial, runs in
+  a zone that is not the factory's.
+- Past 99 the number simply grows a digit — `B100…` — as the roll number does.
 ---
 ---
 ---

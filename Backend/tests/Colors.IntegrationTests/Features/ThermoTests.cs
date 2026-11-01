@@ -694,4 +694,96 @@ public class ThermoTests(DatabaseFixture fixture)
 
         Assert.False(again.IsSuccess);
     }
+
+    // ---------- bag codes (section 19.25) ----------
+    // Each test counts on a day of its own, far from today, so the day's count is its
+    // alone even though every test shares one database.
+
+    private static ThermoService ServiceAt(ColorsDbContext db, TimeProvider clock) =>
+        new(db, new BarcodeService(db, clock), clock);
+
+    [Fact]
+    public async Task Each_bag_is_coded_with_its_number_that_day_and_the_time()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "BGC1");
+        var first = await FinishedRunAsync(db, ids, "BGC1");
+        var second = await FinishedRunAsync(db, ids, "BGC1b");
+
+        // 14:58 UTC is 17:58 in the factory, three hours ahead.
+        var clock = new TestClock(new DateTimeOffset(2091, 3, 4, 14, 58, 0, TimeSpan.Zero));
+        var service = ServiceAt(db, clock);
+
+        var a = await service.SaveTestReportAsync(
+            first.Id, new SaveThermoTestRequest(3, 4m, 10m, 0m, null, UtcOffsetMinutes: 180), ids.UserId);
+        var b = await service.SaveTestReportAsync(
+            second.Id, new SaveThermoTestRequest(2, 4m, 10m, 0m, null, UtcOffsetMinutes: 180), ids.UserId);
+
+        Assert.True(a.IsSuccess, a.Message);
+        Assert.True(b.IsSuccess, b.Message);
+
+        // The count runs on across the day's runs: 01 to 03, then 04 and 05.
+        Assert.Equal(
+            ["B010403911758", "B020403911758", "B030403911758"],
+            a.Value!.Bags.Select(x => x.Barcode).Order(StringComparer.Ordinal));
+        Assert.Equal(
+            ["B040403911758", "B050403911758"],
+            b.Value!.Bags.Select(x => x.Barcode).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task The_bag_count_starts_again_at_midnight_where_shift_B_ends()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "BGC2");
+        var late = await FinishedRunAsync(db, ids, "BGC2");
+        var early = await FinishedRunAsync(db, ids, "BGC2b");
+
+        // 23:59 on the factory's clock, then two minutes later — the next day.
+        var clock = new TestClock(new DateTimeOffset(2091, 5, 6, 20, 59, 0, TimeSpan.Zero));
+        var service = ServiceAt(db, clock);
+
+        var beforeMidnight = await service.SaveTestReportAsync(
+            late.Id, new SaveThermoTestRequest(2, 4m, 10m, 0m, null, UtcOffsetMinutes: 180), ids.UserId);
+        clock.Advance(TimeSpan.FromMinutes(2));
+        var afterMidnight = await service.SaveTestReportAsync(
+            early.Id, new SaveThermoTestRequest(1, 4m, 10m, 0m, null, UtcOffsetMinutes: 180), ids.UserId);
+
+        Assert.Contains("B020605912359", beforeMidnight.Value!.Bags.Select(x => x.Barcode));
+        Assert.Equal("B010705910001", Assert.Single(afterMidnight.Value!.Bags).Barcode);
+    }
+
+    [Fact]
+    public async Task A_bag_is_found_by_its_code()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "BGC3");
+        var run = await FinishedRunAsync(db, ids, "BGC3");
+        var clock = new TestClock(new DateTimeOffset(2091, 7, 8, 9, 0, 0, TimeSpan.Zero));
+
+        var counted = await ServiceAt(db, clock).SaveTestReportAsync(
+            run.Id, new SaveThermoTestRequest(1, 4m, 10m, 0m, null, UtcOffsetMinutes: 180), ids.UserId);
+        var bag = Assert.Single(counted.Value!.Bags);
+
+        // Typed in lower case off a torn label, it is still the same bag.
+        var found = await new BarcodeService(db, clock).LookupAsync(bag.Barcode.ToLowerInvariant());
+
+        Assert.True(found.Value!.Found);
+        Assert.Equal("Bag", found.Value.ObjectType);
+        Assert.Equal(bag.Id, found.Value.ObjectId);
+    }
+
+    [Fact]
+    public async Task A_time_zone_that_does_not_exist_is_refused()
+    {
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "BGC4");
+        var run = await FinishedRunAsync(db, ids, "BGC4");
+
+        var counted = await NewService(db).SaveTestReportAsync(
+            run.Id, new SaveThermoTestRequest(1, 4m, 10m, 0m, null, UtcOffsetMinutes: 20 * 60), ids.UserId);
+
+        Assert.False(counted.IsSuccess);
+        Assert.Empty(await db.ProducedBags.Where(b => b.ThermoProductionId == run.Id).ToListAsync());
+    }
 }

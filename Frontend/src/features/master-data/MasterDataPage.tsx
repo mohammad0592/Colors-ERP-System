@@ -12,6 +12,7 @@ import {
 } from './api';
 import { LookupTab } from './LookupTab';
 import { MaterialsTab } from './MaterialsTab';
+import { ProductCodesTab } from './ProductCodesTab';
 import { ProductsTab } from './ProductsTab';
 
 type TabId =
@@ -21,6 +22,7 @@ type TabId =
   | 'categories'
   | 'colors'
   | 'products'
+  | 'productCodes'
   | 'productTypes'
   | 'lines'
   | 'shifts';
@@ -34,6 +36,8 @@ const tabs: { id: TabId; label: TranslationKey }[] = [
   { id: 'categories', label: 'md.categories' },
   { id: 'colors', label: 'md.colours' },
   { id: 'products', label: 'md.products' },
+  // The code on every bag of a product in a colour (section 19.25).
+  { id: 'productCodes', label: 'md.productCodes' },
   { id: 'productTypes', label: 'md.productTypes' },
   { id: 'lines', label: 'md.lines' },
   { id: 'shifts', label: 'md.shiftsTab' },
@@ -131,6 +135,8 @@ export function MasterDataPage(): ReactElement {
       )}
 
       {tab === 'products' && <ProductsTab />}
+
+      {tab === 'productCodes' && <ProductCodesTab />}
 
       {tab === 'productTypes' && (
         <LookupTab

@@ -128,6 +128,7 @@ public static class DependencyInjection
         services.AddScoped<IMaterialCategoryService, MaterialCategoryService>();
         services.AddScoped<IColorService, ColorService>();
         services.AddScoped<IProductService, ProductService>();
+        services.AddScoped<IProductCodeService, ProductCodeService>();
         services.AddScoped<IProductTypeService, ProductTypeService>();
         services.AddScoped<IMaterialService, MaterialService>();
 

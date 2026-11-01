@@ -3,6 +3,7 @@ using Colors.Application.Features.Inventory;
 using Colors.Domain.Common;
 using Colors.Domain.Enums;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.MasterData;
 using Microsoft.EntityFrameworkCore;
 
 namespace Colors.Infrastructure.Services.Inventory;
@@ -183,6 +184,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             .ToListAsync(cancellationToken);
 
         var codes = await CodesAsync(BarcodeObjectType.Bag, bags.Select(b => b.Id), cancellationToken);
+        var productCodes = await ProductCodeBook.LoadAsync(db, cancellationToken);
 
         // Which pallet a bag sits on. Only the live assignments — a bag taken off is
         // back in the store, and saying otherwise is exactly the mistake to avoid.
@@ -197,7 +199,7 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
                 "Bag",
                 b.Id,
                 codes.GetValueOrDefault(b.Id, string.Empty),
-                ProductCode.For(b.Product.IsAbsorbent, b.PieceCount, b.Color.Code),
+                productCodes.For(b.ProductId, b.ColorId, b.Product.IsAbsorbent, b.PieceCount, b.Color.Code),
                 $"{b.Product.Name} · {b.Color.Name}",
                 Spaced(b.Status.ToString()),
                 b.Status == ProducedBagStatus.Available,
@@ -313,7 +315,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             return Gone(barcode);
         }
 
-        var productCode = ProductCode.For(bag.Product.IsAbsorbent, bag.PieceCount, bag.Color.Code);
+        var productCode = (await ProductCodeBook.LoadAsync(db, cancellationToken))
+            .For(bag.ProductId, bag.ColorId, bag.Product.IsAbsorbent, bag.PieceCount, bag.Color.Code);
 
         return Result<BarcodeLabelDto>.Success(new BarcodeLabelDto(
             barcode,

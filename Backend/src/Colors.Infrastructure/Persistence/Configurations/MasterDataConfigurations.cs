@@ -102,6 +102,37 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
     }
 }
 
+public class ProductColourCodeConfiguration : IEntityTypeConfiguration<ProductColourCode>
+{
+    public void Configure(EntityTypeBuilder<ProductColourCode> builder)
+    {
+        builder.ToTable("ProductColourCodes");
+        builder.Property(e => e.Code).IsRequired().HasMaxLength(20);
+
+        // One code names one kind of bag, so a code is never on two rows.
+        builder.HasIndex(e => e.Code).IsUnique().HasDatabaseName("ux_product_colour_codes_code");
+
+        // One code for each product in each colour, and one for "every colour". Nulls are
+        // not distinct here, or a product could be given two every-colour codes.
+        builder.HasIndex(e => new { e.ProductId, e.ColorId })
+            .IsUnique()
+            .AreNullsDistinct(false)
+            .HasDatabaseName("ux_product_colour_codes_product_colour");
+
+        // Gone with the product or the colour only if those could be deleted, which they
+        // cannot once used — restrict, like the rest of the master data.
+        builder.HasOne(e => e.Product)
+            .WithMany()
+            .HasForeignKey(e => e.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(e => e.Color)
+            .WithMany()
+            .HasForeignKey(e => e.ColorId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 public class ProductTypeConfiguration : IEntityTypeConfiguration<ProductType>
 {
     public void Configure(EntityTypeBuilder<ProductType> builder)

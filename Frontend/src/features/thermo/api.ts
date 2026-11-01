@@ -183,7 +183,13 @@ export const thermoApi = {
       body: { finishedAt },
     }),
 
-  /** Saving the counts creates the bags and prints their labels. */
+  /**
+   * Saving the counts creates the bags and prints their labels.
+   *
+   * The tablet's time zone goes with it: each bag's code carries the date and time on the
+   * factory's clock, and its number starts again at the factory's midnight (section
+   * 19.25). The server keeps time in UTC and cannot tell which zone the factory is in.
+   */
   saveTest: (
     runId: number,
     body: {
@@ -196,6 +202,6 @@ export const thermoApi = {
   ): Promise<ThermoRunDto> =>
     apiRequest<ThermoRunDto>(`/api/thermo/runs/${String(runId)}/test`, {
       method: 'POST',
-      body,
+      body: { ...body, utcOffsetMinutes: -new Date().getTimezoneOffset() },
     }),
 };

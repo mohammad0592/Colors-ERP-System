@@ -340,6 +340,10 @@ public class ThermoService(
         var pieceCount = request.BagCount * product.PiecesPerBag;
         var now = timeProvider.GetUtcNow();
 
+        // The factory's own clock, for the bag codes: the date and time in them, and the
+        // day whose count the numbers come from (section 19.25).
+        var local = now.ToOffset(TimeSpan.FromMinutes(request.UtcOffsetMinutes));
+
         // The counts and the bags they describe are one act: bags with no report would
         // belong to nothing, and a report claiming bags nobody can scan is worse.
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
@@ -374,10 +378,21 @@ public class ThermoService(
         db.ProducedBags.AddRange(bags);
         await db.SaveChangesAsync(cancellationToken);
 
-        foreach (var bag in bags)
+        // The day's numbers, taken inside this transaction: the counter's row stays locked
+        // until it commits, so two tablets saving at once cannot both be handed 05, and a
+        // refusal below rolls it back so the numbers are not lost.
+        var firstNumber = await TakeBagNumbersAsync(
+            DateOnly.FromDateTime(local.DateTime), bags.Count, cancellationToken);
+
+        // Each bag's code is its barcode, as a roll's is (section 19.25): B, its number
+        // that day, the date and the time — B050111261758.
+        foreach (var (bag, index) in bags.Select((bag, index) => (bag, index)))
         {
             var barcode = await barcodes.IssueAsync(
-                BarcodeObjectType.Bag, bag.Id, cancellationToken);
+                BarcodeObjectType.Bag,
+                bag.Id,
+                BagCode.For(firstNumber + index, local),
+                cancellationToken);
 
             if (!barcode.IsSuccess)
             {
@@ -422,9 +437,42 @@ public class ThermoService(
             return "The weight of one bag is missing.";
         }
 
+        if (request.UtcOffsetMinutes is < MinUtcOffsetMinutes or > MaxUtcOffsetMinutes)
+        {
+            return "The tablet's time zone is not one that exists. Check its clock settings.";
+        }
+
         return request.AbsorbentPercentage is < 0 or > 100
             ? "The absorbency is a percentage, between 0 and 100."
             : null;
+    }
+
+    // The widest time zones there are, UTC-12 to UTC+14.
+    private const int MinUtcOffsetMinutes = -12 * 60;
+    private const int MaxUtcOffsetMinutes = 14 * 60;
+
+    /// <summary>
+    /// Takes <paramref name="count"/> numbers from the day's count and moves it on, in one
+    /// statement, returning the first. The first bag of a day adds its row, starting at 1;
+    /// that is the whole of the daily reset. The update locks the row until the caller's
+    /// transaction ends, so a second tablet waits rather than reading the same numbers.
+    /// </summary>
+    private async Task<int> TakeBagNumbersAsync(
+        DateOnly day,
+        int count,
+        CancellationToken cancellationToken)
+    {
+        var taken = await db.Database
+            .SqlQuery<int>(
+                $"""
+                 INSERT INTO "BagNumberCounters" ("Day", "NextNumber") VALUES ({day}, 1 + {count})
+                 ON CONFLICT ("Day") DO UPDATE
+                     SET "NextNumber" = "BagNumberCounters"."NextNumber" + {count}
+                 RETURNING "NextNumber" - {count} AS "Value"
+                 """)
+            .ToListAsync(cancellationToken);
+
+        return taken[0];
     }
 
     /// <summary>

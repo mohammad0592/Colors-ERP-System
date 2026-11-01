@@ -226,6 +226,89 @@ public static class MasterDataSeeder
 
         await db.SaveChangesAsync(cancellationToken);
 
+        // --- Product codes (specification section 19.25). Needs the products. ---
+        // The factory's own list, as it gave it: the code on every bag of a product in a
+        // colour, or in any colour for the burger boxes. Matched on the product's name and
+        // the colour's letter; a product or colour that has been renamed or removed is
+        // skipped, and its codes are typed in Master Data instead.
+        //
+        // "Mixed" (محير) is the one colour in the list the system did not have. It is
+        // added with the codes, and only then, so deleting it later does not bring it back.
+        if (!await db.ProductColourCodes.AnyAsync(cancellationToken))
+        {
+            if (!await db.Colors.AnyAsync(c => c.Code == "C", cancellationToken))
+            {
+                db.Colors.Add(new Color { Name = "Mixed", Code = "C" });
+                before++;
+                await db.SaveChangesAsync(cancellationToken);
+            }
+
+            var codes = new (string Product, string? Colour, string Code)[]
+            {
+                ("Absorbent Small Plate", "B", "AB250B"),
+                ("Absorbent Small Plate", "G", "AB250G"),
+                ("Absorbent Small Plate", "W", "AB250W"),
+                ("Absorbent Small Plate", "Y", "AB250Y"),
+                ("Absorbent Big Plate", "B", "AB500B"),
+                ("Absorbent Big Plate", "U", "AB500BLUE"),
+                ("Absorbent Big Plate", "C", "AB500C"),
+                ("Absorbent Big Plate", "G", "AB500G"),
+                ("Absorbent Big Plate", "W", "AB500W"),
+                ("Absorbent Big Plate", "Y", "AB500Y"),
+                ("1-Compartment Lunch Box", "B", "LB01B"),
+                ("1-Compartment Lunch Box", "W", "LB01W"),
+                ("3-Compartment Lunch Box", "B", "LB03B"),
+                ("3-Compartment Lunch Box", "W", "LB03W"),
+                ("Normal Small Plate", "B", "N250B"),
+                ("Normal Small Plate", "C", "N250C"),
+                ("Normal Small Plate", "G", "N250G"),
+                ("Normal Small Plate", "P", "N250P"),
+                ("Normal Small Plate", "W", "N250W"),
+                ("Normal Small Plate", "Y", "N250Y"),
+                ("Normal Big Plate", "B", "N500B"),
+                ("Normal Big Plate", "U", "N500BL"),
+                ("Normal Big Plate", "C", "N500C"),
+                ("Normal Big Plate", "G", "N500G"),
+                ("Normal Big Plate", "P", "N500P"),
+                ("Normal Big Plate", "W", "N500W"),
+                ("Normal Big Plate", "Y", "N500Y"),
+                ("Large Burger Box", null, "BB"),
+                ("Small Burger Box", null, "BS"),
+            };
+
+            var productIds = await db.Products.ToDictionaryAsync(p => p.Name, p => p.Id, cancellationToken);
+            var colourIds = await db.Colors.ToDictionaryAsync(c => c.Code, c => c.Id, cancellationToken);
+
+            foreach (var (product, colour, code) in codes)
+            {
+                if (!productIds.TryGetValue(product, out var productId))
+                {
+                    continue;
+                }
+
+                int? colourId = null;
+                if (colour is not null)
+                {
+                    if (!colourIds.TryGetValue(colour, out var id))
+                    {
+                        continue;
+                    }
+
+                    colourId = id;
+                }
+
+                db.ProductColourCodes.Add(new ProductColourCode
+                {
+                    ProductId = productId,
+                    ColorId = colourId,
+                    Code = code,
+                });
+                before++;
+            }
+
+            await db.SaveChangesAsync(cancellationToken);
+        }
+
         // --- Materials (specification section 4). Needs the ids saved above. ---
         var kg = await db.Units.SingleAsync(u => u.Name == "Kilogram", cancellationToken);
         var piece = await db.Units.SingleAsync(u => u.Name == "Piece", cancellationToken);

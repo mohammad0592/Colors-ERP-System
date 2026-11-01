@@ -1,16 +1,17 @@
 namespace Colors.Domain.Common;
 
 /// <summary>
-/// The product code the factory already prints on every bag label — <c>AB500B</c>
-/// (specification section 12).
+/// The product code worked out from a bag's own attributes — <c>AB500B</c> reads as
+/// absorbent, 500 pieces to a bag, black (specification section 12).
 ///
-/// <c>AB500B</c> reads as: absorbent, 500 pieces to a bag, black. It identifies the
-/// <i>kind</i> of bag, which is why it cannot be the barcode: every bag of black
-/// absorbent 500 carries the same one, so scanning it could never say <i>which</i> bag.
-/// It stays on the label as text because that is what people read.
+/// Only the fallback now. The codes the factory prints are kept in Master Data
+/// (<c>ProductColourCode</c>, section 19.25), because they follow no single rule; this
+/// fills in for a product and colour nobody has given a code yet, so a label is never
+/// printed with the code missing.
 ///
-/// Always derived from the bag's own attributes, never stored, so it cannot end up
-/// disagreeing with them.
+/// It identifies the <i>kind</i> of bag, which is why it cannot be the barcode: every bag
+/// of black absorbent 500 carries the same one, so scanning it could never say
+/// <i>which</i> bag.
 /// </summary>
 public static class ProductCode
 {

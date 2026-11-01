@@ -159,13 +159,20 @@ public sealed record LeaveRunUnfinishedRequest(string Reason, DateTimeOffset? Fi
 /// count, which is the bag count times the product's pieces per bag.
 ///
 /// <b>Saving this creates the bags and their barcodes.</b>
+///
+/// <c>UtcOffsetMinutes</c> is the tablet's distance from UTC — 180 for UTC+3. Each bag's
+/// code carries the date and time it was counted, and the number in it starts again
+/// every day at midnight (section 19.25), both on the factory's clock. The server keeps
+/// time in UTC, and on a cloud host its own zone is not the factory's, so the tablet
+/// says which zone the factory is in.
 /// </summary>
 public sealed record SaveThermoTestRequest(
     int BagCount,
     decimal PieceWeight,
     decimal BagWeight,
     decimal AbsorbentPercentage,
-    string? Notes);
+    string? Notes,
+    int UtcOffsetMinutes = 0);
 
 /// <summary>
 /// Line 2 — thermoforming (specification section 9).

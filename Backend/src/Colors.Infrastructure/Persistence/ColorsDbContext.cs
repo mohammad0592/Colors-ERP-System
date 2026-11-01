@@ -38,6 +38,7 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<Color> Colors => Set<Color>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<MovementType> MovementTypes => Set<MovementType>();
+    public DbSet<ProductColourCode> ProductColourCodes => Set<ProductColourCode>();
 
     // Inventory — specification section 6.
     public DbSet<MaterialInventory> MaterialInventory => Set<MaterialInventory>();
@@ -60,6 +61,7 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
     public DbSet<ThermoProduction> ThermoProductions => Set<ThermoProduction>();
     public DbSet<ThermoTestReport> ThermoTestReports => Set<ThermoTestReport>();
     public DbSet<ProducedBag> ProducedBags => Set<ProducedBag>();
+    public DbSet<BagNumberCounter> BagNumberCounters => Set<BagNumberCounter>();
 
     // Pallets and packaging — specification section 10.
     public DbSet<WoodenPallet> WoodenPallets => Set<WoodenPallet>();

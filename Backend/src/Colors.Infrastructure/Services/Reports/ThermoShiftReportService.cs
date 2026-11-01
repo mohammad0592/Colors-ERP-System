@@ -4,6 +4,7 @@ using Colors.Application.Features.Reports;
 using Colors.Domain.Common;
 using Colors.Infrastructure.Identity;
 using Colors.Infrastructure.Persistence;
+using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.Thermo;
 using Microsoft.EntityFrameworkCore;
 
@@ -62,6 +63,7 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
             .ToListAsync(cancellationToken);
 
         var earlier = await UnfinishedRuns.ForRollsAsync(db, runs.Select(p => p.RollId), cancellationToken);
+        var productCodes = await ProductCodeBook.LoadAsync(db, cancellationToken);
         var rolls = runs.Select(p => ToRollRow(p, earlier[p.RollId])).ToList();
         var counted = runs.Where(p => p.TestReport is not null && p.Roll.Weight is not null).ToList();
 
@@ -85,7 +87,8 @@ public class ThermoShiftReportService(ColorsDbContext db) : IThermoShiftReportSe
                                + (earlier[p.RollId].PlatesKg ?? 0m)), 3);
                 var scrap = Math.Round(rollWeight - productWeight, 3);
                 var codes = g
-                    .Select(p => ProductCode.For(product.IsAbsorbent, product.PiecesPerBag, p.Roll.Color.Code))
+                    .Select(p => productCodes.For(
+                        product.Id, p.Roll.ColorId, product.IsAbsorbent, product.PiecesPerBag, p.Roll.Color.Code))
                     .Distinct()
                     .Order();
 

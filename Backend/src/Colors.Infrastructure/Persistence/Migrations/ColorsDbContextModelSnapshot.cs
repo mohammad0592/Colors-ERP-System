@@ -547,6 +547,42 @@ namespace Colors.Infrastructure.Persistence.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Colors.Domain.Entities.MasterData.ProductColourCode", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int?>("ColorId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique()
+                        .HasDatabaseName("ux_product_colour_codes_code");
+
+                    b.HasIndex("ColorId");
+
+                    b.HasIndex("ProductId", "ColorId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_product_colour_codes_product_colour");
+
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("ProductId", "ColorId"), false);
+
+                    b.ToTable("ProductColourCodes", (string)null);
+                });
+
             modelBuilder.Entity("Colors.Domain.Entities.MasterData.ProductType", b =>
                 {
                     b.Property<int>("Id")
@@ -895,6 +931,22 @@ namespace Colors.Infrastructure.Persistence.Migrations
                             t.HasCheckConstraint("ck_pallets_shipped_together", "(\"ShippedAt\" IS NULL) = (\"ShippedByUserId\" IS NULL)");
 
                             t.HasCheckConstraint("ck_pallets_shipping_reversal_complete", "(\"ShippingReversedAt\" IS NULL) = (\"ShippingReversedByUserId\" IS NULL) AND (\"ShippingReversedAt\" IS NULL) = (\"ShippingReversalReason\" IS NULL) AND (\"ShippingReversedAt\" IS NULL OR \"ShippedAt\" IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.Production.BagNumberCounter", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<int>("NextNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Day");
+
+                    b.ToTable("BagNumberCounters", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_bag_number_positive", "\"NextNumber\" > 0");
                         });
                 });
 
@@ -2153,6 +2205,24 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Navigation("ProductType");
 
                     b.Navigation("RecipeFamily");
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.MasterData.ProductColourCode", b =>
+                {
+                    b.HasOne("Colors.Domain.Entities.MasterData.Color", "Color")
+                        .WithMany()
+                        .HasForeignKey("ColorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Colors.Domain.Entities.MasterData.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Color");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("Colors.Domain.Entities.Packaging.BagPalletAssignment", b =>
