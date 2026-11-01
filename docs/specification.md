@@ -1808,7 +1808,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-seven changes, from watching the factory use the system. They are written here rather
+Twenty-eight changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2622,6 +2622,24 @@ been used — the store cannot give back what it no longer holds.
 Everything on it that has not come back is returned to the store, so the ticket used nothing
 and every report reading it says so. A closed ticket is not cancelled: its material has been
 counted as used, and a mistake there is corrected by adjusting the store.
+
+### 19.28 A label for each kind
+
+A roll, a bag and a pallet each have a label laid out their own way, so they are told
+apart across the floor before anybody reads a word. All three stay 4 × 4 inches and keep
+the QR with the code printed beside it for typing in when the label is torn.
+
+- **Roll** — a black band across the top with a roll drawn in it and the roll's code.
+  Below, the QR on the left and the roll's facts on the right: the recipe in large
+  letters, then colour, weight, length, shift and date.
+- **Bag** — a plate drawn at the top beside the product code in the largest letters on
+  the label, with the product's name under it. Below, the facts on the left — the piece
+  count in a box of its own, colour, roll, shift and date — and the QR on the right, the
+  other way round from a roll's.
+- **Pallet** — nothing but the pallet's code at the top, a QR as large as the sticker
+  allows in the middle, and the general code at the bottom (19.26). What is on the pallet
+  is one scan away.
+
 ---
 ---
 ---
