@@ -1,5 +1,4 @@
 import { useState, type ReactElement } from 'react';
-import { Link } from 'react-router-dom';
 import { useTranslation } from '../../hooks/useTranslation';
 import { ConfirmDialog, type ConfirmRequest } from '../../components/ui/ConfirmDialog';
 import { Modal } from '../../components/ui/Modal';
@@ -8,7 +7,6 @@ import type { ProductionLineDto } from '../master-data/api';
 import type { PersonDto } from '../people/api';
 import { shiftReportsApi, type ShiftLineDto, type ShiftReportDto } from './api';
 import { formatDate } from './shiftFormat';
-import { shiftConfigFor } from './shiftConfigLines';
 import { ShiftStatusBadge } from './ShiftStatusBadge';
 
 interface ShiftReportDialogProps {
@@ -22,10 +20,14 @@ interface ShiftReportDialogProps {
 /**
  * The lines on a shift, and who runs each one (specification section 2).
  *
- * That is all the supervisor sets here. Each line's times, crew, notes and machine
- * settings are its operator's to fill in, on the Shift Configurations screen — and the
+ * That is all the supervisor sets here. Each line's times, staff, notes and machine
+ * settings are its operator's to fill in, on that line's Shift Configuration — and the
  * meter is shared there by every line. The supervisor himself is chosen when the shift
  * is opened.
+ *
+ * The operators are chosen first and saved together with one Save, which closes the
+ * window (section 19.24). Adding or taking off a line happens at once, as it changes the
+ * list being chosen from.
  */
 export function ShiftReportDialog({
   report,
@@ -40,6 +42,8 @@ export function ShiftReportDialog({
   const [error, setError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null);
+  // The operators picked but not yet saved, by line. A line not in here keeps its own.
+  const [chosen, setChosen] = useState<Record<number, number | null>>({});
 
   const missing = allLines.filter(
     (line) => !report.lines.some((onShift) => onShift.productionLineId === line.id),
@@ -50,6 +54,43 @@ export function ShiftReportDialog({
     setIsSaving(true);
     try {
       onChanged(await action());
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  /** The operator a line will have: the one picked here, or the one it has. */
+  function operatorOf(line: ShiftLineDto): number | null {
+    return line.id in chosen ? (chosen[line.id] ?? null) : line.operatorUserId;
+  }
+
+  /** Saves every operator that was changed, one line after another, and closes. */
+  async function save(): Promise<void> {
+    const changed = report.lines.filter(
+      (line) => operatorOf(line) !== line.operatorUserId,
+    );
+    if (changed.length === 0) {
+      onClose();
+      return;
+    }
+
+    setError(null);
+    setIsSaving(true);
+    try {
+      let latest = report;
+      for (const line of changed) {
+        latest = await shiftReportsApi.setLineOperator(
+          report.id,
+          line.id,
+          operatorOf(line),
+        );
+      }
+      onChanged(latest);
+      onClose();
     } catch (caught) {
       setError(
         caught instanceof ApiError ? caught.message : t('common.somethingWentWrong'),
@@ -113,14 +154,12 @@ export function ShiftReportDialog({
               <select
                 id={`operator-${String(line.id)}`}
                 className="field-input"
-                value={line.operatorUserId ?? ''}
+                value={operatorOf(line) ?? ''}
                 disabled={locked || isSaving}
                 onChange={(event) => {
-                  const chosen =
+                  const picked =
                     event.target.value === '' ? null : Number(event.target.value);
-                  void run(() =>
-                    shiftReportsApi.setLineOperator(report.id, line.id, chosen),
-                  );
+                  setChosen((current) => ({ ...current, [line.id]: picked }));
                 }}
               >
                 <option value="">{t('shifts.chooseOperator')}</option>
@@ -190,28 +229,22 @@ export function ShiftReportDialog({
         </p>
       )}
 
-      <div className="mt-6 flex flex-wrap gap-3">
-        {/* Each line's own configuration, for this shift (section 19.18). */}
-        {report.lines.map((line) => {
-          const config = shiftConfigFor(line);
-          return config === undefined ? null : (
-            <Link
-              key={line.id}
-              to={`${config.path}?shift=${String(report.id)}`}
-              className="btn-primary grid w-auto place-items-center px-6"
-            >
-              {t(config.label)}
-            </Link>
-          );
-        })}
-        <button
-          type="button"
-          className="min-h-touch rounded-control border border-line px-6 text-sm font-semibold text-ink-soft transition-colors hover:bg-canvas"
-          onClick={onClose}
-        >
-          {t('common.close')}
-        </button>
-      </div>
+      {/* One Save for the operators chosen above. A shift that can no longer be changed
+          has nothing to save, and closes with the cross. */}
+      {!locked && (
+        <div className="mt-6">
+          <button
+            type="button"
+            className="btn-primary"
+            disabled={isSaving}
+            onClick={() => {
+              void save();
+            }}
+          >
+            {isSaving ? t('common.saving') : t('common.save')}
+          </button>
+        </div>
+      )}
 
       {confirm !== null && (
         <ConfirmDialog

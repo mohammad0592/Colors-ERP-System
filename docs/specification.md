@@ -1806,7 +1806,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-three changes, from watching the factory use the system. They are written here rather
+Twenty-four changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2349,8 +2349,8 @@ the check back, the range belongs on the recipe, and the verdict follows from th
   menu: the line's times, crew, notes and, on the thermo, machine settings. Each line's
   operator opens only his own line's screen; the supervisor and the administrator open
   all three from the menu. Each screen shows its own line and nothing of the other two,
-  for the administrator too. A closed or corrected shift is reached from its window on
-  the Shifts screen, which has a button for each line that ran on it.
+  for the administrator too. They open the running shift; the buttons that once led from
+  a shift's window to each of its lines were taken out in 19.24.
 - **The electricity meter heads all three.** It is the factory's one meter (section 2), so
   a reading entered on any line's screen is the same reading on the others, with who
   entered it, and each screen picks up a new reading within half a minute.
@@ -2474,6 +2474,23 @@ changed. Such a roll comes out, goes back to stock half used, and goes in again 
   said on the run that finishes the roll, against the plates of all its runs, while each
   run's bags and pieces stay with the shift that made them. The shift summary follows the
   same rule.
+
+### 19.24 One Save for a shift's line operators
+
+The window that opens on a shift — straight after opening one, or from *Open report* on
+the Shifts screen — chooses who runs each line. Its foot had a button for each line's
+shift configuration and a Close button; now it has one **Save**.
+
+- The operators are chosen first and saved together when Save is pressed, which closes
+  the window. Picking one no longer saves it on the spot, so a wrong pick can be put
+  right before anything is written; the cross closes the window without saving.
+- Adding a line to the shift, or taking one off, still happens at once — it changes the
+  list being chosen from.
+- A shift that can no longer be changed has nothing to save, and shows no Save.
+
+**What goes with it:** a shift's line configurations are reached from the menu, and those
+screens open the running shift. A closed or corrected shift's configuration is no longer
+one click from its window.
 ---
 ---
 ---

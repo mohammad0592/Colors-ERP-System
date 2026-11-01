@@ -5,7 +5,8 @@ import type { ShiftLineDto } from './api';
 /**
  * The three shift configuration screens, one per line (specification section 19.18).
  *
- * Kept apart from the screen itself because the shift window links to them too.
+ * Kept apart from the screen itself, which reads them with the redirect from the old
+ * single address.
  */
 
 export type ShiftConfigKind = 'extruder' | 'thermo' | 'recycler';
@@ -39,11 +40,3 @@ export const shiftConfigLines: ShiftConfigLine[] = [
     matches: (line) => line.recycles,
   },
 ];
-
-/**
- * A line's own configuration screen, for links to it from elsewhere — the shift window
- * links to each line of its shift. Undefined for a line that is none of the three.
- */
-export function shiftConfigFor(line: ShiftLineDto): ShiftConfigLine | undefined {
-  return shiftConfigLines.find((kind) => kind.matches(line));
-}
