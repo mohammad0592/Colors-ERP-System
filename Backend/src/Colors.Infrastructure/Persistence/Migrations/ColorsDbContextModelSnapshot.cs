@@ -1557,6 +1557,96 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.ToTable("RecipeVersions", (string)null);
                 });
 
+            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ScheduledShift", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset?>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ChangedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("ExtruderStartingShift")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("NotOpenedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateOnly>("ProductionDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("ScheduledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ScheduledByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ShiftId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("ShiftReportId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("SupervisorUserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedByUserId");
+
+                    b.HasIndex("ScheduledByUserId");
+
+                    b.HasIndex("ShiftId");
+
+                    b.HasIndex("ShiftReportId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_scheduled_shifts_report");
+
+                    b.HasIndex("SupervisorUserId");
+
+                    b.HasIndex("ProductionDate", "ShiftId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_scheduled_shifts_date_shift");
+
+                    b.ToTable("ScheduledShifts", (string)null);
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ScheduledShiftLine", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("OperatorUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductionLineId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ScheduledShiftId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OperatorUserId");
+
+                    b.HasIndex("ProductionLineId");
+
+                    b.HasIndex("ScheduledShiftId", "ProductionLineId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_scheduled_shift_lines_shift_line");
+
+                    b.ToTable("ScheduledShiftLines", (string)null);
+                });
+
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftLine", b =>
                 {
                     b.Property<int>("Id")
@@ -2620,6 +2710,64 @@ namespace Colors.Infrastructure.Persistence.Migrations
                     b.Navigation("Family");
                 });
 
+            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ScheduledShift", b =>
+                {
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ScheduledByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Colors.Domain.Entities.MasterData.Shift", "Shift")
+                        .WithMany()
+                        .HasForeignKey("ShiftId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Colors.Domain.Entities.Shifts.ShiftReport", "ShiftReport")
+                        .WithMany()
+                        .HasForeignKey("ShiftReportId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SupervisorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Shift");
+
+                    b.Navigation("ShiftReport");
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ScheduledShiftLine", b =>
+                {
+                    b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("OperatorUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Colors.Domain.Entities.MasterData.ProductionLine", "ProductionLine")
+                        .WithMany()
+                        .HasForeignKey("ProductionLineId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Colors.Domain.Entities.Shifts.ScheduledShift", "ScheduledShift")
+                        .WithMany("Lines")
+                        .HasForeignKey("ScheduledShiftId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProductionLine");
+
+                    b.Navigation("ScheduledShift");
+                });
+
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftLine", b =>
                 {
                     b.HasOne("Colors.Infrastructure.Identity.ApplicationUser", null)
@@ -2831,6 +2979,11 @@ namespace Colors.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Colors.Domain.Entities.Recipes.RecipeVersion", b =>
                 {
                     b.Navigation("Ingredients");
+                });
+
+            modelBuilder.Entity("Colors.Domain.Entities.Shifts.ScheduledShift", b =>
+                {
+                    b.Navigation("Lines");
                 });
 
             modelBuilder.Entity("Colors.Domain.Entities.Shifts.ShiftLine", b =>

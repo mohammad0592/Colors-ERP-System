@@ -205,6 +205,7 @@ Any host that runs a Docker image will do — Railway, Render, Fly.io, or a plai
 | `ConnectionStrings__ColorsDb` | The database. Most hosts instead give you `DATABASE_URL`, which the system reads by itself. |
 | `Jwt__SigningKey` | Any 32+ random characters. Different from the factory server's. |
 | `Seed__AdminPassword` | The first administrator's password. Everyone else is created from the Users screen. |
+| `Factory__TimeZone` | The factory's time zone, for example `Asia/Hebron`. The host's clock is UTC, and scheduled shifts open by the factory's time (specification section 19.30). |
 
 Two are already set inside the image and should be left alone: `Hosting__BehindProxy=true`, because every host handles HTTPS itself and the system has to be told so or the site never loads, and `Database__MigrateOnStartup=true`, because a container has no console to run migrations from.
 

@@ -124,6 +124,7 @@ const layout: {
     items: [
       { label: 'nav.recipes', path: '/recipes', icon: 'recipe' },
       { label: 'nav.shifts', path: '/shifts', icon: 'shift' },
+      { label: 'nav.shiftSchedule', path: '/shift-schedule', icon: 'calendar' },
       { label: 'nav.masterData', path: '/master-data', icon: 'settings' },
       { label: 'nav.users', path: '/users', icon: 'users' },
     ],

@@ -32,7 +32,7 @@ public class ThermoTests(DatabaseFixture fixture)
     /// A roll off the extruder, measured, and therefore ready for the thermo. Built
     /// through the real service so the test stands on the same path the factory uses.
     /// </summary>
-    private static async Task<RollDto> AvailableRollAsync(
+    internal static async Task<RollDto> AvailableRollAsync(
         ColorsDbContext db,
         FactoryData.Ids ids,
         string suffix,

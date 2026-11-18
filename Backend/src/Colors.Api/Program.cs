@@ -1,5 +1,6 @@
 ﻿using Colors.Api.Auditing;
 using Colors.Api.Extensions;
+using Colors.Api.Hosting;
 using Colors.Application.Common.Auditing;
 using Colors.Infrastructure;
 using Colors.Infrastructure.Persistence.Seed;
@@ -35,6 +36,9 @@ builder.Services.AddScoped<ICurrentEntry, CurrentEntry>();
 
 // Refusals are written on their own scope, after the man already has his answer.
 builder.Services.AddSingleton<RefusalLog>();
+
+// Opens and closes the scheduled shifts at their times (specification section 19.30).
+builder.Services.AddHostedService<ShiftScheduleClock>();
 
 // Reading and checking the access token on every request.
 builder.Services.AddJwtAuthentication(builder.Configuration);

@@ -14,6 +14,7 @@ using Colors.Application.Features.Pallets;
 using Colors.Application.Features.People;
 using Colors.Application.Features.Recipes;
 using Colors.Application.Features.ShiftReports;
+using Colors.Application.Features.ShiftSchedule;
 using Colors.Application.Features.Trace;
 using Colors.Application.Features.Users;
 using Colors.Application.Features.Thermo;
@@ -28,6 +29,7 @@ using Colors.Infrastructure.Services.Inventory;
 using Colors.Infrastructure.Services.MasterData;
 using Colors.Infrastructure.Services.MaterialIssue;
 using Colors.Infrastructure.Services.Production;
+using Colors.Infrastructure.Services.ShiftSchedule;
 using Colors.Infrastructure.Services.Packaging;
 using Colors.Infrastructure.Services.Recycler;
 using Colors.Infrastructure.Services.Reports;
@@ -137,6 +139,12 @@ public static class DependencyInjection
 
         // Shift reports (specification section 2).
         services.AddScoped<IShiftReportService, ShiftReportService>();
+
+        // Tomorrow's shifts, planned the day before (specification section 19.30). The
+        // zone is read once, at startup, so a wrong name stops the API there and then.
+        var factoryZone = FactoryClock.ZoneFrom(configuration["Factory:TimeZone"]);
+        services.AddSingleton(provider => new FactoryClock(provider.GetRequiredService<TimeProvider>(), factoryZone));
+        services.AddScoped<IShiftScheduleService, ShiftScheduleService>();
 
         // People, read only — every screen that has to name somebody.
         services.AddScoped<IPeopleService, PeopleService>();

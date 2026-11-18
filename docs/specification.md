@@ -1808,7 +1808,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Twenty-nine changes, from watching the factory use the system. They are written here rather
+Thirty changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2670,6 +2670,62 @@ as a dash.
 
 A bag cancelled by a count correction no longer scans anywhere else, but a trace of its
 roll still names it by its code, with the reason.
+
+### 19.30 Tomorrow's shifts are planned the day before
+
+**Built.** A *Shift Scheduling* screen, for the supervisor and the administrator, plans
+**tomorrow's** shifts — never today's, never further ahead. The point is that nobody is
+deciding at 07:55 who runs the extruder: the day before, the supervisor sets each shift
+up, and at its time the system opens it with that set-up and closes it at its end.
+
+**What a plan holds:** the shift, its supervisor, the lines that will run, and each line's
+operator — chosen only from people holding that line's job, the same rule as on an open
+shift (section 2). The extruder's starting shift (19.16) can be ticked too. The **workers**
+on each line are not planned; they are added on the day, once the shift is open. An
+operator may also be left to be named on the day.
+
+**Changing a plan:** it can be changed or cancelled until its shift starts. From then on
+it is an ordinary shift, changed on the Shifts screen like any other.
+
+**Opening:** at the shift's start, within half a minute, the system opens the shift from
+the plan. The shift records the man who planned it as the one who opened it, and its notes
+say it was opened by the schedule. If a shift is still running — the factory works one
+at a time (section 2) — it is closed first.
+
+**Work still open carries over.** The factory chose this over making the shift wait: at
+the change, a roll still in the thermo and an issue ticket not yet weighed back move to
+the new shift, and their output and waste count to it. If the new shift was not planned
+with that line, the line is added, because the roll in the machine means the line is
+running. Both shifts' notes name what moved. Batches end with the old shift as they always
+do (section 8).
+
+**Closing:** a scheduled shift closes itself at its end. If a roll is still in the thermo
+or a ticket still out and **no** shift comes after it to take them over, it stays open
+past its end — closing would strand that work on a closed shift — and the screen shows it
+as past its end. It closes by itself once they are finished, or when the next scheduled
+shift opens and takes them over. A shift closed by the schedule has nobody in *closed by*;
+its notes say the schedule closed it.
+
+**When it does not open:** if the system was off for the whole of a shift, the plan is
+marked as never opened, with the hours, rather than opening hours late. A shift opened
+by the schedule and then discarded as a mistake is not opened again.
+
+**Opening by hand stays.** A shift that was not planned is still opened on the Shifts
+screen. Only shifts opened from a plan close themselves; one opened by hand is closed by
+hand, unless a planned shift starts and closes it.
+
+**The factory's clock.** The server opens shifts by the factory's time. On the factory
+server that is the machine's own clock. A host in another zone — the cloud trial runs on
+UTC — is given `Factory:TimeZone` (for example `Asia/Hebron`), or every shift opens
+hours out.
+
+**`ScheduledShifts`** — Id · ProductionDate · ShiftId · SupervisorUserId ·
+ExtruderStartingShift · ScheduledByUserId · ScheduledAt · ChangedByUserId · ChangedAt ·
+**ShiftReportId** (the shift it became) · NotOpenedReason.
+Unique on (ProductionDate, ShiftId); a shift is opened from one plan at most.
+
+**`ScheduledShiftLines`** — Id · ScheduledShiftId · ProductionLineId · OperatorUserId.
+Unique on (ScheduledShiftId, ProductionLineId).
 
 ---
 ---

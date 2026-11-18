@@ -119,6 +119,10 @@ export const screenAccess = {
   // administrator's, which the screen and the server both enforce (section 2).
   '/shifts': [Administrator, Supervisor],
 
+  // Planning tomorrow's shifts is opening them in advance, so it is the same people's
+  // job (section 19.30).
+  '/shift-schedule': [Administrator, Supervisor],
+
   // Master data changes affect every screen, and who may sign in affects everything.
   // The administrator's alone (section 3).
   '/master-data': [Administrator],

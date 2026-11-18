@@ -99,6 +99,7 @@ export const en = {
   'nav.audit': 'Audit log',
   'nav.recipes': 'Recipes',
   'nav.shifts': 'Shifts',
+  'nav.shiftSchedule': 'Shift Scheduling',
   'nav.masterData': 'Master Data',
   'nav.users': 'Users',
   'nav.collapse': 'Collapse',
@@ -146,6 +147,9 @@ export const en = {
   'page.recipes.subtitle': 'The main recipes and every version.',
   'page.shifts.title': 'Shifts',
   'page.shifts.subtitle': 'One record per shift. Close it when the work is finished.',
+  'page.schedule.title': 'Shift Scheduling',
+  'page.schedule.subtitle':
+    "Plan tomorrow's shifts. Each opens and closes by itself at its time.",
   'page.masterData.title': 'Master Data',
   'page.users.title': 'Users',
   'page.users.subtitle': 'Staff: who may sign in, and what each of them may do.',
@@ -1076,6 +1080,47 @@ export const en = {
   'refusal.roll.productWrongRecipe':
     '{0} is not made from {1}. Choose a product this recipe makes.',
   'refusal.roll.recipeRetired': '{0} is no longer used. Choose one of the main recipes.',
+  'schedule.tomorrow': 'Tomorrow',
+  'schedule.today': 'Today',
+  'schedule.planShift': 'Plan shift',
+  'schedule.opensItself': 'It opens by itself at its start and closes at its end.',
+  'schedule.whichLines': 'Lines that will run',
+  'schedule.operator': 'Operator',
+  'schedule.nameOnTheDay': 'Named on the day',
+  'schedule.crewOnTheDay':
+    'The workers on each line are added on the day, once the shift is open.',
+  'schedule.savePlan': 'Save plan',
+  'schedule.saveChanges': 'Save changes',
+  'schedule.loadFailed': 'Could not load the shift schedule.',
+  'schedule.cancelThis': 'Cancel this plan?',
+  'schedule.cancelMessage':
+    'Shift {0} on {1} will not open by itself. It can still be opened by hand on the Shifts screen.',
+  'schedule.cancelPlan': 'Cancel plan',
+  'schedule.notPlannedYet': 'Not planned yet.',
+  'schedule.notPlannedToday':
+    'Not planned. A shift needed today is opened by hand on the Shifts screen.',
+  'schedule.overrunningNote':
+    'Past its end time and still open: a roll is in the thermo or a ticket is still out. It closes by itself once they are finished, or when the next shift starts and takes them over.',
+  'schedule.plannedBy': 'Planned by',
+  'schedule.changedBy': 'changed by',
+  'schedule.status.planned': 'Planned',
+  'schedule.status.running': 'Running',
+  'schedule.status.overrunning': 'Past its end',
+  'schedule.status.finished': 'Finished',
+  'schedule.status.notOpened': 'Never opened',
+  'refusal.shiftSchedule.tomorrowOnly': 'Shifts are planned for tomorrow only, {0}.',
+  'refusal.shiftSchedule.alreadyPlanned':
+    'Shift {0} is already planned for that day. Change that plan instead.',
+  'refusal.shiftSchedule.alreadyOpened': 'Shift {0} on that day has already been opened.',
+  'refusal.shiftSchedule.alreadyOpenedChange':
+    'Shift {0} has already opened. Change it on the Shifts screen.',
+  'refusal.shiftSchedule.alreadyStarted':
+    'Shift {0} has already started, so its plan can no longer be changed.',
+  'refusal.shiftSchedule.notFound': 'This planned shift does not exist.',
+  'refusal.shiftSchedule.chooseALine':
+    'Choose at least one line that will run this shift.',
+  'refusal.shiftSchedule.chooseActiveSupervisor':
+    'Choose an active person as the supervisor.',
 } as const;
 
 /** Every key the screens may ask for. */

@@ -715,6 +715,19 @@ public class ShiftReportService(
                 "This shift already has workers recorded on it. Close it instead.", "shift.hasWorkers");
         }
 
+        // A shift opened from the schedule lets go of its plan, and the plan says why.
+        // Left pointing at nothing, the plan would look unopened and the next check of the
+        // clock would open the shift again (section 19.30).
+        var plans = await db.ScheduledShifts
+            .Where(s => s.ShiftReportId == id)
+            .ToListAsync(cancellationToken);
+
+        foreach (var plan in plans)
+        {
+            plan.ShiftReportId = null;
+            plan.NotOpenedReason = "It opened, and was then discarded as opened by mistake.";
+        }
+
         db.Set<ShiftReport>().Remove(report);
 
         try
@@ -764,7 +777,8 @@ public class ShiftReportService(
     /// rolls is run by an extruder operator, and so on. Null for a line that does none of
     /// the three, which takes anybody.
     /// </summary>
-    private static string? OperatorRoleFor(ProductionLine line) =>
+    // Internal so the shift schedule asks the same question the same way (section 19.30).
+    internal static string? OperatorRoleFor(ProductionLine line) =>
         line.MakesRolls ? RoleNames.ExtruderOperator
         : line.FormsBags ? RoleNames.ThermoOperator
         : line.Recycles ? RoleNames.RecyclerOperator

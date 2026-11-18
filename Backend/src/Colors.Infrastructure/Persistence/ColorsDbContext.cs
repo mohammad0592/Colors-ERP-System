@@ -97,6 +97,10 @@ public class ColorsDbContext(DbContextOptions<ColorsDbContext> options)
 
     public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
 
+    // Tomorrow's shifts, planned the day before — specification section 19.30.
+    public DbSet<ScheduledShift> ScheduledShifts => Set<ScheduledShift>();
+    public DbSet<ScheduledShiftLine> ScheduledShiftLines => Set<ScheduledShiftLine>();
+
     /// <summary>
     /// Hands out the recipe numbers the factory says out loud — "recipe 8".
     ///

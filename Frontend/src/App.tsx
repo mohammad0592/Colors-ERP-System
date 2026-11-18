@@ -24,6 +24,7 @@ import {
   ShiftConfigurationsPage,
 } from './features/shifts/ShiftConfigurationsPage';
 import { ShiftsPage } from './features/shifts/ShiftsPage';
+import { ShiftSchedulePage } from './features/shift-schedule/ShiftSchedulePage';
 import { UsersPage } from './features/users/UsersPage';
 import { TracePage } from './features/trace/TracePage';
 import { ThermoProductionPage } from './features/thermo/ThermoProductionPage';
@@ -85,6 +86,7 @@ const screens: { path: ScreenPath; element: ReactElement }[] = [
   { path: '/audit', element: <AuditPage /> },
   { path: '/recipes', element: <RecipesPage /> },
   { path: '/shifts', element: <ShiftsPage /> },
+  { path: '/shift-schedule', element: <ShiftSchedulePage /> },
   { path: '/master-data', element: <MasterDataPage /> },
   { path: '/users', element: <UsersPage /> },
 ];

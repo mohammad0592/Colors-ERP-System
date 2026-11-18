@@ -181,3 +181,78 @@ public class StaffMemberConfiguration : IEntityTypeConfiguration<StaffMember>
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+
+public class ScheduledShiftConfiguration : IEntityTypeConfiguration<ScheduledShift>
+{
+    public void Configure(EntityTypeBuilder<ScheduledShift> builder)
+    {
+        builder.ToTable("ScheduledShifts");
+
+        builder.Property(e => e.NotOpenedReason).HasMaxLength(500);
+
+        // A shift is planned once a day. Two plans for the same shift would both try to
+        // open it, and the second would find it already open.
+        builder.HasIndex(e => new { e.ProductionDate, e.ShiftId })
+            .IsUnique()
+            .HasDatabaseName("ux_scheduled_shifts_date_shift");
+
+        // A shift is opened from one plan at most.
+        builder.HasIndex(e => e.ShiftReportId)
+            .IsUnique()
+            .HasDatabaseName("ux_scheduled_shifts_report");
+
+        builder.HasOne(e => e.Shift)
+            .WithMany()
+            .HasForeignKey(e => e.ShiftId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Restrict, not set-null: a plan that quietly lost its shift would look unopened,
+        // and the next check would open the shift a second time. Discarding a shift
+        // unhooks its plan on purpose and says why.
+        builder.HasOne(e => e.ShiftReport)
+            .WithMany()
+            .HasForeignKey(e => e.ShiftReportId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        foreach (var userFk in new[]
+                 {
+                     nameof(ScheduledShift.SupervisorUserId),
+                     nameof(ScheduledShift.ScheduledByUserId),
+                     nameof(ScheduledShift.ChangedByUserId),
+                 })
+        {
+            builder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(userFk)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+    }
+}
+
+public class ScheduledShiftLineConfiguration : IEntityTypeConfiguration<ScheduledShiftLine>
+{
+    public void Configure(EntityTypeBuilder<ScheduledShiftLine> builder)
+    {
+        builder.ToTable("ScheduledShiftLines");
+
+        // A line is planned once in a shift, as it appears once in a shift.
+        builder.HasIndex(e => new { e.ScheduledShiftId, e.ProductionLineId })
+            .IsUnique()
+            .HasDatabaseName("ux_scheduled_shift_lines_shift_line");
+
+        builder.HasOne(e => e.ScheduledShift)
+            .WithMany(s => s.Lines)
+            .HasForeignKey(e => e.ScheduledShiftId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne(e => e.ProductionLine)
+            .WithMany()
+            .HasForeignKey(e => e.ProductionLineId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<ApplicationUser>()
+            .WithMany()
+            .HasForeignKey(e => e.OperatorUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
