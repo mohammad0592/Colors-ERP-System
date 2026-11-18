@@ -42,7 +42,6 @@ export function ProducedStockTab({
     RoleNames.Administrator,
     RoleNames.Supervisor,
     RoleNames.ThermoOperator,
-    RoleNames.PackagingOperator,
   );
   const [defective, setDefective] = useState<{ id: number; barcode: string } | null>(
     null,

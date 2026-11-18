@@ -21,7 +21,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
     private static ShiftReportService NewService(Infrastructure.Persistence.ColorsDbContext db) =>
         new(db, TimeProvider.System, NullLogger<ShiftReportService>.Instance);
 
-    private static async Task<(int Operator, int TestPerson)> ExtruderRolesAsync(
+    private static async Task<(int Extruder, int Recycler)> TwoJobsAsync(
         Infrastructure.Persistence.ColorsDbContext db)
     {
         async Task<int> Ensure(string name)
@@ -36,7 +36,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
             return role.Id;
         }
 
-        return (await Ensure(RoleNames.ExtruderOperator), await Ensure(RoleNames.ExtruderTestPerson));
+        return (await Ensure(RoleNames.ExtruderOperator), await Ensure(RoleNames.RecyclerOperator));
     }
 
     // These are about the crew, not about who may write it, so the supervisor writes.
@@ -50,10 +50,10 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "ROLE1");
-        var (op, test) = await ExtruderRolesAsync(db);
+        var (op, test) = await TwoJobsAsync(db);
 
-        // He runs the extruder and takes its measurements. Forcing one would make the
-        // record say he ran the machine and say nothing about the testing.
+        // He runs the extruder and, short-handed, the recycler too. Forcing one would make
+        // the record say he ran one machine and say nothing about the other.
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,
             ids.ShiftLineId,
@@ -66,7 +66,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
         Assert.Contains(op, worker.RoleInShiftIds);
         Assert.Contains(test, worker.RoleInShiftIds);
         Assert.Contains(RoleNames.ExtruderOperator, worker.RoleInShiftNames);
-        Assert.Contains(RoleNames.ExtruderTestPerson, worker.RoleInShiftNames);
+        Assert.Contains(RoleNames.RecyclerOperator, worker.RoleInShiftNames);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "ROLE2");
-        var (op, _) = await ExtruderRolesAsync(db);
+        var (op, _) = await TwoJobsAsync(db);
 
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,
@@ -123,7 +123,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "ROLE5");
-        var (op, test) = await ExtruderRolesAsync(db);
+        var (op, test) = await TwoJobsAsync(db);
         var service = NewService(db);
 
         await service.UpdateLineAsync(ids.ShiftReportId, ids.ShiftLineId,
@@ -153,7 +153,7 @@ public class ShiftWorkerRoleTests(DatabaseFixture fixture)
     {
         await using var db = fixture.CreateContext();
         var ids = await FactoryData.CreateAsync(db, "ROLE6");
-        var (op, test) = await ExtruderRolesAsync(db);
+        var (op, test) = await TwoJobsAsync(db);
 
         var saved = await NewService(db).UpdateLineAsync(
             ids.ShiftReportId,

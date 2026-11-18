@@ -6,7 +6,7 @@ namespace Colors.Domain.Entities.Packaging;
 /// <summary>
 /// What packaging a shift used (specification section 10).
 ///
-/// Recorded once, at the end, by the Packaging Operator — one per line per shift. It is
+/// Recorded once, at the end, by the Thermo Operator — one per line per shift. It is
 /// a header with a line per material rather than a column per material, so adding a new
 /// packaging material is a row in Master Data and not a migration.
 /// </summary>

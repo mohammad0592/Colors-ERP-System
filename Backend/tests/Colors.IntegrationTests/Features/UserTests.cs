@@ -87,7 +87,7 @@ public class UserTests(DatabaseFixture fixture)
             number,
             "علي حمدان",
             "Colors123",
-            [RoleNames.ExtruderOperator, RoleNames.ExtruderTestPerson]));
+            [RoleNames.ExtruderOperator, RoleNames.RecyclerOperator]));
 
         Assert.True(created.IsSuccess, created.Message);
         Assert.Equal(number, created.Value!.EmployeeNumber);
@@ -97,7 +97,7 @@ public class UserTests(DatabaseFixture fixture)
         // (specification section 3).
         Assert.Equal(2, created.Value.Roles.Count);
         Assert.Contains(RoleNames.ExtruderOperator, created.Value.Roles);
-        Assert.Contains(RoleNames.ExtruderTestPerson, created.Value.Roles);
+        Assert.Contains(RoleNames.RecyclerOperator, created.Value.Roles);
     }
 
     [Fact]
@@ -176,11 +176,11 @@ public class UserTests(DatabaseFixture fixture)
             Number(),
             "Test Person",
             "Colors123",
-            [RoleNames.ThermoOperator, RoleNames.PackagingOperator]));
+            [RoleNames.ThermoOperator, RoleNames.RecyclerOperator]));
 
         var id = created.Value!.Id;
 
-        // The factory hires a packer: one role moves off this man, nothing is rebuilt.
+        // The factory hires a recycler operator: one role moves off this man, nothing is rebuilt.
         var updated = await service.UpdateAsync(
             id,
             new UpdateUserRequest(

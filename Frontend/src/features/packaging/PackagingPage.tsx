@@ -30,11 +30,7 @@ export function PackagingPage(): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const canRecord = hasRole(
-    RoleNames.Administrator,
-    RoleNames.PackagingOperator,
-    RoleNames.ThermoOperator,
-  );
+  const canRecord = hasRole(RoleNames.Administrator, RoleNames.ThermoOperator);
 
   const [recording, setRecording] = useState<StartableLine | null>(null);
   const [typed, setTyped] = useState<

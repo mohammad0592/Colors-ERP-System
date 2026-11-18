@@ -6,6 +6,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Icon } from '../../components/ui/Icon';
 import { useAuth } from '../../hooks/useAuth';
+import { rolesFor, type ScreenPath } from '../../routes/access';
 import { formatDate } from '../shifts/shiftFormat';
 import { dashboardApi, type DashboardAlertDto } from './api';
 
@@ -23,7 +24,7 @@ const shortcutPaths = [
  * Where each kind of waiting work is done, so a count is something the reader can act
  * on rather than a number to worry about.
  */
-const alertGoesTo: Record<string, string> = {
+const alertGoesTo: Record<string, ScreenPath> = {
   'material-low': '/inventory',
   'ticket-open': '/inventory/issue',
   'roll-in-thermo': '/production/thermo',
@@ -100,10 +101,10 @@ export function DashboardPage(): ReactElement {
 
       {shift === null ? (
         <section className="card mb-6 p-6">
-          <h2 className="text-lg font-semibold text-ink">{t('dashboard.noShiftIsOpen')}</h2>
-          <p className="mt-2 max-w-2xl text-ink-soft">
-            {t('dashboard.noShiftLong')}
-          </p>
+          <h2 className="text-lg font-semibold text-ink">
+            {t('dashboard.noShiftIsOpen')}
+          </h2>
+          <p className="mt-2 max-w-2xl text-ink-soft">{t('dashboard.noShiftLong')}</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <Fact label={t('dashboard.signedInAs')} value={user?.fullName ?? ''} />
             <Fact label={t('field.employeeNumber')} value={user?.employeeNumber ?? ''} />
@@ -129,7 +130,10 @@ export function DashboardPage(): ReactElement {
               <Fact label={t('field.rollsMade')} value={String(summary.rollsProduced)} />
               <Fact label={t('field.rollsFormed')} value={String(summary.rollsFormed)} />
               <Fact label={t('term.bags')} value={String(summary.bagCount)} />
-              <Fact label={t('dashboard.palletsFinished')} value={String(summary.palletsCompleted)} />
+              <Fact
+                label={t('dashboard.palletsFinished')}
+                value={String(summary.palletsCompleted)}
+              />
               <Fact
                 label={t('field.lostInForming')}
                 value={
@@ -186,7 +190,15 @@ export function DashboardPage(): ReactElement {
  * shift needs to know which of these is merely untidy and which will refuse him.
  */
 function Alert({ alert }: { alert: DashboardAlertDto }): ReactElement {
-  const to = alertGoesTo[alert.kind];
+  const { hasRole } = useAuth();
+  const path = alertGoesTo[alert.kind];
+  const roles = path === undefined ? undefined : rolesFor(path);
+
+  // Linked only where the reader may go. A supervisor sees the open tickets that hold
+  // his shift, but the issue screen is the storekeeper's (section 19.31) — a link that
+  // turns him away is worse than none.
+  const to =
+    path !== undefined && (roles === undefined || hasRole(...roles)) ? path : undefined;
 
   const body = (
     <>

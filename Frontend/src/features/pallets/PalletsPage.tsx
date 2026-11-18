@@ -31,11 +31,7 @@ export function PalletsPage(): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const canPack = hasRole(
-    RoleNames.Administrator,
-    RoleNames.PackagingOperator,
-    RoleNames.ThermoOperator,
-  );
+  const canPack = hasRole(RoleNames.Administrator, RoleNames.ThermoOperator);
   const canReverse = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
 
   const [openOnly, setOpenOnly] = useState(true);

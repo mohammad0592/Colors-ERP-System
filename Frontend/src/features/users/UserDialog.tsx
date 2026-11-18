@@ -9,9 +9,8 @@ import { PasswordInput } from '../../components/ui/PasswordInput';
 /**
  * Adding a worker, or changing one (specification section 3).
  *
- * The roles are tick boxes rather than a single choice, because one man is the extruder
- * operator and its test person today and the factory wants to split those later without
- * anything being rebuilt.
+ * The roles are tick boxes rather than a single choice, because a man who runs two
+ * lines holds both their roles.
  *
  * There is no delete. Production records name people for ever, so somebody who leaves is
  * marked as no longer working here and keeps their history.

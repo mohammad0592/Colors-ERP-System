@@ -20,13 +20,10 @@ public static class IdentitySeeder
     private static readonly Dictionary<string, string> RoleDescriptions = new()
     {
         [RoleNames.Administrator] = "Users, master data, recipes, system settings, backups, corrections.",
-        [RoleNames.Supervisor] = "Recipe versions, inventory adjustments, opening and closing shifts, approving corrections.",
+        [RoleNames.Supervisor] = "Opening, closing and planning shifts, inventory adjustments, approving corrections.",
         [RoleNames.InventoryManager] = "Receives materials, issues tickets, records returns.",
-        [RoleNames.ExtruderOperator] = "Line 1 — creates batches and rolls, prints roll barcodes.",
-        [RoleNames.ExtruderTestPerson] = "Line 1 — records roll test reports: weight, length, plate weight, thickness.",
-        [RoleNames.ThermoOperator] = "Line 2 — consumes rolls, records forming, creates produced bags.",
-        [RoleNames.ThermoTestPerson] = "Line 2 — records thermo test reports: plate weight, absorbent percentage.",
-        [RoleNames.PackagingOperator] = "Line 2 — creates pallets, scans bags onto them, records packaging materials.",
+        [RoleNames.ExtruderOperator] = "Line 1 — batches and rolls, weighing them and testing them.",
+        [RoleNames.ThermoOperator] = "Line 2 — forming rolls, counting and testing what came out, pallets and packaging.",
         [RoleNames.RecyclerOperator] = "Line 3 — records scrap weight and recycled output.",
         [RoleNames.LabelPrinter] = "The computer with the label printer — prints the labels the tablets send.",
     };

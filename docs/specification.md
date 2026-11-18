@@ -57,12 +57,12 @@ If two things happen at different times, or are done by different people, they a
 
 | Production record | Test record | Why separate |
 |---|---|---|
-| `Rolls` | `RollTestReports` | Operator vs Extruder Test Person · roll exists first, test comes after |
-| `ThermoProductions` | `ThermoTestReports` | Thermo Operator vs Thermo Test Person · same |
+| `Rolls` | `RollTestReports` | roll exists first, test comes after |
+| `ThermoProductions` | `ThermoTestReports` | same |
 
 **Four concrete reasons, not just theory:**
 
-1. **Different permissions.** The operator may write the roll but not the test; the test person the opposite. With separate tables this is one `[Authorize]` attribute per endpoint. In one shared table you would need column-level security, which neither EF Core nor PostgreSQL makes easy.
+1. **Different permissions.** Each is one `[Authorize]` attribute per endpoint. In one shared table, letting different people write different columns would need column-level security, which neither EF Core nor PostgreSQL makes easy. The test roles have since merged into the line's operator (19.31), but the endpoints stay apart, so a split later needs no change here.
 
 2. **Different times.** The roll is created at 09:05. The test is written after. In one table every measurement column would have to be nullable, and "has this roll been tested?" becomes "are these nine columns still null?" — fragile and slow.
 
@@ -293,7 +293,7 @@ Workers hang off the **line**, not the shift: a man works the extruder or the th
 
 ### One man, several jobs, one shift
 
-The jobs are a **list**, not a single choice, because that is how this factory runs. [Section 3](#3-users-and-roles) already says it plainly: the same man is usually both Extruder Operator and Extruder Test Person, and the thermo operator also builds the pallets.
+The jobs are a **list**, not a single choice, because that is how this factory runs: a man short-handed may run the extruder and the recycler in the same shift. (Shift records from before 19.31 that listed a test or packaging job now list the line's operator.)
 
 Forcing one job per shift would make him pick, and then *"who took the measurements on 5 August?"* has no honest answer — the record would show him running the extruder and say nothing about the testing he also did.
 
@@ -334,7 +334,7 @@ Built on **ASP.NET Core Identity**. Passwords are hashed by Identity — never b
 
 ### One person, many roles
 
-The factory has one man doing both the extruder operator's job and the test person's job today, and wants to split them later without changing anything. So roles are **many-to-many**:
+A man who runs two lines holds both their roles, so roles are **many-to-many**:
 
 ```
 Users ──< UserRoles >── Roles
@@ -348,41 +348,30 @@ The factory identifies people by employee number on paper, so it is stored and c
 
 ### Roles
 
-There are **two testing stages** in the factory — one at the extruder and one at the thermo — so there are two testing roles, not one.
+**One role a line** (19.31). Each line is run by one crew, so the line's operator does all
+of its work — on the extruder that includes testing the rolls, on the thermo it includes
+counting and testing what came out, and building the pallets.
 
 | Role | Does | Line |
 |---|---|---|
-| Administrator | Users, master data, recipes, system settings, backups, corrections | — |
-| Supervisor | Recipe versions, inventory adjustments, open/close shifts, approve corrections | — |
-| Inventory Manager | Receives materials, issues tickets, records returns | Store |
-| Extruder Operator | Creates batches and rolls, prints roll barcodes | 1 |
-| **Extruder Test Person** | Records **roll test reports** — weight, length, plate weight, four thickness readings | 1 |
-| Thermo Operator | Consumes rolls, records forming and **counts the bags**, builds the pallets and records the packaging, fills in his line's shift configuration. Sees the rolls, bags and pallets in Inventory — **not** the raw or packing material | 2 |
-| **Thermo Test Person** | Records **thermo test reports** — plate weight after forming, absorbent percentage | 2 |
-| **Packaging Operator** | Creates pallets, scans bags onto them, completes pallets, records packaging materials | 2 |
+| Administrator | Users, master data, **recipes**, the **audit log**, system settings, backups, corrections | — |
+| Supervisor | Opens, closes and plans shifts, inventory adjustments, approves corrections, ships pallets. **Not** material issue, recipes or the audit log (19.31) | — |
+| Inventory Manager | Receives materials, issues tickets, records returns, cancels a ticket issued by mistake | Store |
+| Extruder Operator | Creates batches and rolls, prints roll barcodes, weighs the rolls and records the **roll test reports** — plate weight, four thickness readings, absorbency | 1 |
+| Thermo Operator | Consumes rolls, records forming, **counts the bags** and records the **thermo test reports**, builds the pallets and records the packaging, fills in his line's shift configuration. Sees the rolls, bags and pallets in Inventory — **not** the raw or packing material | 2 |
 | Recycler Operator | Records scrap and recycled output | 3 |
 | **Label Printer** | The computer the label printer hangs off — prints the labels the tablets send. Sees the Print Queue and nothing else (19.13) | — |
 
-*(Both test roles were called "Quality Control" in the old documents. That name is wrong — they do not approve or reject anything. They record measurements, and production continues either way.)*
+*(The tests were once called "Quality Control" in the old documents. That name is wrong — nobody approves or rejects anything. The tests record measurements, and production continues either way.)*
 
-### A role is cheap now and expensive later
+### A role is a job someone holds
 
-**Rule: define a role for every distinct job, even when one person does several of them today.**
-
-A role costs one row in a table and one constant in code. Adding a role *later* means editing `[Authorize]` on every affected endpoint and redeploying — which is exactly the change the factory wants to avoid.
-
-Right now, one man is very likely all four of these:
-
-```
-Extruder Operator  +  Extruder Test Person
-Thermo Operator    +  Packaging Operator
-```
-
-That is fine. He is given all the roles he needs. When the factory hires someone for packaging, the administrator **removes one role from one person and gives it to another**. Nothing is rebuilt, nothing is redeployed.
-
-This is the whole reason roles are many-to-many rather than one role per user.
-
-**The limit of the rule:** a role must correspond to a real job someone could hold. Do not invent roles for jobs the factory does not have — that describes a factory that does not exist and makes the permission screen confusing. Packaging is a real job; someone does it every shift, even if today he is also the thermo operator.
+A role must correspond to a real job someone could hold. The first version split each
+line into several roles — an Extruder Test Person, a Thermo Test Person, a Packaging
+Operator — on the idea that the factory might hire for them separately. It runs each line
+with one crew instead, so the split only gave the administrator more boxes to tick and
+more ways to leave one unticked (19.31). A man who works two lines is given both lines'
+roles; that is what many-to-many is for.
 
 ---
 
@@ -904,7 +893,7 @@ Beyond that, rolls are chosen by customer demand, not in order, and may sit in s
 
 ### Roll test report
 
-Recorded **once**, as the roll leaves the extruder, by the **Extruder Test Person** — which today is the same man as the operator, holding both roles.
+Recorded **once**, as the roll leaves the extruder, by the **Extruder Operator** (19.31).
 
 **`RollTestReports`**
 
@@ -954,7 +943,7 @@ This record is also the parent of the test report and of every bag the run produ
 
 ### The test report — the *measurements*
 
-Recorded by the **Thermo Test Person** after the run, from the factory's own form.
+Recorded by the **Thermo Operator** after the run, from the factory's own form (19.31).
 
 **`ThermoTestReports`**
 
@@ -1033,7 +1022,7 @@ The bag count lives in the test report, so **saving the test report is what crea
 
 That matches the factory: the bags are counted at the end of the run, so the number does not exist until then.
 
-One thing to watch after go-live: the packaging operator cannot start building a pallet until the test person has saved his form. Today one man holds both roles, so it costs nothing. If the factory later splits the jobs and packaging finds itself waiting, the fix is small — move `BagCount` to `ThermoProductions` so the operator enters it himself. Nothing else in the design changes.
+One thing to watch after go-live: a pallet cannot be started until the bags have been counted. The thermo operator does both (19.31), so it costs nothing. If the factory ever splits the jobs and packaging finds itself waiting, the fix is small — move `BagCount` to `ThermoProductions` so the operator enters it himself. Nothing else in the design changes.
 
 ### Produced bags
 
@@ -1227,7 +1216,7 @@ This is the rule the database enforces, not the application. Application code al
 
 ### Packaging materials
 
-Recorded once at the end of the shift by the **Packaging Operator**. The real form shows **fractional** quantities (small bags 4.14, large bags 6.1) alongside weights — so the factory *does* measure partial use, by weighing.
+Recorded once at the end of the shift by the **Thermo Operator** (19.31). The real form shows **fractional** quantities (small bags 4.14, large bags 6.1) alongside weights — so the factory *does* measure partial use, by weighing.
 
 **`PackagingConsumptions`** — Id · **ShiftLineId** (FK) · RecordedByUserId (FK) · RecordedAt · Notes
 
@@ -1808,7 +1797,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Thirty changes, from watching the factory use the system. They are written here rather
+Thirty-one changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2618,7 +2607,7 @@ same quantity goes back out, beside the wrong delivery, which stays on the list 
 *Reversed*. A delivery is reversed once at most, and not at all if its material has already
 been used — the store cannot give back what it no longer holds.
 
-**A wrong issue ticket cancelled** (storekeeper, supervisor, administrator), while it is open.
+**A wrong issue ticket cancelled** (storekeeper, administrator — the supervisor too until 19.31), while it is open.
 Everything on it that has not come back is returned to the store, so the ticket used nothing
 and every report reading it says so. A closed ticket is not cancelled: its material has been
 counted as used, and a mistake there is corrected by adjusting the store.
@@ -2726,6 +2715,37 @@ Unique on (ProductionDate, ShiftId); a shift is opened from one plan at most.
 
 **`ScheduledShiftLines`** — Id · ScheduledShiftId · ProductionLineId · OperatorUserId.
 Unique on (ScheduledShiftId, ProductionLineId).
+
+### 19.31 One role a line, and a narrower supervisor
+
+**Built.** Each line is run by one crew, so each line has one role:
+
+| Before | Now |
+|---|---|
+| Extruder Operator, Extruder Test Person | **Extruder Operator** — the rolls and their tests |
+| Thermo Operator, Thermo Test Person, Packaging Operator | **Thermo Operator** — forming, counting and testing, pallets and packaging |
+
+The merged role opens every screen of its line, exactly as the separate roles together
+did. The Thermo Operator still sees only the rolls, bags and pallets in Inventory, not the
+raw or packing material — the factory kept that as it was, though the packaging operator
+and the thermo test person could see the materials before.
+
+**The supervisor no longer has** Material Issue, Recipes or the Audit Log — not only the
+tabs but what they allowed, so the server refuses him too:
+
+- **Material Issue** is the storekeeper's. Cancelling a ticket issued by mistake is the
+  inventory manager's or the administrator's. A shift that will not close because of an
+  open ticket still names the ticket; the dashboard still counts it but no longer links a
+  supervisor to a screen he cannot open.
+- **Recipes** are the administrator's: a recipe decides what every roll is made of. Anyone
+  may still read them, since the extruder operator picks one for each batch.
+- **The audit log** is the administrator's.
+
+**Existing data moved with it.** A migration gives everyone holding an old role the role
+it merged into, rewrites every shift record that listed an old role as a job somebody did,
+and then deletes the old roles. It is not undone by rolling back — who held which old role
+is gone once merged — so a database that must go back restores the backup `Migrate.ps1`
+takes first.
 
 ---
 ---

@@ -31,8 +31,7 @@ public class InventoryController(
     // rather than "all but one", so a job added later sees nothing until it is given it.
     private const string CanSeeMaterials =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.InventoryManager},"
-        + $"{RoleNames.ExtruderOperator},{RoleNames.ExtruderTestPerson},{RoleNames.ThermoTestPerson},"
-        + $"{RoleNames.PackagingOperator},{RoleNames.RecyclerOperator}";
+        + $"{RoleNames.ExtruderOperator},{RoleNames.RecyclerOperator}";
 
     [HttpGet]
     [Authorize(Roles = CanSeeMaterials)]

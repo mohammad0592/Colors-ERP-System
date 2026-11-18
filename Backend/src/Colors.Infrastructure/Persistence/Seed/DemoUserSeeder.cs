@@ -31,12 +31,12 @@ public static class DemoUserSeeder
         new("INV001", "Inventory Manager", [RoleNames.InventoryManager]),
 
         // One person, both extruder jobs — the real arrangement in the factory today.
-        new("EXT001", "علي حمدان", [RoleNames.ExtruderOperator, RoleNames.ExtruderTestPerson]),
+        new("EXT001", "علي حمدان", [RoleNames.ExtruderOperator]),
 
         // The thermo operator also builds the pallets.
-        new("THR001", "علي ياغي", [RoleNames.ThermoOperator, RoleNames.PackagingOperator]),
+        new("THR001", "علي ياغي", [RoleNames.ThermoOperator]),
 
-        new("TST001", "صدام نجوم", [RoleNames.ThermoTestPerson]),
+        new("TST001", "صدام نجوم", [RoleNames.ThermoOperator]),
         new("REC001", "محمد حمدان", [RoleNames.RecyclerOperator]),
     ];
 

@@ -52,7 +52,6 @@ export function RollProductionPage(): ReactElement {
     RoleNames.Administrator,
     RoleNames.Supervisor,
     RoleNames.ExtruderOperator,
-    RoleNames.ExtruderTestPerson,
   );
   const [measuring, setMeasuring] = useState<RollDto | RollSummaryDto | null>(null);
 

@@ -5,9 +5,8 @@ namespace Colors.Domain.Entities.Production;
 /// <summary>
 /// What was measured after the roll was formed (specification section 9).
 ///
-/// Written by the Thermo Test Person, from the factory's own form. Separate from the
-/// run for the same reason the roll's test is separate from the roll: different role,
-/// different moment.
+/// Written by the Thermo Operator, from the factory's own form. Separate from the run for
+/// the same reason the roll's test is separate from the roll: a different moment.
 ///
 /// <b>Saving this creates the bags.</b> The bag count lives here, and it does not exist
 /// until the end of the run — which is exactly when the factory counts them.

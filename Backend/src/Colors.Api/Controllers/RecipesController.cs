@@ -10,16 +10,15 @@ namespace Colors.Api.Controllers;
 /// Recipes — the main recipes and every version of them.
 ///
 /// Reading is open to any signed-in worker, because the extruder operator picks a
-/// recipe to start a batch. Writing belongs to the Administrator and the Supervisor:
-/// specification section 3 gives recipe authoring to both, since the supervisor is
-/// the one who actually adjusts percentages.
+/// recipe to start a batch. Writing belongs to the Administrator alone: a recipe decides
+/// what every roll is made of, and the factory keeps that with one person (19.31).
 /// </summary>
 [ApiController]
 [Route("api/recipes")]
 [Authorize]
 public class RecipesController(IRecipeService recipes) : ApiControllerBase
 {
-    private const string CanEdit = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
+    private const string CanEdit = RoleNames.Administrator;
 
     // ---------- families ----------
 

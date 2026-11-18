@@ -8,12 +8,11 @@ namespace Colors.Api.Controllers;
 /// <summary>
 /// The audit log (specification section 15).
 ///
-/// The administrator and the supervisor: one answers for the system, the other for the
-/// shift. Read-only — there is no endpoint to write a line, and none to remove one.
+/// The administrator's alone: he answers for the system (19.31). Read-only — there is no endpoint to write a line, and none to remove one.
 /// </summary>
 [ApiController]
 [Route("api/audit")]
-[Authorize(Roles = $"{RoleNames.Administrator},{RoleNames.Supervisor}")]
+[Authorize(Roles = RoleNames.Administrator)]
 public class AuditController(IAuditService audit) : ApiControllerBase
 {
     [HttpGet]

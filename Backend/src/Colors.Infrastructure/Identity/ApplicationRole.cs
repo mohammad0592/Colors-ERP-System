@@ -13,7 +13,7 @@ public class ApplicationRole : IdentityRole<int>
 {
     /// <summary>
     /// What this role may do, in plain words, shown on the user-management screen.
-    /// "ExtruderTestPerson" means nothing to an administrator; the description does.
+    /// "RecyclerOperator" says little to an administrator; the description says what it does.
     /// </summary>
     public string? Description { get; set; }
 }

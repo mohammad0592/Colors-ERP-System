@@ -45,8 +45,8 @@ public class JwtTokenGeneratorTests
     [Fact]
     public void Access_token_carries_every_role_the_worker_holds()
     {
-        // The factory's normal case: one man is both operator and test person.
-        string[] roles = [RoleNames.ExtruderOperator, RoleNames.ExtruderTestPerson];
+        // A man who runs two lines holds both their roles.
+        string[] roles = [RoleNames.ExtruderOperator, RoleNames.RecyclerOperator];
 
         var (token, _) = CreateGenerator().CreateAccessToken(CreateUser(), roles, Now);
 
@@ -58,7 +58,7 @@ public class JwtTokenGeneratorTests
 
         Assert.Equal(2, roleClaims.Count);
         Assert.Contains(RoleNames.ExtruderOperator, roleClaims);
-        Assert.Contains(RoleNames.ExtruderTestPerson, roleClaims);
+        Assert.Contains(RoleNames.RecyclerOperator, roleClaims);
     }
 
     [Fact]

@@ -9,10 +9,8 @@ namespace Colors.Api.Controllers;
 /// <summary>
 /// Line 1 — the mixer and the extruder (specification section 8).
 ///
-/// Batches and rolls belong to the Extruder Operator; the measurements belong to the
-/// Extruder Test Person. Today one man holds both roles, but the endpoints are
-/// separated now so splitting the jobs later needs no code change — which is exactly
-/// what section 3 asks for.
+/// Batches, rolls and their tests all belong to the Extruder Operator: the line has one
+/// crew, and the man who makes the roll is the one who tests it (section 19.31).
 ///
 /// Reading is open to any signed-in worker: the thermo operator needs to see what is
 /// in stock.
@@ -23,11 +21,10 @@ namespace Colors.Api.Controllers;
 public class ProductionController(IProductionService production) : ApiControllerBase
 {
     private const string CanProduce = $"{RoleNames.Administrator},{RoleNames.ExtruderOperator}";
-    private const string CanTest = $"{RoleNames.Administrator},{RoleNames.ExtruderTestPerson}";
-    // Weighing moved from the roll test to the production screen (section 19.12), so both
-    // the man logging rolls and the man testing them may do it.
+    private const string CanTest = $"{RoleNames.Administrator},{RoleNames.ExtruderOperator}";
+    // Weighing moved from the roll test to the production screen (section 19.12).
     private const string CanMeasure =
-        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator},{RoleNames.ExtruderTestPerson}";
+        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator}";
     private const string CanCorrect =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ExtruderOperator}";
     // Scrapping is a judgement that the roll is bad, so it is the supervisor's (19.27).

@@ -5,9 +5,9 @@ namespace Colors.Domain.Entities.Production;
 /// plate and the four thickness readings. The weight and length used to be here too, and
 /// moved to the roll itself in section 19.12.
 ///
-/// Written by the Extruder Test Person — today the same man as the operator, holding
-/// both roles. Separate from the roll because it is a different event, by a different
-/// role, at a different moment: the roll exists first, the measurements come after.
+/// Written by the Extruder Operator, who made the roll (section 19.31). Separate from the
+/// roll because it is a different event at a different moment: the roll exists first,
+/// the measurements come after.
 ///
 /// Filled in a reading at a time and saved as it goes (specification section 19.15): the
 /// absorbency alone takes ten minutes in water, and nothing typed before that should wait

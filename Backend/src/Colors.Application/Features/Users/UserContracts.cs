@@ -10,9 +10,8 @@ public sealed record UserDto(
     string FullName,
     bool IsActive,
     DateTimeOffset CreatedAt,
-    // Every job this person may do. Many-to-many on purpose: one man is the extruder
-    // operator and its test person today, and the factory wants to split those later
-    // without anything being rebuilt (specification section 3).
+    // Every job this person may do. Many-to-many on purpose: a man who runs two lines
+    // holds both their roles (specification section 3).
     IReadOnlyList<string> Roles,
     // True while five wrong passwords are still locking the account. It clears itself
     // after five minutes, but an administrator can free the person immediately — on a

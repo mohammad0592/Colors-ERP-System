@@ -9,12 +9,10 @@ namespace Colors.Api.Controllers;
 /// <summary>
 /// Line 2 — thermoforming (specification section 9).
 ///
-/// The run belongs to the Thermo Operator; the counting belongs to the Thermo Test
-/// Person. Today one man holds both roles, and the endpoints are separated now so
-/// splitting the jobs later needs no code change.
+/// The run and the counting both belong to the Thermo Operator: the line has one crew,
+/// and the man who ran the roll counts what came out (section 19.31).
 ///
-/// Reading is open to any signed-in worker: the packaging operator needs to see which
-/// bags exist before he can build a pallet.
+/// Reading is open to any signed-in worker.
 /// </summary>
 [ApiController]
 [Route("api/thermo")]
@@ -22,10 +20,7 @@ namespace Colors.Api.Controllers;
 public class ThermoController(IThermoService thermo) : ApiControllerBase
 {
     private const string CanForm = $"{RoleNames.Administrator},{RoleNames.ThermoOperator}";
-    // The operator counts too: on the floor the man who ran the roll is usually the one
-    // who counts what came out.
-    private const string CanTest =
-        $"{RoleNames.Administrator},{RoleNames.ThermoTestPerson},{RoleNames.ThermoOperator}";
+    private const string CanTest = $"{RoleNames.Administrator},{RoleNames.ThermoOperator}";
 
     // Corrections (section 19.27). Changing saved counts adds or cancels bags, so it is a
     // supervisor's; taking back a wrong start is the operator's own fresh mistake too; and
@@ -34,7 +29,7 @@ public class ThermoController(IThermoService thermo) : ApiControllerBase
     private const string CanUndoStart =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ThermoOperator}";
     private const string CanMarkDefective =
-        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ThermoOperator},{RoleNames.PackagingOperator}";
+        $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.ThermoOperator}";
 
     // ---------- runs ----------
 

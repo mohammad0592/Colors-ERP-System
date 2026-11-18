@@ -9,7 +9,7 @@ namespace Colors.Api.Controllers;
 /// <summary>
 /// Pallets (specification section 10).
 ///
-/// Building a pallet is the Packaging Operator's job. Undoing a scan is not: a bag comes
+/// Building a pallet is the Thermo Operator's job — he packs what his line makes. Undoing a scan is not: a bag comes
 /// off only with a supervisor's reason, because the row is kept for ever and the
 /// correction is part of the history.
 ///
@@ -21,9 +21,7 @@ namespace Colors.Api.Controllers;
 [Authorize]
 public class PalletsController(IPalletService pallets) : ApiControllerBase
 {
-    // The thermo operator builds the pallets from the bags his line makes.
-    private const string CanPack =
-        $"{RoleNames.Administrator},{RoleNames.PackagingOperator},{RoleNames.ThermoOperator}";
+    private const string CanPack = $"{RoleNames.Administrator},{RoleNames.ThermoOperator}";
     private const string CanReverse = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
 
     // Sending a pallet out is not floor work. It takes the pallet out of the factory's

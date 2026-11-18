@@ -97,13 +97,15 @@ describe('who may open what', () => {
     expect(menuShows(reports?.roles, RoleNames.InventoryManager)).toBe(true);
   });
 
-  it('lets the supervisor see the tickets that stop him closing the shift', () => {
-    // A ticket still outstanding blocks the close (specification section 2), so he has
-    // to be able to look. He still cannot issue one — the screen decides that.
-    expect(guardAllows('/inventory/issue', RoleNames.Supervisor)).toBe(true);
+  it('keeps the supervisor out of the store, the recipes and the audit log', () => {
+    // Section 19.31: the store is the storekeeper's, and recipes and the log are the
+    // administrator's.
+    for (const path of ['/inventory/issue', '/recipes', '/audit'] as const) {
+      expect(guardAllows(path, RoleNames.Supervisor)).toBe(false);
 
-    const issue = menuItems.find((item) => item.path === '/inventory/issue');
-    expect(menuShows(issue?.roles, RoleNames.Supervisor)).toBe(true);
+      const item = menuItems.find((entry) => entry.path === path);
+      expect(menuShows(item?.roles, RoleNames.Supervisor)).toBe(false);
+    }
   });
 
   it('keeps an operator off the lines that are not his', () => {

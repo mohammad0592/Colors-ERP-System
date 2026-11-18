@@ -23,7 +23,7 @@ export function RollTestsPage(): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const canTest = hasRole(RoleNames.Administrator, RoleNames.ExtruderTestPerson);
+  const canTest = hasRole(RoleNames.Administrator, RoleNames.ExtruderOperator);
 
   const [waitingOnly, setWaitingOnly] = useState(true);
   const [measuring, setMeasuring] = useState<RollSummaryDto | null>(null);

@@ -1,7 +1,7 @@
 import { wordFor } from './words';
 
 /**
- * The ten roles, mirroring Colors.Domain.Constants.RoleNames on the server.
+ * The seven roles, mirroring Colors.Domain.Constants.RoleNames on the server.
  *
  * Written as constants, never as loose strings: a typo in a role name would hide a
  * menu item with no error and nothing to search for. The `as const` makes any typo
@@ -12,10 +12,7 @@ export const RoleNames = {
   Supervisor: 'Supervisor',
   InventoryManager: 'InventoryManager',
   ExtruderOperator: 'ExtruderOperator',
-  ExtruderTestPerson: 'ExtruderTestPerson',
   ThermoOperator: 'ThermoOperator',
-  ThermoTestPerson: 'ThermoTestPerson',
-  PackagingOperator: 'PackagingOperator',
   RecyclerOperator: 'RecyclerOperator',
   /** The computer with the label printer (section 19.13). */
   LabelPrinter: 'LabelPrinter',
@@ -29,10 +26,7 @@ export const roleLabels: Record<RoleName, string> = {
   Supervisor: 'Supervisor',
   InventoryManager: 'Inventory Manager',
   ExtruderOperator: 'Extruder Operator',
-  ExtruderTestPerson: 'Extruder Test Person',
   ThermoOperator: 'Thermo Operator',
-  ThermoTestPerson: 'Thermo Test Person',
-  PackagingOperator: 'Packaging Operator',
   RecyclerOperator: 'Recycler Operator',
   LabelPrinter: 'Label Printer',
 };

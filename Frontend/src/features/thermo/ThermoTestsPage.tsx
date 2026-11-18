@@ -20,11 +20,7 @@ export function ThermoTestsPage(): ReactElement {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { hasRole } = useAuth();
-  const canTest = hasRole(
-    RoleNames.Administrator,
-    RoleNames.ThermoTestPerson,
-    RoleNames.ThermoOperator,
-  );
+  const canTest = hasRole(RoleNames.Administrator, RoleNames.ThermoOperator);
 
   const [waitingOnly, setWaitingOnly] = useState(true);
   const [counting, setCounting] = useState<ThermoRunSummaryDto | null>(null);

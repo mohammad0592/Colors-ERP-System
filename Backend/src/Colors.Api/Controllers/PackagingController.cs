@@ -9,7 +9,7 @@ namespace Colors.Api.Controllers;
 /// <summary>
 /// Packaging consumption (specification section 10).
 ///
-/// Recorded by the Packaging Operator at the end of the shift. Reading is open wider:
+/// Recorded by the Thermo Operator at the end of the shift. Reading is open wider:
 /// the supervisor closing a shift needs to see whether it was written down.
 /// </summary>
 [ApiController]
@@ -17,8 +17,7 @@ namespace Colors.Api.Controllers;
 [Authorize]
 public class PackagingController(IPackagingService packaging) : ApiControllerBase
 {
-    private const string CanRecord =
-        $"{RoleNames.Administrator},{RoleNames.PackagingOperator},{RoleNames.ThermoOperator}";
+    private const string CanRecord = $"{RoleNames.Administrator},{RoleNames.ThermoOperator}";
 
     [HttpGet]
     public async Task<IActionResult> GetAll(

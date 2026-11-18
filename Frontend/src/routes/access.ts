@@ -18,7 +18,7 @@ import { RoleNames } from '../lib/roles';
  * | May he press the buttons on it? | the screen's own `canProduce` / `canTest` / … |
  * | May the change be saved? | the server, on every endpoint |
  *
- * So this list is deliberately the **wider** one. The extruder test person may open Roll
+ * So this list is deliberately the **wider** one. The supervisor may open Roll
  * Production and see what has been made — he simply gets no "New Roll" button, because
  * the screen asks the second question separately. Locking him out of the screen entirely
  * would hide information he needs to do his own job.
@@ -31,9 +31,7 @@ import { RoleNames } from '../lib/roles';
 export type ScreenRoles = readonly string[] | undefined;
 
 const { Administrator, Supervisor, InventoryManager } = RoleNames;
-const { ExtruderOperator, ExtruderTestPerson } = RoleNames;
-const { ThermoOperator, ThermoTestPerson } = RoleNames;
-const { PackagingOperator, RecyclerOperator } = RoleNames;
+const { ExtruderOperator, ThermoOperator, RecyclerOperator } = RoleNames;
 const { LabelPrinter } = RoleNames;
 
 export const screenAccess = {
@@ -55,36 +53,23 @@ export const screenAccess = {
 
   '/inventory/receive': [Administrator, InventoryManager],
 
-  // The supervisor is here because he closes the shift, and a ticket still outstanding
-  // is one of the things that stops him (section 2). He cannot issue one.
-  '/inventory/issue': [Administrator, InventoryManager, Supervisor],
+  // The store's own business. The supervisor once had it too, to see the tickets that
+  // stop a shift closing; the close names them, and the store is the storekeeper's
+  // (section 19.31).
+  '/inventory/issue': [Administrator, InventoryManager],
 
-  // Line 1. Making rolls and measuring them are different jobs, so they are different
-  // screens — even though one man holds both roles today (section 3). Both roles may
-  // open both screens: the man about to measure needs to see what was made, and the man
-  // making them needs to see what has been measured.
-  '/production/rolls': [Administrator, Supervisor, ExtruderOperator, ExtruderTestPerson],
-  '/production/roll-tests': [
-    Administrator,
-    Supervisor,
-    ExtruderOperator,
-    ExtruderTestPerson,
-  ],
+  // Line 1. One role for the line (section 19.31): the man who makes the rolls tests them.
+  '/production/rolls': [Administrator, Supervisor, ExtruderOperator],
+  '/production/roll-tests': [Administrator, Supervisor, ExtruderOperator],
 
-  // Line 2, split the same way: forming is one job, counting what came out is another.
-  '/production/thermo': [Administrator, Supervisor, ThermoOperator, ThermoTestPerson],
-  '/production/thermo-tests': [
-    Administrator,
-    Supervisor,
-    ThermoOperator,
-    ThermoTestPerson,
-  ],
+  // Line 2, the same: forming, counting what came out, and packing it are one job.
+  '/production/thermo': [Administrator, Supervisor, ThermoOperator],
+  '/production/thermo-tests': [Administrator, Supervisor, ThermoOperator],
 
   // Packing. The supervisor is here because he answers for what is still part-built at
   // the end of his shift, and he is the one who takes a wrongly scanned bag back off.
-  // The thermo operator is here because he builds the pallets from what his line makes.
-  '/production/pallets': [Administrator, Supervisor, PackagingOperator, ThermoOperator],
-  '/production/packaging': [Administrator, Supervisor, PackagingOperator, ThermoOperator],
+  '/production/pallets': [Administrator, Supervisor, ThermoOperator],
+  '/production/packaging': [Administrator, Supervisor, ThermoOperator],
 
   // Sending a finished pallet out is not floor work. It takes the pallet out of the
   // factory's stock for good, so it sits with the supervisor — the same fence as taking
@@ -108,12 +93,13 @@ export const screenAccess = {
   // inventory manager is here for the waste control report, which is his (section 7).
   '/reports': [Administrator, Supervisor, InventoryManager],
 
-  // Who changed what, and what was refused. The administrator answers for the system,
-  // the supervisor for the shift (section 15).
-  '/audit': [Administrator, Supervisor],
+  // Who changed what, and what was refused. The administrator answers for the system
+  // (sections 15 and 19.31).
+  '/audit': [Administrator],
 
-  // The supervisor adjusts the percentages, so recipes are his job too (section 3).
-  '/recipes': [Administrator, Supervisor],
+  // A recipe decides what every roll is made of; the factory keeps it with one person
+  // (section 19.31).
+  '/recipes': [Administrator],
 
   // Opening and closing shifts is the supervisor's job. Reopening a closed one is the
   // administrator's, which the screen and the server both enforce (section 2).
@@ -141,9 +127,6 @@ export const materialStockRoles = [
   Supervisor,
   InventoryManager,
   ExtruderOperator,
-  ExtruderTestPerson,
-  ThermoTestPerson,
-  PackagingOperator,
   RecyclerOperator,
 ] as const;
 

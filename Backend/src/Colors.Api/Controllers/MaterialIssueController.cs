@@ -20,9 +20,9 @@ public class MaterialIssueController(IMaterialIssueService tickets) : ApiControl
 {
     private const string CanIssue = $"{RoleNames.Administrator},{RoleNames.InventoryManager}";
 
-    // The storekeeper who issued it may cancel his own mistake, as may a supervisor (19.27).
-    private const string CanCancel =
-        $"{RoleNames.Administrator},{RoleNames.InventoryManager},{RoleNames.Supervisor}";
+    // The storekeeper who issued it may cancel his own mistake (19.27). The supervisor once
+    // could too; the store is the storekeeper's alone now (19.31).
+    private const string CanCancel = $"{RoleNames.Administrator},{RoleNames.InventoryManager}";
 
     [HttpGet]
     public async Task<IActionResult> GetAll(
