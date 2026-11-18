@@ -2636,7 +2636,12 @@ the QR with the code printed beside it for typing in when the label is torn.
 - **Bag** — a rectangular plate, as the factory makes, drawn at the top beside the
   product code in the largest letters on the label, with the product's name under it. Below, the facts on the left — the piece
   count in a box of its own, colour, roll, shift and date — and the QR on the right, the
-  other way round from a roll's.
+  other way round from a roll's. Along the bottom, the general code (`LB03W` for a white
+  3-compartment lunch box) as a Code 128 barcode with the code printed under it. The QR
+  names this one bag for the system; the barcode names what is in it, for a customer's or
+  a warehouse's own scanner, which reads a line barcode and has never heard of our bag
+  numbers. The system's own scanners read the QR only — the barcode is not scanned
+  inside the factory. The QR is a little smaller on a bag than on a roll to make room.
 - **Pallet** — nothing but the pallet's code at the top, a QR as large as the sticker
   allows in the middle, and the general code at the bottom (19.26). What is on the pallet
   is one scan away.

@@ -1,5 +1,6 @@
 ﻿import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from '../../hooks/useTranslation';
+import JsBarcode from 'jsbarcode';
 import QRCode from 'qrcode';
 import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
 import { createPortal } from 'react-dom';
@@ -390,6 +391,10 @@ function RollLabel({
  * aisle — that code is what the packers sort by. The QR is on the right, the other way
  * round from a roll's, and the piece count has a box of its own: it is what the customer
  * counts.
+ *
+ * Along the bottom, the product's general code as an ordinary barcode. The QR names this
+ * one bag for the system; the barcode names what is in it, for a shop's or a warehouse's
+ * own scanner, which reads a line barcode and knows nothing of our bag numbers.
  */
 function BagLabel({
   label,
@@ -438,8 +443,57 @@ function BagLabel({
           <Field label="Date · الوقت" value={madeAt(label.createdAt)} />
         </div>
 
-        <QrBlock barcode={label.barcode} qr={qr} />
+        {/* A little smaller than a roll's, to leave the barcode its room underneath. */}
+        <QrBlock barcode={label.barcode} qr={qr} size="h-[44mm] w-[44mm]" />
       </div>
+
+      {label.productCode !== null && <ProductBarcode code={label.productCode} />}
+    </div>
+  );
+}
+
+/**
+ * The general code as a Code 128 barcode, with the code printed under it as every
+ * barcode has. Code 128 because it takes letters as well as digits — LB03W is not a
+ * number — and every handheld scanner reads it out of the box.
+ */
+function ProductBarcode({ code }: { code: string }): ReactElement {
+  const svg = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    if (svg.current === null) {
+      return;
+    }
+    try {
+      JsBarcode(svg.current, code, {
+        format: 'CODE128',
+        // In units, not millimetres: the SVG is scaled to the label below. One unit a
+        // bar and 22 high come out at about half a millimetre a bar and 11mm tall, which
+        // any scanner reads. The ten units at either end are the quiet zone the standard
+        // asks for — without blank space there a scanner cannot find where it starts.
+        // None above and below, where it would only make the bars shorter — set through
+        // `margin`, because the library reads a marginTop of 0 as "not given".
+        width: 1,
+        height: 22,
+        margin: 0,
+        marginLeft: 10,
+        marginRight: 10,
+        displayValue: false,
+        background: '#ffffff',
+        lineColor: '#000000',
+      });
+    } catch {
+      // Only a character Code 128 cannot hold — not an ASCII letter or digit — gets here.
+      // The code is still printed under the empty space, so it can be typed.
+    }
+  }, [code]);
+
+  return (
+    <div className="mt-[1.5mm] flex flex-col items-center border-t border-ink/30 pt-[1.5mm]">
+      <svg ref={svg} className="h-[11mm] w-auto max-w-full" aria-label={code} />
+      <p className="mt-[0.5mm] font-mono text-xs leading-none font-bold tracking-[0.3em]">
+        {code}
+      </p>
     </div>
   );
 }
@@ -472,11 +526,19 @@ function PalletLabel({
  * half of the square: it is scanned by a tablet camera from arm's length on the floor,
  * and a bigger code reads from further away and at a steeper angle.
  */
-function QrBlock({ barcode, qr }: { barcode: string; qr: string | null }): ReactElement {
+function QrBlock({
+  barcode,
+  qr,
+  size = 'h-[50mm] w-[50mm]',
+}: {
+  barcode: string;
+  qr: string | null;
+  size?: string;
+}): ReactElement {
   return (
     <div className="flex shrink-0 flex-col items-center justify-center">
       <p className="mb-[1mm] font-mono text-sm font-bold">{barcode}</p>
-      <QrSquare qr={qr} size="h-[50mm] w-[50mm]" />
+      <QrSquare qr={qr} size={size} />
     </div>
   );
 }
