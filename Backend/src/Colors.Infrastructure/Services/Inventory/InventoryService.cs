@@ -24,6 +24,7 @@ public class InventoryService(
 {
     public async Task<IReadOnlyList<MaterialStockDto>> GetStockAsync(
         bool belowMinimumOnly = false,
+        bool packingOnly = false,
         CancellationToken cancellationToken = default)
     {
         // A left join, so a material that has never been received still appears — at
@@ -31,6 +32,7 @@ public class InventoryService(
         // see rather than a blank row missing from the list.
         var rows = await db.Materials
             .Where(m => m.IsActive)
+            .Where(m => !packingOnly || !m.Category.IssuedOnTickets)
             .Include(m => m.Category)
             .Include(m => m.BaseUnit)
             .Select(m => new
@@ -102,12 +104,14 @@ public class InventoryService(
     public async Task<IReadOnlyList<InventoryMovementDto>> GetMovementsAsync(
         int? materialId = null,
         int take = 100,
+        bool packingOnly = false,
         CancellationToken cancellationToken = default)
     {
         var movements = await db.MaterialInventoryMovements
             .Include(m => m.Material).ThenInclude(m => m.BaseUnit)
             .Include(m => m.MovementType)
             .Where(m => materialId == null || m.MaterialId == materialId)
+            .Where(m => !packingOnly || !m.Material.Category.IssuedOnTickets)
             .OrderByDescending(m => m.MovementDate)
             .ThenByDescending(m => m.Id)
             .Take(Math.Clamp(take, 1, 500))
@@ -354,7 +358,7 @@ public class InventoryService(
                 posted.Message ?? "The stock could not be moved.");
         }
 
-        var stock = await GetStockAsync(false, cancellationToken);
+        var stock = await GetStockAsync(cancellationToken: cancellationToken);
         return Result<MaterialStockDto>.Success(stock.First(s => s.MaterialId == materialId));
     }
 

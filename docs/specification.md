@@ -357,8 +357,8 @@ counting and testing what came out, and building the pallets.
 | Administrator | Users, master data, **recipes**, the **audit log**, system settings, backups, corrections | — |
 | Supervisor | Opens, closes and plans shifts, inventory adjustments, approves corrections, ships pallets. **Not** material issue, recipes or the audit log (19.31) | — |
 | Inventory Manager | Receives materials, issues tickets, records returns, cancels a ticket issued by mistake | Store |
-| Extruder Operator | Creates batches and rolls, prints roll barcodes, weighs the rolls and records the **roll test reports** — plate weight, four thickness readings, absorbency | 1 |
-| Thermo Operator | Consumes rolls, records forming, **counts the bags** and records the **thermo test reports**, builds the pallets and records the packaging, fills in his line's shift configuration. Sees the rolls, bags and pallets in Inventory — **not** the raw or packing material | 2 |
+| Extruder Operator | Creates batches and rolls, prints roll barcodes, weighs the rolls and records the **roll test reports** — plate weight, four thickness readings, absorbency. Sees the materials and the rolls in Inventory — **not** the bags or pallets (19.32) | 1 |
+| Thermo Operator | Consumes rolls, records forming, **counts the bags** and records the **thermo test reports**, builds the pallets and records the packaging, fills in his line's shift configuration. Sees the packing material, rolls, bags and pallets in Inventory — **not** the raw material (19.32) | 2 |
 | Recycler Operator | Records scrap and recycled output | 3 |
 | **Label Printer** | The computer the label printer hangs off — prints the labels the tablets send. Sees the Print Queue and nothing else (19.13) | — |
 
@@ -1797,7 +1797,7 @@ The operators do **not** get this screen. Each of them gets a small screen showi
 
 ## 19. The next round
 
-Thirty-one changes, from watching the factory use the system. They are written here rather
+Thirty-three changes, from watching the factory use the system. They are written here rather
 than kept in a message so none of them is lost, and so the decisions behind them are
 recorded next to the rules they change.
 
@@ -2726,9 +2726,7 @@ Unique on (ScheduledShiftId, ProductionLineId).
 | Thermo Operator, Thermo Test Person, Packaging Operator | **Thermo Operator** — forming, counting and testing, pallets and packaging |
 
 The merged role opens every screen of its line, exactly as the separate roles together
-did. The Thermo Operator still sees only the rolls, bags and pallets in Inventory, not the
-raw or packing material — the factory kept that as it was, though the packaging operator
-and the thermo test person could see the materials before.
+did. What each sees in Inventory was settled straight after, in 19.32.
 
 **The supervisor no longer has** Material Issue, Recipes or the Audit Log — not only the
 tabs but what they allowed, so the server refuses him too:
@@ -2746,6 +2744,57 @@ it merged into, rewrites every shift record that listed an old role as a job som
 and then deletes the old roles. It is not undone by rolling back — who held which old role
 is gone once merged — so a database that must go back restores the backup `Migrate.ps1`
 takes first.
+
+### 19.32 Each line sees its own part of the store
+
+**Built.** The Inventory screen has five tabs — raw materials, packing materials, rolls,
+bags and pallets. Each job sees the ones that touch its work:
+
+| | Raw | Packing | Rolls | Bags, pallets |
+|---|---|---|---|---|
+| Administrator, Supervisor, Inventory Manager, Recycler Operator | ✓ | ✓ | ✓ | ✓ |
+| Extruder Operator | ✓ | ✓ | ✓ | — |
+| Thermo Operator | — | ✓ | ✓ | ✓ |
+
+- The **thermo operator** sees the packing material, because he packs with it — the bags
+  and the wooden pallets. The raw material goes into the extruder's mixer and stays off
+  his screen.
+- The **extruder operator** does not see bags or pallets. His line makes rolls and never
+  handles a bag.
+
+The server keeps to the same lists: it sends the thermo operator the packing material
+only, with only its movements, and refuses the bag and pallet list to the extruder
+operator. A man holding both lines' roles sees everything either shows. *Trace a label*
+stays open to everyone: whoever is holding a label may ask what is behind it.
+
+### 19.33 The bag label in Arabic, with the factory's logo
+
+**Built.** The bag's label prints the product's name in Arabic under the English one, and
+the factory's logo in its top corner, above the "Bag · كيس" mark.
+
+- **The Arabic name** is a new field on the product, *Name in Arabic*, in Master Data.
+  Optional: a product without one prints the English name alone. The eight products the
+  factory started with were given the names the factory gave:
+
+  | Product | Arabic |
+  |---|---|
+  | Normal Big Plate | طبق كبير عادي |
+  | Normal Small Plate | طبق صغير عادي |
+  | Absorbent Big Plate | طبق امتصاص كبير |
+  | Absorbent Small Plate | طبق امتصاص صغير |
+  | 1-Compartment Lunch Box | لانش بوكس غير مقطع |
+  | 3-Compartment Lunch Box | لانش بوكس مقطع |
+  | Large Burger Box | علبة برغر كبيرة |
+  | Small Burger Box | علبة برغر صغيرة |
+
+  A name is changed in Master Data, and the next label prints the new one. Filling these
+  in on an existing database never overwrites a name already typed in.
+- **The logo** prints in grey. The label printer prints black, and a colour logo would
+  come out as whatever its driver made of the colours; a grey one comes out as the logo.
+  The label is not ready to print until the logo has loaded, so the queue never sends a
+  sticker with an empty corner; a logo that fails to load does not hold the print up.
+
+Roll and pallet labels are unchanged.
 
 ---
 ---

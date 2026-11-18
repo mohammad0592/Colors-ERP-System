@@ -118,15 +118,28 @@ export const screenAccess = {
 export type ScreenPath = keyof typeof screenAccess;
 
 /**
- * Who sees the raw and packing material on the Inventory screen. Every job but the
- * thermo operator's: his part of the store is the rolls, bags and pallets, and the server
- * refuses him the material list too.
+ * Who sees what on the Inventory screen (section 19.32). The server keeps to the same
+ * lists, so a hidden tab is also a refused request.
+ *
+ * Raw material goes into the extruder's mixer, so the thermo operator does not see it;
+ * he does see the packing, which he uses. The extruder operator's line makes rolls and
+ * never handles a bag, so he does not see the bags and pallets.
  */
-export const materialStockRoles = [
+export const rawMaterialRoles = [
   Administrator,
   Supervisor,
   InventoryManager,
   ExtruderOperator,
+  RecyclerOperator,
+] as const;
+
+export const packingMaterialRoles = [...rawMaterialRoles, ThermoOperator] as const;
+
+export const bagAndPalletRoles = [
+  Administrator,
+  Supervisor,
+  InventoryManager,
+  ThermoOperator,
   RecyclerOperator,
 ] as const;
 

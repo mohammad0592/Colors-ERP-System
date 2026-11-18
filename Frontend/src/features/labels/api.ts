@@ -51,6 +51,8 @@ export interface BarcodeLabelDto {
   maxThickness: number | null;
   /** A roll only: its recipe, "3 — Absorbent" — the roll's type (section 19.17). */
   recipeName: string | null;
+  /** A bag only: the product's name in Arabic, under the English one (section 19.33). */
+  productArabicName: string | null;
 }
 
 export const producedStockApi = {

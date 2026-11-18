@@ -65,7 +65,9 @@ public sealed record ProductDto(
     decimal? MinThickness,
     decimal? MaxThickness,
     bool IsActive,
-    bool CanDelete);
+    bool CanDelete,
+    // Printed on the bag's label under the English name (section 19.33).
+    string? ArabicName = null);
 
 public sealed record SaveProductRequest(
     string Name,
@@ -76,7 +78,8 @@ public sealed record SaveProductRequest(
     int SmallBagsPerBag,
     int BagsPerPallet,
     decimal? MinThickness,
-    decimal? MaxThickness);
+    decimal? MaxThickness,
+    string? ArabicName = null);
 
 /// <summary>
 /// A material category. <c>IssuedOnTickets</c> is what decides whether its materials

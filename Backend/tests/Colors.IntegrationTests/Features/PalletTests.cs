@@ -1152,4 +1152,23 @@ public class PalletTests(DatabaseFixture fixture)
         Assert.Equal(palletLabel.ProductCode, palletLabel.HeadlineCode);
         Assert.Equal(closed.Barcode, palletLabel.Barcode);
     }
+
+    [Fact]
+    public async Task A_bags_label_carries_its_products_name_in_Arabic()
+    {
+        // The floor reads Arabic, so the bag's label prints the name in both (section 19.33).
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PAR1");
+        var normal = await db.Products.FirstAsync(p => p.Id == ids.NormalProductId);
+        var absorbent = await db.Products.FirstAsync(p => p.Id == ids.AbsorbentProductId);
+        normal.ArabicName = "طبق كبير عادي";
+        absorbent.ArabicName = "طبق امتصاص كبير";
+        await db.SaveChangesAsync();
+
+        var (_, bags) = await PartPalletAsync(db, ids, "PAR1", 1, 1);
+        var label = (await new ProducedStockService(db).GetLabelAsync(bags[0].Barcode)).Value!;
+
+        var made = label.ProductName == normal.Name ? normal : absorbent;
+        Assert.Equal(made.ArabicName, label.ProductArabicName);
+    }
 }

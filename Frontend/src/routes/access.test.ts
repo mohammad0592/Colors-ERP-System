@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { navigation } from '../components/layout/navigation';
 import { RoleNames, type RoleName } from '../lib/roles';
-import { materialStockRoles, rolesFor, screenAccess, type ScreenPath } from './access';
+import {
+  bagAndPalletRoles,
+  packingMaterialRoles,
+  rawMaterialRoles,
+  rolesFor,
+  screenAccess,
+  type ScreenPath,
+} from './access';
 
 /**
  * The menu and the route guard must offer the same screens to the same people.
@@ -175,8 +182,18 @@ describe('who may open what', () => {
       expect(guardAllows(path, thermo)).toBe(false);
     }
 
-    // Inventory, but only its rolls, bags and pallets: never the raw or packing material.
-    expect((materialStockRoles as readonly string[]).includes(thermo)).toBe(false);
+    // In Inventory, the packing he uses but never the raw material (section 19.32).
+    expect((rawMaterialRoles as readonly string[]).includes(thermo)).toBe(false);
+    expect((packingMaterialRoles as readonly string[]).includes(thermo)).toBe(true);
+    expect((bagAndPalletRoles as readonly string[]).includes(thermo)).toBe(true);
+  });
+
+  it('shows the extruder operator the materials and rolls but no bags or pallets', () => {
+    const extruder = RoleNames.ExtruderOperator;
+
+    expect((rawMaterialRoles as readonly string[]).includes(extruder)).toBe(true);
+    expect((packingMaterialRoles as readonly string[]).includes(extruder)).toBe(true);
+    expect((bagAndPalletRoles as readonly string[]).includes(extruder)).toBe(false);
   });
 });
 

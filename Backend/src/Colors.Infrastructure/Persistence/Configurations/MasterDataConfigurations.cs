@@ -80,6 +80,7 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
                 + "AND (\"MinThickness\" IS NULL OR \"MaxThickness\" IS NULL "
                 + "OR \"MinThickness\" <= \"MaxThickness\")"));
         builder.Property(e => e.Name).IsRequired().HasMaxLength(100);
+        builder.Property(e => e.ArabicName).HasMaxLength(100);
 
         // The same precision as the readings it is compared with.
         builder.Property(e => e.MinThickness).HasPrecision(9, 3);

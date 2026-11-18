@@ -37,7 +37,8 @@ public class ProductService(ColorsDbContext db)
             entity.MinThickness,
             entity.MaxThickness,
             entity.IsActive,
-            canDelete);
+            canDelete,
+            entity.ArabicName);
 
     protected override void Apply(SaveProductRequest request, Product entity)
     {
@@ -51,6 +52,7 @@ public class ProductService(ColorsDbContext db)
         entity.BagsPerPallet = request.BagsPerPallet;
         entity.MinThickness = request.MinThickness;
         entity.MaxThickness = request.MaxThickness;
+        entity.ArabicName = string.IsNullOrWhiteSpace(request.ArabicName) ? null : request.ArabicName.Trim();
     }
 
     protected override async Task<string?> ValidateAsync(

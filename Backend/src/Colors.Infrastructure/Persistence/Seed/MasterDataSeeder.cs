@@ -179,16 +179,19 @@ public static class MasterDataSeeder
         // bag directly, with no large bag at all (specification section 10). The bags per
         // pallet are the factory's own: 15 for plates, 23 for lunch boxes, 30 and 40 for
         // the burger boxes. They are rows, so correcting one is an edit in Master Data.
-        var products = new (string Name, string Type, bool Abs, int Pieces, int SmallBags, int LargeBags, int PerPallet)[]
+        //
+        // Each has its Arabic name for the bag's label, in the factory's own words — "lunch
+        // box" is said in English on the floor, so it is written that way (section 19.33).
+        var products = new (string Name, string Arabic, string Type, bool Abs, int Pieces, int SmallBags, int LargeBags, int PerPallet)[]
         {
-            ("Normal Big Plate", "Plate", false, 500, 2, 1, 15),
-            ("Normal Small Plate", "Plate", false, 500, 2, 1, 15),
-            ("Absorbent Big Plate", "Plate", true, 500, 2, 1, 15),
-            ("Absorbent Small Plate", "Plate", true, 500, 2, 1, 15),
-            ("1-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 23),
-            ("3-Compartment Lunch Box", "Lunch Box", false, 250, 1, 0, 23),
-            ("Large Burger Box", "Burger Box", false, 250, 1, 0, 30),
-            ("Small Burger Box", "Burger Box", false, 250, 1, 0, 40),
+            ("Normal Big Plate", "طبق كبير عادي", "Plate", false, 500, 2, 1, 15),
+            ("Normal Small Plate", "طبق صغير عادي", "Plate", false, 500, 2, 1, 15),
+            ("Absorbent Big Plate", "طبق امتصاص كبير", "Plate", true, 500, 2, 1, 15),
+            ("Absorbent Small Plate", "طبق امتصاص صغير", "Plate", true, 500, 2, 1, 15),
+            ("1-Compartment Lunch Box", "لانش بوكس غير مقطع", "Lunch Box", false, 250, 1, 0, 23),
+            ("3-Compartment Lunch Box", "لانش بوكس مقطع", "Lunch Box", false, 250, 1, 0, 23),
+            ("Large Burger Box", "علبة برغر كبيرة", "Burger Box", false, 250, 1, 0, 30),
+            ("Small Burger Box", "علبة برغر صغيرة", "Burger Box", false, 250, 1, 0, 40),
         };
 
         // Only into an empty table, and only if the types are still the ones seeded above
@@ -212,6 +215,7 @@ public static class MasterDataSeeder
                 db.Products.Add(new Product
                 {
                     Name = p.Name,
+                    ArabicName = p.Arabic,
                     ProductTypeId = type.Id,
                     IsAbsorbent = p.Abs,
                     PiecesPerBag = p.Pieces,

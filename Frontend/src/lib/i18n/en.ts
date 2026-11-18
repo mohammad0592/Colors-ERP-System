@@ -1121,6 +1121,8 @@ export const en = {
     'Choose at least one line that will run this shift.',
   'refusal.shiftSchedule.chooseActiveSupervisor':
     'Choose an active person as the supervisor.',
+  'md.arabicName': 'Name in Arabic',
+  'md.arabicNameHint': 'Printed on the bag\'s label under the English name.',
 } as const;
 
 /** Every key the screens may ask for. */

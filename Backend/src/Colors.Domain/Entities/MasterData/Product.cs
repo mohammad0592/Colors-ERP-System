@@ -17,6 +17,14 @@ namespace Colors.Domain.Entities.MasterData;
 /// </summary>
 public class Product : MasterEntity
 {
+    /// <summary>
+    /// The name in Arabic, printed on the bag's label under the English one
+    /// (specification section 19.33). The floor reads Arabic; the code and the English
+    /// name stay because the customers and the reports use them. Optional: a product
+    /// without one prints the English name alone.
+    /// </summary>
+    public string? ArabicName { get; set; }
+
     /// <summary>Plate · Lunch Box · Burger Box. For grouping in reports.</summary>
     public int ProductTypeId { get; set; }
 

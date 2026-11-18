@@ -56,6 +56,8 @@ export interface ProductDto extends LookupDto {
    */
   minThickness: number | null;
   maxThickness: number | null;
+  /** Printed on the bag's label under the English name (section 19.33). */
+  arabicName: string | null;
 }
 
 export interface SaveProduct {
@@ -68,6 +70,7 @@ export interface SaveProduct {
   bagsPerPallet: number;
   minThickness: number | null;
   maxThickness: number | null;
+  arabicName: string | null;
 }
 
 export interface MaterialCategoryDto extends LookupDto {

@@ -1088,4 +1088,6 @@ export const ar: Record<TranslationKey, string> = {
   'refusal.shiftSchedule.notFound': 'هذه الوردية المخطّطة غير موجودة.',
   'refusal.shiftSchedule.chooseALine': 'اختر خطاً واحداً على الأقل سيعمل في هذه الوردية.',
   'refusal.shiftSchedule.chooseActiveSupervisor': 'اختر شخصاً فعّالاً مشرفاً.',
+  'md.arabicName': 'الاسم بالعربية',
+  'md.arabicNameHint': 'يُطبع على ملصق الكيس تحت الاسم الإنجليزي.',
 };

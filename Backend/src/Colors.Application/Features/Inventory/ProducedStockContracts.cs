@@ -54,7 +54,9 @@ public sealed record BarcodeLabelDto(
     decimal? MaxThickness,
     // A roll only: its recipe, "3 — Absorbent" — the roll's type, printed where a bag
     // prints its product (specification section 19.17).
-    string? RecipeName = null);
+    string? RecipeName = null,
+    // A bag only: the product's name in Arabic, under the English one (section 19.33).
+    string? ProductArabicName = null);
 
 /// <summary>
 /// Produced stock and the labels that go on it.

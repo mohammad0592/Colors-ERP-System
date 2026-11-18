@@ -422,4 +422,29 @@ public class MaterialIssueTests(DatabaseFixture fixture)
         Assert.False(more.IsSuccess);
         Assert.False((await service.CloseAsync(ticket.Id, ids.UserId)).IsSuccess);
     }
+
+    [Fact]
+    public async Task Packing_only_shows_the_packing_and_none_of_the_raw_material()
+    {
+        // The thermo operator's view of the store (section 19.32): the bags and wooden
+        // pallets he packs with, and nothing that goes into the extruder's mixer.
+        await using var db = fixture.CreateContext();
+        var ids = await FactoryData.CreateAsync(db, "PACK1");
+        await StockUp(db, ids.GppsId, ids.UserId, 50);
+        await StockUp(db, ids.LargeBagsId, ids.UserId, 20);
+        var inventory = NewInventory(db);
+
+        var stock = await inventory.GetStockAsync(packingOnly: true);
+        Assert.Contains(stock, row => row.MaterialId == ids.LargeBagsId);
+        Assert.DoesNotContain(stock, row => row.MaterialId == ids.GppsId);
+        Assert.All(stock, row => Assert.False(row.IssuedOnTickets));
+
+        var moves = await inventory.GetMovementsAsync(take: 500, packingOnly: true);
+        Assert.Contains(moves, move => move.MaterialId == ids.LargeBagsId);
+        Assert.DoesNotContain(moves, move => move.MaterialId == ids.GppsId);
+
+        // Everyone else still sees both.
+        var everything = await inventory.GetStockAsync();
+        Assert.Contains(everything, row => row.MaterialId == ids.GppsId);
+    }
 }

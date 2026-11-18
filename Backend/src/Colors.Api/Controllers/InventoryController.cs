@@ -26,12 +26,36 @@ public class InventoryController(
     private const string CanReceive = $"{RoleNames.Administrator},{RoleNames.InventoryManager}";
     private const string CanAdjust = $"{RoleNames.Administrator},{RoleNames.Supervisor}";
 
-    // Who may see the raw and packing material in the store: every job but the thermo
-    // operator's, whose part of the inventory is the rolls, bags and pallets. Listed
-    // rather than "all but one", so a job added later sees nothing until it is given it.
+    // Who may see the materials in the store (section 19.32). Listed rather than "all but
+    // one", so a job added later sees nothing until it is given it.
+    //
+    // The thermo operator is let in for the packing he uses — the bags and the wooden
+    // pallets — and the list is cut down to packing for him below. The raw material goes
+    // into the extruder's mixer and is none of his line's business.
     private const string CanSeeMaterials =
         $"{RoleNames.Administrator},{RoleNames.Supervisor},{RoleNames.InventoryManager},"
-        + $"{RoleNames.ExtruderOperator},{RoleNames.RecyclerOperator}";
+        + $"{RoleNames.ExtruderOperator},{RoleNames.RecyclerOperator},{RoleNames.ThermoOperator}";
+
+    private static readonly string[] SeeRawMaterial =
+    [
+        RoleNames.Administrator,
+        RoleNames.Supervisor,
+        RoleNames.InventoryManager,
+        RoleNames.ExtruderOperator,
+        RoleNames.RecyclerOperator,
+    ];
+
+    // Who may see the bags and pallets in the store: everyone but the extruder operator,
+    // whose line makes rolls and never touches a bag (section 19.32). A man who also holds
+    // the thermo's role sees them through that.
+    private static readonly string[] SeeBagsAndPallets =
+    [
+        RoleNames.Administrator,
+        RoleNames.Supervisor,
+        RoleNames.InventoryManager,
+        RoleNames.ThermoOperator,
+        RoleNames.RecyclerOperator,
+    ];
 
     [HttpGet]
     [Authorize(Roles = CanSeeMaterials)]
@@ -39,12 +63,14 @@ public class InventoryController(
         [FromQuery] bool belowMinimumOnly = false,
         CancellationToken cancellationToken = default)
     {
-        return Ok(await inventory.GetStockAsync(belowMinimumOnly, cancellationToken));
+        return Ok(await inventory.GetStockAsync(belowMinimumOnly, PackingOnly(), cancellationToken));
     }
 
     /// <summary>
-    /// Rolls, bags and pallets in one list. Reading is open to any signed-in worker:
-    /// anyone may need to find where a label went.
+    /// Rolls, bags and pallets in one list. Rolls are open to any signed-in worker: anyone
+    /// may need to find where a label went. Bags and pallets are kept from the extruder
+    /// operator, whose line never handles them (section 19.32) — Trace a label still
+    /// answers him about a label in his hand.
     /// </summary>
     [HttpGet("produced")]
     public async Task<IActionResult> GetProduced(
@@ -54,6 +80,12 @@ public class InventoryController(
         [FromQuery] bool availableOnly = false,
         CancellationToken cancellationToken = default)
     {
+        var rollsOnly = string.Equals(kind?.Trim(), "Roll", StringComparison.OrdinalIgnoreCase);
+        if (!rollsOnly && !SeeBagsAndPallets.Any(User.IsInRole))
+        {
+            return Forbid();
+        }
+
         return Ok(await produced.GetAsync(kind, status, search, availableOnly, cancellationToken));
     }
 
@@ -94,7 +126,7 @@ public class InventoryController(
         [FromQuery] int take = 100,
         CancellationToken cancellationToken = default)
     {
-        return Ok(await inventory.GetMovementsAsync(materialId, take, cancellationToken));
+        return Ok(await inventory.GetMovementsAsync(materialId, take, PackingOnly(), cancellationToken));
     }
 
     [HttpPost("receive")]
@@ -135,4 +167,10 @@ public class InventoryController(
     /// <summary>Who is acting. From the token, never from the body.</summary>
     private int CurrentUserId() =>
         int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
+
+    /// <summary>
+    /// Only the packing material, for someone let in to see the store's materials for the
+    /// packing alone — the thermo operator holding no other role that shows the raw.
+    /// </summary>
+    private bool PackingOnly() => !SeeRawMaterial.Any(User.IsInRole);
 }

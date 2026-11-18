@@ -78,9 +78,14 @@ public sealed record ReceivingUnitDto(
 /// <summary>The store. Declared here, implemented in Infrastructure (section 0.1).</summary>
 public interface IInventoryService
 {
-    /// <summary>Every material with its balance, including those never yet received.</summary>
+    /// <summary>
+    /// Every material with its balance, including those never yet received.
+    /// <paramref name="packingOnly"/> leaves out the raw material, for the thermo operator,
+    /// who sees the packing he uses and nothing that goes into the mixer (section 19.32).
+    /// </summary>
     Task<IReadOnlyList<MaterialStockDto>> GetStockAsync(
         bool belowMinimumOnly = false,
+        bool packingOnly = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>The units a material may be received in, largest first.</summary>
@@ -88,9 +93,11 @@ public interface IInventoryService
         int materialId,
         CancellationToken cancellationToken = default);
 
+    /// <summary>The latest movements, newest first. <paramref name="packingOnly"/> as above.</summary>
     Task<IReadOnlyList<InventoryMovementDto>> GetMovementsAsync(
         int? materialId = null,
         int take = 100,
+        bool packingOnly = false,
         CancellationToken cancellationToken = default);
 
     Task<Result<MaterialStockDto>> ReceiveAsync(

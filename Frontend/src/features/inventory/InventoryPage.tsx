@@ -5,7 +5,11 @@ import { useTranslation } from '../../hooks/useTranslation';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAuth } from '../../hooks/useAuth';
 import { RoleNames } from '../../lib/roles';
-import { materialStockRoles } from '../../routes/access';
+import {
+  bagAndPalletRoles,
+  packingMaterialRoles,
+  rawMaterialRoles,
+} from '../../routes/access';
 import { ProducedStockTab } from '../labels/ProducedStockTab';
 import { AdjustStockDialog } from './AdjustStockDialog';
 import { ReasonDialog } from '../../components/ui/ReasonDialog';
@@ -30,11 +34,16 @@ export function InventoryPage(): ReactElement {
   const { hasRole } = useAuth();
   const canAdjust = hasRole(RoleNames.Administrator, RoleNames.Supervisor);
   const canReceive = hasRole(RoleNames.Administrator, RoleNames.InventoryManager);
-  // The thermo operator's part of the store is what his line makes; the materials tabs
-  // are not shown to him, and the server refuses him the list anyway.
-  const seesMaterials = hasRole(...materialStockRoles);
+  // Each job sees its own part of the store (section 19.32): the thermo operator the
+  // packing but not the raw material, the extruder operator no bags or pallets. The
+  // server sends the thermo operator only the packing, and refuses the rest.
+  const seesRaw = hasRole(...rawMaterialRoles);
+  const seesMaterials = hasRole(...packingMaterialRoles);
+  const seesBags = hasRole(...bagAndPalletRoles);
 
-  const [section, setSection] = useState<Section>(() => (seesMaterials ? 'raw' : 'Roll'));
+  const [section, setSection] = useState<Section>(() =>
+    seesRaw ? 'raw' : seesMaterials ? 'packing' : 'Roll',
+  );
   const [lowOnly, setLowOnly] = useState(false);
   const [adjusting, setAdjusting] = useState<MaterialStockDto | null>(null);
   const [historyFor, setHistoryFor] = useState<MaterialStockDto | null>(null);
@@ -85,15 +94,17 @@ export function InventoryPage(): ReactElement {
   }
 
   const tabs: { key: Section; label: string }[] = [
+    ...(seesRaw ? [{ key: 'raw' as const, label: t('inventory.rawMaterials') }] : []),
     ...(seesMaterials
-      ? [
-          { key: 'raw' as const, label: t('inventory.rawMaterials') },
-          { key: 'packing' as const, label: t('inventory.packingMaterials') },
-        ]
+      ? [{ key: 'packing' as const, label: t('inventory.packingMaterials') }]
       : []),
     { key: 'Roll', label: t('term.rolls') },
-    { key: 'Bag', label: t('term.bags') },
-    { key: 'Pallet', label: t('term.pallets') },
+    ...(seesBags
+      ? [
+          { key: 'Bag' as const, label: t('term.bags') },
+          { key: 'Pallet' as const, label: t('term.pallets') },
+        ]
+      : []),
   ];
 
   return (

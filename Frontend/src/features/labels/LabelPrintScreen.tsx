@@ -273,7 +273,22 @@ function LabelSheet({
   /** Told once the QR is drawn, or has failed to be — either way it is final. */
   onReady: (barcode: string) => void;
 }): ReactElement {
-  const qr = useQr(label.barcode, onReady);
+  // A bag's label carries the logo, and the queue prints the moment every label says it
+  // is ready — so a bag is not ready until the picture has arrived, or the first sticker
+  // of the morning goes out with an empty corner.
+  const needsLogo = label.kind === 'Bag';
+  const logoReady = useImageReady(LOGO, needsLogo);
+  const [qrDrawn, setQrDrawn] = useState(false);
+  const qrDone = useCallback(() => {
+    setQrDrawn(true);
+  }, []);
+  const qr = useQr(label.barcode, qrDone);
+
+  useEffect(() => {
+    if (qrDrawn && (!needsLogo || logoReady)) {
+      onReady(label.barcode);
+    }
+  }, [qrDrawn, needsLogo, logoReady, onReady, label.barcode]);
 
   return label.kind === 'Roll' ? (
     <RollLabel label={label} qr={qr} />
@@ -282,6 +297,40 @@ function LabelSheet({
   ) : (
     <PalletLabel label={label} qr={qr} />
   );
+}
+
+/** The factory's logo, served beside the screens. */
+const LOGO = '/logo-full.png';
+
+/**
+ * True once the picture is decoded — or has failed to load, so a missing logo never
+ * holds a print up for ever. The sticker goes out without it rather than not at all.
+ */
+function useImageReady(src: string, wanted: boolean): boolean {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    if (!wanted) {
+      return;
+    }
+
+    let cancelled = false;
+    const done = (): void => {
+      if (!cancelled) {
+        setReady(true);
+      }
+    };
+
+    const image = new Image();
+    image.src = src;
+    void image.decode().then(done, done);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [src, wanted]);
+
+  return ready;
 }
 
 /** The QR as an SVG string, or null when it could not be drawn. */
@@ -416,10 +465,22 @@ function BagLabel({
           {label.productName !== null && (
             <p className="mt-[1mm] truncate text-xs font-semibold">{label.productName}</p>
           )}
+          {/* The floor reads Arabic (section 19.33). Kept to the left under the English
+              name rather than pushed to the far edge, so the two read as one name. */}
+          {label.productArabicName !== null && (
+            <p dir="rtl" className="truncate text-left text-sm leading-tight font-bold">
+              {label.productArabicName}
+            </p>
+          )}
         </div>
-        <span className="shrink-0 rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase">
-          Bag · كيس
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-[1mm]">
+          {/* Grey, because the label printer prints black: a colour logo would come out
+              as whatever its driver guessed, a grey one as the logo. */}
+          <img src={LOGO} alt="Colors" className="h-[10mm] w-auto grayscale" />
+          <span className="rounded-full border-2 border-ink px-2 py-0.5 text-[10px] font-bold uppercase">
+            Bag · كيس
+          </span>
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 gap-[3mm]">

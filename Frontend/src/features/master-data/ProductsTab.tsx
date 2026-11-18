@@ -112,7 +112,14 @@ export function ProductsTab(): ReactElement {
           <tbody>
             {products.data.map((product) => (
               <tr key={product.id} className="border-b border-line last:border-0">
-                <td className="px-4 py-3 font-medium text-ink">{product.name}</td>
+                <td className="px-4 py-3 font-medium text-ink">
+                  {product.name}
+                  {product.arabicName !== null && (
+                    <span dir="rtl" className="block text-xs font-normal text-ink-muted">
+                      {product.arabicName}
+                    </span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-ink-soft">{product.productTypeName}</td>
                 <td className="px-4 py-3 text-ink-soft">
                   {product.recipeFamilyName ?? '—'}
@@ -218,6 +225,7 @@ function ProductDialog({
 }): ReactElement {
   const { t } = useTranslation();
   const [name, setName] = useState(product?.name ?? '');
+  const [arabicName, setArabicName] = useState(product?.arabicName ?? '');
   const [productTypeId, setProductTypeId] = useState(
     product?.productTypeId ?? types[0]?.id ?? 0,
   );
@@ -259,6 +267,7 @@ function ProductDialog({
         bagsPerPallet: Number(bagsPerPallet),
         minThickness: minThickness.trim() === '' ? null : Number(minThickness),
         maxThickness: maxThickness.trim() === '' ? null : Number(maxThickness),
+        arabicName: arabicName.trim() === '' ? null : arabicName.trim(),
       };
 
       if (product === null) {
@@ -303,6 +312,24 @@ function ProductDialog({
               setName(event.target.value);
             }}
           />
+        </div>
+
+        <div className="mb-4">
+          <label className="field-label" htmlFor="prod-arabic-name">
+            {t('md.arabicName')}
+          </label>
+          <input
+            id="prod-arabic-name"
+            dir="rtl"
+            className="field-input"
+            value={arabicName}
+            maxLength={100}
+            disabled={isSaving}
+            onChange={(event) => {
+              setArabicName(event.target.value);
+            }}
+          />
+          <p className="mt-1 text-xs text-ink-muted">{t('md.arabicNameHint')}</p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">

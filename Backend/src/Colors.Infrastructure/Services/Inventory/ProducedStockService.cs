@@ -337,7 +337,8 @@ public class ProducedStockService(ColorsDbContext db) : IProducedStockService
             bag.ThermoProduction.ShiftLine.ShiftReport.ProductionDate,
             bag.CreatedAt,
             null,
-            null));
+            null,
+            ProductArabicName: bag.Product.ArabicName));
     }
 
     private async Task<Result<BarcodeLabelDto>> PalletLabelAsync(
